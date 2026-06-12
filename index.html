@@ -171,9 +171,10 @@
 
   <button id="startBtn">▶ Start Adventure!</button>
   <div id="controlsHelp">
-    🖱️ <b>Click the game to look around</b> • <b>WASD</b> move • <b>Space</b> jump • <b>E</b> use math station / shop<br>
-    <b>Left-click</b> place a block • <b>Right-click</b> remove a block • <b>1 / 2</b> choose block or door • <b>C</b> camera view<br>
-    📱 On a tablet: joystick to move, drag to look, tap to build!
+    <b>⬆ ⬇ Arrow keys</b> walk • <b>← →</b> turn • <b>Space</b> jump • <b>E</b> use math station / shop<br>
+    Solve math and <b>5 blocks appear on the ground</b>! • <b>P</b> pick up a block • <b>D</b> put down a block<br>
+    <b>1 / 2</b> choose block or door • <b>C</b> camera view • Mouse clicks build too!<br>
+    📱 On a tablet: joystick to move, drag to look, tap to build & pick up!
   </div>
 </div>
 
@@ -855,6 +856,13 @@ function collideAxis(axis, delta) {
         }
 }
 
+function cellOverlapsPlayer(cx, cy, cz) {
+  const half = player.width / 2;
+  return Math.abs(cx + 0.5 - player.pos.x) < half + 0.5 &&
+         Math.abs(cz + 0.5 - player.pos.z) < half + 0.5 &&
+         cy + 1 > player.pos.y && cy < player.pos.y + player.height;
+}
+
 function nearTrunk() {
   for (const t of trees) {
     const dx = player.pos.x - (t.x + 0.5), dz = player.pos.z - (t.z + 0.5);
@@ -866,11 +874,13 @@ function nearTrunk() {
 function updatePlayer(dt) {
   const speed = G.owned.shoes ? 7 : 5;
   const jumpV = G.owned.boots ? 10 : 7.5;
+  if (keys['ArrowLeft']) player.yaw += 2.4 * dt;     // turn with arrows — no mouse needed
+  if (keys['ArrowRight']) player.yaw -= 2.4 * dt;
   let mx = 0, mz = 0;
-  if (keys['KeyW'] || touch.joyY < -0.25) mz -= 1;
-  if (keys['KeyS'] || touch.joyY > 0.25) mz += 1;
-  if (keys['KeyA'] || touch.joyX < -0.25) mx -= 1;
-  if (keys['KeyD'] || touch.joyX > 0.25) mx += 1;
+  if (keys['ArrowUp'] || keys['KeyW'] || touch.joyY < -0.25) mz -= 1;
+  if (keys['ArrowDown'] || keys['KeyS'] || touch.joyY > 0.25) mz += 1;
+  if (touch.joyX < -0.25) mx -= 1;
+  if (touch.joyX > 0.25) mx += 1;
   const moving = (mx !== 0 || mz !== 0);
   if (moving) {
     const len = Math.hypot(mx, mz); mx /= len; mz /= len;
@@ -946,6 +956,86 @@ function updatePlayer(dt) {
     player.pos.z - Math.cos(player.yaw) * Math.cos(player.pitch) * 8
   );
   camera.lookAt(look);
+}
+
+/* ---- loot blocks: appear on the ground after a correct answer ---- */
+const lootBlocks = [];
+const lootGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55);
+const lootMat = new THREE.MeshLambertMaterial({ color: 0xC9B79A, emissive: 0x3a311f });
+function spawnLoot(n) {
+  for (let i = 0; i < n; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const r = 1.4 + Math.random() * 1.2;
+    const lx = Math.max(-WORLD_R + 1, Math.min(WORLD_R - 1, player.pos.x + Math.cos(ang) * r));
+    const lz = Math.max(-WORLD_R + 1, Math.min(WORLD_R - 1, player.pos.z + Math.sin(ang) * r));
+    const mesh = new THREE.Mesh(lootGeo, lootMat);
+    mesh.position.set(lx, player.pos.y + 0.45, lz);
+    scene.add(mesh);
+    lootBlocks.push({ mesh, alive: true, baseY: player.pos.y + 0.45, phase: Math.random() * 6 });
+  }
+}
+function collectLoot(l) {
+  l.alive = false;
+  scene.remove(l.mesh);
+  G.blocks++;
+  Sound.pop();
+  refreshHUD();
+  toast('🧱 +1 block!', 700);
+}
+/* P — pick up the nearest block (loot first, then your own builds) */
+function pickupBlock() {
+  let best = null, bestD = 2.8;
+  for (const l of lootBlocks) {
+    if (!l.alive) continue;
+    const d = Math.hypot(l.mesh.position.x - player.pos.x, l.mesh.position.z - player.pos.z);
+    if (d < bestD) { best = l; bestD = d; }
+  }
+  if (best) { collectLoot(best); return; }
+  let bk = null, be = null, bestY = -1, bestDist = 999;
+  blocks.forEach((b, k) => {            // within reach, prefer the topmost block
+    if (!b.removable) return;
+    const [x, y, z] = k.split(',').map(Number);
+    if (y > player.pos.y + 2.5) return;
+    const d = Math.hypot(x + 0.5 - player.pos.x, z + 0.5 - player.pos.z);
+    if (d > 1.8) return;
+    if (y > bestY || (y === bestY && d < bestDist)) { bk = k; be = b; bestY = y; bestDist = d; }
+  });
+  if (bk) {
+    const [x, y, z] = bk.split(',').map(Number);
+    removeBlockAt(x, y, z);
+    G.blocks += be.type === 'door' ? 4 : 1;
+    Sound.brk();
+    refreshHUD();
+    return;
+  }
+  toast('🤲 No block close enough — walk up to one and try P again!', 1800);
+}
+/* D — put down a block on the square in front of you (stacks for walls) */
+function putDownBlock() {
+  const fx = Math.floor(player.pos.x - Math.sin(player.yaw) * 1.4);
+  const fz = Math.floor(player.pos.z - Math.cos(player.yaw) * 1.4);
+  if (Math.abs(fx) >= WORLD_R || Math.abs(fz) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return; }
+  const base = blocks.get(key(fx, 0, fz));
+  if (base && !base.removable) { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
+  if (G.selectedSlot === 'door') {
+    if (G.blocks < 4) { toast('🚪 A door costs 4 blocks — solve more math!', 1800); return; }
+    if (blocks.has(key(fx, 0, fz)) || blocks.has(key(fx, 1, fz))) { toast('🚪 The door needs an empty spot!', 1500); return; }
+    if (cellOverlapsPlayer(fx, 0, fz) || cellOverlapsPlayer(fx, 1, fz)) { toast('🙂 Step back a little first!', 1400); return; }
+    placeDoor(fx, 0, fz);
+    G.blocks -= 4;
+  } else {
+    if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
+    let y = 0;
+    while (y <= 8 && blocks.has(key(fx, y, fz))) y++;
+    if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return; }
+    if (cellOverlapsPlayer(fx, y, fz)) { toast('🙂 Step back a little first!', 1400); return; }
+    const mesh = new THREE.Mesh(blockGeo, (fx + y + fz) % 2 ? placedMat : placedMatEdge);
+    mesh.position.set(fx + 0.5, y + 0.5, fz + 0.5);
+    addBlockMesh(fx, y, fz, null, 'placed', true, mesh);
+    G.blocks -= 1;
+  }
+  Sound.place();
+  refreshHUD();
 }
 
 /* ============================ CREEPERS ============================ */
@@ -1084,11 +1174,11 @@ function answerPicked(btn, opt) {
       $('mathFeedback').textContent = '🎉 Nice! The blocks turned to coins: +' + reward + ' 🪙';
       if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 equations solved! You are a math star! Keep shopping!', 4000); }, 900);
     } else {
-      G.blocks += reward;
-      $('mathFeedback').textContent = '🎉 Nice! The blocks went blank — +' + reward + ' building blocks!';
+      spawnLoot(5);                    // 5 blocks pop onto the ground around you
+      $('mathFeedback').textContent = '🎉 Nice! 5 blocks appeared on the ground — ' + (isTouch ? 'tap them to pick them up!' : 'press P near them to pick them up!');
     }
     refreshHUD();
-    setTimeout(closeMath, 1400);
+    setTimeout(closeMath, 1700);
   } else {
     Sound.wrong();
     btn.classList.add('shake');
@@ -1158,6 +1248,13 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
   raycaster.far = 7;
 
+  // 0) loot blocks — tap or click to pick up
+  const lMeshes = lootBlocks.filter(l => l.alive).map(l => l.mesh);
+  if (lMeshes.length) {
+    const hitL = raycaster.intersectObjects(lMeshes)[0];
+    if (hitL) { collectLoot(lootBlocks.find(l => l.mesh === hitL.object)); return; }
+  }
+
   // 1) berries
   if (G.mode === 'store') {
     const bMeshes = berries.filter(b => b.alive).map(b => b.mesh);
@@ -1225,24 +1322,17 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   const pz = Math.floor(hit.point.z + n.z * 0.5);
   if (Math.abs(px) >= WORLD_R || Math.abs(pz) >= WORLD_R || py > 12) return;
 
-  // don't build inside yourself
-  const half = player.width / 2;
-  const overlapsPlayer = (cx, cy, cz) =>
-    Math.abs(cx + 0.5 - player.pos.x) < half + 0.5 &&
-    Math.abs(cz + 0.5 - player.pos.z) < half + 0.5 &&
-    cy + 1 > player.pos.y && cy < player.pos.y + player.height;
-
   if (G.selectedSlot === 'door') {
     if (G.blocks < 4) { toast('🚪 A door costs 4 blocks — solve more math!', 1800); return; }
     if (blocks.has(key(px, py, pz)) || blocks.has(key(px, py + 1, pz))) return;
-    if (overlapsPlayer(px, py, pz) || overlapsPlayer(px, py + 1, pz)) { toast('🙂 Step back a little first!', 1400); return; }
+    if (cellOverlapsPlayer(px, py, pz) || cellOverlapsPlayer(px, py + 1, pz)) { toast('🙂 Step back a little first!', 1400); return; }
     placeDoor(px, py, pz);
     G.blocks -= 4;
     Sound.place(); refreshHUD();
   } else {
     if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
     if (blocks.has(key(px, py, pz))) return;
-    if (overlapsPlayer(px, py, pz)) { toast('🙂 Step back a little first!', 1400); return; }
+    if (cellOverlapsPlayer(px, py, pz)) { toast('🙂 Step back a little first!', 1400); return; }
     const mesh = new THREE.Mesh(blockGeo, (px + py + pz) % 2 ? placedMat : placedMatEdge);
     mesh.position.set(px + 0.5, py + 0.5, pz + 0.5);
     addBlockMesh(px, py, pz, null, 'placed', true, mesh);
@@ -1263,7 +1353,9 @@ const keys = {};
 addEventListener('keydown', e => {
   if (!G.running || popupOpen) return;
   keys[e.code] = true;
-  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+  if (e.code === 'KeyP') pickupBlock();
+  if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyE') {
     if (nearestStationDist() < 2.6) { Sound.click(); openMath(); }
     else if (G.mode === 'store' && shopDist() < 3.5) { Sound.click(); openShop(); }
@@ -1349,6 +1441,7 @@ if (isTouch) {
     e.preventDefault();
     if (nearestStationDist() < 2.8) { Sound.click(); openMath(); }
     else if (G.mode === 'store' && shopDist() < 3.5) { Sound.click(); openShop(); }
+    else pickupBlock();
   }, { passive: false });
   $('btnModeTouch').addEventListener('touchstart', e => {
     e.preventDefault();
@@ -1515,6 +1608,13 @@ function loop(now) {
     c.position.x += dt * (0.4 + i * 0.1);
     if (c.position.x > 50) c.position.x = -50;
   });
+
+  // loot blocks bob and spin so they're easy to spot
+  for (const l of lootBlocks) {
+    if (!l.alive) continue;
+    l.mesh.position.y = l.baseY + Math.sin(now / 300 + l.phase) * 0.12;
+    l.mesh.rotation.y = now / 600 + l.phase;
+  }
 
   // berries respawn
   if (G.mode === 'store') {

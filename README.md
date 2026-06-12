@@ -15,14 +15,15 @@ No images, models, or audio files to download.
 3. **Pick your hero** from seven cute voxel avatars.
 4. Walk up to a glowing **❓ math station** and solve the equation by
    **finding the right block** — tap the answer block from a few choices.
-   When you pick the correct one, the blocks turn blank and become building
-   material in your inventory!
-5. Build! Blocks snap to a grid, just like you'd expect.
+   When you pick the correct one, **5 blocks pop onto the ground** around
+   you!
+5. Walk over and press **P** to pick them up, then press **D** to put a
+   block down on the square in front of you. Blocks snap to a grid and
+   stack automatically, so building walls is easy.
 
 Equations are **freshly generated every time** — you'll never see the same
-problem twice in a session, and harder equations earn **more blocks** (a small
-one gives ~3, big ones give more). Wrong answers are no big deal — you just
-get a friendly "try again!"
+problem twice in a session. Wrong answers are no big deal — you just get a
+friendly "try again!" (In Store Mode, harder equations earn more coins.)
 
 ## 🗺️ Game modes
 
@@ -50,16 +51,16 @@ Seven blocky, procedurally built avatars to choose from:
 
 | Input | Action |
 | --- | --- |
-| Click the game | Capture the mouse to look around |
-| `W A S D` | Move |
+| `↑` / `↓` | Walk forward / backward (`W`/`S` work too) |
+| `←` / `→` | Turn left / right — no mouse needed! |
 | `Space` | Jump (hold near a tree trunk to climb, if you own the ladder) |
-| Mouse | Look around |
-| **Left-click** | Place a block |
-| **Right-click** | Remove a block (you get it back) |
+| `P` | **Pick up** the nearest block (loot from math, or your own builds) |
+| `D` | **Put down** a block on the square in front of you (stacks into walls) |
 | `1` / `2` | Select block 🧱 or door 🚪 (a door costs 4 blocks) |
 | `E` | Use a math station / open the shop |
 | `B` | Open the shop (Store Mode) |
 | `C` | Toggle first-person / third-person camera |
+| Mouse (optional) | Click the game to look around; left-click places, right-click removes |
 
 **Touch (tablet):** on-screen joystick to move, drag the screen to look,
 **tap** to place/break (toggle with the 🧱/⛏️ button), plus JUMP and ⭐ USE
