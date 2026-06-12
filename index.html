@@ -435,13 +435,26 @@ function addEyes(head, color, z) {
   box(head, 0.08, 0.08, 0.03, color || 0x222222, -0.11, 0.05, z);
   box(head, 0.08, 0.08, 0.03, color || 0x222222, 0.11, 0.05, z);
 }
-function addSunglasses(head, z) {
-  box(head, 0.16, 0.11, 0.04, 0x111111, -0.11, 0.05, z);
-  box(head, 0.16, 0.11, 0.04, 0x111111, 0.11, 0.05, z);
-  box(head, 0.08, 0.03, 0.04, 0x111111, 0, 0.06, z);
-}
 
 /* Each builder returns {group, legs, arms, head} — feet at y=0, faces +Z. */
+/* Four-legged base: horizontal body, head up front, legs at the corners. */
+function buildQuad(bodyColor, headColor, legColor) {
+  const g = new THREE.Group();
+  const legs = [
+    limb(g, 0.16, 0.5, 0.16, legColor, -0.16, 0.5, 0.3),   // front left
+    limb(g, 0.16, 0.5, 0.16, legColor, 0.16, 0.5, 0.3),    // front right
+    limb(g, 0.16, 0.5, 0.16, legColor, -0.16, 0.5, -0.3),  // back left
+    limb(g, 0.16, 0.5, 0.16, legColor, 0.16, 0.5, -0.3)    // back right
+  ];
+  box(g, 0.46, 0.42, 0.95, bodyColor, 0, 0.7, 0);          // body
+  box(g, 0.3, 0.3, 0.24, bodyColor, 0, 0.95, 0.42);        // neck
+  const head = new THREE.Group();
+  head.position.set(0, 1.22, 0.56);
+  box(head, 0.42, 0.4, 0.42, headColor, 0, 0, 0);
+  g.add(head);
+  return { group: g, legs, arms: [], head, quad: true };
+}
+
 function buildBiped(bodyColor, headColor, legColor, armColor) {
   const g = new THREE.Group();
   const legs = [
@@ -464,19 +477,19 @@ const AVATARS = [
   {
     id: 'queenfox', name: 'Queen Fox 🦊👑',
     build() {
-      const a = buildBiped(0xE8762C, 0xE8762C, 0xC95F1B, 0xE8762C);
-      box(a.head, 0.3, 0.22, 0.06, 0xFFF4E0, 0, -0.1, 0.26);            // white muzzle
-      box(a.head, 0.09, 0.09, 0.09, 0x222222, 0, -0.08, 0.31);          // nose
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.14, 0.22, 0.08, 0xE8762C, -0.16, 0.33, 0);          // ears
-      box(a.head, 0.14, 0.22, 0.08, 0xE8762C, 0.16, 0.33, 0);
-      box(a.head, 0.07, 0.1, 0.05, 0xFFF4E0, -0.16, 0.3, 0.03);
-      box(a.head, 0.07, 0.1, 0.05, 0xFFF4E0, 0.16, 0.3, 0.03);
-      addCrown(a.head, 0.3, 0xFFD23E);
-      box(a.group, 0.3, 0.34, 0.06, 0xFFF4E0, 0, 0.85, 0.15);           // white belly
-      const tail = box(a.group, 0.2, 0.2, 0.55, 0xE8762C, 0, 0.62, -0.42);
+      const a = buildQuad(0xE8762C, 0xE8762C, 0xC95F1B);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.2, 0.16, 0.18, 0xFFF4E0, 0, -0.1, 0.24);            // white muzzle
+      box(a.head, 0.08, 0.08, 0.08, 0x222222, 0, -0.08, 0.34);          // black nose
+      box(a.head, 0.12, 0.22, 0.06, 0xE8762C, -0.13, 0.28, -0.02);      // pointy ears
+      box(a.head, 0.12, 0.22, 0.06, 0xE8762C, 0.13, 0.28, -0.02);
+      box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, -0.13, 0.26, 0.02);
+      box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, 0.13, 0.26, 0.02);
+      addCrown(a.head, 0.25, 0xFFD23E);
+      box(a.group, 0.32, 0.24, 0.2, 0xFFF4E0, 0, 0.78, 0.45);           // white chest
+      const tail = box(a.group, 0.22, 0.22, 0.6, 0xE8762C, 0, 0.85, -0.65); // bushy tail, raised
       tail.rotation.x = 0.5;
-      box(a.group, 0.16, 0.16, 0.18, 0xFFF4E0, 0, 0.49, -0.62);         // white tail tip
+      box(a.group, 0.18, 0.18, 0.2, 0xFFF4E0, 0, 1.0, -0.92);           // white tail tip
       return a;
     }
   },
@@ -521,62 +534,67 @@ const AVATARS = [
   {
     id: 'unicorn', name: 'Unicorn Dancer 🦄',
     build() {
-      const a = buildBiped(0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
-      addEyes(a.head, 0x7e57c2, 0.26);
-      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.0, 0.07, 0.32, 6), mat(0xFFD8F0));
-      horn.position.set(0, 0.4, 0.05);
+      const a = buildQuad(0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
+      addEyes(a.head, 0x7e57c2, 0.22);
+      box(a.head, 0.2, 0.18, 0.16, 0xF6EFFB, 0, -0.12, 0.24);           // soft muzzle
+      box(a.head, 0.07, 0.05, 0.04, 0xD9B3FF, -0.05, -0.12, 0.33);      // nostrils
+      box(a.head, 0.07, 0.05, 0.04, 0xD9B3FF, 0.05, -0.12, 0.33);
+      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.0, 0.06, 0.32, 6), mat(0xFFD8F0));
+      horn.position.set(0, 0.34, 0.06);
       a.head.add(horn);
-      const maneColors = [0xFFB3D9, 0xB3D9FF, 0xD9B3FF, 0xB3FFD1];      // pastel mane
-      maneColors.forEach((c, i) => box(a.head, 0.12, 0.14, 0.12, c, -0.18 + i * 0.12, 0.3, -0.14));
-      box(a.head, 0.12, 0.5, 0.14, 0xFFB3D9, 0, -0.05, -0.3);           // mane down back
-      box(a.group, 0.66, 0.12, 0.5, 0xFFE1F2, 0, 0.62, 0);              // tutu
-      a.arms[0].rotation.z = 2.4;                                       // dancer pose: arms up
-      a.arms[1].rotation.z = -2.4;
-      a.legs[1].rotation.x = -0.7;                                      // one leg out, mid-twirl
-      a.dancer = true;
+      box(a.head, 0.08, 0.14, 0.06, 0xFFFFFF, -0.12, 0.24, -0.06);      // ears
+      box(a.head, 0.08, 0.14, 0.06, 0xFFFFFF, 0.12, 0.24, -0.06);
+      const maneColors = [0xFFB3D9, 0xB3D9FF, 0xD9B3FF, 0xB3FFD1];      // pastel mane down the neck
+      maneColors.forEach((c, i) => box(a.group, 0.14, 0.16, 0.15, c, 0, 1.22 - i * 0.08, 0.36 - i * 0.16));
+      box(a.group, 0.62, 0.1, 0.62, 0xFFE1F2, 0, 0.62, -0.02);          // a little tutu
+      box(a.group, 0.14, 0.16, 0.14, 0xFFB3D9, 0, 0.82, -0.56);         // pastel tail
+      box(a.group, 0.13, 0.16, 0.13, 0xD9B3FF, 0, 0.68, -0.62);
+      box(a.group, 0.12, 0.16, 0.12, 0xB3D9FF, 0, 0.54, -0.66);
+      a.dancer = true;                                                  // prances & twirls when idle
       return a;
     }
   },
   {
-    id: 'tiger', name: 'Tiger 😎🐯',
+    id: 'tiger', name: 'Tiger 🐯',
     build() {
-      const a = buildBiped(0xF28C28, 0xF28C28, 0xE07B1A, 0xF28C28);
-      box(a.head, 0.26, 0.18, 0.06, 0xFFF4E0, 0, -0.13, 0.26);          // white muzzle
-      box(a.head, 0.09, 0.07, 0.05, 0x222222, 0, -0.08, 0.3);           // nose
-      addSunglasses(a.head, 0.27);                                      // the cool one 😎
-      box(a.head, 0.13, 0.13, 0.1, 0xE07B1A, -0.18, 0.28, 0);           // round ears
-      box(a.head, 0.13, 0.13, 0.1, 0xE07B1A, 0.18, 0.28, 0);
-      box(a.head, 0.06, 0.13, 0.04, 0x222222, -0.14, 0.19, 0.26);       // forehead stripes
-      box(a.head, 0.06, 0.16, 0.04, 0x222222, 0, 0.2, 0.26);
-      box(a.head, 0.06, 0.13, 0.04, 0x222222, 0.14, 0.19, 0.26);
-      box(a.group, 0.28, 0.3, 0.06, 0xFFF4E0, 0, 0.72, 0.15);           // white belly
-      box(a.group, 0.52, 0.07, 0.1, 0x222222, 0, 1.02, 0.12);           // body stripes
-      box(a.group, 0.52, 0.07, 0.1, 0x222222, 0, 0.88, 0.12);
-      const tail = box(a.group, 0.12, 0.12, 0.5, 0xF28C28, 0, 0.6, -0.36);
-      tail.rotation.x = 0.6;
-      box(a.group, 0.14, 0.14, 0.14, 0x222222, 0, 0.46, -0.55);         // black tail tip
+      const a = buildQuad(0xF28C28, 0xF28C28, 0xE07B1A);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.2, 0.14, 0.14, 0xFFF4E0, 0, -0.12, 0.24);           // white muzzle
+      box(a.head, 0.08, 0.06, 0.05, 0x222222, 0, -0.09, 0.32);          // nose
+      box(a.head, 0.12, 0.12, 0.08, 0xE07B1A, -0.15, 0.25, -0.02);      // round ears
+      box(a.head, 0.12, 0.12, 0.08, 0xE07B1A, 0.15, 0.25, -0.02);
+      box(a.head, 0.05, 0.12, 0.04, 0x222222, -0.13, 0.13, 0.21);       // forehead stripes
+      box(a.head, 0.05, 0.15, 0.04, 0x222222, 0, 0.15, 0.21);
+      box(a.head, 0.05, 0.12, 0.04, 0x222222, 0.13, 0.13, 0.21);
+      for (let i = 0; i < 4; i++)                                       // stripes across the back
+        box(a.group, 0.5, 0.1, 0.09, 0x222222, 0, 0.86, 0.33 - i * 0.22);
+      box(a.group, 0.48, 0.16, 0.5, 0xFFF4E0, 0, 0.52, 0.08);           // white belly underneath
+      const tail = box(a.group, 0.12, 0.12, 0.55, 0xF28C28, 0, 0.78, -0.68);
+      tail.rotation.x = 0.35;
+      box(a.group, 0.13, 0.13, 0.13, 0x222222, 0, 0.88, -0.94);         // black tail tip
       return a;
     }
   },
   {
     id: 'dragon', name: 'Dragon 🐉',
     build() {
-      const a = buildBiped(0x3CA13C, 0x3CA13C, 0x2E7D32, 0x3CA13C);
-      addEyes(a.head, 0xFFC400, 0.26);
-      box(a.head, 0.22, 0.14, 0.16, 0x66BB6A, 0, -0.12, 0.3);           // snout
-      box(a.head, 0.05, 0.05, 0.04, 0x222222, -0.05, -0.09, 0.39);      // nostrils
-      box(a.head, 0.05, 0.05, 0.04, 0x222222, 0.05, -0.09, 0.39);
-      box(a.head, 0.07, 0.14, 0.07, 0xD8342C, -0.1, 0.3, -0.1);         // head spikes
-      box(a.head, 0.07, 0.18, 0.07, 0xD8342C, 0, 0.32, -0.16);
-      for (let i = 0; i < 3; i++) box(a.group, 0.08, 0.12, 0.08, 0xD8342C, 0, 1.05 - i * 0.18, -0.18); // back spikes
-      const wingL = box(a.group, 0.5, 0.36, 0.05, 0xD8342C, -0.42, 1.0, -0.18);  // wings
-      wingL.rotation.y = 0.6; wingL.rotation.z = 0.35;
-      const wingR = box(a.group, 0.5, 0.36, 0.05, 0xD8342C, 0.42, 1.0, -0.18);
-      wingR.rotation.y = -0.6; wingR.rotation.z = -0.35;
-      const tail = box(a.group, 0.16, 0.16, 0.7, 0x3CA13C, 0, 0.52, -0.48);  // long tail
-      tail.rotation.x = 0.55;
-      box(a.group, 0.1, 0.14, 0.1, 0xD8342C, 0, 0.62, -0.55);           // spike along the tail
-      const tailTip = box(a.group, 0.22, 0.22, 0.22, 0xD8342C, 0, 0.75, -0.82); // red arrow tip
+      const a = buildQuad(0x3CA13C, 0x3CA13C, 0x2E7D32);
+      addEyes(a.head, 0xFFC400, 0.22);
+      box(a.head, 0.22, 0.16, 0.18, 0x66BB6A, 0, -0.1, 0.26);           // snout
+      box(a.head, 0.05, 0.05, 0.04, 0x222222, -0.05, -0.07, 0.36);      // nostrils
+      box(a.head, 0.05, 0.05, 0.04, 0x222222, 0.05, -0.07, 0.36);
+      box(a.head, 0.07, 0.16, 0.07, 0xD8342C, -0.09, 0.26, -0.08);      // head spikes
+      box(a.head, 0.07, 0.2, 0.07, 0xD8342C, 0.09, 0.28, -0.12);
+      for (let i = 0; i < 3; i++)                                       // spikes along the spine
+        box(a.group, 0.08, 0.16, 0.08, 0xD8342C, 0, 0.96, 0.26 - i * 0.26);
+      const wingL = box(a.group, 0.55, 0.4, 0.06, 0xD8342C, -0.4, 1.05, -0.05);  // wings on the back
+      wingL.rotation.y = 0.5; wingL.rotation.z = 0.5;
+      const wingR = box(a.group, 0.55, 0.4, 0.06, 0xD8342C, 0.4, 1.05, -0.05);
+      wingR.rotation.y = -0.5; wingR.rotation.z = -0.5;
+      const tail = box(a.group, 0.15, 0.15, 0.7, 0x3CA13C, 0, 0.82, -0.78);     // long tail
+      tail.rotation.x = 0.5;
+      box(a.group, 0.09, 0.14, 0.09, 0xD8342C, 0, 0.92, -0.85);         // spike along the tail
+      const tailTip = box(a.group, 0.22, 0.22, 0.22, 0xD8342C, 0, 1.02, -1.1);  // red arrow tip
       tailTip.rotation.x = Math.PI / 4;
       return a;
     }
@@ -584,20 +602,25 @@ const AVATARS = [
   {
     id: 'deer', name: 'Deer (Sporty!) 🦌🏅',
     build() {
-      const a = buildBiped(0xE53935, 0x9C6B3F, 0x7d5430, 0x9C6B3F);     // red jersey
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.16, 0.12, 0.08, 0xEEDDC8, 0, -0.12, 0.27);          // muzzle
-      box(a.head, 0.07, 0.06, 0.05, 0x332211, 0, -0.09, 0.32);          // nose
-      box(a.head, 0.54, 0.1, 0.54, 0xFFFFFF, 0, 0.18, 0);               // sporty headband
-      box(a.head, 0.12, 0.06, 0.06, 0xE53935, 0, 0.18, 0.28);           // headband star spot
+      const a = buildQuad(0x9C6B3F, 0x9C6B3F, 0x8a5c33);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.16, 0.13, 0.12, 0xEEDDC8, 0, -0.12, 0.24);          // muzzle
+      box(a.head, 0.07, 0.06, 0.05, 0x332211, 0, -0.1, 0.32);           // nose
+      box(a.head, 0.09, 0.16, 0.06, 0x8a5c33, -0.15, 0.24, -0.06);      // ears
+      box(a.head, 0.09, 0.16, 0.06, 0x8a5c33, 0.15, 0.24, -0.06);
       [-1, 1].forEach(s => {                                            // antlers
-        box(a.head, 0.06, 0.3, 0.06, 0x6B4A2B, s * 0.17, 0.42, -0.05);
-        box(a.head, 0.16, 0.06, 0.06, 0x6B4A2B, s * 0.24, 0.5, -0.05);
-        box(a.head, 0.06, 0.14, 0.06, 0x6B4A2B, s * 0.3, 0.58, -0.05);
+        box(a.head, 0.05, 0.28, 0.05, 0x6B4A2B, s * 0.13, 0.36, -0.1);
+        box(a.head, 0.15, 0.05, 0.05, 0x6B4A2B, s * 0.19, 0.46, -0.1);
+        box(a.head, 0.05, 0.13, 0.05, 0x6B4A2B, s * 0.25, 0.53, -0.1);
       });
-      box(a.group, 0.34, 0.2, 0.06, 0xFFFFFF, 0, 0.9, 0.15);            // jersey number patch
-      box(a.group, 0.08, 0.14, 0.07, 0xE53935, -0.05, 0.9, 0.17);       // "1" on the jersey
-      box(a.group, 0.52, 0.1, 0.3, 0xFFFFFF, 0, 0.62, 0);               // jersey stripe
+      box(a.head, 0.46, 0.09, 0.46, 0xFFFFFF, 0, 0.14, 0);              // sporty headband
+      box(a.head, 0.1, 0.06, 0.05, 0xE53935, 0, 0.14, 0.23);            // headband star spot
+      box(a.group, 0.5, 0.12, 0.5, 0xE53935, 0, 0.92, -0.06);           // team jersey on the back
+      box(a.group, 0.52, 0.06, 0.14, 0xFFFFFF, 0, 0.94, -0.06);         // jersey stripe
+      box(a.group, 0.06, 0.1, 0.16, 0xFFFFFF, -0.27, 0.86, -0.06);      // number "1" on the side
+      [[-0.25, 0.78, -0.28], [0.25, 0.74, -0.32], [-0.25, 0.7, 0.18], [0.25, 0.8, 0.1]].forEach(p =>
+        box(a.group, 0.06, 0.06, 0.06, 0xFFF4E0, p[0], p[1], p[2]));    // white fawn spots
+      box(a.group, 0.13, 0.18, 0.12, 0xFFF4E0, 0, 0.8, -0.52);          // white stubby tail
       return a;
     }
   }
@@ -832,7 +855,7 @@ function setAvatar(index) {
 function addPartyHat() {
   if (!player.avatarData || player.avatarData.hatAdded) return;
   const hat = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.18, 0.4, 6), mat(0x2BC4E8));
-  hat.position.set(0, 0.5, 0);
+  hat.position.set(0, player.avatarData.quad ? 0.4 : 0.5, 0);
   player.avatarData.head.add(hat);
   player.avatarData.hatAdded = true;
 }
@@ -930,13 +953,20 @@ function updatePlayer(dt) {
   const t = performance.now() / 1000;
   if (moving) {
     const s = Math.sin(t * 9) * 0.6;
-    d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
-    if (!d.dancer) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
+    if (d.quad) {                                                      // diagonal trot
+      d.legs[0].rotation.x = s; d.legs[3].rotation.x = s;
+      d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s;
+    } else {
+      d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
+      d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7;
+    }
+  } else if (d.dancer) {                                               // unicorn prances & twirls
+    d.legs[0].rotation.x = -0.8; d.legs[1].rotation.x = -0.5;
+    d.legs[2].rotation.x *= 0.8; d.legs[3].rotation.x *= 0.8;
+    av.rotation.y += Math.sin(t * 2) * 0.15;
   } else {
-    d.legs[0].rotation.x *= 0.8;
-    if (!d.dancer) { d.legs[1].rotation.x *= 0.8; d.arms[0].rotation.x *= 0.8; d.arms[1].rotation.x *= 0.8; }
-    else d.legs[1].rotation.x = -0.7;
-    if (d.dancer) av.rotation.y += Math.sin(t * 2) * 0.15;             // idle twirl
+    d.legs.forEach(l => l.rotation.x *= 0.8);
+    d.arms.forEach(arm => arm.rotation.x *= 0.8);
   }
 
   // camera
@@ -1522,7 +1552,7 @@ function buildMenu() {
     grid.appendChild(card);
 
     const data = av.build();
-    data.group.rotation.y = 0.5;
+    data.group.rotation.y = data.quad ? 0.85 : 0.5;   // angle quadrupeds to show all four legs
     pvScene.add(data.group);
     renderer.render(pvScene, pvCam);
     cv.getContext('2d').drawImage(renderer.domElement, 0, 0, 140, 140);

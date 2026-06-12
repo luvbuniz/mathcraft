@@ -35,15 +35,16 @@ friendly "try again!" (In Store Mode, harder equations earn more coins.)
 
 ## 🦊 The heroes
 
-Seven blocky, procedurally built avatars to choose from:
+Seven blocky, procedurally built avatars to choose from — and the
+four-legged animals really walk on four legs:
 
-- **Queen Fox** 👑 — orange & white, with a tiny crown
+- **Queen Fox** 👑 — orange & white on four paws, bushy white-tipped tail, tiny crown
 - **Princess** 👸 — gown, crown, and a gem brooch
 - **Peacock** 🦚 — blue & green with a full fan of tail feathers
-- **Unicorn Dancer** 🦄 — pastel mane, horn, and a twirly dance pose
-- **Tiger** 😎 — orange with black stripes and a striped tail… and sunglasses (the cool one)
-- **Dragon** 🐉 — green with red wings, back spikes, and a long red-tipped tail
-- **Deer** 🏅 — the sporty one, with antlers, a headband, and a jersey
+- **Unicorn Dancer** 🦄 — a real little horse with a horn and pastel mane, prancing and twirling
+- **Tiger** 🐯 — orange with black stripes across its back and a black-tipped tail
+- **Dragon** 🐉 — green on four legs, red wings, spine spikes, and a long red-tipped tail
+- **Deer** 🏅 — the sporty one: antlers, fawn spots, a headband, and a team jersey on its back
 
 ## 🕹️ Controls
 
