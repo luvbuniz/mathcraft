@@ -40,8 +40,8 @@ Seven blocky, procedurally built avatars to choose from:
 - **Princess** 👸 — gown, crown, and a gem brooch
 - **Peacock** 🦚 — blue & green with a full fan of tail feathers
 - **Unicorn Dancer** 🦄 — pastel mane, horn, and a twirly dance pose
-- **Shark** 😎 — grey, toothy, top fin… and sunglasses (the cool one)
-- **Dragon** 🐉 — green with red wings and back spikes
+- **Tiger** 😎 — orange with black stripes and a striped tail… and sunglasses (the cool one)
+- **Dragon** 🐉 — green with red wings, back spikes, and a long red-tipped tail
 - **Deer** 🏅 — the sporty one, with antlers, a headband, and a jersey
 
 ## 🕹️ Controls
