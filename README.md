@@ -77,7 +77,11 @@ four-legged animals really walk on four legs:
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
 
 On-screen buttons (top-right corner): **🔊** sound, **📷** camera, **🏠**
-save & go home, **💾** save, and **🎒** backpack. They work with a tap too.
+save & go home, **💾** save, **🎒** backpack, and **📸** take a photo of
+your build (saves a picture you can keep or share). They work with a tap too.
+
+**🎨 Paint:** open the backpack and pick a paint color, then the blocks you
+place come out in that color — great for decorating houses.
 
 **Touch (tablet):** on-screen joystick to move, drag the screen to look,
 **tap** to place/break (toggle with the 🧱/⛏️ button), plus JUMP and ⭐ USE
@@ -117,7 +121,26 @@ panel:
 | 20 | 👑 Golden Crown — your hero wears it! |
 | 35 | 🏆 Math Champion |
 
-## 📚 Grade levels
+## 🧑‍🏫 For grown-ups — progress tracking
+
+On the start screen, tap **🧑‍🏫 For Grown-Ups** to open a progress
+dashboard (for parents & teachers). It shows one card per player, each with:
+
+- problems solved and **accuracy %**
+- total **time played** and badges earned
+- a breakdown **by grade**
+- a **bar chart by skill** (addition, subtraction, multiplication,
+  division, fractions, decimals, money, rounding, word problems, etc.)
+
+Everything is stored privately in the browser on that device. Each player
+card has a **Reset progress** button.
+
+## 📚 Grade levels & question variety
+
+Every prompt is freshly generated and never repeats in a session. Beyond
+the core operations, kids also get missing-number puzzles, word problems,
+rounding, multi-step problems, area & perimeter, order of operations,
+percents, and money — scaled to the grade band:
 
 | Grade | Math |
 | --- | --- |
