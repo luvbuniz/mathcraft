@@ -57,6 +57,9 @@
   .hudBox { position:absolute; background:rgba(255,255,255,.88); border-radius:14px; padding:8px 14px;
     font-weight:bold; box-shadow:0 3px 0 rgba(0,0,0,.15); font-size:clamp(15px,2.4vw,20px); }
   #hudTop { top:10px; left:10px; color:#4a3b16; display:flex; flex-direction:column; gap:4px; }
+  #blockCount, #coinCount { display:inline-block; }
+  .countPop { animation:countPop .5s; color:#2f7d27; }
+  @keyframes countPop { 0%{transform:scale(1)} 40%{transform:scale(1.7)} 100%{transform:scale(1)} }
   #hudMode { top:10px; left:50%; transform:translateX(-50%); color:#3b5d9e; text-align:center; }
   #hudTimer { font-size:clamp(18px,3vw,26px); color:#c0392b; display:none; }
   #hudShelter { font-size:.8em; display:none; }
@@ -100,6 +103,11 @@
   .answerBlock.shake { animation:shake .35s; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
   #mathFeedback { min-height:34px; font-size:clamp(18px,3vw,24px); font-weight:bold; margin-top:14px; color:#2f7d27; }
+  #hintBtn { margin-top:14px; background:#FFE9A0; color:#7a5c00; font-weight:bold; font-size:clamp(14px,2.4vw,18px);
+    padding:10px 18px; border-radius:12px; box-shadow:0 3px 0 #d4b44a; }
+  #hintBox { display:none; margin-top:10px; background:#E3F2FD; color:#22456b; border-radius:12px; padding:12px 14px;
+    font-size:clamp(15px,2.6vw,19px); font-weight:bold; text-align:left; line-height:1.5; }
+  .answerBlock:disabled { opacity:.55; cursor:default; }
   .closeX { position:absolute; margin-left:auto; background:#ff9d8a; color:#7c2413; font-weight:bold;
     border-radius:10px; padding:6px 14px; font-size:16px; box-shadow:0 3px 0 #c96b59; }
 
@@ -136,6 +144,108 @@
   #btnJump { right:26px; bottom:96px; }
   #btnAction { right:26px; bottom:170px; background:rgba(255,233,150,.85); }
   #btnModeTouch { right:104px; bottom:96px; }
+
+  /* ---------- Names + saved games ---------- */
+  #nameInput { width:min(420px,90%); font-family:inherit; font-size:clamp(16px,2.6vw,20px);
+    padding:11px 16px; border-radius:12px; border:3px solid #b9cde6; background:#fff; color:#33507a;
+    text-align:center; font-weight:bold; }
+  #nameInput:focus { outline:none; border-color:#6fcf63; }
+  #savedList { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .saveRow { display:flex; align-items:center; gap:8px; background:#eef6ff; border-radius:12px; padding:8px 10px; }
+  .saveRow .loadBtn { flex:1; text-align:left; background:#6fcf63; color:#fff; font-weight:bold;
+    font-size:clamp(14px,2.3vw,18px); padding:11px 14px; border-radius:10px; box-shadow:0 3px 0 #3f9636; }
+  .saveRow .delBtn { background:#ff9d8a; color:#7c2413; font-weight:bold; padding:11px 13px; border-radius:10px;
+    box-shadow:0 3px 0 #c96b59; font-size:16px; }
+  #savedHint { font-size:clamp(12px,2vw,15px); color:#5b6b46; margin-top:6px; }
+
+  /* ---------- Right-side HUD buttons ---------- */
+  .hudBtn { position:absolute; right:10px; pointer-events:auto; font-size:22px;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  #homeBtn { top:114px; }
+  #saveBtn { top:166px; }
+  #invBtn  { top:218px; }
+  #photoBtn { top:270px; }
+  #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
+    padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
+  @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+  #badgeBtn.pulse { animation:badgePulse .6s 3; }
+  #placingTag { position:absolute; bottom:104px; left:50%; transform:translateX(-50%);
+    background:rgba(47,125,39,.92); color:#fff; padding:7px 16px; border-radius:12px; font-weight:bold;
+    font-size:clamp(14px,2.4vw,18px); display:none; white-space:nowrap; }
+
+  /* ---------- Inventory + badges popups ---------- */
+  #invList { display:flex; flex-direction:column; gap:9px; margin-top:10px; }
+  .invItem { display:flex; align-items:center; gap:12px; background:#eef6ff; border-radius:14px; padding:10px 14px; }
+  .invItem .icon { font-size:30px; }
+  .invItem .info { flex:1; text-align:left; }
+  .invItem .info b { color:#33507a; font-size:clamp(15px,2.4vw,19px); }
+  .invItem .info small { display:block; color:#6c84a6; }
+  .invItem .placeBtn, .invItem .eatBtn { background:#6fcf63; color:#fff; font-weight:bold; font-size:clamp(13px,2.1vw,17px);
+    padding:9px 14px; border-radius:10px; box-shadow:0 3px 0 #3f9636; white-space:nowrap; margin-left:4px; }
+  .invItem .eatBtn { background:#ff8a5c; box-shadow:0 3px 0 #c9603a; }
+  .invItem .placeBtn:disabled { background:#bbb; box-shadow:0 3px 0 #999; }
+  #badgeGrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px; }
+  .badgeCard { background:#FFF7DE; border-radius:14px; padding:12px 8px; text-align:center; box-shadow:0 3px 0 #e0cf94; }
+  .badgeCard.locked { background:#eceff2; box-shadow:0 3px 0 #c9ced4; filter:grayscale(1); opacity:.7; }
+  .badgeCard .bIcon { font-size:38px; }
+  .badgeCard b { display:block; color:#7a5c00; font-size:clamp(13px,2.1vw,16px); }
+  .badgeCard small { color:#9a7d3a; }
+
+  /* ---------- Grown-ups dashboard ---------- */
+  #grownupPopup { z-index:60; }   /* opens from the start screen, so it must sit above it */
+  #grownupBtn { margin-top:10px; background:#dbe7f7; color:#34527e; font-weight:bold;
+    font-size:clamp(13px,2.2vw,16px); padding:9px 18px; border-radius:14px; box-shadow:0 3px 0 #b0c4de; }
+  #grownupList { display:flex; flex-direction:column; gap:12px; margin-top:10px; }
+  .guCard { background:#f3f7fc; border-radius:14px; padding:12px 14px; text-align:left; box-shadow:0 3px 0 #d3dde8; }
+  .guCard h3 { color:#33507a; font-size:clamp(17px,2.8vw,21px); margin-bottom:4px; }
+  .guStats { display:flex; flex-wrap:wrap; gap:6px 16px; color:#4a5b70; font-size:clamp(13px,2.2vw,16px); font-weight:bold; margin-bottom:8px; }
+  .guBar { display:flex; align-items:center; gap:8px; margin:3px 0; font-size:clamp(12px,2vw,15px); color:#3b4a5e; }
+  .guBar .lab { width:38%; text-align:right; }
+  .guBar .track { flex:1; height:14px; background:#e2e8f0; border-radius:7px; overflow:hidden; }
+  .guBar .fill { height:100%; background:linear-gradient(90deg,#69d05c,#3f9d34); border-radius:7px; }
+  .guBar .num { width:28px; font-weight:bold; }
+  .guReset { margin-top:8px; background:#ffd0c6; color:#7c2413; font-weight:bold; font-size:13px;
+    padding:7px 12px; border-radius:10px; box-shadow:0 2px 0 #d99; }
+  .guEmpty { color:#6c84a6; font-style:italic; padding:10px 0; }
+  /* ---------- Paint swatches (in the backpack) ---------- */
+  #paintRow { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .swatch { width:34px; height:34px; border-radius:8px; border:3px solid #fff; box-shadow:0 2px 0 rgba(0,0,0,.2); cursor:pointer; }
+  .swatch.sel { outline:4px solid #2f7d27; }
+
+  /* ---------- Phone / small-screen layout (kept last so it wins) ---------- */
+  @media (max-width: 820px) {
+    .hudBox { font-size:12px; padding:5px 8px; border-radius:10px; gap:2px; }
+    #hudTop { top:8px; left:8px; max-width:42vw; }
+    #hudMode { top:8px; max-width:44vw; font-size:12px; line-height:1.2; padding:5px 8px; }
+    #hudTimer { font-size:16px; }
+    #badgeBtn { font-size:12px; padding:4px 8px; }
+    #soundBtn, #camBtn, .hudBtn { font-size:17px; padding:5px 8px; }
+    #soundBtn { top:8px; right:8px; }
+    #camBtn  { top:50px; right:8px; }
+    #homeBtn { top:92px; right:8px; }
+    #saveBtn { top:134px; right:8px; }
+    #invBtn  { top:176px; right:8px; }
+    #photoBtn { top:218px; right:8px; }
+    /* messages sit up top, clear of the controls */
+    #hintBar { bottom:auto; top:104px; left:50%; transform:translateX(-50%);
+      white-space:normal; max-width:72vw; text-align:center; }
+    #placingTag { bottom:auto; top:146px; left:50%; transform:translateX(-50%);
+      white-space:normal; max-width:72vw; text-align:center; }
+    #toast { top:30%; }
+    /* joystick tucked into the bottom-left corner */
+    #joyBase { bottom:18px; left:14px; width:104px; height:104px; opacity:.8; }
+    #joyStick { width:46px; height:46px; left:29px; top:29px; }
+    /* action buttons in a tidy vertical stack, bottom-right */
+    .touchBtn { font-size:14px; padding:11px 0; width:92px; text-align:center; }
+    #btnAction { right:12px; bottom:196px; }
+    #btnJump   { right:12px; bottom:134px; }
+    #btnModeTouch { right:12px; bottom:72px; left:auto; }
+    /* compact hotbar, centered above the very bottom */
+    #hotbar { bottom:16px; gap:6px; }
+    .hotSlot { width:60px; font-size:11px; padding:5px 2px; }
+    .hotSlot .slotIcon { font-size:18px; }
+    #crosshair { font-size:20px; }
+  }
 </style>
 </head>
 <body>
@@ -144,6 +254,13 @@
 <div id="startScreen">
   <div id="gameTitle">⛏️ MathCraft</div>
   <div id="gameSub">Solve math • Earn blocks • Build your world!</div>
+
+  <div class="menuSection">
+    <h2>👋 Who's playing?</h2>
+    <div style="text-align:center"><input id="nameInput" maxlength="14" placeholder="Type your name" autocomplete="off"></div>
+    <div id="savedList"></div>
+    <div id="savedHint">Tap a saved game to keep building, or pick the options below and press <b>Start Adventure</b> for a brand-new world.</div>
+  </div>
 
   <div class="menuSection">
     <h2>1️⃣ Pick your grade</h2>
@@ -159,7 +276,7 @@
     <h2>2️⃣ Pick a game mode</h2>
     <div class="btnRow" id="modeRow">
       <button class="chooseBtn modeBtn selected" data-mode="relaxed">🌼 Relaxed Mode<small>No timer, no enemies. Build anything!</small></button>
-      <button class="chooseBtn modeBtn" data-mode="creeper">⏰ Creeper Mode<small>15 minutes to build a shelter with a door… or creepers come!</small></button>
+      <button class="chooseBtn modeBtn" data-mode="creeper">⏰ Shelter Rush<small>15 minutes to build a shelter with a door… or the Gloomies come!</small></button>
       <button class="chooseBtn modeBtn" data-mode="store">🏪 Level 2: Store Mode<small>Earn coins, shop for a ladder, climb trees & pick berries!</small></button>
     </div>
   </div>
@@ -170,20 +287,24 @@
   </div>
 
   <button id="startBtn">▶ Start Adventure!</button>
+  <button id="grownupBtn">🧑‍🏫 For Grown-Ups — see math progress</button>
   <div id="controlsHelp">
-    🖱️ <b>Click the game to look around</b> • <b>WASD</b> move • <b>Space</b> jump • <b>E</b> use math station / shop<br>
-    <b>Left-click</b> place a block • <b>Right-click</b> remove a block • <b>1 / 2</b> choose block or door • <b>C</b> camera view<br>
-    📱 On a tablet: joystick to move, drag to look, tap to build!
+    <b>⬆ ⬇ Arrow keys</b> walk • <b>← →</b> turn • <b>Space</b> jump • <b>E</b> use math station / shop<br>
+    Solve math → <b>blocks + GOLD coins</b> pop onto the ground! • <b>P</b> pick up • <b>D</b> put down • <b>R</b> remove<br>
+    <b>B</b> shop • <b>I</b> backpack/inventory • <b>1 / 2</b> block or door • <b>C</b> camera • 🤔 stuck? Tap the hint button!<br>
+    💾 Save and 🏠 Home buttons are in the game • 📱 Tablet: joystick to move, drag to look, tap to build!
   </div>
 </div>
 
 <!-- ================= HUD ================= -->
 <div id="hud">
   <div class="hudBox" id="hudTop">
+    <div id="playerRow" style="display:none; color:#2f7d27">🙂 <span id="playerName"></span></div>
     <div>🧱 Blocks: <span id="blockCount">0</span></div>
     <div id="coinRow" style="display:none">🪙 Coins: <span id="coinCount">0</span></div>
     <div id="berryRow" style="display:none">🍓 Berries: <span id="berryCount">0</span></div>
     <div id="solvedRow" style="display:none">✅ Solved: <span id="solvedCount">0</span>/10</div>
+    <button id="badgeBtn" style="display:none">🏅 Badges</button>
   </div>
   <div class="hudBox" id="hudMode">
     <div id="modeLabel">🌼 Relaxed Mode</div>
@@ -192,13 +313,14 @@
   </div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Camera view">📷</button>
+  <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
+  <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
+  <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
+  <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
   <div id="crosshair">＋</div>
   <div id="hintBar"></div>
+  <div id="placingTag"></div>
   <div id="toast"></div>
-  <div id="hotbar">
-    <button class="hotSlot active" id="slotBlock"><span class="slotIcon">🧱</span>Block<br><span id="slotBlockN">0</span></button>
-    <button class="hotSlot" id="slotDoor"><span class="slotIcon">🚪</span>Door<br>costs 4 🧱</button>
-  </div>
 </div>
 
 <!-- ================= MATH POPUP ================= -->
@@ -208,6 +330,8 @@
     <div id="mathEquation">7 + 5 = ?</div>
     <div id="mathPrompt">Find the right block! Tap the block with the answer.</div>
     <div id="mathChoices"></div>
+    <button id="hintBtn">🤔 Need a hint?</button>
+    <div id="hintBox"></div>
     <div id="mathFeedback"></div>
   </div>
 </div>
@@ -219,6 +343,35 @@
     <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏪 The Block Shop</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
     <div id="shopItems"></div>
+  </div>
+</div>
+
+<!-- ================= GROWN-UPS DASHBOARD ================= -->
+<div class="popup" id="grownupPopup">
+  <div class="popupCard" style="width:min(620px,95vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="grownupClose">✖ Close</button></div>
+    <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🧑‍🏫 Math Progress</h2>
+    <div style="color:#6c84a6; font-size:clamp(13px,2.2vw,16px); margin-bottom:6px">For parents & teachers — saved on this device, one card per player.</div>
+    <div id="grownupList"></div>
+  </div>
+</div>
+
+<!-- ================= INVENTORY POPUP ================= -->
+<div class="popup" id="invPopup">
+  <div class="popupCard">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="invClose">✖ Close</button></div>
+    <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🎒 Your Backpack</h2>
+    <div id="invList"></div>
+  </div>
+</div>
+
+<!-- ================= BADGES POPUP ================= -->
+<div class="popup" id="badgePopup">
+  <div class="popupCard">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="badgeClose">✖ Close</button></div>
+    <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏅 My Badges</h2>
+    <div style="font-weight:bold; color:#7a6a35">Problems solved: <span id="badgeSolved">0</span></div>
+    <div id="badgeGrid"></div>
   </div>
 </div>
 
@@ -322,68 +475,170 @@ function makeEquation(grade) {
   return generateOnce(grade);             // session has seen a LOT of math — allow anything
 }
 
+/* Hints teach the place-value method but never reveal the final answer. */
+function stepHint(a, b, sub) {
+  const sign = sub ? ' − ' : ' + ';
+  const comps = [];
+  const hb = Math.floor(b / 100) * 100, tb = Math.floor((b % 100) / 10) * 10, ob = b % 10;
+  [hb, tb, ob].forEach(c => { if (c > 0) comps.push(c); });
+  if (comps.length <= 1) {
+    return sub ? 'Count back ' + b + ' from ' + a + ' in easy jumps!'
+               : 'Start at ' + a + ' and count up ' + b + ' in easy jumps!';
+  }
+  let run = a, txt = 'Step by step! ' + a;
+  for (let i = 0; i < comps.length - 1; i++) {
+    run = sub ? run - comps[i] : run + comps[i];
+    txt += sign + comps[i] + ' = ' + run + (i < comps.length - 2 ? ', then' : '');
+  }
+  return txt + '. Now ' + (sub ? 'take away ' : 'add ') + comps[comps.length - 1] + ' more!';
+}
+const WORD_NAMES = ['Mia', 'Leo', 'Ava', 'Sam', 'Zoe', 'Max', 'Lily', 'Eli', 'Nia', 'Ben'];
+const WORD_THINGS = ['🍎 apples', '🪙 coins', '⭐ stickers', '🧱 blocks', '🍪 cookies', '🌸 flowers', '🐚 shells', '🚗 toy cars'];
 function generateOnce(grade) {
-  let text, answer, reward, distractors = [];
+  let text, answer, reward, hint, skill = 'other', distractors = [];
   if (grade === 2) {                       // add/subtract within 100
-    if (Math.random() < 0.5) {
+    const kind = pick(['add', 'add', 'sub', 'sub', 'missing', 'word', 'ten']);
+    if (kind === 'add') {
       const a = ri(5, 80), b = ri(3, 99 - a);
-      text = a + ' + ' + b; answer = a + b;
-    } else {
+      text = a + ' + ' + b; answer = a + b; skill = 'add';
+      hint = stepHint(a, b, false);
+      distractors = [answer + ri(1, 3), Math.max(0, answer - ri(1, 3)), answer + 10];
+    } else if (kind === 'sub') {
       const a = ri(20, 99), b = ri(2, a - 1);
-      text = a + ' − ' + b; answer = a - b;
+      text = a + ' − ' + b; answer = a - b; skill = 'sub';
+      hint = stepHint(a, b, true);
+      distractors = [answer + ri(1, 3), Math.max(0, answer - ri(1, 3)), answer + 10];
+    } else if (kind === 'missing') {
+      const a = ri(3, 40), answerN = ri(3, 40); const s = a + answerN;
+      text = a + ' + ? = ' + s; answer = answerN; skill = 'add';
+      hint = 'Count up from ' + a + ' until you reach ' + s + ' — how many steps?';
+      distractors = [answer + 1, Math.max(0, answer - 1), answer + 10];
+    } else if (kind === 'word') {
+      const a = ri(4, 30), b = ri(3, 25), thing = pick(WORD_THINGS), nm = pick(WORD_NAMES);
+      if (Math.random() < 0.5) { answer = a + b; text = nm + ' has ' + a + ' ' + thing + ' and gets ' + b + ' more. How many?'; skill = 'word'; hint = 'Getting more means add — put ' + a + ' and ' + b + ' together!'; }
+      else { const hi = Math.max(a, b) + 5, lo = Math.min(a, b); answer = hi - lo; text = nm + ' has ' + hi + ' ' + thing + ' and gives away ' + lo + '. How many left?'; skill = 'word'; hint = 'Giving away means take away — subtract ' + lo + ' from ' + hi + '!'; }
+      distractors = [answer + 1, Math.max(0, answer - 2), answer + 10];
+    } else {
+      const n = ri(15, 80);
+      if (Math.random() < 0.5) { answer = n + 10; text = n + ' + 10'; skill = 'add'; hint = 'Adding 10 bumps the tens digit up by one!'; }
+      else { answer = n - 10; text = n + ' − 10'; skill = 'sub'; hint = 'Taking away 10 drops the tens digit down by one!'; }
+      distractors = [answer + 1, answer - 1, answer + 20];
     }
-    reward = 3 + (answer > 50 ? 1 : 0);
-    distractors = [answer + ri(1, 3), Math.max(0, answer - ri(1, 3)), answer + 10];
+    reward = 3 + (Number(answer) > 50 ? 1 : 0);
   } else if (grade === 3) {                // within 1000 + intro multiplication
-    const kind = pick(['add', 'sub', 'mul']);
+    const kind = pick(['add', 'sub', 'mul', 'mul', 'round', 'word']);
     if (kind === 'add') {
       const a = ri(100, 800), b = ri(50, 999 - a);
-      text = a + ' + ' + b; answer = a + b; reward = 4;
+      text = a + ' + ' + b; answer = a + b; reward = 4; skill = 'add';
+      hint = stepHint(a, b, false);
       distractors = [answer + 10, answer - 10, answer + 100];
     } else if (kind === 'sub') {
       const a = ri(200, 999), b = ri(50, a - 20);
-      text = a + ' − ' + b; answer = a - b; reward = 4;
+      text = a + ' − ' + b; answer = a - b; reward = 4; skill = 'sub';
+      hint = stepHint(a, b, true);
       distractors = [answer + 10, Math.max(0, answer - 10), answer + 100];
-    } else {
+    } else if (kind === 'mul') {
       const a = ri(2, 10), b = ri(1, 10);
-      text = a + ' × ' + b; answer = a * b; reward = 5;
+      text = a + ' × ' + b; answer = a * b; reward = 5; skill = 'mul';
+      hint = a + ' × ' + b + ' means ' + a + ' groups of ' + b + '. Skip-count by ' + b + ': ' + b + ', ' + (b * 2) + ', ' + (b * 3) + '… do it ' + a + ' times!';
       distractors = [answer + a, Math.max(0, answer - a), answer + b];
-    }
-  } else if (grade === 4) {                // multi-digit × and ÷
-    if (Math.random() < 0.55) {
-      const a = ri(11, 99), b = ri(2, 9);
-      text = a + ' × ' + b; answer = a * b; reward = 6 + (a > 50 ? 1 : 0);
-      distractors = [answer + b, answer - b, answer + 10];
+    } else if (kind === 'round') {
+      const n = ri(112, 988), to = pick([10, 100]);
+      answer = Math.round(n / to) * to; reward = 4; skill = 'round';
+      text = 'Round ' + n + ' to the nearest ' + to;
+      hint = to === 10 ? 'Look at the ones digit: 5 or more rounds up, less than 5 rounds down.' : 'Look at the tens digit: 50 or more rounds up, less rounds down.';
+      distractors = [answer + to, Math.max(0, answer - to), answer + to * 2];
     } else {
-      const b = ri(2, 9), q = ri(3, 12), a = b * q;
-      text = a + ' ÷ ' + b; answer = q; reward = 6;
-      distractors = [q + 1, Math.max(1, q - 1), q + 2];
+      const a = ri(2, 9), b = ri(3, 8), nm = pick(WORD_NAMES);
+      answer = a * b; reward = 5; skill = 'word';
+      text = nm + ' has ' + a + ' boxes with ' + b + ' ' + pick(WORD_THINGS) + ' in each. How many?';
+      hint = 'Equal groups means multiply — ' + a + ' groups of ' + b + '!';
+      distractors = [answer + b, Math.max(0, answer - a), a + b];
     }
-  } else {                                 // grade 5: big ×, fractions, decimals
-    const kind = pick(['bigmul', 'frac', 'fracOf', 'dec']);
+  } else if (grade === 4) {                // multi-digit ×/÷, multi-step, area
+    const kind = pick(['mul', 'mul', 'div', 'multi', 'area', 'word', 'missing']);
+    if (kind === 'mul') {
+      const a = ri(11, 99), b = ri(2, 9);
+      text = a + ' × ' + b; answer = a * b; reward = 6 + (a > 50 ? 1 : 0); skill = 'mul';
+      const ta = Math.floor(a / 10) * 10;
+      hint = a % 10 === 0
+        ? a + ' is just tens! Do ' + (a / 10) + ' × ' + b + ' first, then put a zero on the end!'
+        : 'Split ' + a + ' into ' + ta + ' and ' + (a % 10) + '. Then: ' + ta + ' × ' + b + ' = ' + (ta * b) + ', and ' + (a % 10) + ' × ' + b + ' = ' + (a % 10 * b) + '. Add them!';
+      distractors = [answer + b, answer - b, answer + 10];
+    } else if (kind === 'div') {
+      const b = ri(2, 9), q = ri(3, 12), a = b * q;
+      text = a + ' ÷ ' + b; answer = q; reward = 6; skill = 'div';
+      hint = 'Think backwards: ' + b + ' × ? = ' + a + '. Skip-count by ' + b + ' until you reach ' + a + ' — count your hops!';
+      distractors = [q + 1, Math.max(1, q - 1), q + 2];
+    } else if (kind === 'multi') {
+      const a = ri(3, 9), b = ri(2, 9), c = ri(2, 20);
+      text = a + ' × ' + b + ' + ' + c; answer = a * b + c; reward = 7; skill = 'multi';
+      hint = 'Do the × first: ' + a + ' × ' + b + '. Then add ' + c + ' to that.';
+      distractors = [a * b - c > 0 ? a * b - c : a * b + 1, answer + 10, answer - 2];
+    } else if (kind === 'area') {
+      const l = ri(3, 12), w = ri(2, 9);
+      text = 'A rug is ' + l + ' by ' + w + '. What is its area?'; answer = l * w; reward = 7; skill = 'geo';
+      hint = 'Area = length × width. Multiply ' + l + ' by ' + w + '!';
+      distractors = [2 * (l + w), answer + l, answer - w];
+    } else if (kind === 'missing') {
+      const b = ri(3, 9), q = ri(3, 9); const p = b * q;
+      text = '? × ' + b + ' = ' + p; answer = q; reward = 6; skill = 'mul';
+      hint = 'How many ' + b + "'s make " + p + '? Count by ' + b + '!';
+      distractors = [q + 1, Math.max(1, q - 1), q + 2];
+    } else {
+      const g = pick([2, 3, 4, 6]); const each = ri(3, 9); const tot = g * each;
+      answer = each; reward = 7; skill = 'word';
+      text = pick(WORD_NAMES) + ' shares ' + tot + ' ' + pick(WORD_THINGS) + ' equally among ' + g + ' friends. How many each?';
+      hint = 'Sharing equally means divide — split ' + tot + ' into ' + g + ' equal groups.';
+      distractors = [each + 1, Math.max(1, each - 1), g + each];
+    }
+  } else {                                 // grade 5: big ×, fractions, decimals, order, %, money
+    const kind = pick(['bigmul', 'frac', 'fracOf', 'dec', 'order', 'percent', 'money']);
     if (kind === 'bigmul') {
       const a = ri(11, 25), b = ri(11, 19);
-      text = a + ' × ' + b; answer = a * b; reward = 9;
+      text = a + ' × ' + b; answer = a * b; reward = 9; skill = 'mul';
+      hint = 'Split ' + b + ' into 10 and ' + (b - 10) + '. Then: ' + a + ' × 10 = ' + (a * 10) + ', and ' + a + ' × ' + (b - 10) + ' = ' + (a * (b - 10)) + '. Add them!';
       distractors = [answer + a, answer - b, answer + 10];
     } else if (kind === 'frac') {
       const d = pick([4, 5, 6, 8, 10]);
       const n1 = ri(1, d - 2), n2 = ri(1, d - n1 - 1);
       text = n1 + '/' + d + ' + ' + n2 + '/' + d;
-      answer = (n1 + n2) + '/' + d; reward = 8;
+      answer = (n1 + n2) + '/' + d; reward = 8; skill = 'frac';
+      hint = 'Same bottom number! The /' + d + ' stays the same — just add the top numbers: ' + n1 + ' + ' + n2 + '!';
       distractors = [(n1 + n2 + 1) + '/' + d, Math.max(1, n1 + n2 - 1) + '/' + d, (n1 + n2) + '/' + (d + 2)];
     } else if (kind === 'fracOf') {
       const d = pick([2, 3, 4, 5]), q = ri(2, 9), whole = d * q;
-      text = '1/' + d + ' of ' + whole; answer = q; reward = 8;
+      text = '1/' + d + ' of ' + whole; answer = q; reward = 8; skill = 'frac';
+      hint = 'Split ' + whole + ' into ' + d + ' equal groups. How big is one group?';
       distractors = [q + 1, Math.max(1, q - 1), q + d];
+    } else if (kind === 'order') {
+      const a = ri(2, 12), b = ri(2, 9), c = ri(2, 9);
+      text = a + ' + ' + b + ' × ' + c; answer = a + b * c; reward = 9; skill = 'order';
+      hint = 'Multiply before you add! Do ' + b + ' × ' + c + ' first, then add ' + a + '.';
+      distractors = [(a + b) * c, answer + 5, answer - 3];
+    } else if (kind === 'percent') {
+      const base = pick([20, 40, 50, 60, 80, 100, 200]); const p = pick([10, 25, 50]);
+      answer = base * p / 100; reward = 9; skill = 'dec';
+      text = p + '% of ' + base;
+      hint = p === 50 ? 'Half of it! 50% means split ' + base + ' in two.' : (p === 25 ? '25% is one quarter — split ' + base + ' into 4.' : '10% means split ' + base + ' into 10 equal parts.');
+      distractors = [answer + base / 10, Math.max(0, answer - base / 10), answer + 5];
+    } else if (kind === 'money') {
+      const dollars = ri(1, 9), cents = pick([0, 25, 50, 75]); const price = dollars + cents / 100; const qty = ri(2, 4);
+      const total = Math.round(price * qty * 100) / 100;
+      text = '$' + price.toFixed(2) + ' × ' + qty; answer = '$' + total.toFixed(2); reward = 9; skill = 'money';
+      hint = 'Multiply like money: ' + qty + ' lots of $' + price.toFixed(2) + '. Keep the cents lined up!';
+      distractors = ['$' + (total + 1).toFixed(2), '$' + Math.max(0, total - 0.5).toFixed(2), '$' + (total + qty).toFixed(2)];
     } else {
-      const a = ri(10, 89) / 10, b = ri(10, 89) / 10;
+      const a = ri(10, 89) / 10, b = ri(10, 89) / 10; skill = 'dec';
       if (Math.random() < 0.5) {
         text = a.toFixed(1) + ' + ' + b.toFixed(1);
         answer = (Math.round(a * 10 + b * 10) / 10);
+        hint = 'Whole numbers first, then the tenths — line up the decimal points!';
       } else {
         const hi = Math.max(a, b), lo = Math.min(a, b);
         text = hi.toFixed(1) + ' − ' + lo.toFixed(1);
         answer = (Math.round(hi * 10 - lo * 10) / 10);
+        hint = 'Line up the decimal points and subtract — count up from ' + lo.toFixed(1) + ' to ' + hi.toFixed(1) + ' if it helps!';
       }
       answer = answer.toFixed(1); reward = 9;
       distractors = [(parseFloat(answer) + 0.1).toFixed(1), (Math.max(0, parseFloat(answer) - 0.1)).toFixed(1), (parseFloat(answer) + 1).toFixed(1)];
@@ -396,10 +651,15 @@ function generateOnce(grade) {
   }
   let guard = 0;
   while (opts.length < 4 && guard++ < 30) {  // top up if distractors collided
-    const extra = String(parseInt(answer) ? parseInt(answer) + ri(2, 9) : ri(2, 20));
+    const money = answer.indexOf('$') === 0;
+    const base = parseFloat(answer.replace('$', ''));
+    let extra;
+    if (money) extra = '$' + (base + ri(1, 6)).toFixed(2);
+    else if (answer.indexOf('/') >= 0) extra = (ri(1, 9)) + '/' + answer.split('/')[1];
+    else extra = String(Number.isFinite(base) ? Math.round(base) + ri(2, 9) : ri(2, 20));
     if (!opts.includes(extra)) opts.push(extra);
   }
-  return { text, answer, reward, options: shuffle(opts) };
+  return { text, answer, reward, hint, skill, options: shuffle(opts) };
 }
 
 /* ============================ AVATARS ============================ */
@@ -434,13 +694,26 @@ function addEyes(head, color, z) {
   box(head, 0.08, 0.08, 0.03, color || 0x222222, -0.11, 0.05, z);
   box(head, 0.08, 0.08, 0.03, color || 0x222222, 0.11, 0.05, z);
 }
-function addSunglasses(head, z) {
-  box(head, 0.16, 0.11, 0.04, 0x111111, -0.11, 0.05, z);
-  box(head, 0.16, 0.11, 0.04, 0x111111, 0.11, 0.05, z);
-  box(head, 0.08, 0.03, 0.04, 0x111111, 0, 0.06, z);
-}
 
 /* Each builder returns {group, legs, arms, head} — feet at y=0, faces +Z. */
+/* Four-legged base: horizontal body, head up front, legs at the corners. */
+function buildQuad(bodyColor, headColor, legColor) {
+  const g = new THREE.Group();
+  const legs = [
+    limb(g, 0.16, 0.5, 0.16, legColor, -0.16, 0.5, 0.3),   // front left
+    limb(g, 0.16, 0.5, 0.16, legColor, 0.16, 0.5, 0.3),    // front right
+    limb(g, 0.16, 0.5, 0.16, legColor, -0.16, 0.5, -0.3),  // back left
+    limb(g, 0.16, 0.5, 0.16, legColor, 0.16, 0.5, -0.3)    // back right
+  ];
+  box(g, 0.46, 0.42, 0.95, bodyColor, 0, 0.7, 0);          // body
+  box(g, 0.3, 0.3, 0.24, bodyColor, 0, 0.95, 0.42);        // neck
+  const head = new THREE.Group();
+  head.position.set(0, 1.22, 0.56);
+  box(head, 0.42, 0.4, 0.42, headColor, 0, 0, 0);
+  g.add(head);
+  return { group: g, legs, arms: [], head, quad: true };
+}
+
 function buildBiped(bodyColor, headColor, legColor, armColor) {
   const g = new THREE.Group();
   const legs = [
@@ -463,19 +736,19 @@ const AVATARS = [
   {
     id: 'queenfox', name: 'Queen Fox 🦊👑',
     build() {
-      const a = buildBiped(0xE8762C, 0xE8762C, 0xC95F1B, 0xE8762C);
-      box(a.head, 0.3, 0.22, 0.06, 0xFFF4E0, 0, -0.1, 0.26);            // white muzzle
-      box(a.head, 0.09, 0.09, 0.09, 0x222222, 0, -0.08, 0.31);          // nose
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.14, 0.22, 0.08, 0xE8762C, -0.16, 0.33, 0);          // ears
-      box(a.head, 0.14, 0.22, 0.08, 0xE8762C, 0.16, 0.33, 0);
-      box(a.head, 0.07, 0.1, 0.05, 0xFFF4E0, -0.16, 0.3, 0.03);
-      box(a.head, 0.07, 0.1, 0.05, 0xFFF4E0, 0.16, 0.3, 0.03);
-      addCrown(a.head, 0.3, 0xFFD23E);
-      box(a.group, 0.3, 0.34, 0.06, 0xFFF4E0, 0, 0.85, 0.15);           // white belly
-      const tail = box(a.group, 0.2, 0.2, 0.55, 0xE8762C, 0, 0.62, -0.42);
+      const a = buildQuad(0xE8762C, 0xE8762C, 0xC95F1B);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.2, 0.16, 0.18, 0xFFF4E0, 0, -0.1, 0.24);            // white muzzle
+      box(a.head, 0.08, 0.08, 0.08, 0x222222, 0, -0.08, 0.34);          // black nose
+      box(a.head, 0.12, 0.22, 0.06, 0xE8762C, -0.13, 0.28, -0.02);      // pointy ears
+      box(a.head, 0.12, 0.22, 0.06, 0xE8762C, 0.13, 0.28, -0.02);
+      box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, -0.13, 0.26, 0.02);
+      box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, 0.13, 0.26, 0.02);
+      addCrown(a.head, 0.25, 0xFFD23E);
+      box(a.group, 0.32, 0.24, 0.2, 0xFFF4E0, 0, 0.78, 0.45);           // white chest
+      const tail = box(a.group, 0.22, 0.22, 0.6, 0xE8762C, 0, 0.85, -0.65); // bushy tail, raised
       tail.rotation.x = 0.5;
-      box(a.group, 0.16, 0.16, 0.18, 0xFFF4E0, 0, 0.49, -0.62);         // white tail tip
+      box(a.group, 0.18, 0.18, 0.2, 0xFFF4E0, 0, 1.0, -0.92);           // white tail tip
       return a;
     }
   },
@@ -520,74 +793,93 @@ const AVATARS = [
   {
     id: 'unicorn', name: 'Unicorn Dancer 🦄',
     build() {
-      const a = buildBiped(0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
-      addEyes(a.head, 0x7e57c2, 0.26);
-      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.0, 0.07, 0.32, 6), mat(0xFFD8F0));
-      horn.position.set(0, 0.4, 0.05);
+      const a = buildQuad(0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
+      addEyes(a.head, 0x7e57c2, 0.22);
+      box(a.head, 0.2, 0.18, 0.16, 0xF6EFFB, 0, -0.12, 0.24);           // soft muzzle
+      box(a.head, 0.07, 0.05, 0.04, 0xD9B3FF, -0.05, -0.12, 0.33);      // nostrils
+      box(a.head, 0.07, 0.05, 0.04, 0xD9B3FF, 0.05, -0.12, 0.33);
+      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.0, 0.06, 0.32, 6), mat(0xFFD8F0));
+      horn.position.set(0, 0.34, 0.06);
       a.head.add(horn);
-      const maneColors = [0xFFB3D9, 0xB3D9FF, 0xD9B3FF, 0xB3FFD1];      // pastel mane
-      maneColors.forEach((c, i) => box(a.head, 0.12, 0.14, 0.12, c, -0.18 + i * 0.12, 0.3, -0.14));
-      box(a.head, 0.12, 0.5, 0.14, 0xFFB3D9, 0, -0.05, -0.3);           // mane down back
-      box(a.group, 0.66, 0.12, 0.5, 0xFFE1F2, 0, 0.62, 0);              // tutu
-      a.arms[0].rotation.z = 2.4;                                       // dancer pose: arms up
-      a.arms[1].rotation.z = -2.4;
-      a.legs[1].rotation.x = -0.7;                                      // one leg out, mid-twirl
-      a.dancer = true;
+      box(a.head, 0.08, 0.14, 0.06, 0xFFFFFF, -0.12, 0.24, -0.06);      // ears
+      box(a.head, 0.08, 0.14, 0.06, 0xFFFFFF, 0.12, 0.24, -0.06);
+      const maneColors = [0xFFB3D9, 0xB3D9FF, 0xD9B3FF, 0xB3FFD1];      // pastel mane down the neck
+      maneColors.forEach((c, i) => box(a.group, 0.14, 0.16, 0.15, c, 0, 1.22 - i * 0.08, 0.36 - i * 0.16));
+      box(a.group, 0.62, 0.1, 0.62, 0xFFE1F2, 0, 0.62, -0.02);          // a little tutu
+      box(a.group, 0.14, 0.16, 0.14, 0xFFB3D9, 0, 0.82, -0.56);         // pastel tail
+      box(a.group, 0.13, 0.16, 0.13, 0xD9B3FF, 0, 0.68, -0.62);
+      box(a.group, 0.12, 0.16, 0.12, 0xB3D9FF, 0, 0.54, -0.66);
+      a.dancer = true;                                                  // prances & twirls when idle
       return a;
     }
   },
   {
-    id: 'shark', name: 'Shark 😎🦈',
+    id: 'tiger', name: 'Tiger 🐯',
     build() {
-      const a = buildBiped(0x7B8FA3, 0x7B8FA3, 0x60707f, 0x7B8FA3);
-      box(a.group, 0.3, 0.42, 0.06, 0xEFF4F8, 0, 0.85, 0.15);           // white belly
-      box(a.head, 0.36, 0.1, 0.05, 0xEFF4F8, 0, -0.17, 0.26);           // mouth
-      for (let i = 0; i < 4; i++) box(a.head, 0.05, 0.07, 0.05, 0xFFFFFF, -0.12 + i * 0.08, -0.13, 0.27); // teeth
-      addSunglasses(a.head, 0.27);                                      // the cool one 😎
-      const fin = box(a.head, 0.08, 0.3, 0.22, 0x60707f, 0, 0.38, -0.05); // top fin
-      fin.rotation.x = -0.25;
-      const tail = box(a.group, 0.07, 0.3, 0.2, 0x60707f, 0, 0.8, -0.24);
-      tail.rotation.x = 0.5;
+      const a = buildQuad(0xF28C28, 0xF28C28, 0xE07B1A);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.2, 0.14, 0.14, 0xFFF4E0, 0, -0.12, 0.24);           // white muzzle
+      box(a.head, 0.08, 0.06, 0.05, 0x222222, 0, -0.09, 0.32);          // nose
+      box(a.head, 0.12, 0.12, 0.08, 0xE07B1A, -0.15, 0.25, -0.02);      // round ears
+      box(a.head, 0.12, 0.12, 0.08, 0xE07B1A, 0.15, 0.25, -0.02);
+      box(a.head, 0.05, 0.12, 0.04, 0x222222, -0.13, 0.13, 0.21);       // forehead stripes
+      box(a.head, 0.05, 0.15, 0.04, 0x222222, 0, 0.15, 0.21);
+      box(a.head, 0.05, 0.12, 0.04, 0x222222, 0.13, 0.13, 0.21);
+      for (let i = 0; i < 4; i++)                                       // stripes across the back
+        box(a.group, 0.5, 0.1, 0.09, 0x222222, 0, 0.86, 0.33 - i * 0.22);
+      box(a.group, 0.48, 0.16, 0.5, 0xFFF4E0, 0, 0.52, 0.08);           // white belly underneath
+      const tail = box(a.group, 0.12, 0.12, 0.55, 0xF28C28, 0, 0.78, -0.68);
+      tail.rotation.x = 0.35;
+      box(a.group, 0.13, 0.13, 0.13, 0x222222, 0, 0.88, -0.94);         // black tail tip
       return a;
     }
   },
   {
     id: 'dragon', name: 'Dragon 🐉',
     build() {
-      const a = buildBiped(0x3CA13C, 0x3CA13C, 0x2E7D32, 0x3CA13C);
-      addEyes(a.head, 0xFFC400, 0.26);
-      box(a.head, 0.22, 0.14, 0.16, 0x66BB6A, 0, -0.12, 0.3);           // snout
-      box(a.head, 0.05, 0.05, 0.04, 0x222222, -0.05, -0.09, 0.39);      // nostrils
-      box(a.head, 0.05, 0.05, 0.04, 0x222222, 0.05, -0.09, 0.39);
-      box(a.head, 0.07, 0.14, 0.07, 0xD8342C, -0.1, 0.3, -0.1);         // head spikes
-      box(a.head, 0.07, 0.18, 0.07, 0xD8342C, 0, 0.32, -0.16);
-      for (let i = 0; i < 3; i++) box(a.group, 0.08, 0.12, 0.08, 0xD8342C, 0, 1.05 - i * 0.18, -0.18); // back spikes
-      const wingL = box(a.group, 0.5, 0.36, 0.05, 0xD8342C, -0.42, 1.0, -0.18);  // wings
-      wingL.rotation.y = 0.6; wingL.rotation.z = 0.35;
-      const wingR = box(a.group, 0.5, 0.36, 0.05, 0xD8342C, 0.42, 1.0, -0.18);
-      wingR.rotation.y = -0.6; wingR.rotation.z = -0.35;
-      const tail = box(a.group, 0.14, 0.14, 0.45, 0x3CA13C, 0, 0.45, -0.35);
-      tail.rotation.x = 0.45;
+      const a = buildQuad(0x3CA13C, 0x3CA13C, 0x2E7D32);
+      addEyes(a.head, 0xFFC400, 0.22);
+      box(a.head, 0.22, 0.16, 0.18, 0x66BB6A, 0, -0.1, 0.26);           // snout
+      box(a.head, 0.05, 0.05, 0.04, 0x222222, -0.05, -0.07, 0.36);      // nostrils
+      box(a.head, 0.05, 0.05, 0.04, 0x222222, 0.05, -0.07, 0.36);
+      box(a.head, 0.07, 0.16, 0.07, 0xD8342C, -0.09, 0.26, -0.08);      // head spikes
+      box(a.head, 0.07, 0.2, 0.07, 0xD8342C, 0.09, 0.28, -0.12);
+      for (let i = 0; i < 3; i++)                                       // spikes along the spine
+        box(a.group, 0.08, 0.16, 0.08, 0xD8342C, 0, 0.96, 0.26 - i * 0.26);
+      const wingL = box(a.group, 0.55, 0.4, 0.06, 0xD8342C, -0.4, 1.05, -0.05);  // wings on the back
+      wingL.rotation.y = 0.5; wingL.rotation.z = 0.5;
+      const wingR = box(a.group, 0.55, 0.4, 0.06, 0xD8342C, 0.4, 1.05, -0.05);
+      wingR.rotation.y = -0.5; wingR.rotation.z = -0.5;
+      const tail = box(a.group, 0.15, 0.15, 0.7, 0x3CA13C, 0, 0.82, -0.78);     // long tail
+      tail.rotation.x = 0.5;
+      box(a.group, 0.09, 0.14, 0.09, 0xD8342C, 0, 0.92, -0.85);         // spike along the tail
+      const tailTip = box(a.group, 0.22, 0.22, 0.22, 0xD8342C, 0, 1.02, -1.1);  // red arrow tip
+      tailTip.rotation.x = Math.PI / 4;
       return a;
     }
   },
   {
     id: 'deer', name: 'Deer (Sporty!) 🦌🏅',
     build() {
-      const a = buildBiped(0xE53935, 0x9C6B3F, 0x7d5430, 0x9C6B3F);     // red jersey
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.16, 0.12, 0.08, 0xEEDDC8, 0, -0.12, 0.27);          // muzzle
-      box(a.head, 0.07, 0.06, 0.05, 0x332211, 0, -0.09, 0.32);          // nose
-      box(a.head, 0.54, 0.1, 0.54, 0xFFFFFF, 0, 0.18, 0);               // sporty headband
-      box(a.head, 0.12, 0.06, 0.06, 0xE53935, 0, 0.18, 0.28);           // headband star spot
+      const a = buildQuad(0x9C6B3F, 0x9C6B3F, 0x8a5c33);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.16, 0.13, 0.12, 0xEEDDC8, 0, -0.12, 0.24);          // muzzle
+      box(a.head, 0.07, 0.06, 0.05, 0x332211, 0, -0.1, 0.32);           // nose
+      box(a.head, 0.09, 0.16, 0.06, 0x8a5c33, -0.15, 0.24, -0.06);      // ears
+      box(a.head, 0.09, 0.16, 0.06, 0x8a5c33, 0.15, 0.24, -0.06);
       [-1, 1].forEach(s => {                                            // antlers
-        box(a.head, 0.06, 0.3, 0.06, 0x6B4A2B, s * 0.17, 0.42, -0.05);
-        box(a.head, 0.16, 0.06, 0.06, 0x6B4A2B, s * 0.24, 0.5, -0.05);
-        box(a.head, 0.06, 0.14, 0.06, 0x6B4A2B, s * 0.3, 0.58, -0.05);
+        box(a.head, 0.05, 0.28, 0.05, 0x6B4A2B, s * 0.13, 0.36, -0.1);
+        box(a.head, 0.15, 0.05, 0.05, 0x6B4A2B, s * 0.19, 0.46, -0.1);
+        box(a.head, 0.05, 0.13, 0.05, 0x6B4A2B, s * 0.25, 0.53, -0.1);
       });
-      box(a.group, 0.34, 0.2, 0.06, 0xFFFFFF, 0, 0.9, 0.15);            // jersey number patch
-      box(a.group, 0.08, 0.14, 0.07, 0xE53935, -0.05, 0.9, 0.17);       // "1" on the jersey
-      box(a.group, 0.52, 0.1, 0.3, 0xFFFFFF, 0, 0.62, 0);               // jersey stripe
+      box(a.head, 0.46, 0.09, 0.46, 0xFFFFFF, 0, 0.14, 0);              // sporty headband
+      box(a.head, 0.1, 0.06, 0.05, 0xE53935, 0, 0.14, 0.23);            // headband star spot
+      box(a.group, 0.5, 0.12, 0.5, 0xE53935, 0, 0.92, -0.06);           // team jersey on the back
+      box(a.group, 0.52, 0.06, 0.14, 0xFFFFFF, 0, 0.94, -0.06);         // jersey stripe
+      box(a.group, 0.06, 0.1, 0.16, 0xFFFFFF, -0.27, 0.86, -0.06);      // number "1" on the side
+      [[-0.25, 0.78, -0.28], [0.25, 0.74, -0.32], [-0.25, 0.7, 0.18], [0.25, 0.8, 0.1]].forEach(p =>
+        box(a.group, 0.06, 0.06, 0.06, 0xFFF4E0, p[0], p[1], p[2]));    // white fawn spots
+      box(a.group, 0.13, 0.18, 0.12, 0xFFF4E0, 0, 0.8, -0.52);          // white stubby tail
       return a;
     }
   }
@@ -595,23 +887,303 @@ const AVATARS = [
 
 /* ============================ GAME STATE ============================ */
 const G = {
-  grade: 2, mode: 'relaxed', avatarIndex: 0,
-  blocks: 0, coins: 0, berries: 0, solved: 0,
+  grade: 2, mode: 'relaxed', avatarIndex: 0, playerName: 'Player',
+  blocks: 0, doors: 0, coins: 0, berries: 0, solved: 0,
+  furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, stove: 0, sink: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },  // placeable backpack items
   running: false, over: false,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false,
-  selectedSlot: 'block',
-  firstPerson: false,
+  selectedSlot: 'block', blockColor: 0xC9B79A,
+  firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
   warned60: false, warned10: false
 };
 
 const SHOP_ITEMS = [
-  { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  desc: 'Climb trees! Stand by a trunk and hold JUMP to go up.' },
-  { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, desc: 'Run faster around the world.' },
-  { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, desc: 'Jump higher!' },
-  { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    desc: 'A snazzy hat for your hero.' },
-  { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, desc: 'Trade every berry for 1 coin each.' }
+  { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
+  { id: 'door',   icon: '🚪', name: 'House Door', price: 5,   kind: 'many',  desc: 'A door for your house — goes in your backpack.' },
+  { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 10,  kind: 'many',  desc: 'Goes in your backpack. Open it (I) to place it.' },
+  { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'Goes in your backpack. Put food on top!' },
+  { id: 'bed',    icon: '🛏️', name: 'Comfy Bed', price: 14,   kind: 'many',  desc: 'A bed with a pillow for your house.' },
+  { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
+  { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
+  { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
+  { id: 'stove',  icon: '🍳', name: 'Kitchen Stove', price: 12, kind: 'many', desc: 'A stove with burners and an oven for the kitchen.' },
+  { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
+  { id: 'bathtub',icon: '🛁', name: 'Bathtub', price: 14,      kind: 'many',  desc: 'A cozy bathtub for the bathroom.' },
+  { id: 'shower', icon: '🚿', name: 'Shower', price: 12,       kind: 'many',  desc: 'A shower for the bathroom.' },
+  { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
+  { id: 'bush',   icon: '🌳', name: 'Leafy Bush', price: 4,    kind: 'many',  desc: 'A round green bush for the garden.' },
+  { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
+  { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP by a trunk, press P for berries.' },
+  { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
+  { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, kind: 'own',   desc: 'Jump higher!' },
+  { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    kind: 'own',   desc: 'A snazzy hat for your hero.' },
+  { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.' }
 ];
+
+/* ============================ BADGES & SAVING ============================ */
+const BADGES = [
+  { id: 'star',   n: 5,  icon: '⭐', name: 'Math Star' },
+  { id: 'tophat', n: 10, icon: '🎩', name: 'Fancy Top Hat', wear: true },
+  { id: 'crown',  n: 20, icon: '👑', name: 'Golden Crown', wear: true },
+  { id: 'champ',  n: 35, icon: '🏆', name: 'Math Champion' }
+];
+/* Per-player progress, kept in the browser so grown-ups can track it. */
+function freshProfile() {
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byGrade: {}, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0 };
+}
+let profile = freshProfile();
+let profileDirty = false;
+const profileKey = name => 'mathcraftProfile:' + (name || 'Player');
+function loadProfileFor(name) {
+  profile = freshProfile();
+  try {
+    const p = JSON.parse(localStorage.getItem(profileKey(name)));
+    if (p && p.badges) Object.assign(profile, p);   // merge so old saves gain new fields
+  } catch (e) {}
+  profile.byOp = profile.byOp || {};
+  profile.byGrade = profile.byGrade || {};
+  if (!profile.firstPlayed) profile.firstPlayed = Date.now();
+}
+function saveProfile() {
+  profile.lastPlayed = Date.now();
+  try { localStorage.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) {}
+}
+
+const SKILL_LABELS = {
+  add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division',
+  frac: 'Fractions', dec: 'Decimals', money: 'Money', round: 'Rounding',
+  multi: 'Multi-step', order: 'Order of ops', geo: 'Area & shapes', word: 'Word problems', other: 'Other'
+};
+function recordWrong(eq) {
+  profile.totalWrong = (profile.totalWrong || 0) + 1;
+  profileDirty = true;
+}
+function recordSolve(eq) {
+  profile.totalSolved++;
+  if (eq) {
+    const op = eq.skill || 'other';
+    profile.byOp[op] = (profile.byOp[op] || 0) + 1;
+    profile.byGrade[G.grade] = (profile.byGrade[G.grade] || 0) + 1;
+  }
+  for (const b of BADGES) {
+    if (profile.totalSolved >= b.n && !profile.badges.includes(b.id)) {
+      profile.badges.push(b.id);
+      setTimeout(() => {
+        Sound.fanfare();
+        toast(b.icon + ' New badge: ' + b.name + '!' + (b.wear ? ' Your hero is wearing it!' : ' Tap 🏅 to see it.'), 2400);
+      }, 900);
+      applyHeadwear();
+    }
+  }
+  saveProfile();
+  updateBadgeBtn(true);
+}
+function updateBadgeBtn(pulse) {
+  const btn = $('badgeBtn');
+  btn.style.display = 'inline-block';
+  btn.textContent = '🏅 ' + profile.badges.length;
+  if (pulse && profile.badges.length) {
+    btn.classList.remove('pulse');
+    void btn.offsetWidth;            // restart the animation
+    btn.classList.add('pulse');
+  }
+}
+function renderBadges() {
+  $('badgeSolved').textContent = profile.totalSolved;
+  const grid = $('badgeGrid');
+  grid.innerHTML = '';
+  BADGES.forEach(b => {
+    const earned = profile.badges.includes(b.id);
+    const card = document.createElement('div');
+    card.className = 'badgeCard' + (earned ? '' : ' locked');
+    card.innerHTML = '<div class="bIcon">' + b.icon + '</div><b>' + b.name + '</b><small>' +
+      (earned ? 'Earned! 🎉' : 'Solve ' + b.n) + '</small>';
+    grid.appendChild(card);
+  });
+}
+function openBadges() {
+  if (popupOpen || G.over) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  renderBadges();
+  $('badgePopup').style.display = 'flex';
+}
+function closeBadges() { $('badgePopup').style.display = 'none'; popupOpen = false; }
+
+/* ---------- Grown-ups progress dashboard ---------- */
+function listProfiles() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.indexOf('mathcraftProfile:') === 0) {
+      try { const p = JSON.parse(localStorage.getItem(k)); if (p) { p._name = k.slice('mathcraftProfile:'.length); out.push(p); } } catch (e) {}
+    }
+  }
+  return out.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+}
+function fmtPlayTime(s) {
+  s = Math.round(s || 0);
+  if (s < 60) return s + ' sec';
+  const m = Math.round(s / 60);
+  if (m < 60) return m + ' min';
+  return Math.floor(m / 60) + ' hr ' + (m % 60) + ' min';
+}
+function renderGrownup() {
+  // make sure the player currently in memory is reflected even if not yet saved
+  if (G.running) saveProfile();
+  const list = $('grownupList');
+  list.innerHTML = '';
+  const profs = listProfiles();
+  if (!profs.length) { list.innerHTML = '<div class="guEmpty">No progress yet — play a game first!</div>'; return; }
+  profs.forEach(p => {
+    const solved = p.totalSolved || 0, wrong = p.totalWrong || 0;
+    const acc = (solved + wrong) ? Math.round(solved / (solved + wrong) * 100) : 100;
+    const card = document.createElement('div');
+    card.className = 'guCard';
+    let html = '<h3>🙂 ' + p._name + '</h3>';
+    html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
+      '<span>🏅 Badges: ' + ((p.badges && p.badges.length) || 0) + '</span><span>⏱️ ' + fmtPlayTime(p.secondsPlayed) + '</span></div>';
+    // grade breakdown
+    const grades = p.byGrade || {};
+    const gKeys = Object.keys(grades).sort();
+    if (gKeys.length) html += '<div style="font-weight:bold;color:#5b6b80;margin:4px 0 2px">By grade: ' +
+      gKeys.map(g => 'G' + g + ' (' + grades[g] + ')').join(' · ') + '</div>';
+    // skill bars
+    const ops = p.byOp || {};
+    const opKeys = Object.keys(ops).sort((a, b) => ops[b] - ops[a]);
+    const max = opKeys.reduce((m, k) => Math.max(m, ops[k]), 1);
+    opKeys.forEach(k => {
+      const pct = Math.round(ops[k] / max * 100);
+      html += '<div class="guBar"><span class="lab">' + (SKILL_LABELS[k] || k) + '</span>' +
+        '<span class="track"><span class="fill" style="width:' + pct + '%"></span></span>' +
+        '<span class="num">' + ops[k] + '</span></div>';
+    });
+    if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
+    card.innerHTML = html;
+    const reset = document.createElement('button');
+    reset.className = 'guReset';
+    reset.textContent = '🗑 Reset ' + p._name + "'s progress";
+    reset.onclick = () => {
+      Sound.click();
+      try { localStorage.removeItem('mathcraftProfile:' + p._name); } catch (e) {}
+      if (p._name === G.playerName) { profile = freshProfile(); profile.firstPlayed = Date.now(); }
+      renderGrownup();
+    };
+    card.appendChild(reset);
+    list.appendChild(card);
+  });
+}
+function openGrownup() { renderGrownup(); $('grownupPopup').style.display = 'flex'; }
+function closeGrownup() { $('grownupPopup').style.display = 'none'; }
+
+function serializeWorld() {
+  const placed = [], seen = new Set();
+  blocks.forEach((b, k) => {
+    if (!b.removable || seen.has(b.mesh.id)) return;
+    seen.add(b.mesh.id);
+    const [x, y, z] = k.split(',').map(Number);
+    if (b.type === 'door' && b.partner) placed.push([x, Math.min(y, Number(b.partner.split(',')[1])), z, 'door']);
+    else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
+    else placed.push([x, y, z, b.type]);
+  });
+  return placed;
+}
+const SAVE_PREFIX = 'mathcraftSave:';
+const saveKey = name => SAVE_PREFIX + (name || 'Player');
+let lastSaveAt = 0;
+function saveGame() {
+  if (!G.playerName) return;
+  try {
+    localStorage.setItem(saveKey(G.playerName), JSON.stringify({
+      name: G.playerName, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex,
+      blocks: G.blocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
+      furniture: G.furniture, owned: G.owned, timer: G.timer,
+      placed: serializeWorld(),
+      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0]),
+      pos: [player.pos.x, player.pos.y, player.pos.z],
+      when: Date.now()
+    }));
+  } catch (e) {}
+}
+function listSaves() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.indexOf(SAVE_PREFIX) === 0) {
+      try { const s = JSON.parse(localStorage.getItem(k)); if (s) out.push(s); } catch (e) {}
+    }
+  }
+  return out.sort((a, b) => (b.when || 0) - (a.when || 0));
+}
+function loadSaveFor(name) {
+  try { return JSON.parse(localStorage.getItem(saveKey(name))); } catch (e) { return null; }
+}
+function clearSave(name) { try { localStorage.removeItem(saveKey(name || G.playerName)); } catch (e) {} }
+function restoreGame(s) {
+  resetWorld();
+  resetGameState();
+  G.playerName = s.name || 'Player';
+  G.grade = s.grade; G.mode = s.mode; G.avatarIndex = s.avatarIndex;
+  G.blocks = s.blocks; G.doors = s.doors || 0; G.coins = s.coins || 0;
+  G.berries = s.berries || 0; G.solved = s.solved || 0;
+  Object.assign(G.furniture, s.furniture || {});
+  Object.assign(G.owned, s.owned || {});
+  if (G.mode === 'creeper' && typeof s.timer === 'number') G.timer = Math.max(30, s.timer);
+  loadProfileFor(G.playerName);
+  (s.placed || []).forEach(([x, y, z, type, color]) => {
+    if (blocks.has(key(x, y, z))) return;
+    if (type === 'door') placeDoor(x, y, z);
+    else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z);
+    else {
+      const col = color || 0xC9B79A;
+      const isPlain = col === 0xC9B79A;
+      const mesh = new THREE.Mesh(blockGeo, isPlain ? ((x + y + z) % 2 ? placedMat : placedMatEdge) : blockMat(col));
+      mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+      addBlockMesh(x, y, z, null, 'placed', true, mesh);
+      blocks.get(key(x, y, z)).color = col;
+    }
+  });
+  (s.foods || []).forEach(([x, z, onTable]) => spawnFoodAt(x, z, !!onTable));
+  if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
+  startGame();
+  toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
+}
+addEventListener('beforeunload', () => { if (G.running && !G.over) saveGame(); });
+
+/* wipe everything the player built/spawned so a fresh or loaded game starts clean */
+function resetWorld() {
+  const toDelete = [], meshes = new Set();
+  blocks.forEach((b, k) => { if (b.removable) { toDelete.push(k); meshes.add(b.mesh); } });
+  toDelete.forEach(k => blocks.delete(k));
+  meshes.forEach(m => scene.remove(m));
+  lootBlocks.forEach(l => scene.remove(l.mesh)); lootBlocks.length = 0;
+  gloomies.forEach(g => scene.remove(g)); gloomies.length = 0;
+  berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
+  placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
+  player.pos.copy(SPAWN); player.vel.set(0, 0, 0);
+  player.yaw = 0; player.pitch = -0.15;
+}
+function resetGameState() {
+  G.blocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0;
+  G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, stove: 0, sink: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
+  G.over = false; G.doomsday = false; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false;
+  G.timer = 15 * 60; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
+  G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false };
+}
+function goHome() {
+  if (G.running && !G.over) saveGame();
+  G.running = false; popupOpen = false;
+  ['mathPopup', 'shopPopup', 'invPopup', 'badgePopup', 'endScreen'].forEach(id => $(id).style.display = 'none');
+  $('placingTag').style.display = 'none';
+  $('hud').style.display = 'none';
+  $('touchUI').style.display = 'none';
+  resetWorld();
+  refreshSavedList();
+  $('nameInput').value = G.playerName;
+  $('startScreen').style.display = 'flex';
+}
 
 /* ============================ THREE.JS WORLD ============================ */
 const WORLD_R = 24;                    // world spans -24..24 in x/z
@@ -619,7 +1191,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 40, 90);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 200);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });  // preserve so photos work
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -667,6 +1239,18 @@ function solidAt(x, y, z) {
 const blockGeo = new THREE.BoxGeometry(0.98, 0.98, 0.98);
 const placedMat = new THREE.MeshLambertMaterial({ color: 0xC9B79A });   // blank/plain block
 const placedMatEdge = new THREE.MeshLambertMaterial({ color: 0xBCA988 });
+/* paint palette: kids pick a color for the blocks they place */
+const PAINTS = [
+  { name: 'Plain', color: 0xC9B79A }, { name: 'Red', color: 0xE3534B }, { name: 'Orange', color: 0xEE9b3a },
+  { name: 'Yellow', color: 0xF2D04b }, { name: 'Green', color: 0x6fcf63 }, { name: 'Sky', color: 0x5aa7e8 },
+  { name: 'Blue', color: 0x3b6fd8 }, { name: 'Purple', color: 0x9b6fe0 }, { name: 'Pink', color: 0xF58bc0 },
+  { name: 'White', color: 0xF4F1EA }, { name: 'Black', color: 0x40444b }, { name: 'Brown', color: 0x8a5c33 }
+];
+const paintCache = {};
+function blockMat(color) {
+  if (!paintCache[color]) paintCache[color] = new THREE.MeshLambertMaterial({ color });
+  return paintCache[color];
+}
 
 function addBlockMesh(x, y, z, material, type, removable, customMesh) {
   const mesh = customMesh || new THREE.Mesh(blockGeo, material);
@@ -732,54 +1316,129 @@ function spawnBerries() {
   const berryGeo = new THREE.SphereGeometry(0.16, 8, 8);
   const colors = [0xE53935, 0xAB47BC, 0xFF7043];
   trees.forEach((t, ti) => {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {        // four berries per tree, around the outside
       const m = new THREE.Mesh(berryGeo, new THREE.MeshLambertMaterial({ color: colors[(ti + i) % 3] }));
-      const ang = (i / 4) * Math.PI * 2 + ti;
-      m.position.set(t.x + 0.5 + Math.cos(ang) * 1.3, t.topY + 0.4 + (i % 2) * 0.8, t.z + 0.5 + Math.sin(ang) * 1.3);
+      const ang = (i / 4) * Math.PI * 2 + ti * 0.7;
+      m.position.set(t.x + 0.5 + Math.cos(ang) * 1.55, t.topY + 0.1 + (i % 2) * 0.7, t.z + 0.5 + Math.sin(ang) * 1.55);
       scene.add(m);
       berries.push({ mesh: m, alive: true, respawnAt: 0 });
     }
   });
 }
+/* close enough to pick? generous reach, but you must be up at berry height */
+function canReachBerry(b) {
+  const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
+  return head.distanceTo(b.mesh.position) <= 3.2 && (b.mesh.position.y - head.y) <= 1.25;
+}
+function collectBerry(b) {
+  b.alive = false; b.mesh.visible = false;
+  b.respawnAt = performance.now() + 25000;
+  G.berries++; Sound.pop(); refreshHUD();
+  toast('🍓 Yum! +1 berry', 1100);
+}
 
 /* ---- math stations: glowing "?" pillars ---- */
-function questionTexture() {
+function questionTexture(gives) {
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
   const c = cv.getContext('2d');
-  c.fillStyle = '#5B3FA8'; c.fillRect(0, 0, 64, 64);
-  c.strokeStyle = '#8a6fd4'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
-  c.fillStyle = '#FFE066'; c.font = 'bold 44px sans-serif';
+  const coin = gives === 'coin';
+  c.fillStyle = coin ? '#E0A21C' : '#3B6FD8'; c.fillRect(0, 0, 64, 64);      // gold = coins, blue = blocks
+  c.strokeStyle = coin ? '#F6CF5E' : '#7FA8F0'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
+  c.fillStyle = '#FFFFFF'; c.font = 'bold 34px sans-serif';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('?', 32, 36);
+  c.fillText('?', 32, 22);
+  c.font = 'bold 13px sans-serif';
+  c.fillText(coin ? '🪙 COINS' : '🧱 BLOCKS', 32, 50);
   return new THREE.CanvasTexture(cv);
 }
 const stations = [];
-const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emissive: 0x3a1f7a });
-[[4, 2], [-5, -4], [2, -7], [-3, 6]].forEach(([sx, sz]) => {
-  const m = new THREE.Mesh(blockGeo, stationMat);
+const blockStationMat = new THREE.MeshLambertMaterial({ map: questionTexture('block'), emissive: 0x16306b });
+const coinStationMat = new THREE.MeshLambertMaterial({ map: questionTexture('coin'), emissive: 0x6b4a08 });
+// two stations give building blocks, two give gold coins — color-coded so kids can choose
+[[4, 2, 'block'], [-5, -4, 'coin'], [2, -7, 'block'], [-3, 6, 'coin']].forEach(([sx, sz, gives]) => {
+  const sm = gives === 'coin' ? coinStationMat : blockStationMat;
+  const m = new THREE.Mesh(blockGeo, sm);
   m.position.set(sx + 0.5, 0.5, sz + 0.5);
   addBlockMesh(sx, 0, sz, null, 'station', false, m);
-  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), stationMat);
+  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), sm);
   topper.position.set(sx + 0.5, 1.45, sz + 0.5);
   scene.add(topper);
-  stations.push({ x: sx, z: sz, mesh: m, topper });
+  stations.push({ x: sx, z: sz, mesh: m, topper, gives });
 });
+/* a friendly signpost where the door station used to be — points to the shop */
+{
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#FFF4E0'; c.fillRect(0, 0, 128, 64);
+  for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#E53935' : '#FFF4E0'; c.fillRect(i * 16, 0, 16, 10); }
+  c.fillStyle = '#7a3b12'; c.font = 'bold 26px sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('SHOP ➜', 64, 38);
+  const signMat = new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) });
+  const sign = new THREE.Group();
+  box(sign, 0.12, 1.5, 0.12, 0x8B5A2B, 0, 0.75, 0);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 0.08), signMat);
+  board.position.set(0, 1.35, 0);
+  sign.add(board);
+  sign.position.set(-2.5, 0, 6.5);
+  sign.rotation.y = 2.5;               // face roughly toward the shop stall
+  scene.add(sign);
+}
 
-/* ---- shop stall (Store Mode) ---- */
+/* ---- THE SHOP: a little 3D store building with a sign and a shopkeeper ---- */
 const shopGroup = new THREE.Group();
 {
-  box(shopGroup, 3, 0.2, 1.4, 0xC9B79A, 0, 1.0, 0);                    // counter
-  box(shopGroup, 0.2, 1.0, 0.2, 0x8B5A2B, -1.3, 0.5, 0.5);
-  box(shopGroup, 0.2, 1.0, 0.2, 0x8B5A2B, 1.3, 0.5, 0.5);
-  box(shopGroup, 0.2, 2.2, 0.2, 0x8B5A2B, -1.3, 1.1, -0.5);
-  box(shopGroup, 0.2, 2.2, 0.2, 0x8B5A2B, 1.3, 1.1, -0.5);
-  for (let i = 0; i < 6; i++) box(shopGroup, 0.5, 0.16, 1.7, i % 2 ? 0xE53935 : 0xFFF4E0, -1.25 + i * 0.5, 2.3, 0); // awning
-  box(shopGroup, 0.8, 0.5, 0.1, 0xFFD23E, 0, 1.7, 0.6);                // sign
+  const CREAM = 0xFFF1DC, TIMBER = 0x8B5A2B, ROOF = 0xC0392B, WOOD = 0xC49A6C;
+  box(shopGroup, 3.0, 0.12, 3.0, WOOD, 0, 0.06, 0);                    // floor
+  box(shopGroup, 3.0, 2.2, 0.16, CREAM, 0, 1.2, -1.45);               // back wall
+  box(shopGroup, 0.16, 2.2, 3.0, CREAM, -1.45, 1.2, 0);              // left wall
+  box(shopGroup, 0.16, 2.2, 3.0, CREAM, 1.45, 1.2, 0);               // right wall
+  [[-1.45, -1.45], [1.45, -1.45], [-1.45, 1.45], [1.45, 1.45]].forEach(([x, z]) =>
+    box(shopGroup, 0.22, 2.4, 0.22, TIMBER, x, 1.2, z));              // corner posts
+  box(shopGroup, 3.0, 0.9, 0.5, WOOD, 0, 0.55, 1.3);                  // front counter
+  box(shopGroup, 3.0, 0.14, 0.62, 0x8a5c33, 0, 1.04, 1.32);          // counter top
+  box(shopGroup, 3.5, 0.26, 3.5, ROOF, 0, 2.45, 0);                  // overhanging roof
+  box(shopGroup, 3.6, 0.22, 1.1, 0xA93226, 0, 2.64, 0);              // roof ridge
+  for (let i = 0; i < 7; i++) {                                       // striped awning
+    const a = box(shopGroup, 0.42, 0.12, 0.95, i % 2 ? 0xE53935 : 0xFFFFFF, -1.26 + i * 0.42, 1.98, 1.72);
+    a.rotation.x = 0.5;
+  }
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#FFD23E'; c.fillRect(0, 0, 256, 96);
+  c.strokeStyle = '#b5832a'; c.lineWidth = 8; c.strokeRect(4, 4, 248, 88);
+  c.fillStyle = '#7a3b12'; c.font = 'bold 56px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('🛒 SHOP', 128, 54);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 0.12), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 3.05, 0);          // centered on top of the roof
+  shopGroup.add(sign);
+  box(shopGroup, 0.14, 0.5, 0.14, 0x8B5A2B, -0.7, 2.7, 0);   // little posts holding the sign up
+  box(shopGroup, 0.14, 0.5, 0.14, 0x8B5A2B, 0.7, 2.7, 0);
+  box(shopGroup, 0.3, 0.3, 0.3, 0x6fcf63, -0.9, 1.28, 1.35);          // goods on the counter
+  box(shopGroup, 0.3, 0.3, 0.3, 0x5aa7e8, -0.5, 1.28, 1.35);
+  box(shopGroup, 0.22, 0.22, 0.22, 0xE53935, 0.7, 1.24, 1.35);
+  box(shopGroup, 0.22, 0.22, 0.22, 0xAB47BC, 0.96, 1.24, 1.35);
+  const keeper = new THREE.Group();                                   // friendly shopkeeper
+  keeper.position.set(0, 0, -0.25);
+  box(keeper, 0.5, 0.62, 0.3, 0x3b7dd8, 0, 1.35, 0);                  // body
+  box(keeper, 0.52, 0.32, 0.32, 0xFFFFFF, 0, 1.12, 0.02);            // apron
+  box(keeper, 0.42, 0.42, 0.42, 0xE8B98C, 0, 1.86, 0);              // head
+  box(keeper, 0.07, 0.08, 0.03, 0x222222, -0.1, 1.9, 0.21);          // eyes
+  box(keeper, 0.07, 0.08, 0.03, 0x222222, 0.1, 1.9, 0.21);
+  box(keeper, 0.18, 0.05, 0.03, 0xB5532A, 0, 1.77, 0.21);            // smile
+  box(keeper, 0.46, 0.2, 0.46, 0x6d4326, 0, 2.13, 0);               // hair
+  box(keeper, 0.13, 0.45, 0.13, 0x3b7dd8, -0.32, 1.4, 0.05);         // left arm
+  const armR = box(keeper, 0.13, 0.45, 0.13, 0xE8B98C, 0.34, 1.58, 0.05); // waving arm
+  armR.rotation.z = -1.1;
+  shopGroup.add(keeper);
+  shopGroup.userData.keeperArm = armR;
 }
 shopGroup.position.set(-8.5, 0, -8.5);
+shopGroup.rotation.y = 0.35;                                          // angle the storefront toward the play area
 scene.add(shopGroup);
 const SHOP_POS = { x: -8.5, z: -8.5 };
-blocks.set(key(-9, 0, -9), { mesh: shopGroup, type: 'shop', removable: false });
+for (let x = -10; x <= -8; x++) for (let z = -10; z <= -8; z++)       // building footprint is solid
+  blocks.set(key(x, 0, z), { mesh: shopGroup, type: 'shop', removable: false });
 
 /* ---- clouds & flowers ---- */
 const clouds = [];
@@ -816,15 +1475,32 @@ function setAvatar(index) {
   const data = AVATARS[index].build();
   player.avatar = data.group;
   player.avatarData = data;
-  if (G.owned.hat) addPartyHat();
+  applyHeadwear();
   scene.add(player.avatar);
 }
-function addPartyHat() {
-  if (!player.avatarData || player.avatarData.hatAdded) return;
-  const hat = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.18, 0.4, 6), mat(0x2BC4E8));
-  hat.position.set(0, 0.5, 0);
-  player.avatarData.head.add(hat);
-  player.avatarData.hatAdded = true;
+/* Badge prizes go on your head! Best earned hat wins: crown > top hat > party hat. */
+function applyHeadwear() {
+  const d = player.avatarData;
+  if (!d) return;
+  if (d.headwear) { d.head.remove(d.headwear); d.headwear = null; }
+  const topY = d.quad ? 0.2 : 0.25;    // top of the head box
+  let h = null;
+  if (profile.badges.includes('crown')) {
+    h = new THREE.Group();
+    addCrown(h, 0, 0xFFD23E);
+    h.position.y = topY + 0.04;
+  } else if (profile.badges.includes('tophat')) {
+    h = new THREE.Group();
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.04, 10), mat(0x222222));
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3, 10), mat(0x222222));
+    top.position.y = 0.17;
+    h.add(brim); h.add(top);
+    h.position.y = topY + 0.03;
+  } else if (G.owned.hat) {
+    h = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.18, 0.4, 6), mat(0x2BC4E8));
+    h.position.y = topY + 0.2;
+  }
+  if (h) { d.head.add(h); d.headwear = h; }
 }
 
 function collideAxis(axis, delta) {
@@ -846,6 +1522,13 @@ function collideAxis(axis, delta) {
         }
 }
 
+function cellOverlapsPlayer(cx, cy, cz) {
+  const half = player.width / 2;
+  return Math.abs(cx + 0.5 - player.pos.x) < half + 0.5 &&
+         Math.abs(cz + 0.5 - player.pos.z) < half + 0.5 &&
+         cy + 1 > player.pos.y && cy < player.pos.y + player.height;
+}
+
 function nearTrunk() {
   for (const t of trees) {
     const dx = player.pos.x - (t.x + 0.5), dz = player.pos.z - (t.z + 0.5);
@@ -855,13 +1538,16 @@ function nearTrunk() {
 }
 
 function updatePlayer(dt) {
-  const speed = G.owned.shoes ? 7 : 5;
+  let speed = G.owned.shoes ? 7 : 5;
+  if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
   const jumpV = G.owned.boots ? 10 : 7.5;
+  if (keys['ArrowLeft']) player.yaw += 2.4 * dt;     // turn with arrows — no mouse needed
+  if (keys['ArrowRight']) player.yaw -= 2.4 * dt;
   let mx = 0, mz = 0;
-  if (keys['KeyW'] || touch.joyY < -0.25) mz -= 1;
-  if (keys['KeyS'] || touch.joyY > 0.25) mz += 1;
-  if (keys['KeyA'] || touch.joyX < -0.25) mx -= 1;
-  if (keys['KeyD'] || touch.joyX > 0.25) mx += 1;
+  if (keys['ArrowUp'] || keys['KeyW'] || touch.joyY < -0.25) mz -= 1;
+  if (keys['ArrowDown'] || keys['KeyS'] || touch.joyY > 0.25) mz += 1;
+  if (touch.joyX < -0.25) mx -= 1;
+  if (touch.joyX > 0.25) mx += 1;
   const moving = (mx !== 0 || mz !== 0);
   if (moving) {
     const len = Math.hypot(mx, mz); mx /= len; mz /= len;
@@ -872,9 +1558,11 @@ function updatePlayer(dt) {
     player.vel.x = 0; player.vel.z = 0;
   }
 
-  const climbing = G.owned.ladder && nearTrunk() && (keys['Space'] || touch.jump);
-  if (climbing) {
-    player.vel.y = 3.2;
+  const nearLadder = G.owned.ladder && nearTrunk();
+  if (nearLadder && (keys['Space'] || touch.jump)) {
+    player.vel.y = 3.2;                                  // climb up
+  } else if (nearLadder && !player.onGround && player.vel.y <= 0) {
+    player.vel.y = 0;                                    // hang on the ladder — no falling while you pick!
   } else {
     player.vel.y -= 22 * dt;
     if ((keys['Space'] || touch.jump) && player.onGround) {
@@ -911,13 +1599,20 @@ function updatePlayer(dt) {
   const t = performance.now() / 1000;
   if (moving) {
     const s = Math.sin(t * 9) * 0.6;
-    d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
-    if (!d.dancer) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
+    if (d.quad) {                                                      // diagonal trot
+      d.legs[0].rotation.x = s; d.legs[3].rotation.x = s;
+      d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s;
+    } else {
+      d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
+      d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7;
+    }
+  } else if (d.dancer) {                                               // unicorn prances & twirls
+    d.legs[0].rotation.x = -0.8; d.legs[1].rotation.x = -0.5;
+    d.legs[2].rotation.x *= 0.8; d.legs[3].rotation.x *= 0.8;
+    av.rotation.y += Math.sin(t * 2) * 0.15;
   } else {
-    d.legs[0].rotation.x *= 0.8;
-    if (!d.dancer) { d.legs[1].rotation.x *= 0.8; d.arms[0].rotation.x *= 0.8; d.arms[1].rotation.x *= 0.8; }
-    else d.legs[1].rotation.x = -0.7;
-    if (d.dancer) av.rotation.y += Math.sin(t * 2) * 0.15;             // idle twirl
+    d.legs.forEach(l => l.rotation.x *= 0.8);
+    d.arms.forEach(arm => arm.rotation.x *= 0.8);
   }
 
   // camera
@@ -939,57 +1634,200 @@ function updatePlayer(dt) {
   camera.lookAt(look);
 }
 
-/* ============================ CREEPERS ============================ */
-const creepers = [];
-function buildCreeper() {
+/* ---- loot: blank blocks (building) and GOLD blocks (coins!) ---- */
+const lootBlocks = [];
+const lootGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55);
+const lootGeoCoin = new THREE.BoxGeometry(0.45, 0.45, 0.45);
+const lootMat = new THREE.MeshLambertMaterial({ color: 0xC9B79A, emissive: 0x3a311f });
+const lootMatCoin = new THREE.MeshLambertMaterial({ color: 0xFFD23E, emissive: 0x6b520a });
+function spawnLoot(n, kind) {
+  kind = kind || 'block';
+  for (let i = 0; i < n; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const r = 1.4 + Math.random() * 1.2;
+    const lx = Math.max(-WORLD_R + 1, Math.min(WORLD_R - 1, player.pos.x + Math.cos(ang) * r));
+    const lz = Math.max(-WORLD_R + 1, Math.min(WORLD_R - 1, player.pos.z + Math.sin(ang) * r));
+    const mesh = new THREE.Mesh(kind === 'coin' ? lootGeoCoin : lootGeo, kind === 'coin' ? lootMatCoin : lootMat);
+    mesh.position.set(lx, player.pos.y + 0.45, lz);
+    scene.add(mesh);
+    lootBlocks.push({ mesh, alive: true, kind, baseY: player.pos.y + 0.45, phase: Math.random() * 6 });
+  }
+}
+function collectLoot(l) {
+  l.alive = false;
+  scene.remove(l.mesh);
+  if (l.kind === 'coin') {
+    G.coins++;
+    Sound.coin();
+    toast('🪙 +1 coin!', 700);
+  } else {
+    G.blocks++;
+    Sound.pop();
+    toast('🧱 +1 block!', 700);
+  }
+  refreshHUD();
+}
+/* R — remove the nearest block you placed (topmost of a stack first) */
+function removePlacedBlock() {
+  for (let i = 0; i < placedFood.length; i++) {     // an apple you placed comes first
+    const f = placedFood[i];
+    if (Math.hypot(f.x + 0.5 - player.pos.x, f.z + 0.5 - player.pos.z) <= 1.8) {
+      scene.remove(f.mesh); placedFood.splice(i, 1);
+      G.furniture.food += 1; Sound.pop(); refreshHUD();
+      toast('🍎 Apple back in your 🎒!', 1400);
+      return true;
+    }
+  }
+  let bk = null, be = null, bestY = -1, bestDist = 999;
+  blocks.forEach((b, k) => {            // within reach, prefer the topmost block
+    if (!b.removable) return;
+    const [x, y, z] = k.split(',').map(Number);
+    if (y > player.pos.y + 2.5) return;
+    const d = Math.hypot(x + 0.5 - player.pos.x, z + 0.5 - player.pos.z);
+    if (d > 1.8) return;
+    if (y > bestY || (y === bestY && d < bestDist)) { bk = k; be = b; bestY = y; bestDist = d; }
+  });
+  if (!bk) return false;
+  const [x, y, z] = bk.split(',').map(Number);
+  removeBlockAt(x, y, z);
+  refundFor(be.type);
+  Sound.brk();
+  refreshHUD();
+  return true;
+}
+function refundFor(type) {
+  if (type === 'door') G.doors += 1;
+  else if (FURNITURE_TYPES.includes(type)) { G.furniture[type] += 1; toast('📦 Packed up your ' + type + ' — back in your 🎒!', 1600); }
+  else G.blocks += 1;
+}
+/* P — pick up the nearest thing: loot blocks, then berries, then your builds */
+function pickupBlock() {
+  let best = null, bestD = 2.8;
+  for (const l of lootBlocks) {
+    if (!l.alive) continue;
+    const d = Math.hypot(l.mesh.position.x - player.pos.x, l.mesh.position.z - player.pos.z);
+    if (d < bestD) { best = l; bestD = d; }
+  }
+  if (best) { collectLoot(best); return; }
+  if (G.mode === 'store') {
+    let bb = null, bd = 999;
+    const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
+    for (const b of berries) {
+      if (!b.alive || !canReachBerry(b)) continue;
+      const d = head.distanceTo(b.mesh.position);
+      if (d < bd) { bb = b; bd = d; }
+    }
+    if (bb) { collectBerry(bb); return; }
+  }
+  if (removePlacedBlock()) return;
+  toast('🤲 Nothing close enough — walk up to a block' + (G.mode === 'store' ? ' or berry' : '') + ' and try P again!', 1800);
+}
+/* Place whatever slot is selected at grid cell (x,z). blockY is the height
+   for a plain block (stacking); doors/furniture/food sit on the ground. */
+function placeSelectedAt(x, z, blockY) {
+  if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
+  const slot = G.selectedSlot;
+  if (slot === 'door') {
+    if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at the 🏪 shop (press B)!', 2400); return false; }
+    if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
+    if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
+  }
+  if (FURNITURE_TYPES.includes(slot)) {
+    if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
+    if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    placeFurnitureAt(slot, x, z); G.furniture[slot] -= 1; Sound.place(); refreshHUD(); return true;
+  }
+  if (slot === 'food') {
+    if (G.furniture.food < 1) { toast('🍎 No apples in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    const cell = blocks.get(key(x, 0, z));
+    const onTable = !!(cell && cell.type === 'table');
+    if (cell && !onTable) { toast('🍎 Put it on the grass or on a table!', 1600); return false; }
+    spawnFoodAt(x, z, onTable); G.furniture.food -= 1; Sound.pop(); refreshHUD();
+    toast(onTable ? '🍎 Snack on the table — yum!' : '🍎 Apple placed!', 1400); return true;
+  }
+  // plain building block
+  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or the 🏪 shop!', 2000); return false; }
+  const y = blockY == null ? 0 : blockY;
+  if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
+  if (blocks.has(key(x, y, z))) return false;
+  if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+  const isPlain = G.blockColor === 0xC9B79A;
+  const mesh = new THREE.Mesh(blockGeo, isPlain ? ((x + y + z) % 2 ? placedMat : placedMatEdge) : blockMat(G.blockColor));
+  mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+  addBlockMesh(x, y, z, null, 'placed', true, mesh);
+  blocks.get(key(x, y, z)).color = G.blockColor;     // remember the paint for saving
+  G.blocks -= 1; Sound.place(); refreshHUD(); return true;
+}
+/* D — put down the selected item on the square in front of you (blocks stack) */
+function putDownBlock() {
+  const fx = Math.floor(player.pos.x - Math.sin(player.yaw) * 1.4);
+  const fz = Math.floor(player.pos.z - Math.cos(player.yaw) * 1.4);
+  const base = blocks.get(key(fx, 0, fz));
+  if (base && !base.removable && G.selectedSlot !== 'food') { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
+  let blockY = 0;
+  if (G.selectedSlot === 'block') {     // only plain blocks stack up into walls
+    while (blockY <= 8 && blocks.has(key(fx, blockY, fz))) blockY++;
+  }
+  placeSelectedAt(fx, fz, blockY);
+}
+
+/* ==================== THE GLOOMIES (original monsters!) ==================== */
+/* Purple one-eyed grumps. They take about 30 seconds to waddle across the
+   world — if one catches you outside a shelter, it's game over. */
+const gloomies = [];
+function buildGloomy() {
   const g = new THREE.Group();
-  box(g, 0.55, 0.8, 0.4, 0x44A832, 0, 0.9, 0);                         // body
-  box(g, 0.55, 0.55, 0.55, 0x4CBA38, 0, 1.6, 0);                       // head
-  box(g, 0.12, 0.14, 0.03, 0x111111, -0.12, 1.68, 0.28);               // face
-  box(g, 0.12, 0.14, 0.03, 0x111111, 0.12, 1.68, 0.28);
-  box(g, 0.1, 0.2, 0.03, 0x111111, 0, 1.52, 0.28);
-  box(g, 0.06, 0.12, 0.03, 0x111111, -0.07, 1.48, 0.28);
-  box(g, 0.06, 0.12, 0.03, 0x111111, 0.07, 1.48, 0.28);
-  [[-0.16, 0.22], [0.16, 0.22], [-0.16, -0.22], [0.16, -0.22]].forEach(([lx, lz]) =>
-    box(g, 0.22, 0.5, 0.22, 0x3B8F2B, lx, 0.25, lz));
+  box(g, 0.7, 0.75, 0.55, 0x8E5BC8, 0, 0.75, 0);                       // round purple body
+  box(g, 0.5, 0.5, 0.1, 0x7B49B5, 0, 0.68, 0.26);                      // darker tummy
+  box(g, 0.3, 0.3, 0.08, 0xFFFFFF, 0, 0.95, 0.29);                     // one BIG eye
+  box(g, 0.13, 0.13, 0.06, 0x222222, 0, 0.95, 0.33);                   // pupil
+  box(g, 0.32, 0.07, 0.06, 0x4A2A75, 0, 0.55, 0.3);                    // grumpy mouth
+  box(g, 0.1, 0.07, 0.06, 0x4A2A75, -0.18, 0.6, 0.3);
+  box(g, 0.1, 0.07, 0.06, 0x4A2A75, 0.18, 0.6, 0.3);
+  box(g, 0.06, 0.22, 0.06, 0x7B49B5, -0.15, 1.22, 0);                  // wobbly antennae
+  box(g, 0.06, 0.22, 0.06, 0x7B49B5, 0.15, 1.22, 0);
+  box(g, 0.12, 0.12, 0.12, 0xFFD23E, -0.15, 1.38, 0);                  // glowing bobbles
+  box(g, 0.12, 0.12, 0.12, 0xFFD23E, 0.15, 1.38, 0);
+  box(g, 0.16, 0.16, 0.16, 0x8E5BC8, -0.44, 0.75, 0.12);               // stubby arms
+  box(g, 0.16, 0.16, 0.16, 0x8E5BC8, 0.44, 0.75, 0.12);
+  [[-0.2, 0.16], [0.2, 0.16], [-0.2, -0.16], [0.2, -0.16]].forEach(([lx, lz]) =>
+    box(g, 0.2, 0.36, 0.2, 0x7B49B5, lx, 0.18, lz));                   // stubby feet
   return g;
 }
-let lastHiss = 0, lastCatch = 0;
-function spawnCreepers() {
+let lastHiss = 0;
+function spawnGloomies() {
   const n = 5;
   for (let i = 0; i < n; i++) {
     const ang = (i / n) * Math.PI * 2;
-    const c = buildCreeper();
+    const c = buildGloomy();
     c.position.set(Math.cos(ang) * (WORLD_R - 2), 0, Math.sin(ang) * (WORLD_R - 2));
     scene.add(c);
-    creepers.push(c);
+    gloomies.push(c);
   }
 }
-function updateCreepers(dt) {
-  if (!creepers.length) return;
+function updateGloomies(dt) {
+  if (!gloomies.length || G.over) return;
   const now = performance.now() / 1000;
   let nearest = 999;
-  for (const c of creepers) {
+  for (const c of gloomies) {
     const dx = player.pos.x - c.position.x, dz = player.pos.z - c.position.z;
     const dist = Math.hypot(dx, dz);
     nearest = Math.min(nearest, dist);
     if (dist > 0.5) {
-      const sp = 2.2 * dt;
+      const sp = 0.8 * dt;             // a slow waddle ≈ 30s across the world
       const nx = c.position.x + (dx / dist) * sp;
       const nz = c.position.z + (dz / dist) * sp;
       if (!solidAt(Math.floor(nx), 0, Math.floor(c.position.z))) c.position.x = nx;
       if (!solidAt(Math.floor(c.position.x), 0, Math.floor(nz))) c.position.z = nz;
     }
     c.rotation.y = Math.atan2(dx, dz);
-    c.position.y = Math.abs(Math.sin(now * 6 + c.position.x)) * 0.08;
+    c.position.y = Math.abs(Math.sin(now * 6 + c.position.x)) * 0.1;
+    c.rotation.z = Math.sin(now * 6 + c.position.x) * 0.08;            // waddle
   }
   if (nearest < 8 && now - lastHiss > 2.5) { Sound.hiss(); lastHiss = now; }
-  if (nearest < 1.2 && !G.safe && now - lastCatch > 4) {
-    lastCatch = now;
-    Sound.sad();
-    player.pos.copy(SPAWN); player.vel.set(0, 0, 0);
-    toast('💨 A creeper found you! Back to the start — keep building your shelter!', 3200);
-  }
+  if (nearest < 1.1 && !G.safe) loseGame();
 }
 
 /* ============================ SHELTER CHECK ============================ */
@@ -1029,9 +1867,13 @@ function toast(msg, ms) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $('toast').style.display = 'none', ms || 2200);
 }
+function bumpHud(id) {                    // a happy little pop when a counter goes up
+  const el = $(id);
+  if (!el) return;
+  el.classList.remove('countPop'); void el.offsetWidth; el.classList.add('countPop');
+}
 function refreshHUD() {
   $('blockCount').textContent = G.blocks;
-  $('slotBlockN').textContent = G.blocks;
   $('coinCount').textContent = G.coins;
   $('berryCount').textContent = G.berries;
   $('solvedCount').textContent = G.solved;
@@ -1043,15 +1885,12 @@ function fmtTime(s) {
 }
 
 /* ============================ MATH POPUP ============================ */
-let currentEq = null, popupOpen = false;
-function openMath() {
-  if (popupOpen || G.over) return;
-  popupOpen = true;
-  document.exitPointerLock && document.exitPointerLock();
+let currentEq = null, currentGives = 'block', popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0;
+function renderMathQuestion() {
   currentEq = makeEquation(G.grade);
+  mathLocked = false;
+  $('hintBox').style.display = 'none';
   $('mathEquation').textContent = currentEq.text + ' = ?';
-  $('mathPrompt').textContent = 'Find the right block! Tap the block with the answer.';
-  $('mathFeedback').textContent = '';
   const wrap = $('mathChoices');
   wrap.innerHTML = '';
   currentEq.options.forEach(opt => {
@@ -1061,33 +1900,77 @@ function openMath() {
     b.onclick = () => answerPicked(b, opt);
     wrap.appendChild(b);
   });
+}
+function showHint() {
+  if (!currentEq) return;
+  $('hintBox').textContent = '💡 ' + currentEq.hint;
+  $('hintBox').style.display = 'block';
+}
+function openMath(gives) {
+  if (popupOpen || G.over || performance.now() < mathCooldownUntil) return;   // brief cooldown stops spam-reopening
+  popupOpen = true;
+  wrongStreak = 0;
+  currentGives = gives === 'coin' ? 'coin' : 'block';
+  document.exitPointerLock && document.exitPointerLock();
+  $('mathPrompt').textContent = currentGives === 'coin'
+    ? 'Find the answer to earn 🪙 COINS!' : 'Find the answer to earn 🧱 BLOCKS!';
+  $('mathFeedback').textContent = '';
+  renderMathQuestion();
   $('mathPopup').style.display = 'flex';
 }
 function answerPicked(btn, opt) {
-  if (!currentEq) return;
+  if (!currentEq || mathLocked) return;
   if (opt === currentEq.answer) {
     Sound.correct();
+    mathLocked = true;
+    wrongStreak = 0;
     const reward = currentEq.reward;
     document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
-    if (G.mode === 'store') {
-      G.coins += reward; G.solved++;
-      Sound.coin();
-      $('mathFeedback').textContent = '🎉 Nice! The blocks turned to coins: +' + reward + ' 🪙';
-      if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 equations solved! You are a math star! Keep shopping!', 4000); }, 900);
+    if (G.mode === 'store') { G.solved++; if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900); }
+    if (currentGives === 'coin') {
+      G.coins += reward; Sound.coin(); bumpHud('coinCount');
+      $('mathFeedback').textContent = '🎉 Nice! +' + reward + ' 🪙 coins added to your count!';
     } else {
-      G.blocks += reward;
-      $('mathFeedback').textContent = '🎉 Nice! The blocks went blank — +' + reward + ' building blocks!';
+      G.blocks += reward; bumpHud('blockCount');
+      $('mathFeedback').textContent = '🎉 Nice! +' + reward + ' 🧱 blocks added to your count!';
     }
+    recordSolve(currentEq);
     refreshHUD();
-    setTimeout(closeMath, 1400);
+    setTimeout(closeMath, 1500);
   } else {
     Sound.wrong();
+    recordWrong(currentEq);
     btn.classList.add('shake');
-    setTimeout(() => btn.classList.remove('shake'), 400);
-    $('mathFeedback').textContent = pick(['💪 Try again — you\'ve got this!', '🌱 Almost! Give it another try!', '🙂 Not that block — try another!']);
+    mathLocked = true;                 // no button mashing!
+    document.querySelectorAll('.answerBlock').forEach(b => b.disabled = true);
+    wrongStreak++;
+    if (wrongStreak >= 3) {            // breather: show the hint, then a fresh question
+      showHint();
+      let secs = 8;
+      $('mathFeedback').textContent = '🧘 Let\'s slow down and read the hint! New question in ' + secs + '…';
+      breatherTimer = setInterval(() => {
+        secs--;
+        if (secs <= 0) {
+          clearInterval(breatherTimer); breatherTimer = null;
+          wrongStreak = 0;
+          renderMathQuestion();
+          $('mathFeedback').textContent = '🌟 Fresh question — try the hint trick!';
+        } else {
+          $('mathFeedback').textContent = '🧘 Let\'s slow down and read the hint! New question in ' + secs + '…';
+        }
+      }, 1000);
+    } else {
+      // a fresh question every time — no guessing by elimination!
+      $('mathFeedback').textContent = pick(['💪 Good try! Here\'s a brand-new one!', '🌱 Almost! Try this new one!', '🙂 Not quite — here\'s another!']);
+      setTimeout(renderMathQuestion, 700);
+    }
   }
 }
+$('hintBtn').onclick = () => { Sound.click(); showHint(); };
 function closeMath() {
+  if (breatherTimer) { clearInterval(breatherTimer); breatherTimer = null; }
+  wrongStreak = 0;
+  mathCooldownUntil = performance.now() + 350;
   $('mathPopup').style.display = 'none';
   popupOpen = false; currentEq = null;
 }
@@ -1106,39 +1989,162 @@ function renderShop() {
   const wrap = $('shopItems');
   wrap.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
+    if (item.kind === 'sell' && G.mode !== 'store') return;   // berries only grow in Store Mode
     const row = document.createElement('div');
     row.className = 'shopItem';
-    const owned = item.id !== 'sell' && G.owned[item.id];
-    const priceTxt = item.id === 'sell' ? (G.berries + ' 🍓 → ' + G.berries + ' 🪙') : item.price + ' 🪙';
+    const owned = item.kind === 'own' && G.owned[item.id];
+    const priceTxt = item.kind === 'sell' ? (G.berries + ' 🍓 → ' + G.berries + ' 🪙') : item.price + ' 🪙';
     row.innerHTML = '<div class="icon">' + item.icon + '</div>' +
       '<div class="info"><b>' + item.name + ' — ' + priceTxt + '</b><small>' + item.desc + '</small></div>';
     const btn = document.createElement('button');
     btn.className = 'buyBtn' + (owned ? ' owned' : '');
-    btn.textContent = owned ? '✓ Owned' : (item.id === 'sell' ? 'Sell!' : 'Buy');
-    btn.disabled = owned || (item.id === 'sell' ? G.berries === 0 : G.coins < item.price);
-    btn.onclick = () => buyItem(item.id);
+    btn.textContent = owned ? 'Sell back +' + item.price + ' 🪙' : (item.kind === 'sell' ? 'Sell!' : 'Buy');
+    btn.disabled = item.kind === 'sell' ? G.berries === 0 : (!owned && G.coins < item.price);
+    btn.onclick = () => owned ? sellItem(item.id) : buyItem(item.id);
     row.appendChild(btn);
     wrap.appendChild(row);
   });
 }
 function buyItem(id) {
-  if (id === 'sell') {
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  if (item.kind === 'sell') {
     if (G.berries === 0) return;
     G.coins += G.berries;
     toast('🍓 Sold ' + G.berries + ' berries for ' + G.berries + ' coins!');
     G.berries = 0;
     Sound.coin();
+  } else if (item.kind === 'many') {
+    if (G.coins < item.price) return;
+    G.coins -= item.price;
+    Sound.coin();
+    if (id === 'blocks') { G.blocks += 10; toast('🧱 +10 blocks in your backpack!', 2500); }
+    else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
+    else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
-    const item = SHOP_ITEMS.find(i => i.id === id);
     if (G.owned[id] || G.coins < item.price) return;
     G.coins -= item.price;
     G.owned[id] = true;
     Sound.coin();
-    if (id === 'hat') addPartyHat();
-    if (id === 'ladder') toast('🪜 Ladder! Stand next to a tree trunk and hold JUMP to climb!', 3500);
+    if (id === 'hat') applyHeadwear();
+    if (id === 'ladder') toast('🪜 Ladder! Hold JUMP by a tree trunk to climb — then press P to pick berries!', 4000);
     else toast(item.icon + ' You bought ' + item.name + '!');
   }
+  refreshHUD();
   renderShop();
+}
+function sellItem(id) {
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  if (!G.owned[id]) return;
+  G.owned[id] = false;
+  G.coins += item.price;
+  if (id === 'hat') applyHeadwear();
+  Sound.coin();
+  toast(item.icon + ' Sold ' + item.name + ' back for ' + item.price + ' coins!');
+  refreshHUD();
+  renderShop();
+}
+function eatSnack() {
+  Sound.pop();
+  G.snackUntil = performance.now() + 20000;
+  toast('🍎 Yum yum! ZOOMY speed for 20 seconds!', 2500);
+}
+/* ---- furniture: a chair or table on the grid cell in front of you ---- */
+const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower', 'stove', 'sink', 'bathtub', 'shower', 'garden', 'bush'];
+function buildFurnitureMesh(type) {
+  const g = new THREE.Group();
+  if (type === 'chair') {
+    box(g, 0.55, 0.08, 0.55, 0xB07B4F, 0, 0.42, 0);                    // seat
+    box(g, 0.55, 0.6, 0.08, 0xB07B4F, 0, 0.7, -0.24);                  // back
+    [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([lx, lz]) =>
+      box(g, 0.07, 0.42, 0.07, 0x8a5c33, lx, 0.21, lz));
+  } else if (type === 'table') {
+    box(g, 0.95, 0.08, 0.95, 0xC49A6C, 0, 0.72, 0);                    // table top (ready for snacks!)
+    [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38]].forEach(([lx, lz]) =>
+      box(g, 0.08, 0.72, 0.08, 0x8a5c33, lx, 0.36, lz));
+  } else if (type === 'bed') {
+    box(g, 0.8, 0.22, 0.95, 0x6d4326, 0, 0.2, 0);                      // frame
+    box(g, 0.74, 0.16, 0.7, 0x5aa7e8, 0, 0.36, 0.08);                  // blue blanket
+    box(g, 0.66, 0.12, 0.2, 0xFFFFFF, 0, 0.4, -0.34);                  // pillow
+    [[-0.36, -0.42], [0.36, -0.42], [-0.36, 0.42], [0.36, 0.42]].forEach(([lx, lz]) =>
+      box(g, 0.1, 0.18, 0.1, 0x4a2c18, lx, 0.09, lz));                 // legs
+  } else if (type === 'lamp') {
+    box(g, 0.14, 1.5, 0.14, 0x6d6d6d, 0, 0.75, 0);                     // post
+    box(g, 0.34, 0.14, 0.34, 0x5a5a5a, 0, 0.04, 0);                    // base
+    box(g, 0.34, 0.34, 0.34, 0xFFF1A8, 0, 1.6, 0);                     // glowing shade
+  } else if (type === 'fence') {
+    box(g, 0.16, 0.7, 0.16, 0x8a5c33, -0.38, 0.35, 0);                 // posts
+    box(g, 0.16, 0.7, 0.16, 0x8a5c33, 0.38, 0.35, 0);
+    box(g, 0.9, 0.1, 0.08, 0xA9763F, 0, 0.5, 0);                       // rails
+    box(g, 0.9, 0.1, 0.08, 0xA9763F, 0, 0.28, 0);
+  } else if (type === 'flower') {
+    box(g, 0.07, 0.4, 0.07, 0x3E9B3E, 0, 0.2, 0);                      // stem
+    box(g, 0.1, 0.1, 0.1, 0x3E9B3E, 0.08, 0.26, 0);                    // leaf
+    const petal = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043][Math.floor(Math.random() * 4)];
+    [[0, 0.5, 0.12], [0.12, 0.5, 0], [-0.12, 0.5, 0], [0, 0.5, -0.12]].forEach(([x, y, z]) =>
+      box(g, 0.12, 0.12, 0.12, petal, x, y, z));
+    box(g, 0.13, 0.13, 0.13, 0xFFE066, 0, 0.5, 0);                     // center
+  } else if (type === 'stove') {
+    box(g, 0.8, 0.66, 0.7, 0xE8E8EC, 0, 0.33, 0);                     // steel body
+    box(g, 0.82, 0.1, 0.72, 0xC9CDD4, 0, 0.7, 0);                     // cooktop
+    [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]].forEach(([x, z]) =>
+      box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.76, z));                // 4 burners
+    box(g, 0.62, 0.4, 0.05, 0x4a4a52, 0, 0.3, 0.36);                  // oven door
+    box(g, 0.44, 0.05, 0.05, 0xBBBFC6, 0, 0.5, 0.4);                  // handle
+    [-0.3, -0.1, 0.1, 0.3].forEach(x => box(g, 0.06, 0.06, 0.04, 0x222, x, 0.62, 0.37)); // knobs
+  } else if (type === 'sink') {
+    box(g, 0.85, 0.52, 0.7, 0xEFE7D8, 0, 0.26, 0);                    // cabinet
+    box(g, 0.88, 0.12, 0.72, 0xCFD3D9, 0, 0.56, 0);                   // counter top
+    box(g, 0.5, 0.14, 0.42, 0x4a90d9, 0, 0.58, 0.02);                 // basin with water
+    box(g, 0.06, 0.26, 0.06, 0xB0B4BA, 0, 0.74, -0.16);              // faucet stem
+    box(g, 0.2, 0.06, 0.06, 0xB0B4BA, 0, 0.88, -0.07);               // spout
+  } else if (type === 'bathtub') {
+    box(g, 0.95, 0.42, 0.62, 0xFFFFFF, 0, 0.27, 0);                   // tub body
+    box(g, 0.8, 0.14, 0.46, 0x5BB8E8, 0, 0.42, 0);                    // water
+    [[-0.4, -0.24], [0.4, -0.24], [-0.4, 0.24], [0.4, 0.24]].forEach(([x, z]) =>
+      box(g, 0.09, 0.12, 0.09, 0xDADDE2, x, 0.06, z));                // feet
+    box(g, 0.06, 0.22, 0.06, 0xB0B4BA, 0.42, 0.5, 0);                // faucet
+  } else if (type === 'shower') {
+    box(g, 0.72, 0.08, 0.72, 0xD8E8F0, 0, 0.04, 0);                   // tray
+    box(g, 0.06, 0.55, 0.7, 0xBFE3F5, 0.34, 0.5, 0);                  // glass panel
+    box(g, 0.08, 1.55, 0.08, 0xB0B4BA, -0.3, 0.8, -0.3);             // pole
+    box(g, 0.35, 0.08, 0.1, 0xC9CDD4, -0.15, 1.5, -0.3);            // arm
+    box(g, 0.22, 0.1, 0.22, 0xC9CDD4, 0, 1.45, -0.3);               // shower head
+  } else if (type === 'garden') {
+    box(g, 0.85, 0.3, 0.6, 0x8a5c33, 0, 0.15, 0);                     // planter box
+    box(g, 0.78, 0.1, 0.52, 0x5a3a22, 0, 0.32, 0);                    // soil
+    [[-0.25, -0.1], [0, 0.1], [0.25, -0.05]].forEach(([x, z]) => {
+      box(g, 0.06, 0.2, 0.06, 0x3E9B3E, x, 0.46, z);                  // green tops
+      box(g, 0.1, 0.12, 0.1, 0xEE7733, x, 0.4, z);                    // little carrots
+    });
+  } else if (type === 'bush') {
+    box(g, 0.72, 0.5, 0.72, 0x3E9B3E, 0, 0.3, 0);                     // leafy body
+    box(g, 0.5, 0.32, 0.5, 0x4CAF50, 0, 0.62, 0);                     // rounded top
+    [[-0.2, 0.2], [0.22, -0.15], [0.05, 0.05]].forEach(([x, z]) =>
+      box(g, 0.1, 0.1, 0.1, 0xE53935, x, 0.66, z));                   // berries
+  }
+  return g;
+}
+function placeFurnitureAt(type, x, z) {
+  if (blocks.has(key(x, 0, z))) return false;
+  const mesh = buildFurnitureMesh(type);
+  mesh.position.set(x + 0.5, 0, z + 0.5);
+  scene.add(mesh);
+  blocks.set(key(x, 0, z), { mesh, type, removable: true });
+  return true;
+}
+/* ---- apples the player places (on the ground, or on top of a table) ---- */
+const placedFood = [];
+function buildAppleMesh() {
+  const g = new THREE.Group();
+  box(g, 0.18, 0.18, 0.18, 0xE53935, 0, 0, 0);
+  box(g, 0.05, 0.09, 0.05, 0x3E9B3E, 0, 0.12, 0);
+  return g;
+}
+function spawnFoodAt(x, z, onTable) {
+  const g = buildAppleMesh();
+  g.position.set(x + 0.5, onTable ? 0.86 : 0.2, z + 0.5);
+  scene.add(g);
+  placedFood.push({ mesh: g, x, z, onTable });
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
 $('shopClose').onclick = () => { Sound.click(); closeShop(); };
@@ -1149,21 +2155,24 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
   raycaster.far = 7;
 
+  // 0) loot blocks — tap or click to pick up
+  const lMeshes = lootBlocks.filter(l => l.alive).map(l => l.mesh);
+  if (lMeshes.length) {
+    const hitL = raycaster.intersectObjects(lMeshes)[0];
+    if (hitL) { collectLoot(lootBlocks.find(l => l.mesh === hitL.object)); return; }
+  }
+
   // 1) berries
   if (G.mode === 'store') {
     const bMeshes = berries.filter(b => b.alive).map(b => b.mesh);
     const hitB = raycaster.intersectObjects(bMeshes)[0];
     if (hitB) {
       const berry = berries.find(b => b.mesh === hitB.object);
-      const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
-      if (head.distanceTo(berry.mesh.position) > 2.2) {
-        toast(G.owned.ladder ? '🪜 Too far! Climb closer — hold JUMP by the trunk!' : '🍓 Too high! A ladder from the shop would help…', 1900);
+      if (!canReachBerry(berry)) {
+        toast(G.owned.ladder ? '🪜 Climb up the trunk (hold JUMP), then press P!' : '🍓 Too high! A ladder from the shop would help…', 1900);
         return;
       }
-      berry.alive = false; berry.mesh.visible = false;
-      berry.respawnAt = performance.now() + 25000;
-      G.berries++; Sound.pop(); refreshHUD();
-      toast('🍓 Yum! +1 berry', 1100);
+      collectBerry(berry);
       return;
     }
   }
@@ -1182,8 +2191,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   let entry = null, entryKey = null;
   blocks.forEach((b, k) => { if (!entry && (b.mesh === obj || b.mesh === hit.object)) { entry = b; entryKey = k; } });
 
-  if (entry && entry.type === 'station') { openMath(); return; }
-  if (entry && entry.type === 'shop') { if (G.mode === 'store') openShop(); return; }
+  if (entry && entry.type === 'station') {
+    const st = stations.find(s => s.mesh === obj || s.mesh === hit.object);
+    openMath(st ? st.gives : 'block'); return;
+  }
+  if (entry && entry.type === 'shop') { openShop(); return; }
 
   if (action === 'break') {
     if (!entry) return;
@@ -1196,12 +2208,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
       const baseY = partner ? Math.min(y, Number(entry.partner.split(',')[1])) : y;
       bx = x; by = baseY; bz = z;
       removeBlockAt(bx, by, bz);
-      G.blocks += 4;
+      G.doors += 1;
     } else {
-      const p = hit.object.position;
-      bx = Math.floor(p.x); by = Math.floor(p.y); bz = Math.floor(p.z);
+      [bx, by, bz] = entryKey.split(',').map(Number);
       removeBlockAt(bx, by, bz);
-      G.blocks += 1;
+      refundFor(entry.type);
     }
     Sound.brk(); refreshHUD();
     return;
@@ -1215,37 +2226,16 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   const py = Math.max(0, Math.floor(hit.point.y + n.y * 0.5));
   const pz = Math.floor(hit.point.z + n.z * 0.5);
   if (Math.abs(px) >= WORLD_R || Math.abs(pz) >= WORLD_R || py > 12) return;
-
-  // don't build inside yourself
-  const half = player.width / 2;
-  const overlapsPlayer = (cx, cy, cz) =>
-    Math.abs(cx + 0.5 - player.pos.x) < half + 0.5 &&
-    Math.abs(cz + 0.5 - player.pos.z) < half + 0.5 &&
-    cy + 1 > player.pos.y && cy < player.pos.y + player.height;
-
-  if (G.selectedSlot === 'door') {
-    if (G.blocks < 4) { toast('🚪 A door costs 4 blocks — solve more math!', 1800); return; }
-    if (blocks.has(key(px, py, pz)) || blocks.has(key(px, py + 1, pz))) return;
-    if (overlapsPlayer(px, py, pz) || overlapsPlayer(px, py + 1, pz)) { toast('🙂 Step back a little first!', 1400); return; }
-    placeDoor(px, py, pz);
-    G.blocks -= 4;
-    Sound.place(); refreshHUD();
-  } else {
-    if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
-    if (blocks.has(key(px, py, pz))) return;
-    if (overlapsPlayer(px, py, pz)) { toast('🙂 Step back a little first!', 1400); return; }
-    const mesh = new THREE.Mesh(blockGeo, (px + py + pz) % 2 ? placedMat : placedMatEdge);
-    mesh.position.set(px + 0.5, py + 0.5, pz + 0.5);
-    addBlockMesh(px, py, pz, null, 'placed', true, mesh);
-    G.blocks -= 1;
-    Sound.place(); refreshHUD();
-  }
+  placeSelectedAt(px, pz, py);
 }
 
-function nearestStationDist() {
-  let best = 999;
-  for (const s of stations) best = Math.min(best, Math.hypot(player.pos.x - s.x - 0.5, player.pos.z - s.z - 0.5));
-  return best;
+function nearestStation() {
+  let st = null, dist = 999;
+  for (const s of stations) {
+    const d = Math.hypot(player.pos.x - s.x - 0.5, player.pos.z - s.z - 0.5);
+    if (d < dist) { dist = d; st = s; }
+  }
+  return { st, dist };
 }
 function shopDist() { return Math.hypot(player.pos.x - SHOP_POS.x, player.pos.z - SHOP_POS.z); }
 
@@ -1254,15 +2244,20 @@ const keys = {};
 addEventListener('keydown', e => {
   if (!G.running || popupOpen) return;
   keys[e.code] = true;
-  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+  if (e.code === 'KeyP') pickupBlock();
+  if (e.code === 'KeyD') putDownBlock();
+  if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
-    if (nearestStationDist() < 2.6) { Sound.click(); openMath(); }
-    else if (G.mode === 'store' && shopDist() < 3.5) { Sound.click(); openShop(); }
+    const ns = nearestStation();
+    if (ns.dist < 2.6) { Sound.click(); openMath(ns.st.gives); }
+    else if (shopDist() < 3.5) { Sound.click(); openShop(); }
   }
   if (e.code === 'KeyC') toggleCamera();
   if (e.code === 'Digit1') selectSlot('block');
   if (e.code === 'Digit2') selectSlot('door');
-  if (e.code === 'KeyB' && G.mode === 'store') { Sound.click(); openShop(); }
+  if (e.code === 'KeyB') { Sound.click(); openShop(); }
+  if (e.code === 'KeyI') { Sound.click(); openInv(); }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -1272,14 +2267,129 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-function selectSlot(slot) {
+const SLOT_TAGS = { block: '🧱 Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', stove: '🍳 Stove', sink: '🚰 Sink', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
+function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
-  $('slotBlock').classList.toggle('active', slot === 'block');
-  $('slotDoor').classList.toggle('active', slot === 'door');
-  Sound.click();
+  const tag = $('placingTag');
+  if (SLOT_TAGS[slot]) {
+    tag.style.display = 'block';
+    tag.textContent = 'Placing ' + SLOT_TAGS[slot] + ' — press D (or tap) to drop it';
+  } else tag.style.display = 'none';
+  if (!quiet) Sound.click();
 }
-$('slotBlock').onclick = () => selectSlot('block');
-$('slotDoor').onclick = () => selectSlot('door');
+
+/* ---------- Inventory (backpack) ---------- */
+function openInv() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  renderInv();
+  $('invPopup').style.display = 'flex';
+}
+function closeInv() { $('invPopup').style.display = 'none'; popupOpen = false; }
+function startPlacing(slot) {
+  selectSlot(slot);
+  closeInv();
+  toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
+}
+function renderInv() {
+  refreshHUD();
+  const wrap = $('invList');
+  wrap.innerHTML = '';
+  const placeables = [
+    ['🧱', 'Building Blocks', G.blocks, 'block'],
+    ['🚪', 'Doors', G.doors, 'door'],
+    ['🪑', 'Chairs', G.furniture.chair, 'chair'],
+    ['🍽️', 'Picnic Tables', G.furniture.table, 'table'],
+    ['🛏️', 'Beds', G.furniture.bed, 'bed'],
+    ['💡', 'Lamps', G.furniture.lamp, 'lamp'],
+    ['🚧', 'Fences', G.furniture.fence, 'fence'],
+    ['🌷', 'Flowers', G.furniture.flower, 'flower'],
+    ['🍳', 'Stoves', G.furniture.stove, 'stove'],
+    ['🚰', 'Sinks', G.furniture.sink, 'sink'],
+    ['🛁', 'Bathtubs', G.furniture.bathtub, 'bathtub'],
+    ['🚿', 'Showers', G.furniture.shower, 'shower'],
+    ['🌱', 'Garden Planters', G.furniture.garden, 'garden'],
+    ['🌳', 'Bushes', G.furniture.bush, 'bush'],
+    ['🍎', 'Apples', G.furniture.food, 'food']
+  ];
+  placeables.forEach(([icon, name, count, slot]) => {
+    const row = document.createElement('div');
+    row.className = 'invItem';
+    row.innerHTML = '<div class="icon">' + icon + '</div>' +
+      '<div class="info"><b>' + name + '</b><small>You have ' + count + '</small></div>';
+    const place = document.createElement('button');
+    place.className = 'placeBtn';
+    place.textContent = 'Place';
+    place.disabled = count < 1;
+    place.onclick = () => { Sound.click(); startPlacing(slot); };
+    if (slot === 'food') {
+      const eat = document.createElement('button');
+      eat.className = 'eatBtn';
+      eat.textContent = '😋 Eat';
+      eat.disabled = count < 1;
+      eat.onclick = () => { if (G.furniture.food < 1) return; G.furniture.food--; eatSnack(); renderInv(); };
+      row.appendChild(eat);
+    }
+    row.appendChild(place);
+    wrap.appendChild(row);
+  });
+  // money + gear
+  const money = document.createElement('div');
+  money.className = 'invItem';
+  money.innerHTML = '<div class="icon">🪙</div><div class="info"><b>Coins</b><small>You have ' + G.coins +
+    (G.mode === 'store' ? ' • 🍓 Berries: ' + G.berries : '') + '</small></div>';
+  wrap.appendChild(money);
+  const gear = [['🪜', 'Ladder', 'ladder'], ['👟', 'Speedy Shoes', 'shoes'], ['🦘', 'Bouncy Boots', 'boots'], ['🎉', 'Party Hat', 'hat']]
+    .filter(g => G.owned[g[2]]);
+  if (gear.length) {
+    const row = document.createElement('div');
+    row.className = 'invItem';
+    row.innerHTML = '<div class="icon">🎽</div><div class="info"><b>Gear</b><small>' +
+      gear.map(g => g[0] + ' ' + g[1]).join(' • ') + '</small></div>';
+    wrap.appendChild(row);
+  }
+  // paint palette: choose a color for the blocks you place
+  const paint = document.createElement('div');
+  paint.className = 'invItem';
+  paint.innerHTML = '<div class="icon">🎨</div><div class="info"><b>Paint your blocks</b>' +
+    '<small>Pick a color, then place blocks (press D)</small><div id="paintRow"></div></div>';
+  wrap.appendChild(paint);
+  const prow = paint.querySelector('#paintRow');
+  PAINTS.forEach(p => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (G.blockColor === p.color ? ' sel' : '');
+    sw.title = p.name;
+    sw.style.background = '#' + p.color.toString(16).padStart(6, '0');
+    sw.onclick = () => {
+      Sound.click();
+      G.blockColor = p.color;
+      G.selectedSlot = 'block';
+      prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+      sw.classList.add('sel');
+      toast('🎨 ' + p.name + ' blocks selected! Press D to build.', 2000);
+    };
+    prow.appendChild(sw);
+  });
+}
+$('invClose').onclick = () => { Sound.click(); closeInv(); };
+$('invBtn').onclick = () => { Sound.click(); openInv(); };
+$('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
+$('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
+$('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
+$('homeBtn').onclick = () => { Sound.click(); goHome(); };
+$('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
+function takePhoto() {
+  renderer.render(scene, camera);                 // fresh frame in the buffer
+  try {
+    const url = renderer.domElement.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mathcraft-' + (G.playerName || 'build') + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('📸 Photo of your build saved!', 2200);
+  } catch (e) { toast('📸 Couldn\'t save the photo on this device.', 2200); }
+}
 $('soundBtn').onclick = () => {
   const m = Sound.toggleMute();
   $('soundBtn').textContent = m ? '🔇' : '🔊';
@@ -1338,8 +2448,10 @@ if (isTouch) {
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    if (nearestStationDist() < 2.8) { Sound.click(); openMath(); }
-    else if (G.mode === 'store' && shopDist() < 3.5) { Sound.click(); openShop(); }
+    const ns = nearestStation();
+    if (ns.dist < 2.8) { Sound.click(); openMath(ns.st.gives); }
+    else if (shopDist() < 3.5) { Sound.click(); openShop(); }
+    else pickupBlock();
   }, { passive: false });
   $('btnModeTouch').addEventListener('touchstart', e => {
     e.preventDefault();
@@ -1420,7 +2532,7 @@ function buildMenu() {
     grid.appendChild(card);
 
     const data = av.build();
-    data.group.rotation.y = 0.5;
+    data.group.rotation.y = data.quad ? 0.85 : 0.5;   // angle quadrupeds to show all four legs
     pvScene.add(data.group);
     renderer.render(pvScene, pvCam);
     cv.getContext('2d').drawImage(renderer.domElement, 0, 0, 140, 140);
@@ -1437,19 +2549,63 @@ function buildMenu() {
 }
 buildMenu();
 
+function refreshSavedList() {
+  const list = $('savedList');
+  list.innerHTML = '';
+  const saves = listSaves();
+  saves.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'saveRow';
+    const load = document.createElement('button');
+    load.className = 'loadBtn';
+    const modeName = { relaxed: 'Relaxed', creeper: 'Shelter Rush', store: 'Store' }[s.mode] || s.mode;
+    load.innerHTML = '▶ <b>' + (s.name || 'Player') + '</b> — 🧱' + (s.blocks || 0) + ' 🪙' + (s.coins || 0) + ' • ' + modeName;
+    load.onclick = () => { Sound.click(); restoreGame(s); };
+    const del = document.createElement('button');
+    del.className = 'delBtn';
+    del.textContent = '🗑';
+    del.title = 'Delete this saved game';
+    del.onclick = () => { Sound.click(); clearSave(s.name); refreshSavedList(); };
+    row.appendChild(load); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+refreshSavedList();
+{
+  const saves = listSaves();
+  if (saves.length) $('nameInput').value = saves[0].name || '';
+}
+
 $('startBtn').onclick = () => {
   Sound.click();
+  const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
+  G.playerName = nm;
+  clearSave(nm);                       // Start Adventure = a brand-new world for this name
+  resetWorld();
+  resetGameState();
+  loadProfileFor(nm);
   startGame();
 };
+$('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
+$('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
 
 function startGame() {
   $('startScreen').style.display = 'none';
   $('hud').style.display = 'block';
   if (isTouch) $('touchUI').style.display = 'block';
   setAvatar(G.avatarIndex);
+  updateBadgeBtn(false);
+  selectSlot('block', true);
+  $('coinRow').style.display = 'block';        // coins matter in every mode now
+  $('playerRow').style.display = 'block';
+  $('playerName').textContent = G.playerName;
+  $('hudTimer').style.display = 'none';
+  $('hudShelter').style.display = 'none';
+  $('berryRow').style.display = 'none';
+  $('solvedRow').style.display = 'none';
   G.running = true;
 
-  const modeNames = { relaxed: '🌼 Relaxed Mode', creeper: '⏰ Creeper Mode', store: '🏪 Store Mode (Level 2)' };
+  const modeNames = { relaxed: '🌼 Relaxed Mode', creeper: '⏰ Shelter Rush', store: '🏪 Store Mode (Level 2)' };
   $('modeLabel').textContent = modeNames[G.mode] + ' • Grade ' + G.grade;
 
   if (G.mode === 'creeper') {
@@ -1457,13 +2613,12 @@ function startGame() {
     $('hudShelter').style.display = 'block';
     toast('⏰ Build a shelter with walls and a 🚪 door before time runs out!', 4500);
   } else if (G.mode === 'store') {
-    $('coinRow').style.display = 'block';
     $('berryRow').style.display = 'block';
     $('solvedRow').style.display = 'block';
     spawnBerries();
-    toast('🏪 Solve math at the ❓ stations to earn coins, then visit the shop!', 4500);
+    toast('🏪 Blue ❓ stations give 🧱 blocks, gold ❓ stations give 🪙 coins. Shop for doors & more!', 5000);
   } else {
-    toast('🌼 Walk to a ❓ math station and press E (or tap ⭐ USE) to earn blocks!', 4500);
+    toast('🌼 Blue ❓ stations give 🧱 blocks, gold ❓ stations give 🪙 coins to spend at the shop!', 5000);
   }
   refreshHUD();
 }
@@ -1472,16 +2627,26 @@ function startGame() {
 function winCreeper() {
   if (G.over) return;
   G.over = true; G.safe = true;
+  clearSave();
   Sound.fanfare();
   $('endTitle').textContent = '🏠🎉 You\'re SAFE!';
-  $('endMsg').textContent = 'You built a shelter with walls and a door — the creepers can\'t get in! Amazing building and amazing math!';
+  $('endMsg').textContent = 'You built a shelter with walls and a door — the Gloomies can\'t get in! Amazing building and amazing math!';
+  $('endScreen').style.display = 'flex';
+}
+function loseGame() {
+  if (G.over) return;
+  G.over = true;
+  clearSave();
+  Sound.sad();
+  $('endTitle').textContent = '💜 Game Over!';
+  $('endMsg').textContent = 'A Gloomy caught you! You did some awesome math today — press Play Again and build your shelter even faster!';
   $('endScreen').style.display = 'flex';
 }
 function doomsdayStart() {
   G.doomsday = true;
   Sound.sad();
-  toast('💥 DOOMSDAY! The creepers are coming! Finish your shelter — walls + a door = safe!', 5000);
-  spawnCreepers();
+  toast('💜 The GLOOMIES are coming! You have about 30 seconds — get walls and a 🚪 door around you!', 5000);
+  spawnGloomies();
 }
 $('againBtn').onclick = () => location.reload();
 
@@ -1498,7 +2663,8 @@ function loop(now) {
 
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
-  stationMat.emissive.setRGB(0.15 + pulse * 0.25, 0.05 + pulse * 0.1, 0.4 + pulse * 0.2);
+  blockStationMat.emissive.setRGB(0.05 + pulse * 0.1, 0.12 + pulse * 0.12, 0.35 + pulse * 0.25);
+  coinStationMat.emissive.setRGB(0.35 + pulse * 0.25, 0.24 + pulse * 0.14, 0.03 + pulse * 0.05);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
 
   // clouds drift
@@ -1506,6 +2672,16 @@ function loop(now) {
     c.position.x += dt * (0.4 + i * 0.1);
     if (c.position.x > 50) c.position.x = -50;
   });
+
+  // the shopkeeper waves hello
+  if (shopGroup.userData.keeperArm) shopGroup.userData.keeperArm.rotation.z = -1.1 + Math.sin(now / 280) * 0.3;
+
+  // loot blocks bob and spin so they're easy to spot
+  for (const l of lootBlocks) {
+    if (!l.alive) continue;
+    l.mesh.position.y = l.baseY + Math.sin(now / 300 + l.phase) * 0.12;
+    l.mesh.rotation.y = now / 600 + l.phase;
+  }
 
   // berries respawn
   if (G.mode === 'store') {
@@ -1518,16 +2694,18 @@ function loop(now) {
   // hints
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
-    if (nearestStationDist() < 2.6) {
-      hint.textContent = isTouch ? '❓ Tap ⭐ USE to do math and earn ' + (G.mode === 'store' ? 'coins!' : 'blocks!') : '❓ Press E to do math and earn ' + (G.mode === 'store' ? 'coins!' : 'blocks!');
+    const ns = nearestStation();
+    if (ns.dist < 2.6) {
+      const what = ns.st.gives === 'coin' ? 'earn 🪙 COINS!' : 'earn 🧱 BLOCKS!';
+      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and ' : '❓ Press E to do math and ') + what;
       hint.style.display = 'block';
-    } else if (G.mode === 'store' && shopDist() < 3.5) {
+    } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE to open the shop!' : '🏪 Press E to open the shop!';
       hint.style.display = 'block';
     } else hint.style.display = 'none';
   }
 
-  // creeper mode logic
+  // Shelter Rush logic
   if (G.mode === 'creeper' && !G.over) {
     if (!G.doomsday) {
       G.timer -= dt;
@@ -1536,8 +2714,8 @@ function loop(now) {
       if (G.timer < 60 && !G.warned60) { G.warned60 = true; Sound.tick(); toast('⏰ One minute left! Hurry — walls and a door!', 3000); }
       if (G.timer < 10 && !G.warned10) { G.warned10 = true; for (let i = 0; i < 5; i++) Sound.tone(1000, 0.06, 'sine', 0.1, i * 0.5); }
     } else {
-      $('hudTimer').textContent = '💥 Doomsday!';
-      updateCreepers(dt);
+      $('hudTimer').textContent = '💜 The Gloomies are here!';
+      updateGloomies(dt);
     }
     shelterTimer -= dt;
     if (shelterTimer <= 0) {
@@ -1551,13 +2729,23 @@ function loop(now) {
       } else if (G.enclosed) {
         sh.textContent = '🧱 Enclosed… now add a 🚪 door!';
         sh.style.color = '#b5832a';
-        G.safe = true;                 // walls alone still keep creepers out
+        G.safe = true;                 // walls alone still keep Gloomies out
       } else {
         sh.textContent = '🏗️ Not enclosed yet — build walls around you!';
         sh.style.color = '#c0392b';
         G.safe = false;
       }
     }
+  }
+
+  // track time played for the grown-up progress page
+  if (G.running && !G.over && !popupOpen) { profile.secondsPlayed = (profile.secondsPlayed || 0) + dt; profileDirty = true; }
+
+  // auto-save every few seconds so progress is never lost
+  if (G.running && !G.over && now - lastSaveAt > 5000) {
+    lastSaveAt = now;
+    saveGame();
+    if (profileDirty) { saveProfile(); profileDirty = false; }
   }
 
   renderer.render(scene, camera);
