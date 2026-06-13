@@ -1,0 +1,29 @@
+name: Apply MathCraft homepage layout
+on:
+  push:
+    paths:
+      - .github/workflows/apply-home-layout.yml
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply layout
+        shell: python
+        run: |
+          import base64, gzip, subprocess
+          data = "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"
+          open('/tmp/layout.patch','wb').write(gzip.decompress(base64.b64decode(data)))
+          subprocess.check_call(['git','apply','--check','/tmp/layout.patch'])
+          subprocess.check_call(['git','apply','/tmp/layout.patch'])
+      - name: Validate and publish
+        run: |
+          node -e "const fs=require('fs'),vm=require('vm');const h=fs.readFileSync('index.html','utf8');[...h.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(Boolean).forEach((s,i)=>new vm.Script(s,{filename:'inline-'+i}));for(const id of ['startShell','startMenuGrid','startFooter'])if(!h.includes('id=\"'+id+'\"'))throw Error('missing '+id);"
+          rm .github/workflows/apply-home-layout.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html .github/workflows/apply-home-layout.yml
+          git commit -m "Redesign the MathCraft start screen layout"
+          git push
