@@ -318,10 +318,6 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
-  <div id="hotbar">
-    <button class="hotSlot active" id="slotBlock"><span class="slotIcon">🧱</span>Block<br><span id="slotBlockN">0</span></button>
-    <button class="hotSlot" id="slotDoor"><span class="slotIcon">🚪</span>Door<br><span id="slotDoorN">0</span></button>
-  </div>
 </div>
 
 <!-- ================= MATH POPUP ================= -->
@@ -1333,26 +1329,32 @@ function collectBerry(b) {
 }
 
 /* ---- math stations: glowing "?" pillars ---- */
-function questionTexture() {
+function questionTexture(gives) {
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
   const c = cv.getContext('2d');
-  c.fillStyle = '#5B3FA8'; c.fillRect(0, 0, 64, 64);
-  c.strokeStyle = '#8a6fd4'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
-  c.fillStyle = '#FFE066'; c.font = 'bold 44px sans-serif';
+  const coin = gives === 'coin';
+  c.fillStyle = coin ? '#E0A21C' : '#3B6FD8'; c.fillRect(0, 0, 64, 64);      // gold = coins, blue = blocks
+  c.strokeStyle = coin ? '#F6CF5E' : '#7FA8F0'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
+  c.fillStyle = '#FFFFFF'; c.font = 'bold 34px sans-serif';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('?', 32, 36);
+  c.fillText('?', 32, 22);
+  c.font = 'bold 13px sans-serif';
+  c.fillText(coin ? '🪙 COINS' : '🧱 BLOCKS', 32, 50);
   return new THREE.CanvasTexture(cv);
 }
 const stations = [];
-const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emissive: 0x3a1f7a });
-[[4, 2], [-5, -4], [2, -7]].forEach(([sx, sz]) => {
-  const m = new THREE.Mesh(blockGeo, stationMat);
+const blockStationMat = new THREE.MeshLambertMaterial({ map: questionTexture('block'), emissive: 0x16306b });
+const coinStationMat = new THREE.MeshLambertMaterial({ map: questionTexture('coin'), emissive: 0x6b4a08 });
+// two stations give building blocks, two give gold coins — color-coded so kids can choose
+[[4, 2, 'block'], [-5, -4, 'coin'], [2, -7, 'block'], [-3, 6, 'coin']].forEach(([sx, sz, gives]) => {
+  const sm = gives === 'coin' ? coinStationMat : blockStationMat;
+  const m = new THREE.Mesh(blockGeo, sm);
   m.position.set(sx + 0.5, 0.5, sz + 0.5);
   addBlockMesh(sx, 0, sz, null, 'station', false, m);
-  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), stationMat);
+  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), sm);
   topper.position.set(sx + 0.5, 1.45, sz + 0.5);
   scene.add(topper);
-  stations.push({ x: sx, z: sz, mesh: m, topper });
+  stations.push({ x: sx, z: sz, mesh: m, topper, gives });
 });
 /* a friendly signpost where the door station used to be — points to the shop */
 {
@@ -1856,8 +1858,6 @@ function toast(msg, ms) {
 }
 function refreshHUD() {
   $('blockCount').textContent = G.blocks;
-  $('slotBlockN').textContent = G.blocks;
-  $('slotDoorN').textContent = G.doors;
   $('coinCount').textContent = G.coins;
   $('berryCount').textContent = G.berries;
   $('solvedCount').textContent = G.solved;
@@ -1869,7 +1869,7 @@ function fmtTime(s) {
 }
 
 /* ============================ MATH POPUP ============================ */
-let currentEq = null, popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null;
+let currentEq = null, currentGives = 'block', popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null;
 function renderMathQuestion() {
   currentEq = makeEquation(G.grade);
   mathLocked = false;
@@ -1890,12 +1890,14 @@ function showHint() {
   $('hintBox').textContent = '💡 ' + currentEq.hint;
   $('hintBox').style.display = 'block';
 }
-function openMath() {
+function openMath(gives) {
   if (popupOpen || G.over) return;
   popupOpen = true;
   wrongStreak = 0;
+  currentGives = gives === 'coin' ? 'coin' : 'block';
   document.exitPointerLock && document.exitPointerLock();
-  $('mathPrompt').textContent = 'Find the right block! Tap the block with the answer.';
+  $('mathPrompt').textContent = currentGives === 'coin'
+    ? 'Find the answer to earn 🪙 COINS!' : 'Find the answer to earn 🧱 BLOCKS!';
   $('mathFeedback').textContent = '';
   renderMathQuestion();
   $('mathPopup').style.display = 'flex';
@@ -1908,15 +1910,13 @@ function answerPicked(btn, opt) {
     wrongStreak = 0;
     const reward = currentEq.reward;
     document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
-    if (G.mode === 'store') {
-      G.solved++;
-      spawnLoot(reward, 'coin');       // gold blocks = coins!
-      $('mathFeedback').textContent = '🎉 Nice! ' + reward + ' GOLD coin blocks appeared — ' + (isTouch ? 'tap' : 'press P near') + ' them!';
-      if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 equations solved! You are a math star! Keep shopping!', 4000); }, 900);
+    if (G.mode === 'store') { G.solved++; if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900); }
+    if (currentGives === 'coin') {
+      spawnLoot(reward, 'coin');
+      $('mathFeedback').textContent = '🎉 Nice! ' + reward + ' GOLD coins appeared — ' + (isTouch ? 'tap' : 'press P near') + ' them!';
     } else {
-      spawnLoot(5, 'block');           // 5 building blocks…
-      spawnLoot(3, 'coin');            // …plus 3 gold coins for the shop
-      $('mathFeedback').textContent = '🎉 Nice! 5 blocks + 3 GOLD coins appeared on the ground — ' + (isTouch ? 'tap them up!' : 'press P to pick them up!');
+      spawnLoot(reward, 'block');
+      $('mathFeedback').textContent = '🎉 Nice! ' + reward + ' building blocks appeared — ' + (isTouch ? 'tap them up!' : 'press P to pick them up!');
     }
     recordSolve(currentEq);
     refreshHUD();
@@ -2001,7 +2001,7 @@ function buyItem(id) {
     G.coins -= item.price;
     Sound.coin();
     if (id === 'blocks') { G.blocks += 10; toast('🧱 +10 blocks in your backpack!', 2500); }
-    else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Press 2 then D, or open the backpack (I).', 3200); }
+    else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
     else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
     if (G.owned[id] || G.coins < item.price) return;
@@ -2136,7 +2136,10 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   let entry = null, entryKey = null;
   blocks.forEach((b, k) => { if (!entry && (b.mesh === obj || b.mesh === hit.object)) { entry = b; entryKey = k; } });
 
-  if (entry && entry.type === 'station') { openMath(); return; }
+  if (entry && entry.type === 'station') {
+    const st = stations.find(s => s.mesh === obj || s.mesh === hit.object);
+    openMath(st ? st.gives : 'block'); return;
+  }
   if (entry && entry.type === 'shop') { openShop(); return; }
 
   if (action === 'break') {
@@ -2191,7 +2194,8 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
-    if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
+    const ns = nearestStation();
+    if (ns.dist < 2.6) { Sound.click(); openMath(ns.st.gives); }
     else if (shopDist() < 3.5) { Sound.click(); openShop(); }
   }
   if (e.code === 'KeyC') toggleCamera();
@@ -2208,11 +2212,9 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', food: '🍎 Apple' };
+const SLOT_TAGS = { block: '🧱 Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', food: '🍎 Apple' };
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
-  $('slotBlock').classList.toggle('active', slot === 'block');
-  $('slotDoor').classList.toggle('active', slot === 'door');
   const tag = $('placingTag');
   if (SLOT_TAGS[slot]) {
     tag.style.display = 'block';
@@ -2220,8 +2222,6 @@ function selectSlot(slot, quiet) {
   } else tag.style.display = 'none';
   if (!quiet) Sound.click();
 }
-$('slotBlock').onclick = () => selectSlot('block');
-$('slotDoor').onclick = () => selectSlot('door');
 
 /* ---------- Inventory (backpack) ---------- */
 function openInv() {
@@ -2387,7 +2387,8 @@ if (isTouch) {
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
+    const ns = nearestStation();
+    if (ns.dist < 2.8) { Sound.click(); openMath(ns.st.gives); }
     else if (shopDist() < 3.5) { Sound.click(); openShop(); }
     else pickupBlock();
   }, { passive: false });
@@ -2554,9 +2555,9 @@ function startGame() {
     $('berryRow').style.display = 'block';
     $('solvedRow').style.display = 'block';
     spawnBerries();
-    toast('🏪 Solve math at the ❓ stations to earn coins, then visit the shop!', 4500);
+    toast('🏪 Blue ❓ stations give 🧱 blocks, gold ❓ stations give 🪙 coins. Shop for doors & more!', 5000);
   } else {
-    toast('🌼 Walk to a ❓ math station and press E (or tap ⭐ USE) to earn blocks!', 4500);
+    toast('🌼 Blue ❓ stations give 🧱 blocks, gold ❓ stations give 🪙 coins to spend at the shop!', 5000);
   }
   refreshHUD();
 }
@@ -2601,7 +2602,8 @@ function loop(now) {
 
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
-  stationMat.emissive.setRGB(0.15 + pulse * 0.25, 0.05 + pulse * 0.1, 0.4 + pulse * 0.2);
+  blockStationMat.emissive.setRGB(0.05 + pulse * 0.1, 0.12 + pulse * 0.12, 0.35 + pulse * 0.25);
+  coinStationMat.emissive.setRGB(0.35 + pulse * 0.25, 0.24 + pulse * 0.14, 0.03 + pulse * 0.05);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
 
   // clouds drift
@@ -2631,8 +2633,9 @@ function loop(now) {
   // hints
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
-    if (nearestStation().dist < 2.6) {
-      const what = G.mode === 'store' ? 'earn gold coins!' : 'earn blocks & coins!';
+    const ns = nearestStation();
+    if (ns.dist < 2.6) {
+      const what = ns.st.gives === 'coin' ? 'earn 🪙 COINS!' : 'earn 🧱 BLOCKS!';
       hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and ' : '❓ Press E to do math and ') + what;
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {

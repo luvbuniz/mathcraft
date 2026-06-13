@@ -38,7 +38,12 @@ away.
 | --- | --- |
 | 🌼 **Relaxed Mode** | No timer, no enemies. Solve math, earn blocks, build anything you like. |
 | ⏰ **Shelter Rush** | You have **15 minutes** to earn enough blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters take about 30 seconds to waddle over, and if one catches you outside a shelter, it's game over. Fully enclosed shelter with a door = **SAFE** (and you win!). |
-| 🏪 **Level 2: Store Mode** | Correct answers earn **🪙 coins** instead of blocks. Spend them at the Block Shop on **block bundles**, doors, a **🪜 ladder**, speedy shoes, bouncy boots, a party hat, and furniture. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any gear you own — back to the shop for coins! |
+| 🏪 **Level 2: Store Mode** | The math stations are **color-coded**: solve at a **blue ❓ station to earn 🧱 blocks**, or a **gold ❓ station to earn 🪙 coins** — your choice. Spend coins at the shop on **doors**, block bundles, a **🪜 ladder**, speedy shoes, bouncy boots, a party hat, and furniture. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any gear you own — back to the shop for coins! |
+
+In every mode the stations are color-coded the same way (blue = blocks,
+gold = coins), and **doors are bought at the shop** for coins. To place a
+door, chair, table, or other item, open your **🎒 backpack (I)**, tap
+**Place**, then press **D** where you want it.
 
 The shop is open in **every** mode (press **B**), and gold coin blocks drop
 from math in every mode, so you can always buy what you need — including
@@ -70,7 +75,7 @@ four-legged animals really walk on four legs:
 | `D` | **Put down** the selected item on the square in front of you (blocks stack into walls) |
 | `R` | **Remove** the nearest thing you placed (it goes back in your backpack) |
 | `I` | Open your **🎒 backpack/inventory** — see your stuff and place furniture |
-| `1` / `2` | Quick-select block 🧱 or door 🚪 |
+| `1` / `2` | Quick-select block 🧱 or door 🚪 (or choose any item in the 🎒 backpack) |
 | `E` | Use a math station / open the shop |
 | `B` | Open the shop — block bundles, doors, chairs, tables, apples, gear |
 | `C` | Toggle first-person / third-person camera |
