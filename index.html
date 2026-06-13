@@ -57,6 +57,9 @@
   .hudBox { position:absolute; background:rgba(255,255,255,.88); border-radius:14px; padding:8px 14px;
     font-weight:bold; box-shadow:0 3px 0 rgba(0,0,0,.15); font-size:clamp(15px,2.4vw,20px); }
   #hudTop { top:10px; left:10px; color:#4a3b16; display:flex; flex-direction:column; gap:4px; }
+  #blockCount, #coinCount { display:inline-block; }
+  .countPop { animation:countPop .5s; color:#2f7d27; }
+  @keyframes countPop { 0%{transform:scale(1)} 40%{transform:scale(1.7)} 100%{transform:scale(1)} }
   #hudMode { top:10px; left:50%; transform:translateX(-50%); color:#3b5d9e; text-align:center; }
   #hudTimer { font-size:clamp(18px,3vw,26px); color:#c0392b; display:none; }
   #hudShelter { font-size:.8em; display:none; }
@@ -886,7 +889,7 @@ const AVATARS = [
 const G = {
   grade: 2, mode: 'relaxed', avatarIndex: 0, playerName: 'Player',
   blocks: 0, doors: 0, coins: 0, berries: 0, solved: 0,
-  furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, food: 0 },  // placeable backpack items
+  furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, stove: 0, sink: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },  // placeable backpack items
   running: false, over: false,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false,
   selectedSlot: 'block', blockColor: 0xC9B79A,
@@ -904,6 +907,12 @@ const SHOP_ITEMS = [
   { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
+  { id: 'stove',  icon: '🍳', name: 'Kitchen Stove', price: 12, kind: 'many', desc: 'A stove with burners and an oven for the kitchen.' },
+  { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
+  { id: 'bathtub',icon: '🛁', name: 'Bathtub', price: 14,      kind: 'many',  desc: 'A cozy bathtub for the bathroom.' },
+  { id: 'shower', icon: '🚿', name: 'Shower', price: 12,       kind: 'many',  desc: 'A shower for the bathroom.' },
+  { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
+  { id: 'bush',   icon: '🌳', name: 'Leafy Bush', price: 4,    kind: 'many',  desc: 'A round green bush for the garden.' },
   { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
   { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP by a trunk, press P for berries.' },
   { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
@@ -1157,7 +1166,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0;
-  G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, food: 0 };
+  G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, stove: 0, sink: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
   G.over = false; G.doomsday = false; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false;
   G.timer = 15 * 60; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
@@ -1858,6 +1867,11 @@ function toast(msg, ms) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $('toast').style.display = 'none', ms || 2200);
 }
+function bumpHud(id) {                    // a happy little pop when a counter goes up
+  const el = $(id);
+  if (!el) return;
+  el.classList.remove('countPop'); void el.offsetWidth; el.classList.add('countPop');
+}
 function refreshHUD() {
   $('blockCount').textContent = G.blocks;
   $('coinCount').textContent = G.coins;
@@ -1871,7 +1885,7 @@ function fmtTime(s) {
 }
 
 /* ============================ MATH POPUP ============================ */
-let currentEq = null, currentGives = 'block', popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null;
+let currentEq = null, currentGives = 'block', popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0;
 function renderMathQuestion() {
   currentEq = makeEquation(G.grade);
   mathLocked = false;
@@ -1893,7 +1907,7 @@ function showHint() {
   $('hintBox').style.display = 'block';
 }
 function openMath(gives) {
-  if (popupOpen || G.over) return;
+  if (popupOpen || G.over || performance.now() < mathCooldownUntil) return;   // brief cooldown stops spam-reopening
   popupOpen = true;
   wrongStreak = 0;
   currentGives = gives === 'coin' ? 'coin' : 'block';
@@ -1914,15 +1928,15 @@ function answerPicked(btn, opt) {
     document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
     if (G.mode === 'store') { G.solved++; if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900); }
     if (currentGives === 'coin') {
-      spawnLoot(reward, 'coin');
-      $('mathFeedback').textContent = '🎉 Nice! ' + reward + ' GOLD coins appeared — ' + (isTouch ? 'tap' : 'press P near') + ' them!';
+      G.coins += reward; Sound.coin(); bumpHud('coinCount');
+      $('mathFeedback').textContent = '🎉 Nice! +' + reward + ' 🪙 coins added to your count!';
     } else {
-      spawnLoot(reward, 'block');
-      $('mathFeedback').textContent = '🎉 Nice! ' + reward + ' building blocks appeared — ' + (isTouch ? 'tap them up!' : 'press P to pick them up!');
+      G.blocks += reward; bumpHud('blockCount');
+      $('mathFeedback').textContent = '🎉 Nice! +' + reward + ' 🧱 blocks added to your count!';
     }
     recordSolve(currentEq);
     refreshHUD();
-    setTimeout(closeMath, 1700);
+    setTimeout(closeMath, 1500);
   } else {
     Sound.wrong();
     recordWrong(currentEq);
@@ -1956,6 +1970,7 @@ $('hintBtn').onclick = () => { Sound.click(); showHint(); };
 function closeMath() {
   if (breatherTimer) { clearInterval(breatherTimer); breatherTimer = null; }
   wrongStreak = 0;
+  mathCooldownUntil = performance.now() + 350;
   $('mathPopup').style.display = 'none';
   popupOpen = false; currentEq = null;
 }
@@ -2034,7 +2049,7 @@ function eatSnack() {
   toast('🍎 Yum yum! ZOOMY speed for 20 seconds!', 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower'];
+const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower', 'stove', 'sink', 'bathtub', 'shower', 'garden', 'bush'];
 function buildFurnitureMesh(type) {
   const g = new THREE.Group();
   if (type === 'chair') {
@@ -2068,6 +2083,44 @@ function buildFurnitureMesh(type) {
     [[0, 0.5, 0.12], [0.12, 0.5, 0], [-0.12, 0.5, 0], [0, 0.5, -0.12]].forEach(([x, y, z]) =>
       box(g, 0.12, 0.12, 0.12, petal, x, y, z));
     box(g, 0.13, 0.13, 0.13, 0xFFE066, 0, 0.5, 0);                     // center
+  } else if (type === 'stove') {
+    box(g, 0.8, 0.66, 0.7, 0xE8E8EC, 0, 0.33, 0);                     // steel body
+    box(g, 0.82, 0.1, 0.72, 0xC9CDD4, 0, 0.7, 0);                     // cooktop
+    [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]].forEach(([x, z]) =>
+      box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.76, z));                // 4 burners
+    box(g, 0.62, 0.4, 0.05, 0x4a4a52, 0, 0.3, 0.36);                  // oven door
+    box(g, 0.44, 0.05, 0.05, 0xBBBFC6, 0, 0.5, 0.4);                  // handle
+    [-0.3, -0.1, 0.1, 0.3].forEach(x => box(g, 0.06, 0.06, 0.04, 0x222, x, 0.62, 0.37)); // knobs
+  } else if (type === 'sink') {
+    box(g, 0.85, 0.52, 0.7, 0xEFE7D8, 0, 0.26, 0);                    // cabinet
+    box(g, 0.88, 0.12, 0.72, 0xCFD3D9, 0, 0.56, 0);                   // counter top
+    box(g, 0.5, 0.14, 0.42, 0x4a90d9, 0, 0.58, 0.02);                 // basin with water
+    box(g, 0.06, 0.26, 0.06, 0xB0B4BA, 0, 0.74, -0.16);              // faucet stem
+    box(g, 0.2, 0.06, 0.06, 0xB0B4BA, 0, 0.88, -0.07);               // spout
+  } else if (type === 'bathtub') {
+    box(g, 0.95, 0.42, 0.62, 0xFFFFFF, 0, 0.27, 0);                   // tub body
+    box(g, 0.8, 0.14, 0.46, 0x5BB8E8, 0, 0.42, 0);                    // water
+    [[-0.4, -0.24], [0.4, -0.24], [-0.4, 0.24], [0.4, 0.24]].forEach(([x, z]) =>
+      box(g, 0.09, 0.12, 0.09, 0xDADDE2, x, 0.06, z));                // feet
+    box(g, 0.06, 0.22, 0.06, 0xB0B4BA, 0.42, 0.5, 0);                // faucet
+  } else if (type === 'shower') {
+    box(g, 0.72, 0.08, 0.72, 0xD8E8F0, 0, 0.04, 0);                   // tray
+    box(g, 0.06, 0.55, 0.7, 0xBFE3F5, 0.34, 0.5, 0);                  // glass panel
+    box(g, 0.08, 1.55, 0.08, 0xB0B4BA, -0.3, 0.8, -0.3);             // pole
+    box(g, 0.35, 0.08, 0.1, 0xC9CDD4, -0.15, 1.5, -0.3);            // arm
+    box(g, 0.22, 0.1, 0.22, 0xC9CDD4, 0, 1.45, -0.3);               // shower head
+  } else if (type === 'garden') {
+    box(g, 0.85, 0.3, 0.6, 0x8a5c33, 0, 0.15, 0);                     // planter box
+    box(g, 0.78, 0.1, 0.52, 0x5a3a22, 0, 0.32, 0);                    // soil
+    [[-0.25, -0.1], [0, 0.1], [0.25, -0.05]].forEach(([x, z]) => {
+      box(g, 0.06, 0.2, 0.06, 0x3E9B3E, x, 0.46, z);                  // green tops
+      box(g, 0.1, 0.12, 0.1, 0xEE7733, x, 0.4, z);                    // little carrots
+    });
+  } else if (type === 'bush') {
+    box(g, 0.72, 0.5, 0.72, 0x3E9B3E, 0, 0.3, 0);                     // leafy body
+    box(g, 0.5, 0.32, 0.5, 0x4CAF50, 0, 0.62, 0);                     // rounded top
+    [[-0.2, 0.2], [0.22, -0.15], [0.05, 0.05]].forEach(([x, z]) =>
+      box(g, 0.1, 0.1, 0.1, 0xE53935, x, 0.66, z));                   // berries
   }
   return g;
 }
@@ -2214,7 +2267,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { block: '🧱 Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', food: '🍎 Apple' };
+const SLOT_TAGS = { block: '🧱 Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', stove: '🍳 Stove', sink: '🚰 Sink', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
   const tag = $('placingTag');
@@ -2252,6 +2305,12 @@ function renderInv() {
     ['💡', 'Lamps', G.furniture.lamp, 'lamp'],
     ['🚧', 'Fences', G.furniture.fence, 'fence'],
     ['🌷', 'Flowers', G.furniture.flower, 'flower'],
+    ['🍳', 'Stoves', G.furniture.stove, 'stove'],
+    ['🚰', 'Sinks', G.furniture.sink, 'sink'],
+    ['🛁', 'Bathtubs', G.furniture.bathtub, 'bathtub'],
+    ['🚿', 'Showers', G.furniture.shower, 'shower'],
+    ['🌱', 'Garden Planters', G.furniture.garden, 'garden'],
+    ['🌳', 'Bushes', G.furniture.bush, 'bush'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
   placeables.forEach(([icon, name, count, slot]) => {

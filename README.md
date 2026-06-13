@@ -15,14 +15,15 @@ No images, models, or audio files to download.
 3. **Pick your hero** from seven cute voxel avatars.
 4. Walk up to a glowing **❓ math station** and solve the equation by
    **finding the right block** — tap the answer block from a few choices.
-   When you pick the correct one, **5 building blocks and 3 GOLD coin
-   blocks pop onto the ground** around you (gold blocks = coins!).
-5. Walk over and press **P** to pick everything up, then press **D** to put
-   a block down on the square in front of you. Blocks snap to a grid and
-   stack automatically, so building walls is easy.
+   A correct answer is **added straight to your counter** (top-left) — no
+   pickup needed. **Blue ❓ stations give 🧱 blocks; gold ❓ stations give
+   🪙 coins.**
+5. Press **D** to put a block down on the square in front of you. Blocks
+   snap to a grid and stack automatically, so building walls is easy.
 6. Spend your coins at the **🏪 shop** (follow the signpost, or press
-   **B**): doors for your house, a cozy chair, a picnic table, apple
-   snacks, a tree ladder, and more.
+   **B**): doors, furniture (chairs, tables, beds, lamps, a kitchen stove
+   & sink, a bathtub & shower, garden planters, bushes, flowers), a tree
+   ladder, and more.
 
 **Learning, not guessing:** equations are freshly generated every time —
 never the same problem twice in a session. A wrong answer brings up a
@@ -99,11 +100,13 @@ sounds, Gloomy hisses…) are synthesized live with the Web Audio API.
 ## 🎒 Backpack & furniture
 
 Press **I** (or tap **🎒**) to open your backpack. It shows everything you
-have — blocks, doors, coins, berries, apples, and any furniture or gear.
-Pick a **chair**, **picnic table**, or **apple** and press **Place**, then
-walk where you want it and press **D** (or tap the ground) to set it down.
-Put an apple right on top of a table for a little snack scene! Anything you
-place can be picked back up with **P** or **R**.
+have — blocks, doors, coins, berries, apples, furniture, and gear. Furniture
+includes a **chair, picnic table, bed, lamp, fence, flower**, a kitchen
+**🍳 stove** and **🚰 sink**, a bathroom **🛁 bathtub** and **🚿 shower**, and
+backyard **🌱 garden planters** and **🌳 bushes**. Pick any item, press
+**Place**, then walk where you want it and press **D** (or tap the ground)
+to set it down. Put an apple right on top of a table for a snack scene!
+Anything you place can be picked back up with **P** or **R**.
 
 ## 💾 Saving with your name, and badges
 
