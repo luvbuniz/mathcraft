@@ -1400,9 +1400,11 @@ const shopGroup = new THREE.Group();
   c.strokeStyle = '#b5832a'; c.lineWidth = 8; c.strokeRect(4, 4, 248, 88);
   c.fillStyle = '#7a3b12'; c.font = 'bold 56px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('🛒 SHOP', 128, 54);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.8, 0.12), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
-  sign.position.set(0, 2.95, 1.55);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 0.12), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 3.05, 0);          // centered on top of the roof
   shopGroup.add(sign);
+  box(shopGroup, 0.14, 0.5, 0.14, 0x8B5A2B, -0.7, 2.7, 0);   // little posts holding the sign up
+  box(shopGroup, 0.14, 0.5, 0.14, 0x8B5A2B, 0.7, 2.7, 0);
   box(shopGroup, 0.3, 0.3, 0.3, 0x6fcf63, -0.9, 1.28, 1.35);          // goods on the counter
   box(shopGroup, 0.3, 0.3, 0.3, 0x5aa7e8, -0.5, 1.28, 1.35);
   box(shopGroup, 0.22, 0.22, 0.22, 0xE53935, 0.7, 1.24, 1.35);
