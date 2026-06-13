@@ -111,10 +111,12 @@
   #hintBox { display:none; margin-top:10px; background:#E3F2FD; color:#22456b; border-radius:12px; padding:12px 14px;
     font-size:clamp(15px,2.6vw,19px); font-weight:bold; text-align:left; line-height:1.5; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
-  #rewardChoice { display:flex; gap:12px; justify-content:center; margin-top:12px; }
-  .rewardBtn { font-weight:bold; font-size:clamp(16px,3vw,22px); padding:14px 18px; border-radius:14px; color:#fff;
+  #rewardChoice { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px; }
+  .rewardBtn { font-weight:bold; font-size:clamp(14px,2.6vw,19px); padding:13px 16px; border-radius:14px; color:#fff;
     box-shadow:0 4px 0 rgba(0,0,0,.25); }
-  .rewardBtn.blocks { background:linear-gradient(180deg,#8d6e4a,#6e5233); }
+  .rewardBtn.wood  { background:linear-gradient(180deg,#b48a5e,#8d6e4a); }
+  .rewardBtn.stone { background:linear-gradient(180deg,#aab0b8,#838a93); }
+  .rewardBtn.coins { background:linear-gradient(180deg,#f2cf6a,#e0a21c); color:#5b4302; }
   .rewardBtn.balls { background:linear-gradient(180deg,#ff8a5c,#e0613a); }
   .closeX { position:absolute; margin-left:auto; background:#ff9d8a; color:#7c2413; font-weight:bold;
     border-radius:10px; padding:6px 14px; font-size:16px; box-shadow:0 3px 0 #c96b59; }
@@ -285,9 +287,8 @@
   <div class="menuSection">
     <h2>2️⃣ Pick a game mode</h2>
     <div class="btnRow" id="modeRow">
-      <button class="chooseBtn modeBtn selected" data-mode="relaxed">🌼 Relaxed Mode<small>No timer, no enemies. Build anything!</small></button>
+      <button class="chooseBtn modeBtn selected" data-mode="build">🌳 Build Mode<small>Relaxed building — earn blocks & coins, shop, climb trees & pick berries. No timer, no monsters.</small></button>
       <button class="chooseBtn modeBtn" data-mode="creeper">⏰ Shelter Rush<small>Beat the timer to build a shelter with a door… or the Gloomies come! Earn a ball shooter with math to fight back.</small></button>
-      <button class="chooseBtn modeBtn" data-mode="store">🏪 Level 2: Store Mode<small>Earn coins, shop for a ladder, climb trees & pick berries!</small></button>
     </div>
     <div id="timeRow" style="margin-top:12px">
       <span style="font-weight:bold; color:#4a6fb5">⏱️ Shelter Rush timer:</span>
@@ -326,7 +327,7 @@
     <button id="badgeBtn" style="display:none">🏅 Badges</button>
   </div>
   <div class="hudBox" id="hudMode">
-    <div id="modeLabel">🌼 Relaxed Mode</div>
+    <div id="modeLabel">🌳 Build Mode</div>
     <div id="hudTimer">⏰ 15:00</div>
     <div id="timerBar"><div id="timerFill"></div></div>
     <div id="hudShelter">🏗️ Not enclosed yet</div>
@@ -476,6 +477,9 @@ const Sound = {
   tick()    { this.tone(1000, 0.05, 'sine', 0.09); },
   fanfare() { [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.25, 'triangle', 0.16, i * 0.12)); },
   sad()     { this.tone(392, 0.3, 'sine', 0.12); this.tone(330, 0.4, 'sine', 0.1, 0.25); },
+  throw_()  { this.noise(0.18, 0.12, 1400); this.tone(300, 0.16, 'sine', 0.08, 0, 700); },   // soft whoosh
+  bonk()    { this.tone(520, 0.12, 'square', 0.2, 0, 180); this.tone(160, 0.18, 'sine', 0.18, 0.04, 70); this.noise(0.12, 0.14, 500, 0.02); }, // boing + thud
+  cheer()   { [659, 880, 1047].forEach((f, i) => this.tone(f, 0.14, 'square', 0.12, i * 0.06)); },  // little "ta-da" on a hit
   toggleMute() { this.muted = !this.muted; return this.muted; }
 };
 document.addEventListener('pointerdown', function initAudioOnce() {
@@ -909,7 +913,7 @@ const AVATARS = [
 
 /* ============================ GAME STATE ============================ */
 const G = {
-  grade: 2, mode: 'relaxed', avatarIndex: 0, playerName: 'Player',
+  grade: 2, mode: 'build', avatarIndex: 0, playerName: 'Player',
   blocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
   furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, stove: 0, sink: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },  // placeable backpack items
   running: false, over: false,
@@ -1147,7 +1151,7 @@ function restoreGame(s) {
   resetWorld();
   resetGameState();
   G.playerName = s.name || 'Player';
-  G.grade = s.grade; G.mode = s.mode; G.avatarIndex = s.avatarIndex;
+  G.grade = s.grade; G.mode = (s.mode === 'creeper') ? 'creeper' : 'build'; G.avatarIndex = s.avatarIndex;
   G.blocks = s.blocks; G.doors = s.doors || 0; G.coins = s.coins || 0;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
@@ -1364,32 +1368,27 @@ function collectBerry(b) {
 }
 
 /* ---- math stations: glowing "?" pillars ---- */
-function questionTexture(gives) {
+function questionTexture() {
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
   const c = cv.getContext('2d');
-  const coin = gives === 'coin';
-  c.fillStyle = coin ? '#E0A21C' : '#3B6FD8'; c.fillRect(0, 0, 64, 64);      // gold = coins, blue = blocks
-  c.strokeStyle = coin ? '#F6CF5E' : '#7FA8F0'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
-  c.fillStyle = '#FFFFFF'; c.font = 'bold 34px sans-serif';
+  c.fillStyle = '#5B3FA8'; c.fillRect(0, 0, 64, 64);
+  c.strokeStyle = '#8a6fd4'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
+  c.fillStyle = '#FFE066'; c.font = 'bold 44px sans-serif';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('?', 32, 22);
-  c.font = 'bold 13px sans-serif';
-  c.fillText(coin ? '🪙 COINS' : '🧱 BLOCKS', 32, 50);
+  c.fillText('?', 32, 36);
   return new THREE.CanvasTexture(cv);
 }
 const stations = [];
-const blockStationMat = new THREE.MeshLambertMaterial({ map: questionTexture('block'), emissive: 0x16306b });
-const coinStationMat = new THREE.MeshLambertMaterial({ map: questionTexture('coin'), emissive: 0x6b4a08 });
-// two stations give building blocks, two give gold coins — color-coded so kids can choose
-[[4, 2, 'block'], [-5, -4, 'coin'], [2, -7, 'block'], [-3, 6, 'coin']].forEach(([sx, sz, gives]) => {
-  const sm = gives === 'coin' ? coinStationMat : blockStationMat;
-  const m = new THREE.Mesh(blockGeo, sm);
+const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emissive: 0x3a1f7a });
+// solve a question at any station, then choose your reward (blocks / coins / ammo)
+[[4, 2], [-5, -4], [2, -7], [-3, 6]].forEach(([sx, sz]) => {
+  const m = new THREE.Mesh(blockGeo, stationMat);
   m.position.set(sx + 0.5, 0.5, sz + 0.5);
   addBlockMesh(sx, 0, sz, null, 'station', false, m);
-  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), sm);
+  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), stationMat);
   topper.position.set(sx + 0.5, 1.45, sz + 0.5);
   scene.add(topper);
-  stations.push({ x: sx, z: sz, mesh: m, topper, gives });
+  stations.push({ x: sx, z: sz, mesh: m, topper });
 });
 /* a friendly signpost where the door station used to be — points to the shop */
 {
@@ -1735,7 +1734,7 @@ function pickupBlock() {
     if (d < bestD) { best = l; bestD = d; }
   }
   if (best) { collectLoot(best); return; }
-  if (G.mode === 'store') {
+  if (berries.length) {
     let bb = null, bd = 999;
     const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
     for (const b of berries) {
@@ -1746,7 +1745,7 @@ function pickupBlock() {
     if (bb) { collectBerry(bb); return; }
   }
   if (removePlacedBlock()) return;
-  toast('🤲 Nothing close enough — walk up to a block' + (G.mode === 'store' ? ' or berry' : '') + ' and try P again!', 1800);
+  toast('🤲 Nothing close enough — walk up to a block or berry and try P again!', 1800);
 }
 /* Place whatever slot is selected at grid cell (x,z). blockY is the height
    for a plain block (stacking); doors/furniture/food sit on the ground. */
@@ -1873,7 +1872,7 @@ function shootBall() {
   const dirZ = -Math.cos(player.yaw) * Math.cos(player.pitch);
   const dirY = Math.sin(player.pitch) + 0.15;
   projectiles.push({ mesh: m, vx: dirX * 18, vy: dirY * 12 + 3, vz: dirZ * 18, life: 2.2 });
-  Sound.tone(380, 0.12, 'square', 0.16, 0, 660);
+  Sound.throw_();
 }
 function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -1891,7 +1890,8 @@ function updateProjectiles(dt) {
         const ang = Math.atan2(c.position.z, c.position.x);
         c.position.set(Math.cos(ang) * (WORLD_R - 1.5), 0, Math.sin(ang) * (WORLD_R - 1.5));
         c.userData.stunUntil = performance.now() / 1000 + 2.5;
-        Sound.pop(); toast('💥 Bonk! A Gloomy got knocked back!', 1200);
+        Sound.bonk(); Sound.cheer();
+        toast(pick(['💥 BONK! Gloomy knocked back!', '⚽ Direct hit!', '🎯 Bullseye! Take that, Gloomy!']), 1200);
         hit = true; break;
       }
     }
@@ -1955,7 +1955,7 @@ function fmtTime(s) {
 }
 
 /* ============================ MATH POPUP ============================ */
-let currentEq = null, currentGives = 'block', popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0;
+let currentEq = null, popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0;
 function renderMathQuestion() {
   currentEq = makeEquation(G.grade);
   mathLocked = false;
@@ -1976,14 +1976,12 @@ function showHint() {
   $('hintBox').textContent = '💡 ' + currentEq.hint;
   $('hintBox').style.display = 'block';
 }
-function openMath(gives) {
+function openMath() {
   if (popupOpen || G.over || performance.now() < mathCooldownUntil) return;   // brief cooldown stops spam-reopening
   popupOpen = true;
   wrongStreak = 0;
-  currentGives = gives === 'coin' ? 'coin' : 'block';
   document.exitPointerLock && document.exitPointerLock();
-  $('mathPrompt').textContent = currentGives === 'coin'
-    ? 'Find the answer to earn 🪙 COINS!' : 'Find the answer to earn 🧱 BLOCKS!';
+  $('mathPrompt').textContent = 'Find the answer — then pick your reward!';
   $('mathFeedback').textContent = '';
   $('rewardChoice').style.display = 'none';
   renderMathQuestion();
@@ -1997,28 +1995,26 @@ function answerPicked(btn, opt) {
     wrongStreak = 0;
     const reward = currentEq.reward;
     document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
-    if (G.mode === 'store') { G.solved++; if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900); }
+    G.solved++;
+    if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900);
     recordSolve(currentEq);
-    if (G.mode === 'creeper') {           // Shelter Rush: choose blocks OR softball ammo
-      const balls = Math.max(2, Math.round(reward * 0.7));
-      $('mathFeedback').textContent = '🎉 Correct! Pick your reward:';
-      const wrap = $('rewardChoice');
-      wrap.innerHTML = '';
-      wrap.style.display = 'flex';
-      const mk = (cls, label, fn) => { const b = document.createElement('button'); b.className = 'rewardBtn ' + cls; b.textContent = label; b.onclick = () => { if (mathLocked === 'picked') return; mathLocked = 'picked'; fn(); refreshHUD(); closeMath(); }; return b; };
-      wrap.appendChild(mk('blocks', '🧱 +' + reward + ' blocks', () => { G.blocks += reward; bumpHud('blockCount'); }));
-      wrap.appendChild(mk('balls', '⚽ +' + balls + ' softballs', () => { G.balls += balls; Sound.pop(); }));
-      return;                             // wait for the player's choice (no auto-close)
-    }
-    if (currentGives === 'coin') {
-      G.coins += reward; Sound.coin(); bumpHud('coinCount');
-      $('mathFeedback').textContent = '🎉 Nice! +' + reward + ' 🪙 coins added to your count!';
-    } else {
-      G.blocks += reward; bumpHud('blockCount');
-      $('mathFeedback').textContent = '🎉 Nice! +' + reward + ' 🧱 blocks added to your count!';
-    }
-    refreshHUD();
-    setTimeout(closeMath, 1500);
+    // every correct answer: pick your reward
+    const balls = Math.max(2, Math.round(reward * 0.7));
+    $('mathFeedback').textContent = '🎉 Correct! Pick your reward:';
+    const wrap = $('rewardChoice');
+    wrap.innerHTML = '';
+    wrap.style.display = 'flex';
+    const mk = (cls, label, fn) => {
+      const b = document.createElement('button');
+      b.className = 'rewardBtn ' + cls; b.textContent = label;
+      b.onclick = () => { if (mathLocked === 'picked') return; mathLocked = 'picked'; fn(); refreshHUD(); closeMath(); };
+      return b;
+    };
+    wrap.appendChild(mk('wood', '🟫 +' + reward + ' wood blocks', () => { G.blocks += reward; G.blockColor = 0xC9B79A; bumpHud('blockCount'); }));
+    wrap.appendChild(mk('stone', '🩶 +' + reward + ' stone blocks', () => { G.blocks += reward; G.blockColor = 0x9aa0a8; bumpHud('blockCount'); }));
+    wrap.appendChild(mk('coins', '🪙 +' + reward + ' coins', () => { G.coins += reward; Sound.coin(); bumpHud('coinCount'); }));
+    if (G.mode === 'creeper') wrap.appendChild(mk('balls', '⚽ +' + balls + ' softballs', () => { G.balls += balls; Sound.pop(); }));
+    return;                               // wait for the player's choice (no auto-close)
   } else {
     Sound.wrong();
     recordWrong(currentEq);
@@ -2072,7 +2068,7 @@ function renderShop() {
   const wrap = $('shopItems');
   wrap.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
-    if (item.kind === 'sell' && G.mode !== 'store') return;   // berries only grow in Store Mode
+    // (berries can be sold in any mode now)
     const row = document.createElement('div');
     row.className = 'shopItem';
     const owned = item.kind === 'own' && G.owned[item.id];
@@ -2246,7 +2242,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   }
 
   // 1) berries
-  if (G.mode === 'store') {
+  if (berries.length) {
     const bMeshes = berries.filter(b => b.alive).map(b => b.mesh);
     const hitB = raycaster.intersectObjects(bMeshes)[0];
     if (hitB) {
@@ -2275,8 +2271,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   blocks.forEach((b, k) => { if (!entry && (b.mesh === obj || b.mesh === hit.object)) { entry = b; entryKey = k; } });
 
   if (entry && entry.type === 'station') {
-    const st = stations.find(s => s.mesh === obj || s.mesh === hit.object);
-    openMath(st ? st.gives : 'block'); return;
+    openMath(); return;
   }
   if (entry && entry.type === 'shop') { openShop(); return; }
 
@@ -2332,8 +2327,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
-    const ns = nearestStation();
-    if (ns.dist < 2.6) { Sound.click(); openMath(ns.st.gives); }
+    if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop(); }
   }
   if (e.code === 'KeyC') toggleCamera();
@@ -2423,7 +2417,7 @@ function renderInv() {
   const money = document.createElement('div');
   money.className = 'invItem';
   money.innerHTML = '<div class="icon">🪙</div><div class="info"><b>Coins</b><small>You have ' + G.coins +
-    (G.mode === 'store' ? ' • 🍓 Berries: ' + G.berries : '') + '</small></div>';
+    ' • 🍓 Berries: ' + G.berries + '</small></div>';
   wrap.appendChild(money);
   const gear = [['🪜', 'Ladder', 'ladder'], ['👟', 'Speedy Shoes', 'shoes'], ['🦘', 'Bouncy Boots', 'boots'], ['🎉', 'Party Hat', 'hat']]
     .filter(g => G.owned[g[2]]);
@@ -2533,8 +2527,7 @@ if (isTouch) {
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    const ns = nearestStation();
-    if (ns.dist < 2.8) { Sound.click(); openMath(ns.st.gives); }
+    if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop(); }
     else pickupBlock();
   }, { passive: false });
@@ -2650,7 +2643,7 @@ function refreshSavedList() {
     row.className = 'saveRow';
     const load = document.createElement('button');
     load.className = 'loadBtn';
-    const modeName = { relaxed: 'Relaxed', creeper: 'Shelter Rush', store: 'Store' }[s.mode] || s.mode;
+    const modeName = (s.mode === 'creeper') ? 'Shelter Rush' : 'Build';
     load.innerHTML = '▶ <b>' + (s.name || 'Player') + '</b> — 🧱' + (s.blocks || 0) + ' 🪙' + (s.coins || 0) + ' • ' + modeName;
     load.onclick = () => { Sound.click(); restoreGame(s); };
     const del = document.createElement('button');
@@ -2697,12 +2690,14 @@ function startGame() {
   $('hudShelter').style.display = 'none';
   $('berryRow').style.display = 'none';
   $('ballRow').style.display = 'none';
-  $('solvedRow').style.display = 'none';
+  $('berryRow').style.display = 'block';        // trees & berries exist in every mode now
+  $('solvedRow').style.display = 'block';
   if (isTouch) $('btnShoot').style.display = 'none';
+  spawnBerries();
   G.running = true;
 
-  const modeNames = { relaxed: '🌼 Relaxed Mode', creeper: '⏰ Shelter Rush', store: '🏪 Store Mode (Level 2)' };
-  $('modeLabel').textContent = modeNames[G.mode] + ' • Grade ' + G.grade;
+  const modeNames = { build: '🌳 Build Mode', creeper: '⏰ Shelter Rush' };
+  $('modeLabel').textContent = (modeNames[G.mode] || 'Build Mode') + ' • Grade ' + G.grade;
 
   if (G.mode === 'creeper') {
     $('hudTimer').style.display = 'block';
@@ -2710,13 +2705,8 @@ function startGame() {
     $('ballRow').style.display = 'block';
     $('hudShelter').style.display = 'block';
     toast('⏰ Build a shelter (walls + a 🚪 door) before time runs out! Solve math to earn 🧱 blocks or ⚽ softballs to fight the Gloomies.', 6000);
-  } else if (G.mode === 'store') {
-    $('berryRow').style.display = 'block';
-    $('solvedRow').style.display = 'block';
-    spawnBerries();
-    toast('🏪 Blue ❓ stations give 🧱 blocks, gold ❓ stations give 🪙 coins. Shop for doors & more!', 5000);
   } else {
-    toast('🌼 Blue ❓ stations give 🧱 blocks, gold ❓ stations give 🪙 coins to spend at the shop!', 5000);
+    toast('🌳 Solve math at the ❓ stations, then pick your reward: blocks, coins, or more! Shop, climb trees & build.', 5500);
   }
   refreshHUD();
 }
@@ -2762,8 +2752,7 @@ function loop(now) {
 
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
-  blockStationMat.emissive.setRGB(0.05 + pulse * 0.1, 0.12 + pulse * 0.12, 0.35 + pulse * 0.25);
-  coinStationMat.emissive.setRGB(0.35 + pulse * 0.25, 0.24 + pulse * 0.14, 0.03 + pulse * 0.05);
+  stationMat.emissive.setRGB(0.15 + pulse * 0.25, 0.05 + pulse * 0.1, 0.4 + pulse * 0.2);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
 
   // clouds drift
@@ -2783,7 +2772,7 @@ function loop(now) {
   }
 
   // berries respawn
-  if (G.mode === 'store') {
+  if (berries.length) {
     for (const b of berries) {
       if (!b.alive && now > b.respawnAt) { b.alive = true; b.mesh.visible = true; }
       if (b.alive) b.mesh.rotation.y = now / 800;
@@ -2795,8 +2784,7 @@ function loop(now) {
     const hint = $('hintBar');
     const ns = nearestStation();
     if (ns.dist < 2.6) {
-      const what = ns.st.gives === 'coin' ? 'earn 🪙 COINS!' : 'earn 🧱 BLOCKS!';
-      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and ' : '❓ Press E to do math and ') + what;
+      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and pick a reward!' : '❓ Press E to do math and pick a reward!');
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE to open the shop!' : '🏪 Press E to open the shop!';
