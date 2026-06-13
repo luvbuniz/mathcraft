@@ -15,17 +15,22 @@ No images, models, or audio files to download.
 3. **Pick your hero** from seven cute voxel avatars.
 4. Walk up to a glowing **❓ math station** and solve the equation by
    **finding the right block** — tap the answer block from a few choices.
-   When you pick the correct one, **5 blocks pop onto the ground** around
-   you! The **orange station** is special: solving math there wins you a
-   **🚪 door** for your house.
-5. Walk over and press **P** to pick blocks up, then press **D** to put a
-   block down on the square in front of you. Blocks snap to a grid and
+   When you pick the correct one, **5 building blocks and 3 GOLD coin
+   blocks pop onto the ground** around you (gold blocks = coins!).
+5. Walk over and press **P** to pick everything up, then press **D** to put
+   a block down on the square in front of you. Blocks snap to a grid and
    stack automatically, so building walls is easy.
+6. Spend your coins at the **🏪 shop** (follow the signpost, or press
+   **B**): doors for your house, a cozy chair, a picnic table, apple
+   snacks, a tree ladder, and more.
 
-Equations are **freshly generated every time** — you'll never see the same
-problem twice in a session. A wrong answer brings up a **brand-new
-question** (no guessing by elimination!), always with a friendly "try
-again". (In Store Mode, harder equations earn more coins.)
+**Learning, not guessing:** equations are freshly generated every time —
+never the same problem twice in a session. A wrong answer brings up a
+**brand-new question** so answers can't be found by elimination, and after
+three misses the game takes a friendly 8-second breather and shows the
+hint. Stuck? The **🤔 hint button** teaches the place-value way to solve it
+("Tens first: 40 + 20 = 60, then the ones…") without giving the answer
+away.
 
 ## 🗺️ Game modes
 
@@ -62,7 +67,7 @@ four-legged animals really walk on four legs:
 | `R` | **Remove** the nearest block or door you placed (you get it back) |
 | `1` / `2` | Select block 🧱 or door 🚪 (win doors at the orange ❓ station) |
 | `E` | Use a math station / open the shop |
-| `B` | Open the shop (Store Mode) |
+| `B` | Open the shop — doors, chairs, tables, snacks, gear (works in every mode) |
 | `C` | Toggle first-person / third-person camera |
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
 
@@ -73,6 +78,23 @@ buttons.
 A **🔊 sound toggle** lives in the top-right corner — handy for classrooms.
 All sound effects (footsteps, block thunks, berry pops, happy chimes, coin
 sounds, Gloomy hisses…) are synthesized live with the Web Audio API.
+
+## 💾 Saving & badges
+
+The game **auto-saves in your browser** every few seconds — blocks, coins,
+doors, everything you've built, and where you're standing. A **"💾 Continue
+saved game"** button appears on the start screen whenever there's a world
+to come back to.
+
+Solving problems also fills a **lifetime math counter** that survives
+between games and earns badges shown on your HUD:
+
+| Solved | Badge |
+| --- | --- |
+| 5 | ⭐ Math Star |
+| 10 | 🎩 Fancy Top Hat — your hero wears it! |
+| 20 | 👑 Golden Crown — your hero wears it! |
+| 35 | 🏆 Math Champion |
 
 ## 📚 Grade levels
 
