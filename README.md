@@ -38,7 +38,7 @@ away.
 | Mode | What happens |
 | --- | --- |
 | 🌼 **Relaxed Mode** | No timer, no enemies. Solve math, earn blocks, build anything you like. |
-| ⏰ **Shelter Rush** | You have **15 minutes** to earn enough blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters take about 30 seconds to waddle over, and if one catches you outside a shelter, it's game over. Fully enclosed shelter with a door = **SAFE** (and you win!). |
+| ⏰ **Shelter Rush** | Pick a timer (**5, 10, or 15 minutes** — there's a countdown bar in the HUD) to earn blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters waddle over, and if one catches you outside a shelter, it's game over. A fully enclosed shelter with a door = **SAFE** (you win!). Each correct answer lets you choose **🧱 blocks** (to build) or **⚽ softballs** (ammo) — press **F** (or tap **🎯**) to bonk a Gloomy back to the edge. It stays math-based: you can only earn ammo by solving problems. |
 | 🏪 **Level 2: Store Mode** | The math stations are **color-coded**: solve at a **blue ❓ station to earn 🧱 blocks**, or a **gold ❓ station to earn 🪙 coins** — your choice. Spend coins at the shop on **doors**, block bundles, a **🪜 ladder**, speedy shoes, bouncy boots, a party hat, and furniture. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any gear you own — back to the shop for coins! |
 
 In every mode the stations are color-coded the same way (blue = blocks,
@@ -79,10 +79,11 @@ four-legged animals really walk on four legs:
 | `1` / `2` | Quick-select block 🧱 or door 🚪 (or choose any item in the 🎒 backpack) |
 | `E` | Use a math station / open the shop |
 | `B` | Open the shop — block bundles, doors, chairs, tables, apples, gear |
-| `C` | Toggle first-person / third-person camera |
+| `C` | Toggle camera: 🧍 see your character / 👁️ look through their eyes |
+| `F` | Throw a softball at the Gloomies (Shelter Rush, after the timer ends) |
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
 
-On-screen buttons (top-right corner): **🔊** sound, **📷** camera, **🏠**
+On-screen buttons (top-right corner): **🔊** sound, **🧍/👁️** view, **🏠**
 save & go home, **💾** save, **🎒** backpack, and **📸** take a photo of
 your build (saves a picture you can keep or share). They work with a tap too.
 
