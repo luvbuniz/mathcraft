@@ -38,7 +38,11 @@ away.
 | --- | --- |
 | 🌼 **Relaxed Mode** | No timer, no enemies. Solve math, earn blocks, build anything you like. |
 | ⏰ **Shelter Rush** | You have **15 minutes** to earn enough blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters take about 30 seconds to waddle over, and if one catches you outside a shelter, it's game over. Fully enclosed shelter with a door = **SAFE** (and you win!). |
-| 🏪 **Level 2: Store Mode** | Correct answers earn **🪙 coins** instead of blocks. Spend them at the Block Shop on a **🪜 ladder**, speedy shoes, bouncy boots, and a party hat. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any item you own — back to the shop for coins! |
+| 🏪 **Level 2: Store Mode** | Correct answers earn **🪙 coins** instead of blocks. Spend them at the Block Shop on **block bundles**, doors, a **🪜 ladder**, speedy shoes, bouncy boots, a party hat, and furniture. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any gear you own — back to the shop for coins! |
+
+The shop is open in **every** mode (press **B**), and gold coin blocks drop
+from math in every mode, so you can always buy what you need — including
+extra **building blocks** if you'd rather buy than build up your stash.
 
 ## 🦊 The heroes
 
@@ -62,14 +66,18 @@ four-legged animals really walk on four legs:
 | `↑` / `↓` | Walk forward / backward (`W`/`S` work too) |
 | `←` / `→` | Turn left / right — no mouse needed! |
 | `Space` | Jump (hold near a tree trunk to climb, if you own the ladder) |
-| `P` | **Pick up** the nearest thing: loot blocks, berries (Store Mode), or your own builds |
-| `D` | **Put down** a block on the square in front of you (stacks into walls) |
-| `R` | **Remove** the nearest block or door you placed (you get it back) |
-| `1` / `2` | Select block 🧱 or door 🚪 (win doors at the orange ❓ station) |
+| `P` | **Pick up** the nearest thing: loot blocks, berries (Store Mode), apples, or your own builds |
+| `D` | **Put down** the selected item on the square in front of you (blocks stack into walls) |
+| `R` | **Remove** the nearest thing you placed (it goes back in your backpack) |
+| `I` | Open your **🎒 backpack/inventory** — see your stuff and place furniture |
+| `1` / `2` | Quick-select block 🧱 or door 🚪 |
 | `E` | Use a math station / open the shop |
-| `B` | Open the shop — doors, chairs, tables, snacks, gear (works in every mode) |
+| `B` | Open the shop — block bundles, doors, chairs, tables, apples, gear |
 | `C` | Toggle first-person / third-person camera |
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
+
+On-screen buttons (top-right corner): **🔊** sound, **📷** camera, **🏠**
+save & go home, **💾** save, and **🎒** backpack. They work with a tap too.
 
 **Touch (tablet):** on-screen joystick to move, drag the screen to look,
 **tap** to place/break (toggle with the 🧱/⛏️ button), plus JUMP and ⭐ USE
@@ -79,15 +87,28 @@ A **🔊 sound toggle** lives in the top-right corner — handy for classrooms.
 All sound effects (footsteps, block thunks, berry pops, happy chimes, coin
 sounds, Gloomy hisses…) are synthesized live with the Web Audio API.
 
-## 💾 Saving & badges
+## 🎒 Backpack & furniture
 
-The game **auto-saves in your browser** every few seconds — blocks, coins,
-doors, everything you've built, and where you're standing. A **"💾 Continue
-saved game"** button appears on the start screen whenever there's a world
-to come back to.
+Press **I** (or tap **🎒**) to open your backpack. It shows everything you
+have — blocks, doors, coins, berries, apples, and any furniture or gear.
+Pick a **chair**, **picnic table**, or **apple** and press **Place**, then
+walk where you want it and press **D** (or tap the ground) to set it down.
+Put an apple right on top of a table for a little snack scene! Anything you
+place can be picked back up with **P** or **R**.
 
-Solving problems also fills a **lifetime math counter** that survives
-between games and earns badges shown on your HUD:
+## 💾 Saving with your name, and badges
+
+Type your **name** on the start screen and the game keeps a personal save
+just for you — it **auto-saves every few seconds**, plus there's a **💾
+Save** button and a **🏠 Home** button right in the game (Home saves first,
+then returns to the menu). Each saved world shows up as its own row on the
+start screen, so several kids can share one device and keep separate
+worlds. Tap a name to keep building, or press **Start Adventure** for a
+brand-new world.
+
+Each player also has their own **badge collection** that grows across
+games. Tap the **🏅 Badges** button any time to open (and close) the badge
+panel:
 
 | Solved | Badge |
 | --- | --- |

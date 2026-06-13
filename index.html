@@ -49,11 +49,6 @@
     margin-top:4px;
   }
   #startBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #2c6f24; }
-  #continueBtn {
-    display:none; font-size:clamp(17px,3vw,24px); padding:12px 30px; border-radius:18px; color:#fff;
-    background:linear-gradient(180deg,#5aa7e8,#3c7fc4); box-shadow:0 5px 0 #2a5d92; font-weight:bold; margin-top:12px;
-  }
-  #continueBtn:active { transform:translateY(3px); box-shadow:0 2px 0 #2a5d92; }
   #controlsHelp { font-size:clamp(12px,2vw,15px); color:#33532a; margin-top:12px; text-align:center; line-height:1.6;
     background:rgba(255,255,255,.6); padding:8px 14px; border-radius:12px; }
 
@@ -146,6 +141,51 @@
   #btnJump { right:26px; bottom:96px; }
   #btnAction { right:26px; bottom:170px; background:rgba(255,233,150,.85); }
   #btnModeTouch { right:104px; bottom:96px; }
+
+  /* ---------- Names + saved games ---------- */
+  #nameInput { width:min(420px,90%); font-family:inherit; font-size:clamp(16px,2.6vw,20px);
+    padding:11px 16px; border-radius:12px; border:3px solid #b9cde6; background:#fff; color:#33507a;
+    text-align:center; font-weight:bold; }
+  #nameInput:focus { outline:none; border-color:#6fcf63; }
+  #savedList { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .saveRow { display:flex; align-items:center; gap:8px; background:#eef6ff; border-radius:12px; padding:8px 10px; }
+  .saveRow .loadBtn { flex:1; text-align:left; background:#6fcf63; color:#fff; font-weight:bold;
+    font-size:clamp(14px,2.3vw,18px); padding:11px 14px; border-radius:10px; box-shadow:0 3px 0 #3f9636; }
+  .saveRow .delBtn { background:#ff9d8a; color:#7c2413; font-weight:bold; padding:11px 13px; border-radius:10px;
+    box-shadow:0 3px 0 #c96b59; font-size:16px; }
+  #savedHint { font-size:clamp(12px,2vw,15px); color:#5b6b46; margin-top:6px; }
+
+  /* ---------- Right-side HUD buttons ---------- */
+  .hudBtn { position:absolute; right:10px; pointer-events:auto; font-size:22px;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  #homeBtn { top:114px; }
+  #saveBtn { top:166px; }
+  #invBtn  { top:218px; }
+  #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
+    padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
+  @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+  #badgeBtn.pulse { animation:badgePulse .6s 3; }
+  #placingTag { position:absolute; bottom:104px; left:50%; transform:translateX(-50%);
+    background:rgba(47,125,39,.92); color:#fff; padding:7px 16px; border-radius:12px; font-weight:bold;
+    font-size:clamp(14px,2.4vw,18px); display:none; white-space:nowrap; }
+
+  /* ---------- Inventory + badges popups ---------- */
+  #invList { display:flex; flex-direction:column; gap:9px; margin-top:10px; }
+  .invItem { display:flex; align-items:center; gap:12px; background:#eef6ff; border-radius:14px; padding:10px 14px; }
+  .invItem .icon { font-size:30px; }
+  .invItem .info { flex:1; text-align:left; }
+  .invItem .info b { color:#33507a; font-size:clamp(15px,2.4vw,19px); }
+  .invItem .info small { display:block; color:#6c84a6; }
+  .invItem .placeBtn, .invItem .eatBtn { background:#6fcf63; color:#fff; font-weight:bold; font-size:clamp(13px,2.1vw,17px);
+    padding:9px 14px; border-radius:10px; box-shadow:0 3px 0 #3f9636; white-space:nowrap; margin-left:4px; }
+  .invItem .eatBtn { background:#ff8a5c; box-shadow:0 3px 0 #c9603a; }
+  .invItem .placeBtn:disabled { background:#bbb; box-shadow:0 3px 0 #999; }
+  #badgeGrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px; }
+  .badgeCard { background:#FFF7DE; border-radius:14px; padding:12px 8px; text-align:center; box-shadow:0 3px 0 #e0cf94; }
+  .badgeCard.locked { background:#eceff2; box-shadow:0 3px 0 #c9ced4; filter:grayscale(1); opacity:.7; }
+  .badgeCard .bIcon { font-size:38px; }
+  .badgeCard b { display:block; color:#7a5c00; font-size:clamp(13px,2.1vw,16px); }
+  .badgeCard small { color:#9a7d3a; }
 </style>
 </head>
 <body>
@@ -154,6 +194,13 @@
 <div id="startScreen">
   <div id="gameTitle">⛏️ MathCraft</div>
   <div id="gameSub">Solve math • Earn blocks • Build your world!</div>
+
+  <div class="menuSection">
+    <h2>👋 Who's playing?</h2>
+    <div style="text-align:center"><input id="nameInput" maxlength="14" placeholder="Type your name" autocomplete="off"></div>
+    <div id="savedList"></div>
+    <div id="savedHint">Tap a saved game to keep building, or pick the options below and press <b>Start Adventure</b> for a brand-new world.</div>
+  </div>
 
   <div class="menuSection">
     <h2>1️⃣ Pick your grade</h2>
@@ -180,23 +227,23 @@
   </div>
 
   <button id="startBtn">▶ Start Adventure!</button>
-  <button id="continueBtn">💾 Continue saved game</button>
   <div id="controlsHelp">
     <b>⬆ ⬇ Arrow keys</b> walk • <b>← →</b> turn • <b>Space</b> jump • <b>E</b> use math station / shop<br>
     Solve math → <b>blocks + GOLD coins</b> pop onto the ground! • <b>P</b> pick up • <b>D</b> put down • <b>R</b> remove<br>
-    <b>B</b> shop (doors, chairs, snacks!) • <b>1 / 2</b> block or door • <b>C</b> camera • 🤔 stuck? Tap the hint button!<br>
-    📱 On a tablet: joystick to move, drag to look, tap to build & pick up!
+    <b>B</b> shop • <b>I</b> backpack/inventory • <b>1 / 2</b> block or door • <b>C</b> camera • 🤔 stuck? Tap the hint button!<br>
+    💾 Save and 🏠 Home buttons are in the game • 📱 Tablet: joystick to move, drag to look, tap to build!
   </div>
 </div>
 
 <!-- ================= HUD ================= -->
 <div id="hud">
   <div class="hudBox" id="hudTop">
+    <div id="playerRow" style="display:none; color:#2f7d27">🙂 <span id="playerName"></span></div>
     <div>🧱 Blocks: <span id="blockCount">0</span></div>
     <div id="coinRow" style="display:none">🪙 Coins: <span id="coinCount">0</span></div>
     <div id="berryRow" style="display:none">🍓 Berries: <span id="berryCount">0</span></div>
     <div id="solvedRow" style="display:none">✅ Solved: <span id="solvedCount">0</span>/10</div>
-    <div id="badgeRow" style="display:none; font-size:22px"></div>
+    <button id="badgeBtn" style="display:none">🏅 Badges</button>
   </div>
   <div class="hudBox" id="hudMode">
     <div id="modeLabel">🌼 Relaxed Mode</div>
@@ -205,8 +252,12 @@
   </div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Camera view">📷</button>
+  <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
+  <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
+  <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
   <div id="crosshair">＋</div>
   <div id="hintBar"></div>
+  <div id="placingTag"></div>
   <div id="toast"></div>
   <div id="hotbar">
     <button class="hotSlot active" id="slotBlock"><span class="slotIcon">🧱</span>Block<br><span id="slotBlockN">0</span></button>
@@ -234,6 +285,25 @@
     <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏪 The Block Shop</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
     <div id="shopItems"></div>
+  </div>
+</div>
+
+<!-- ================= INVENTORY POPUP ================= -->
+<div class="popup" id="invPopup">
+  <div class="popupCard">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="invClose">✖ Close</button></div>
+    <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🎒 Your Backpack</h2>
+    <div id="invList"></div>
+  </div>
+</div>
+
+<!-- ================= BADGES POPUP ================= -->
+<div class="popup" id="badgePopup">
+  <div class="popupCard">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="badgeClose">✖ Close</button></div>
+    <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏅 My Badges</h2>
+    <div style="font-weight:bold; color:#7a6a35">Problems solved: <span id="badgeSolved">0</span></div>
+    <div id="badgeGrid"></div>
   </div>
 </div>
 
@@ -675,21 +745,23 @@ const AVATARS = [
 
 /* ============================ GAME STATE ============================ */
 const G = {
-  grade: 2, mode: 'relaxed', avatarIndex: 0,
+  grade: 2, mode: 'relaxed', avatarIndex: 0, playerName: 'Player',
   blocks: 0, doors: 0, coins: 0, berries: 0, solved: 0,
+  furniture: { chair: 0, table: 0, food: 0 },     // placeable items in the backpack
   running: false, over: false,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false,
   selectedSlot: 'block',
-  firstPerson: false,
+  firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
   warned60: false, warned10: false
 };
 
 const SHOP_ITEMS = [
-  { id: 'door',   icon: '🚪', name: 'House Door', price: 5,   kind: 'many',  desc: 'A door for your house! Press 2, then D to place it.' },
-  { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 10,  kind: 'many',  desc: 'Appears right in front of you. Take a seat!' },
-  { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'A table with a tasty snack on top!' },
-  { id: 'food',   icon: '🍎', name: 'Apple Snack', price: 4,  kind: 'many',  desc: 'Eat up! Zoomy speed for 20 seconds.' },
+  { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
+  { id: 'door',   icon: '🚪', name: 'House Door', price: 5,   kind: 'many',  desc: 'A door for your house — goes in your backpack.' },
+  { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 10,  kind: 'many',  desc: 'Goes in your backpack. Open it (I) to place it.' },
+  { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'Goes in your backpack. Put food on top!' },
+  { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
   { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP by a trunk, press P for berries.' },
   { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
   { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, kind: 'own',   desc: 'Jump higher!' },
@@ -705,7 +777,14 @@ const BADGES = [
   { id: 'champ',  n: 35, icon: '🏆', name: 'Math Champion' }
 ];
 let profile = { totalSolved: 0, badges: [] };
-try { const p = JSON.parse(localStorage.getItem('mathcraftProfile')); if (p && p.badges) profile = p; } catch (e) {}
+const profileKey = name => 'mathcraftProfile:' + (name || 'Player');
+function loadProfileFor(name) {
+  profile = { totalSolved: 0, badges: [] };
+  try { const p = JSON.parse(localStorage.getItem(profileKey(name))); if (p && p.badges) profile = p; } catch (e) {}
+}
+function saveProfile() {
+  try { localStorage.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) {}
+}
 
 function recordSolve() {
   profile.totalSolved++;
@@ -714,19 +793,45 @@ function recordSolve() {
       profile.badges.push(b.id);
       setTimeout(() => {
         Sound.fanfare();
-        toast(b.icon + ' NEW BADGE: ' + b.name + ' — ' + b.n + ' problems solved!' + (b.wear ? ' Your hero is wearing it!' : ''), 5000);
+        toast(b.icon + ' New badge: ' + b.name + '!' + (b.wear ? ' Your hero is wearing it!' : ' Tap 🏅 to see it.'), 2400);
       }, 900);
       applyHeadwear();
     }
   }
-  try { localStorage.setItem('mathcraftProfile', JSON.stringify(profile)); } catch (e) {}
-  updateBadgeRow();
+  saveProfile();
+  updateBadgeBtn(true);
 }
-function updateBadgeRow() {
-  const row = $('badgeRow');
-  row.style.display = profile.badges.length ? 'block' : 'none';
-  row.textContent = profile.badges.map(id => BADGES.find(b => b.id === id).icon).join(' ');
+function updateBadgeBtn(pulse) {
+  const btn = $('badgeBtn');
+  btn.style.display = 'inline-block';
+  btn.textContent = '🏅 ' + profile.badges.length;
+  if (pulse && profile.badges.length) {
+    btn.classList.remove('pulse');
+    void btn.offsetWidth;            // restart the animation
+    btn.classList.add('pulse');
+  }
 }
+function renderBadges() {
+  $('badgeSolved').textContent = profile.totalSolved;
+  const grid = $('badgeGrid');
+  grid.innerHTML = '';
+  BADGES.forEach(b => {
+    const earned = profile.badges.includes(b.id);
+    const card = document.createElement('div');
+    card.className = 'badgeCard' + (earned ? '' : ' locked');
+    card.innerHTML = '<div class="bIcon">' + b.icon + '</div><b>' + b.name + '</b><small>' +
+      (earned ? 'Earned! 🎉' : 'Solve ' + b.n) + '</small>';
+    grid.appendChild(card);
+  });
+}
+function openBadges() {
+  if (popupOpen || G.over) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  renderBadges();
+  $('badgePopup').style.display = 'flex';
+}
+function closeBadges() { $('badgePopup').style.display = 'none'; popupOpen = false; }
 
 function serializeWorld() {
   const placed = [], seen = new Set();
@@ -739,28 +844,48 @@ function serializeWorld() {
   });
   return placed;
 }
+const SAVE_PREFIX = 'mathcraftSave:';
+const saveKey = name => SAVE_PREFIX + (name || 'Player');
 let lastSaveAt = 0;
 function saveGame() {
+  if (!G.playerName) return;
   try {
-    localStorage.setItem('mathcraftSave', JSON.stringify({
-      grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex,
+    localStorage.setItem(saveKey(G.playerName), JSON.stringify({
+      name: G.playerName, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex,
       blocks: G.blocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
-      owned: G.owned, timer: G.timer,
+      furniture: G.furniture, owned: G.owned, timer: G.timer,
       placed: serializeWorld(),
-      pos: [player.pos.x, player.pos.y, player.pos.z]
+      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0]),
+      pos: [player.pos.x, player.pos.y, player.pos.z],
+      when: Date.now()
     }));
   } catch (e) {}
 }
-function loadSave() {
-  try { return JSON.parse(localStorage.getItem('mathcraftSave')); } catch (e) { return null; }
+function listSaves() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.indexOf(SAVE_PREFIX) === 0) {
+      try { const s = JSON.parse(localStorage.getItem(k)); if (s) out.push(s); } catch (e) {}
+    }
+  }
+  return out.sort((a, b) => (b.when || 0) - (a.when || 0));
 }
-function clearSave() { try { localStorage.removeItem('mathcraftSave'); } catch (e) {} }
+function loadSaveFor(name) {
+  try { return JSON.parse(localStorage.getItem(saveKey(name))); } catch (e) { return null; }
+}
+function clearSave(name) { try { localStorage.removeItem(saveKey(name || G.playerName)); } catch (e) {} }
 function restoreGame(s) {
+  resetWorld();
+  resetGameState();
+  G.playerName = s.name || 'Player';
   G.grade = s.grade; G.mode = s.mode; G.avatarIndex = s.avatarIndex;
   G.blocks = s.blocks; G.doors = s.doors || 0; G.coins = s.coins || 0;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
+  Object.assign(G.furniture, s.furniture || {});
   Object.assign(G.owned, s.owned || {});
   if (G.mode === 'creeper' && typeof s.timer === 'number') G.timer = Math.max(30, s.timer);
+  loadProfileFor(G.playerName);
   (s.placed || []).forEach(([x, y, z, type]) => {
     if (blocks.has(key(x, y, z))) return;
     if (type === 'door') placeDoor(x, y, z);
@@ -771,11 +896,46 @@ function restoreGame(s) {
       addBlockMesh(x, y, z, null, 'placed', true, mesh);
     }
   });
+  (s.foods || []).forEach(([x, z, onTable]) => spawnFoodAt(x, z, !!onTable));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   startGame();
-  toast('💾 Welcome back! Your world is just how you left it.', 3500);
+  toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
 }
 addEventListener('beforeunload', () => { if (G.running && !G.over) saveGame(); });
+
+/* wipe everything the player built/spawned so a fresh or loaded game starts clean */
+function resetWorld() {
+  const toDelete = [], meshes = new Set();
+  blocks.forEach((b, k) => { if (b.removable) { toDelete.push(k); meshes.add(b.mesh); } });
+  toDelete.forEach(k => blocks.delete(k));
+  meshes.forEach(m => scene.remove(m));
+  lootBlocks.forEach(l => scene.remove(l.mesh)); lootBlocks.length = 0;
+  gloomies.forEach(g => scene.remove(g)); gloomies.length = 0;
+  berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
+  placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
+  player.pos.copy(SPAWN); player.vel.set(0, 0, 0);
+  player.yaw = 0; player.pitch = -0.15;
+}
+function resetGameState() {
+  G.blocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0;
+  G.furniture = { chair: 0, table: 0, food: 0 };
+  G.over = false; G.doomsday = false; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false;
+  G.timer = 15 * 60; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
+  G.selectedSlot = 'block';
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false };
+}
+function goHome() {
+  if (G.running && !G.over) saveGame();
+  G.running = false; popupOpen = false;
+  ['mathPopup', 'shopPopup', 'invPopup', 'badgePopup', 'endScreen'].forEach(id => $(id).style.display = 'none');
+  $('placingTag').style.display = 'none';
+  $('hud').style.display = 'none';
+  $('touchUI').style.display = 'none';
+  resetWorld();
+  refreshSavedList();
+  $('nameInput').value = G.playerName;
+  $('startScreen').style.display = 'flex';
+}
 
 /* ============================ THREE.JS WORLD ============================ */
 const WORLD_R = 24;                    // world spans -24..24 in x/z
@@ -1204,6 +1364,15 @@ function collectLoot(l) {
 }
 /* R — remove the nearest block you placed (topmost of a stack first) */
 function removePlacedBlock() {
+  for (let i = 0; i < placedFood.length; i++) {     // an apple you placed comes first
+    const f = placedFood[i];
+    if (Math.hypot(f.x + 0.5 - player.pos.x, f.z + 0.5 - player.pos.z) <= 1.8) {
+      scene.remove(f.mesh); placedFood.splice(i, 1);
+      G.furniture.food += 1; Sound.pop(); refreshHUD();
+      toast('🍎 Apple back in your 🎒!', 1400);
+      return true;
+    }
+  }
   let bk = null, be = null, bestY = -1, bestDist = 999;
   blocks.forEach((b, k) => {            // within reach, prefer the topmost block
     if (!b.removable) return;
@@ -1223,11 +1392,7 @@ function removePlacedBlock() {
 }
 function refundFor(type) {
   if (type === 'door') G.doors += 1;
-  else if (type === 'chair' || type === 'table') {
-    const price = SHOP_ITEMS.find(i => i.id === type).price;
-    G.coins += price;
-    toast('📦 Packed up your ' + type + ' (+' + price + ' 🪙 back)', 1800);
-  }
+  else if (type === 'chair' || type === 'table') { G.furniture[type] += 1; toast('📦 Packed up your ' + type + ' — back in your 🎒!', 1600); }
   else G.blocks += 1;
 }
 /* P — pick up the nearest thing: loot blocks, then berries, then your builds */
@@ -1252,32 +1417,53 @@ function pickupBlock() {
   if (removePlacedBlock()) return;
   toast('🤲 Nothing close enough — walk up to a block' + (G.mode === 'store' ? ' or berry' : '') + ' and try P again!', 1800);
 }
-/* D — put down a block on the square in front of you (stacks for walls) */
+/* Place whatever slot is selected at grid cell (x,z). blockY is the height
+   for a plain block (stacking); doors/furniture/food sit on the ground. */
+function placeSelectedAt(x, z, blockY) {
+  if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
+  const slot = G.selectedSlot;
+  if (slot === 'door') {
+    if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at the 🏪 shop (press B)!', 2400); return false; }
+    if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
+    if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
+  }
+  if (slot === 'chair' || slot === 'table') {
+    if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
+    if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    placeFurnitureAt(slot, x, z); G.furniture[slot] -= 1; Sound.place(); refreshHUD(); return true;
+  }
+  if (slot === 'food') {
+    if (G.furniture.food < 1) { toast('🍎 No apples in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    const cell = blocks.get(key(x, 0, z));
+    const onTable = !!(cell && cell.type === 'table');
+    if (cell && !onTable) { toast('🍎 Put it on the grass or on a table!', 1600); return false; }
+    spawnFoodAt(x, z, onTable); G.furniture.food -= 1; Sound.pop(); refreshHUD();
+    toast(onTable ? '🍎 Snack on the table — yum!' : '🍎 Apple placed!', 1400); return true;
+  }
+  // plain building block
+  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or the 🏪 shop!', 2000); return false; }
+  const y = blockY == null ? 0 : blockY;
+  if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
+  if (blocks.has(key(x, y, z))) return false;
+  if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+  const mesh = new THREE.Mesh(blockGeo, (x + y + z) % 2 ? placedMat : placedMatEdge);
+  mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+  addBlockMesh(x, y, z, null, 'placed', true, mesh);
+  G.blocks -= 1; Sound.place(); refreshHUD(); return true;
+}
+/* D — put down the selected item on the square in front of you (blocks stack) */
 function putDownBlock() {
   const fx = Math.floor(player.pos.x - Math.sin(player.yaw) * 1.4);
   const fz = Math.floor(player.pos.z - Math.cos(player.yaw) * 1.4);
-  if (Math.abs(fx) >= WORLD_R || Math.abs(fz) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return; }
   const base = blocks.get(key(fx, 0, fz));
-  if (base && !base.removable) { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
-  if (G.selectedSlot === 'door') {
-    if (G.doors < 1) { toast('🚪 No doors in your pack! Buy one at the 🏪 shop (press B)!', 2400); return; }
-    if (blocks.has(key(fx, 0, fz)) || blocks.has(key(fx, 1, fz))) { toast('🚪 The door needs an empty spot!', 1500); return; }
-    if (cellOverlapsPlayer(fx, 0, fz) || cellOverlapsPlayer(fx, 1, fz)) { toast('🙂 Step back a little first!', 1400); return; }
-    placeDoor(fx, 0, fz);
-    G.doors -= 1;
-  } else {
-    if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
-    let y = 0;
-    while (y <= 8 && blocks.has(key(fx, y, fz))) y++;
-    if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return; }
-    if (cellOverlapsPlayer(fx, y, fz)) { toast('🙂 Step back a little first!', 1400); return; }
-    const mesh = new THREE.Mesh(blockGeo, (fx + y + fz) % 2 ? placedMat : placedMatEdge);
-    mesh.position.set(fx + 0.5, y + 0.5, fz + 0.5);
-    addBlockMesh(fx, y, fz, null, 'placed', true, mesh);
-    G.blocks -= 1;
+  if (base && !base.removable && G.selectedSlot !== 'food') { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
+  let blockY = 0;
+  if (!['door', 'chair', 'table', 'food'].includes(G.selectedSlot)) {
+    while (blockY <= 8 && blocks.has(key(fx, blockY, fz))) blockY++;
   }
-  Sound.place();
-  refreshHUD();
+  placeSelectedAt(fx, fz, blockY);
 }
 
 /* ==================== THE GLOOMIES (original monsters!) ==================== */
@@ -1517,19 +1703,11 @@ function buyItem(id) {
     Sound.coin();
   } else if (item.kind === 'many') {
     if (G.coins < item.price) return;
-    if (id === 'door') {
-      G.coins -= item.price; G.doors++;
-      Sound.coin();
-      toast('🚪 Door added to your pack! Press 2, then D to place it.', 3000);
-    } else if (id === 'food') {
-      G.coins -= item.price;
-      eatSnack();
-    } else {                             // chair / table appear in front of you
-      if (!placeFurniture(id)) { toast('🙂 No room here! Move to open grass and try again.', 2200); return; }
-      G.coins -= item.price;
-      Sound.coin();
-      toast(item.icon + ' Your ' + item.name + ' appeared in front of you!', 2500);
-    }
+    G.coins -= item.price;
+    Sound.coin();
+    if (id === 'blocks') { G.blocks += 10; toast('🧱 +10 blocks in your backpack!', 2500); }
+    else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Press 2 then D, or open the backpack (I).', 3200); }
+    else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
     if (G.owned[id] || G.coins < item.price) return;
     G.coins -= item.price;
@@ -1567,12 +1745,9 @@ function buildFurnitureMesh(type) {
     [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([lx, lz]) =>
       box(g, 0.07, 0.42, 0.07, 0x8a5c33, lx, 0.21, lz));
   } else {
-    box(g, 0.95, 0.08, 0.95, 0xC49A6C, 0, 0.72, 0);                    // table top
+    box(g, 0.95, 0.08, 0.95, 0xC49A6C, 0, 0.72, 0);                    // table top (ready for snacks!)
     [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38]].forEach(([lx, lz]) =>
       box(g, 0.08, 0.72, 0.08, 0x8a5c33, lx, 0.36, lz));
-    box(g, 0.3, 0.04, 0.3, 0xFFFFFF, 0, 0.78, 0);                      // plate
-    box(g, 0.14, 0.14, 0.14, 0xE53935, 0, 0.86, 0);                    // apple
-    box(g, 0.04, 0.08, 0.04, 0x3E9B3E, 0, 0.95, 0);                    // stem
   }
   return g;
 }
@@ -1584,16 +1759,19 @@ function placeFurnitureAt(type, x, z) {
   blocks.set(key(x, 0, z), { mesh, type, removable: true });
   return true;
 }
-function placeFurniture(type) {
-  const fx = Math.floor(player.pos.x - Math.sin(player.yaw) * 1.5);
-  const fz = Math.floor(player.pos.z - Math.cos(player.yaw) * 1.5);
-  const spots = [[fx, fz], [fx + 1, fz], [fx - 1, fz], [fx, fz + 1], [fx, fz - 1]];
-  for (const [x, z] of spots) {
-    if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) continue;
-    if (cellOverlapsPlayer(x, 0, z)) continue;
-    if (placeFurnitureAt(type, x, z)) { Sound.place(); return true; }
-  }
-  return false;
+/* ---- apples the player places (on the ground, or on top of a table) ---- */
+const placedFood = [];
+function buildAppleMesh() {
+  const g = new THREE.Group();
+  box(g, 0.18, 0.18, 0.18, 0xE53935, 0, 0, 0);
+  box(g, 0.05, 0.09, 0.05, 0x3E9B3E, 0, 0.12, 0);
+  return g;
+}
+function spawnFoodAt(x, z, onTable) {
+  const g = buildAppleMesh();
+  g.position.set(x + 0.5, onTable ? 0.86 : 0.2, z + 0.5);
+  scene.add(g);
+  placedFood.push({ mesh: g, x, z, onTable });
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
 $('shopClose').onclick = () => { Sound.click(); closeShop(); };
@@ -1672,24 +1850,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   const py = Math.max(0, Math.floor(hit.point.y + n.y * 0.5));
   const pz = Math.floor(hit.point.z + n.z * 0.5);
   if (Math.abs(px) >= WORLD_R || Math.abs(pz) >= WORLD_R || py > 12) return;
-
-  if (G.selectedSlot === 'door') {
-    if (G.doors < 1) { toast('🚪 No doors in your pack! Buy one at the 🏪 shop (press B)!', 2400); return; }
-    if (blocks.has(key(px, py, pz)) || blocks.has(key(px, py + 1, pz))) return;
-    if (cellOverlapsPlayer(px, py, pz) || cellOverlapsPlayer(px, py + 1, pz)) { toast('🙂 Step back a little first!', 1400); return; }
-    placeDoor(px, py, pz);
-    G.doors -= 1;
-    Sound.place(); refreshHUD();
-  } else {
-    if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
-    if (blocks.has(key(px, py, pz))) return;
-    if (cellOverlapsPlayer(px, py, pz)) { toast('🙂 Step back a little first!', 1400); return; }
-    const mesh = new THREE.Mesh(blockGeo, (px + py + pz) % 2 ? placedMat : placedMatEdge);
-    mesh.position.set(px + 0.5, py + 0.5, pz + 0.5);
-    addBlockMesh(px, py, pz, null, 'placed', true, mesh);
-    G.blocks -= 1;
-    Sound.place(); refreshHUD();
-  }
+  placeSelectedAt(px, pz, py);
 }
 
 function nearestStation() {
@@ -1719,6 +1880,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Digit1') selectSlot('block');
   if (e.code === 'Digit2') selectSlot('door');
   if (e.code === 'KeyB') { Sound.click(); openShop(); }
+  if (e.code === 'KeyI') { Sound.click(); openInv(); }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -1728,14 +1890,89 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-function selectSlot(slot) {
+const SLOT_TAGS = { chair: '🪑 Chair', table: '🍽️ Table', food: '🍎 Apple' };
+function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
   $('slotBlock').classList.toggle('active', slot === 'block');
   $('slotDoor').classList.toggle('active', slot === 'door');
-  Sound.click();
+  const tag = $('placingTag');
+  if (SLOT_TAGS[slot]) {
+    tag.style.display = 'block';
+    tag.textContent = 'Placing ' + SLOT_TAGS[slot] + ' — press D (or tap) to drop it';
+  } else tag.style.display = 'none';
+  if (!quiet) Sound.click();
 }
 $('slotBlock').onclick = () => selectSlot('block');
 $('slotDoor').onclick = () => selectSlot('door');
+
+/* ---------- Inventory (backpack) ---------- */
+function openInv() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  renderInv();
+  $('invPopup').style.display = 'flex';
+}
+function closeInv() { $('invPopup').style.display = 'none'; popupOpen = false; }
+function startPlacing(slot) {
+  selectSlot(slot);
+  closeInv();
+  toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
+}
+function renderInv() {
+  refreshHUD();
+  const wrap = $('invList');
+  wrap.innerHTML = '';
+  const placeables = [
+    ['🧱', 'Building Blocks', G.blocks, 'block'],
+    ['🚪', 'Doors', G.doors, 'door'],
+    ['🪑', 'Chairs', G.furniture.chair, 'chair'],
+    ['🍽️', 'Picnic Tables', G.furniture.table, 'table'],
+    ['🍎', 'Apples', G.furniture.food, 'food']
+  ];
+  placeables.forEach(([icon, name, count, slot]) => {
+    const row = document.createElement('div');
+    row.className = 'invItem';
+    row.innerHTML = '<div class="icon">' + icon + '</div>' +
+      '<div class="info"><b>' + name + '</b><small>You have ' + count + '</small></div>';
+    const place = document.createElement('button');
+    place.className = 'placeBtn';
+    place.textContent = 'Place';
+    place.disabled = count < 1;
+    place.onclick = () => { Sound.click(); startPlacing(slot); };
+    if (slot === 'food') {
+      const eat = document.createElement('button');
+      eat.className = 'eatBtn';
+      eat.textContent = '😋 Eat';
+      eat.disabled = count < 1;
+      eat.onclick = () => { if (G.furniture.food < 1) return; G.furniture.food--; eatSnack(); renderInv(); };
+      row.appendChild(eat);
+    }
+    row.appendChild(place);
+    wrap.appendChild(row);
+  });
+  // money + gear
+  const money = document.createElement('div');
+  money.className = 'invItem';
+  money.innerHTML = '<div class="icon">🪙</div><div class="info"><b>Coins</b><small>You have ' + G.coins +
+    (G.mode === 'store' ? ' • 🍓 Berries: ' + G.berries : '') + '</small></div>';
+  wrap.appendChild(money);
+  const gear = [['🪜', 'Ladder', 'ladder'], ['👟', 'Speedy Shoes', 'shoes'], ['🦘', 'Bouncy Boots', 'boots'], ['🎉', 'Party Hat', 'hat']]
+    .filter(g => G.owned[g[2]]);
+  if (gear.length) {
+    const row = document.createElement('div');
+    row.className = 'invItem';
+    row.innerHTML = '<div class="icon">🎽</div><div class="info"><b>Gear</b><small>' +
+      gear.map(g => g[0] + ' ' + g[1]).join(' • ') + '</small></div>';
+    wrap.appendChild(row);
+  }
+}
+$('invClose').onclick = () => { Sound.click(); closeInv(); };
+$('invBtn').onclick = () => { Sound.click(); openInv(); };
+$('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
+$('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
+$('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
+$('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('soundBtn').onclick = () => {
   const m = Sound.toggleMute();
   $('soundBtn').textContent = m ? '🔇' : '🔊';
@@ -1894,26 +2131,58 @@ function buildMenu() {
 }
 buildMenu();
 
+function refreshSavedList() {
+  const list = $('savedList');
+  list.innerHTML = '';
+  const saves = listSaves();
+  saves.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'saveRow';
+    const load = document.createElement('button');
+    load.className = 'loadBtn';
+    const modeName = { relaxed: 'Relaxed', creeper: 'Shelter Rush', store: 'Store' }[s.mode] || s.mode;
+    load.innerHTML = '▶ <b>' + (s.name || 'Player') + '</b> — 🧱' + (s.blocks || 0) + ' 🪙' + (s.coins || 0) + ' • ' + modeName;
+    load.onclick = () => { Sound.click(); restoreGame(s); };
+    const del = document.createElement('button');
+    del.className = 'delBtn';
+    del.textContent = '🗑';
+    del.title = 'Delete this saved game';
+    del.onclick = () => { Sound.click(); clearSave(s.name); refreshSavedList(); };
+    row.appendChild(load); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+refreshSavedList();
+{
+  const saves = listSaves();
+  if (saves.length) $('nameInput').value = saves[0].name || '';
+}
+
 $('startBtn').onclick = () => {
   Sound.click();
-  clearSave();                         // starting fresh — the old save is replaced
+  const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
+  G.playerName = nm;
+  clearSave(nm);                       // Start Adventure = a brand-new world for this name
+  resetWorld();
+  resetGameState();
+  loadProfileFor(nm);
   startGame();
 };
-{
-  const savedGame = loadSave();
-  if (savedGame && savedGame.placed) {
-    $('continueBtn').style.display = 'inline-block';
-    $('continueBtn').onclick = () => { Sound.click(); restoreGame(savedGame); };
-  }
-}
 
 function startGame() {
   $('startScreen').style.display = 'none';
   $('hud').style.display = 'block';
   if (isTouch) $('touchUI').style.display = 'block';
   setAvatar(G.avatarIndex);
-  updateBadgeRow();
+  updateBadgeBtn(false);
+  selectSlot('block', true);
   $('coinRow').style.display = 'block';        // coins matter in every mode now
+  $('playerRow').style.display = 'block';
+  $('playerName').textContent = G.playerName;
+  $('hudTimer').style.display = 'none';
+  $('hudShelter').style.display = 'none';
+  $('berryRow').style.display = 'none';
+  $('solvedRow').style.display = 'none';
   G.running = true;
 
   const modeNames = { relaxed: '🌼 Relaxed Mode', creeper: '⏰ Shelter Rush', store: '🏪 Store Mode (Level 2)' };
