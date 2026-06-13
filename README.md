@@ -16,21 +16,23 @@ No images, models, or audio files to download.
 4. Walk up to a glowing **❓ math station** and solve the equation by
    **finding the right block** — tap the answer block from a few choices.
    When you pick the correct one, **5 blocks pop onto the ground** around
-   you!
-5. Walk over and press **P** to pick them up, then press **D** to put a
+   you! The **orange station** is special: solving math there wins you a
+   **🚪 door** for your house.
+5. Walk over and press **P** to pick blocks up, then press **D** to put a
    block down on the square in front of you. Blocks snap to a grid and
    stack automatically, so building walls is easy.
 
 Equations are **freshly generated every time** — you'll never see the same
-problem twice in a session. Wrong answers are no big deal — you just get a
-friendly "try again!" (In Store Mode, harder equations earn more coins.)
+problem twice in a session. A wrong answer brings up a **brand-new
+question** (no guessing by elimination!), always with a friendly "try
+again". (In Store Mode, harder equations earn more coins.)
 
 ## 🗺️ Game modes
 
 | Mode | What happens |
 | --- | --- |
 | 🌼 **Relaxed Mode** | No timer, no enemies. Solve math, earn blocks, build anything you like. |
-| ⏰ **Creeper Mode** | You have **15 minutes** to earn enough blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out first… creepers spawn and chase you! Fully enclosed shelter with a door = **SAFE** (and you win!). |
+| ⏰ **Shelter Rush** | You have **15 minutes** to earn enough blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters take about 30 seconds to waddle over, and if one catches you outside a shelter, it's game over. Fully enclosed shelter with a door = **SAFE** (and you win!). |
 | 🏪 **Level 2: Store Mode** | Correct answers earn **🪙 coins** instead of blocks. Spend them at the Block Shop on a **🪜 ladder** (climb trees and pick berries!), speedy shoes, bouncy boots, and a party hat. Sell your berries back for more coins! |
 
 ## 🦊 The heroes
@@ -57,7 +59,7 @@ four-legged animals really walk on four legs:
 | `Space` | Jump (hold near a tree trunk to climb, if you own the ladder) |
 | `P` | **Pick up** the nearest block (loot from math, or your own builds) |
 | `D` | **Put down** a block on the square in front of you (stacks into walls) |
-| `1` / `2` | Select block 🧱 or door 🚪 (a door costs 4 blocks) |
+| `1` / `2` | Select block 🧱 or door 🚪 (win doors at the orange ❓ station) |
 | `E` | Use a math station / open the shop |
 | `B` | Open the shop (Store Mode) |
 | `C` | Toggle first-person / third-person camera |
@@ -69,7 +71,7 @@ buttons.
 
 A **🔊 sound toggle** lives in the top-right corner — handy for classrooms.
 All sound effects (footsteps, block thunks, berry pops, happy chimes, coin
-sounds, creeper hisses…) are synthesized live with the Web Audio API.
+sounds, Gloomy hisses…) are synthesized live with the Web Audio API.
 
 ## 📚 Grade levels
 

@@ -159,7 +159,7 @@
     <h2>2️⃣ Pick a game mode</h2>
     <div class="btnRow" id="modeRow">
       <button class="chooseBtn modeBtn selected" data-mode="relaxed">🌼 Relaxed Mode<small>No timer, no enemies. Build anything!</small></button>
-      <button class="chooseBtn modeBtn" data-mode="creeper">⏰ Creeper Mode<small>15 minutes to build a shelter with a door… or creepers come!</small></button>
+      <button class="chooseBtn modeBtn" data-mode="creeper">⏰ Shelter Rush<small>15 minutes to build a shelter with a door… or the Gloomies come!</small></button>
       <button class="chooseBtn modeBtn" data-mode="store">🏪 Level 2: Store Mode<small>Earn coins, shop for a ladder, climb trees & pick berries!</small></button>
     </div>
   </div>
@@ -198,7 +198,7 @@
   <div id="toast"></div>
   <div id="hotbar">
     <button class="hotSlot active" id="slotBlock"><span class="slotIcon">🧱</span>Block<br><span id="slotBlockN">0</span></button>
-    <button class="hotSlot" id="slotDoor"><span class="slotIcon">🚪</span>Door<br>costs 4 🧱</button>
+    <button class="hotSlot" id="slotDoor"><span class="slotIcon">🚪</span>Door<br><span id="slotDoorN">0</span></button>
   </div>
 </div>
 
@@ -629,7 +629,7 @@ const AVATARS = [
 /* ============================ GAME STATE ============================ */
 const G = {
   grade: 2, mode: 'relaxed', avatarIndex: 0,
-  blocks: 0, coins: 0, berries: 0, solved: 0,
+  blocks: 0, doors: 0, coins: 0, berries: 0, solved: 0,
   running: false, over: false,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false,
   selectedSlot: 'block',
@@ -776,26 +776,38 @@ function spawnBerries() {
 }
 
 /* ---- math stations: glowing "?" pillars ---- */
-function questionTexture() {
+function questionTexture(door) {
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
   const c = cv.getContext('2d');
-  c.fillStyle = '#5B3FA8'; c.fillRect(0, 0, 64, 64);
-  c.strokeStyle = '#8a6fd4'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
-  c.fillStyle = '#FFE066'; c.font = 'bold 44px sans-serif';
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('?', 32, 36);
+  if (door) {                                  // the orange DOOR station
+    c.fillStyle = '#D2691E'; c.fillRect(0, 0, 64, 64);
+    c.strokeStyle = '#F0964E'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
+    c.fillStyle = '#6B4226'; c.fillRect(22, 26, 20, 32);                // little door
+    c.fillStyle = '#FFD23E'; c.fillRect(36, 40, 4, 4);                  // handle
+    c.fillStyle = '#FFE066'; c.font = 'bold 22px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('?', 32, 14);
+  } else {
+    c.fillStyle = '#5B3FA8'; c.fillRect(0, 0, 64, 64);
+    c.strokeStyle = '#8a6fd4'; c.lineWidth = 4; c.strokeRect(2, 2, 60, 60);
+    c.fillStyle = '#FFE066'; c.font = 'bold 44px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('?', 32, 36);
+  }
   return new THREE.CanvasTexture(cv);
 }
 const stations = [];
-const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emissive: 0x3a1f7a });
-[[4, 2], [-5, -4], [2, -7], [-3, 6]].forEach(([sx, sz]) => {
-  const m = new THREE.Mesh(blockGeo, stationMat);
+const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(false), emissive: 0x3a1f7a });
+const doorStationMat = new THREE.MeshLambertMaterial({ map: questionTexture(true), emissive: 0x6b3208 });
+[[4, 2, 'blocks'], [-5, -4, 'blocks'], [2, -7, 'blocks'], [-3, 6, 'door']].forEach(([sx, sz, gives]) => {
+  const m8 = gives === 'door' ? doorStationMat : stationMat;
+  const m = new THREE.Mesh(blockGeo, m8);
   m.position.set(sx + 0.5, 0.5, sz + 0.5);
   addBlockMesh(sx, 0, sz, null, 'station', false, m);
-  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), stationMat);
+  const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), m8);
   topper.position.set(sx + 0.5, 1.45, sz + 0.5);
   scene.add(topper);
-  stations.push({ x: sx, z: sz, mesh: m, topper });
+  stations.push({ x: sx, z: sz, mesh: m, topper, gives });
 });
 
 /* ---- shop stall (Store Mode) ---- */
@@ -1033,7 +1045,7 @@ function pickupBlock() {
   if (bk) {
     const [x, y, z] = bk.split(',').map(Number);
     removeBlockAt(x, y, z);
-    G.blocks += be.type === 'door' ? 4 : 1;
+    if (be.type === 'door') G.doors += 1; else G.blocks += 1;
     Sound.brk();
     refreshHUD();
     return;
@@ -1048,11 +1060,11 @@ function putDownBlock() {
   const base = blocks.get(key(fx, 0, fz));
   if (base && !base.removable) { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
   if (G.selectedSlot === 'door') {
-    if (G.blocks < 4) { toast('🚪 A door costs 4 blocks — solve more math!', 1800); return; }
+    if (G.doors < 1) { toast('🚪 No doors yet! Solve math at the ORANGE ❓ station!', 2200); return; }
     if (blocks.has(key(fx, 0, fz)) || blocks.has(key(fx, 1, fz))) { toast('🚪 The door needs an empty spot!', 1500); return; }
     if (cellOverlapsPlayer(fx, 0, fz) || cellOverlapsPlayer(fx, 1, fz)) { toast('🙂 Step back a little first!', 1400); return; }
     placeDoor(fx, 0, fz);
-    G.blocks -= 4;
+    G.doors -= 1;
   } else {
     if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
     let y = 0;
@@ -1068,57 +1080,61 @@ function putDownBlock() {
   refreshHUD();
 }
 
-/* ============================ CREEPERS ============================ */
-const creepers = [];
-function buildCreeper() {
+/* ==================== THE GLOOMIES (original monsters!) ==================== */
+/* Purple one-eyed grumps. They take about 30 seconds to waddle across the
+   world — if one catches you outside a shelter, it's game over. */
+const gloomies = [];
+function buildGloomy() {
   const g = new THREE.Group();
-  box(g, 0.55, 0.8, 0.4, 0x44A832, 0, 0.9, 0);                         // body
-  box(g, 0.55, 0.55, 0.55, 0x4CBA38, 0, 1.6, 0);                       // head
-  box(g, 0.12, 0.14, 0.03, 0x111111, -0.12, 1.68, 0.28);               // face
-  box(g, 0.12, 0.14, 0.03, 0x111111, 0.12, 1.68, 0.28);
-  box(g, 0.1, 0.2, 0.03, 0x111111, 0, 1.52, 0.28);
-  box(g, 0.06, 0.12, 0.03, 0x111111, -0.07, 1.48, 0.28);
-  box(g, 0.06, 0.12, 0.03, 0x111111, 0.07, 1.48, 0.28);
-  [[-0.16, 0.22], [0.16, 0.22], [-0.16, -0.22], [0.16, -0.22]].forEach(([lx, lz]) =>
-    box(g, 0.22, 0.5, 0.22, 0x3B8F2B, lx, 0.25, lz));
+  box(g, 0.7, 0.75, 0.55, 0x8E5BC8, 0, 0.75, 0);                       // round purple body
+  box(g, 0.5, 0.5, 0.1, 0x7B49B5, 0, 0.68, 0.26);                      // darker tummy
+  box(g, 0.3, 0.3, 0.08, 0xFFFFFF, 0, 0.95, 0.29);                     // one BIG eye
+  box(g, 0.13, 0.13, 0.06, 0x222222, 0, 0.95, 0.33);                   // pupil
+  box(g, 0.32, 0.07, 0.06, 0x4A2A75, 0, 0.55, 0.3);                    // grumpy mouth
+  box(g, 0.1, 0.07, 0.06, 0x4A2A75, -0.18, 0.6, 0.3);
+  box(g, 0.1, 0.07, 0.06, 0x4A2A75, 0.18, 0.6, 0.3);
+  box(g, 0.06, 0.22, 0.06, 0x7B49B5, -0.15, 1.22, 0);                  // wobbly antennae
+  box(g, 0.06, 0.22, 0.06, 0x7B49B5, 0.15, 1.22, 0);
+  box(g, 0.12, 0.12, 0.12, 0xFFD23E, -0.15, 1.38, 0);                  // glowing bobbles
+  box(g, 0.12, 0.12, 0.12, 0xFFD23E, 0.15, 1.38, 0);
+  box(g, 0.16, 0.16, 0.16, 0x8E5BC8, -0.44, 0.75, 0.12);               // stubby arms
+  box(g, 0.16, 0.16, 0.16, 0x8E5BC8, 0.44, 0.75, 0.12);
+  [[-0.2, 0.16], [0.2, 0.16], [-0.2, -0.16], [0.2, -0.16]].forEach(([lx, lz]) =>
+    box(g, 0.2, 0.36, 0.2, 0x7B49B5, lx, 0.18, lz));                   // stubby feet
   return g;
 }
-let lastHiss = 0, lastCatch = 0;
-function spawnCreepers() {
+let lastHiss = 0;
+function spawnGloomies() {
   const n = 5;
   for (let i = 0; i < n; i++) {
     const ang = (i / n) * Math.PI * 2;
-    const c = buildCreeper();
+    const c = buildGloomy();
     c.position.set(Math.cos(ang) * (WORLD_R - 2), 0, Math.sin(ang) * (WORLD_R - 2));
     scene.add(c);
-    creepers.push(c);
+    gloomies.push(c);
   }
 }
-function updateCreepers(dt) {
-  if (!creepers.length) return;
+function updateGloomies(dt) {
+  if (!gloomies.length || G.over) return;
   const now = performance.now() / 1000;
   let nearest = 999;
-  for (const c of creepers) {
+  for (const c of gloomies) {
     const dx = player.pos.x - c.position.x, dz = player.pos.z - c.position.z;
     const dist = Math.hypot(dx, dz);
     nearest = Math.min(nearest, dist);
     if (dist > 0.5) {
-      const sp = 2.2 * dt;
+      const sp = 0.8 * dt;             // a slow waddle ≈ 30s across the world
       const nx = c.position.x + (dx / dist) * sp;
       const nz = c.position.z + (dz / dist) * sp;
       if (!solidAt(Math.floor(nx), 0, Math.floor(c.position.z))) c.position.x = nx;
       if (!solidAt(Math.floor(c.position.x), 0, Math.floor(nz))) c.position.z = nz;
     }
     c.rotation.y = Math.atan2(dx, dz);
-    c.position.y = Math.abs(Math.sin(now * 6 + c.position.x)) * 0.08;
+    c.position.y = Math.abs(Math.sin(now * 6 + c.position.x)) * 0.1;
+    c.rotation.z = Math.sin(now * 6 + c.position.x) * 0.08;            // waddle
   }
   if (nearest < 8 && now - lastHiss > 2.5) { Sound.hiss(); lastHiss = now; }
-  if (nearest < 1.2 && !G.safe && now - lastCatch > 4) {
-    lastCatch = now;
-    Sound.sad();
-    player.pos.copy(SPAWN); player.vel.set(0, 0, 0);
-    toast('💨 A creeper found you! Back to the start — keep building your shelter!', 3200);
-  }
+  if (nearest < 1.1 && !G.safe) loseGame();
 }
 
 /* ============================ SHELTER CHECK ============================ */
@@ -1161,6 +1177,7 @@ function toast(msg, ms) {
 function refreshHUD() {
   $('blockCount').textContent = G.blocks;
   $('slotBlockN').textContent = G.blocks;
+  $('slotDoorN').textContent = G.doors;
   $('coinCount').textContent = G.coins;
   $('berryCount').textContent = G.berries;
   $('solvedCount').textContent = G.solved;
@@ -1172,15 +1189,10 @@ function fmtTime(s) {
 }
 
 /* ============================ MATH POPUP ============================ */
-let currentEq = null, popupOpen = false;
-function openMath() {
-  if (popupOpen || G.over) return;
-  popupOpen = true;
-  document.exitPointerLock && document.exitPointerLock();
+let currentEq = null, currentGives = 'blocks', popupOpen = false;
+function renderMathQuestion() {
   currentEq = makeEquation(G.grade);
   $('mathEquation').textContent = currentEq.text + ' = ?';
-  $('mathPrompt').textContent = 'Find the right block! Tap the block with the answer.';
-  $('mathFeedback').textContent = '';
   const wrap = $('mathChoices');
   wrap.innerHTML = '';
   currentEq.options.forEach(opt => {
@@ -1190,6 +1202,17 @@ function openMath() {
     b.onclick = () => answerPicked(b, opt);
     wrap.appendChild(b);
   });
+}
+function openMath(gives) {
+  if (popupOpen || G.over) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  currentGives = G.mode === 'store' ? 'coins' : (gives || 'blocks');
+  $('mathPrompt').textContent = currentGives === 'door'
+    ? 'Find the right block to win a 🚪 DOOR!'
+    : 'Find the right block! Tap the block with the answer.';
+  $('mathFeedback').textContent = '';
+  renderMathQuestion();
   $('mathPopup').style.display = 'flex';
 }
 function answerPicked(btn, opt) {
@@ -1198,11 +1221,14 @@ function answerPicked(btn, opt) {
     Sound.correct();
     const reward = currentEq.reward;
     document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
-    if (G.mode === 'store') {
+    if (currentGives === 'coins') {
       G.coins += reward; G.solved++;
       Sound.coin();
       $('mathFeedback').textContent = '🎉 Nice! The blocks turned to coins: +' + reward + ' 🪙';
       if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 equations solved! You are a math star! Keep shopping!', 4000); }, 900);
+    } else if (currentGives === 'door') {
+      G.doors++;
+      $('mathFeedback').textContent = '🎉 You won a 🚪 DOOR! Press 2, then D to put it in your wall!';
     } else {
       spawnLoot(5);                    // 5 blocks pop onto the ground around you
       $('mathFeedback').textContent = '🎉 Nice! 5 blocks appeared on the ground — ' + (isTouch ? 'tap them to pick them up!' : 'press P near them to pick them up!');
@@ -1212,8 +1238,9 @@ function answerPicked(btn, opt) {
   } else {
     Sound.wrong();
     btn.classList.add('shake');
-    setTimeout(() => btn.classList.remove('shake'), 400);
-    $('mathFeedback').textContent = pick(['💪 Try again — you\'ve got this!', '🌱 Almost! Give it another try!', '🙂 Not that block — try another!']);
+    // a fresh question every time — no guessing by elimination!
+    $('mathFeedback').textContent = pick(['💪 Good try! Here\'s a brand-new one!', '🌱 Almost! Try this new one!', '🙂 Not quite — here\'s another!']);
+    setTimeout(renderMathQuestion, 650);
   }
 }
 function closeMath() {
@@ -1318,7 +1345,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   let entry = null, entryKey = null;
   blocks.forEach((b, k) => { if (!entry && (b.mesh === obj || b.mesh === hit.object)) { entry = b; entryKey = k; } });
 
-  if (entry && entry.type === 'station') { openMath(); return; }
+  if (entry && entry.type === 'station') {
+    const s = stations.find(s2 => s2.mesh === obj || s2.mesh === hit.object);
+    openMath(s ? s.gives : 'blocks');
+    return;
+  }
   if (entry && entry.type === 'shop') { if (G.mode === 'store') openShop(); return; }
 
   if (action === 'break') {
@@ -1332,7 +1363,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
       const baseY = partner ? Math.min(y, Number(entry.partner.split(',')[1])) : y;
       bx = x; by = baseY; bz = z;
       removeBlockAt(bx, by, bz);
-      G.blocks += 4;
+      G.doors += 1;
     } else {
       const p = hit.object.position;
       bx = Math.floor(p.x); by = Math.floor(p.y); bz = Math.floor(p.z);
@@ -1353,11 +1384,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   if (Math.abs(px) >= WORLD_R || Math.abs(pz) >= WORLD_R || py > 12) return;
 
   if (G.selectedSlot === 'door') {
-    if (G.blocks < 4) { toast('🚪 A door costs 4 blocks — solve more math!', 1800); return; }
+    if (G.doors < 1) { toast('🚪 No doors yet! Solve math at the ORANGE ❓ station!', 2200); return; }
     if (blocks.has(key(px, py, pz)) || blocks.has(key(px, py + 1, pz))) return;
     if (cellOverlapsPlayer(px, py, pz) || cellOverlapsPlayer(px, py + 1, pz)) { toast('🙂 Step back a little first!', 1400); return; }
     placeDoor(px, py, pz);
-    G.blocks -= 4;
+    G.doors -= 1;
     Sound.place(); refreshHUD();
   } else {
     if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station!', 1800); return; }
@@ -1371,10 +1402,13 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   }
 }
 
-function nearestStationDist() {
-  let best = 999;
-  for (const s of stations) best = Math.min(best, Math.hypot(player.pos.x - s.x - 0.5, player.pos.z - s.z - 0.5));
-  return best;
+function nearestStation() {
+  let st = null, dist = 999;
+  for (const s of stations) {
+    const d = Math.hypot(player.pos.x - s.x - 0.5, player.pos.z - s.z - 0.5);
+    if (d < dist) { dist = d; st = s; }
+  }
+  return { st, dist };
 }
 function shopDist() { return Math.hypot(player.pos.x - SHOP_POS.x, player.pos.z - SHOP_POS.z); }
 
@@ -1387,7 +1421,8 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyP') pickupBlock();
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyE') {
-    if (nearestStationDist() < 2.6) { Sound.click(); openMath(); }
+    const ns = nearestStation();
+    if (ns.dist < 2.6) { Sound.click(); openMath(ns.st.gives); }
     else if (G.mode === 'store' && shopDist() < 3.5) { Sound.click(); openShop(); }
   }
   if (e.code === 'KeyC') toggleCamera();
@@ -1469,7 +1504,8 @@ if (isTouch) {
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    if (nearestStationDist() < 2.8) { Sound.click(); openMath(); }
+    const ns = nearestStation();
+    if (ns.dist < 2.8) { Sound.click(); openMath(ns.st.gives); }
     else if (G.mode === 'store' && shopDist() < 3.5) { Sound.click(); openShop(); }
     else pickupBlock();
   }, { passive: false });
@@ -1581,7 +1617,7 @@ function startGame() {
   setAvatar(G.avatarIndex);
   G.running = true;
 
-  const modeNames = { relaxed: '🌼 Relaxed Mode', creeper: '⏰ Creeper Mode', store: '🏪 Store Mode (Level 2)' };
+  const modeNames = { relaxed: '🌼 Relaxed Mode', creeper: '⏰ Shelter Rush', store: '🏪 Store Mode (Level 2)' };
   $('modeLabel').textContent = modeNames[G.mode] + ' • Grade ' + G.grade;
 
   if (G.mode === 'creeper') {
@@ -1606,14 +1642,22 @@ function winCreeper() {
   G.over = true; G.safe = true;
   Sound.fanfare();
   $('endTitle').textContent = '🏠🎉 You\'re SAFE!';
-  $('endMsg').textContent = 'You built a shelter with walls and a door — the creepers can\'t get in! Amazing building and amazing math!';
+  $('endMsg').textContent = 'You built a shelter with walls and a door — the Gloomies can\'t get in! Amazing building and amazing math!';
+  $('endScreen').style.display = 'flex';
+}
+function loseGame() {
+  if (G.over) return;
+  G.over = true;
+  Sound.sad();
+  $('endTitle').textContent = '💜 Game Over!';
+  $('endMsg').textContent = 'A Gloomy caught you! You did some awesome math today — press Play Again and build your shelter even faster!';
   $('endScreen').style.display = 'flex';
 }
 function doomsdayStart() {
   G.doomsday = true;
   Sound.sad();
-  toast('💥 DOOMSDAY! The creepers are coming! Finish your shelter — walls + a door = safe!', 5000);
-  spawnCreepers();
+  toast('💜 The GLOOMIES are coming! You have about 30 seconds — get walls and a 🚪 door around you!', 5000);
+  spawnGloomies();
 }
 $('againBtn').onclick = () => location.reload();
 
@@ -1631,6 +1675,7 @@ function loop(now) {
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
   stationMat.emissive.setRGB(0.15 + pulse * 0.25, 0.05 + pulse * 0.1, 0.4 + pulse * 0.2);
+  doorStationMat.emissive.setRGB(0.35 + pulse * 0.25, 0.16 + pulse * 0.12, 0.02);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
 
   // clouds drift
@@ -1657,8 +1702,10 @@ function loop(now) {
   // hints
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
-    if (nearestStationDist() < 2.6) {
-      hint.textContent = isTouch ? '❓ Tap ⭐ USE to do math and earn ' + (G.mode === 'store' ? 'coins!' : 'blocks!') : '❓ Press E to do math and earn ' + (G.mode === 'store' ? 'coins!' : 'blocks!');
+    const ns = nearestStation();
+    if (ns.dist < 2.6) {
+      const what = G.mode === 'store' ? 'earn coins!' : (ns.st.gives === 'door' ? 'win a 🚪 DOOR!' : 'earn blocks!');
+      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and ' : '❓ Press E to do math and ') + what;
       hint.style.display = 'block';
     } else if (G.mode === 'store' && shopDist() < 3.5) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE to open the shop!' : '🏪 Press E to open the shop!';
@@ -1666,7 +1713,7 @@ function loop(now) {
     } else hint.style.display = 'none';
   }
 
-  // creeper mode logic
+  // Shelter Rush logic
   if (G.mode === 'creeper' && !G.over) {
     if (!G.doomsday) {
       G.timer -= dt;
@@ -1675,8 +1722,8 @@ function loop(now) {
       if (G.timer < 60 && !G.warned60) { G.warned60 = true; Sound.tick(); toast('⏰ One minute left! Hurry — walls and a door!', 3000); }
       if (G.timer < 10 && !G.warned10) { G.warned10 = true; for (let i = 0; i < 5; i++) Sound.tone(1000, 0.06, 'sine', 0.1, i * 0.5); }
     } else {
-      $('hudTimer').textContent = '💥 Doomsday!';
-      updateCreepers(dt);
+      $('hudTimer').textContent = '💜 The Gloomies are here!';
+      updateGloomies(dt);
     }
     shelterTimer -= dt;
     if (shelterTimer <= 0) {
@@ -1690,7 +1737,7 @@ function loop(now) {
       } else if (G.enclosed) {
         sh.textContent = '🧱 Enclosed… now add a 🚪 door!';
         sh.style.color = '#b5832a';
-        G.safe = true;                 // walls alone still keep creepers out
+        G.safe = true;                 // walls alone still keep Gloomies out
       } else {
         sh.textContent = '🏗️ Not enclosed yet — build walls around you!';
         sh.style.color = '#c0392b';
