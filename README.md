@@ -15,9 +15,8 @@ No images, models, or audio files to download.
 3. **Pick your hero** from seven cute voxel avatars.
 4. Walk up to a glowing **❓ math station** and solve the equation by
    **finding the right block** — tap the answer block from a few choices.
-   A correct answer is **added straight to your counter** (top-left) — no
-   pickup needed. **Blue ❓ stations give 🧱 blocks; gold ❓ stations give
-   🪙 coins.**
+   Then **pick your reward** (wood blocks, stone blocks, coins, or
+   softballs) — it's added straight to your counter, no pickup needed.
 5. Press **D** to put a block down on the square in front of you. Blocks
    snap to a grid and stack automatically, so building walls is easy.
 6. Spend your coins at the **🏪 shop** (follow the signpost, or press
@@ -35,20 +34,22 @@ away.
 
 ## 🗺️ Game modes
 
+There are two modes, and both let you build, shop, climb trees, and pick
+berries:
+
 | Mode | What happens |
 | --- | --- |
-| 🌼 **Relaxed Mode** | No timer, no enemies. Solve math, earn blocks, build anything you like. |
-| ⏰ **Shelter Rush** | Pick a timer (**5, 10, or 15 minutes** — there's a countdown bar in the HUD) to earn blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters waddle over, and if one catches you outside a shelter, it's game over. A fully enclosed shelter with a door = **SAFE** (you win!). Each correct answer lets you choose **🧱 blocks** (to build) or **⚽ softballs** (ammo) — press **F** (or tap **🎯**) to bonk a Gloomy back to the edge. It stays math-based: you can only earn ammo by solving problems. |
-| 🏪 **Level 2: Store Mode** | The math stations are **color-coded**: solve at a **blue ❓ station to earn 🧱 blocks**, or a **gold ❓ station to earn 🪙 coins** — your choice. Spend coins at the shop on **doors**, block bundles, a **🪜 ladder**, speedy shoes, bouncy boots, a party hat, and furniture. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any gear you own — back to the shop for coins! |
+| 🌳 **Build Mode** | Relaxed, open-ended building — no timer, no monsters. Solve math at the ❓ stations and **pick your reward** each time (see below), shop for furniture and gear, climb trees for berries, and build whatever you like. |
+| ⏰ **Shelter Rush** | Pick a timer (**5, 10, or 15 minutes** — there's a countdown bar in the HUD) and build a shelter before it runs out: walls all the way around you plus a **🚪 door**. If time runs out the **Gloomies** come — grumpy purple monsters that waddle toward you; get caught outside a shelter and it's game over. A fully enclosed shelter with a door = **SAFE** (you win!). You also get a math-earned **ball shooter**: choose **⚽ softballs** as your reward, then press **F** (or tap **🎯**) to bonk a Gloomy back to the edge. Ammo only comes from solving math. |
 
-In every mode the stations are color-coded the same way (blue = blocks,
-gold = coins), and **doors are bought at the shop** for coins. To place a
-door, chair, table, or other item, open your **🎒 backpack (I)**, tap
-**Place**, then press **D** where you want it.
+**Pick your reward:** every correct answer lets you choose what you earn —
+**🟫 wood blocks**, **🩶 stone blocks** (a different color), **🪙 coins** to
+spend at the shop, or (in Shelter Rush) **⚽ softballs**. Choosing a block
+color also sets the color of the blocks you place next.
 
-The shop is open in **every** mode (press **B**), and gold coin blocks drop
-from math in every mode, so you can always buy what you need — including
-extra **building blocks** if you'd rather buy than build up your stash.
+The shop is open in **both** modes (press **B**); **doors are bought there**
+for coins. To place a door, chair, table, or other item, open your **🎒
+backpack (I)**, tap **Place**, then press **D** where you want it.
 
 ## 🦊 The heroes
 
@@ -96,7 +97,8 @@ buttons.
 
 A **🔊 sound toggle** lives in the top-right corner — handy for classrooms.
 All sound effects (footsteps, block thunks, berry pops, happy chimes, coin
-sounds, Gloomy hisses…) are synthesized live with the Web Audio API.
+sounds, Gloomy hisses, and a satisfying *bonk* when you hit one with a
+softball…) are synthesized live with the Web Audio API.
 
 ## 🎒 Backpack & furniture
 
