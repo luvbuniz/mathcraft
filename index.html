@@ -172,7 +172,7 @@
   <button id="startBtn">▶ Start Adventure!</button>
   <div id="controlsHelp">
     <b>⬆ ⬇ Arrow keys</b> walk • <b>← →</b> turn • <b>Space</b> jump • <b>E</b> use math station / shop<br>
-    Solve math and <b>5 blocks appear on the ground</b>! • <b>P</b> pick up a block • <b>D</b> put down a block<br>
+    Solve math and <b>5 blocks appear on the ground</b>! • <b>P</b> pick up blocks &amp; berries • <b>D</b> put down • <b>R</b> remove<br>
     <b>1 / 2</b> choose block or door • <b>C</b> camera view • Mouse clicks build too!<br>
     📱 On a tablet: joystick to move, drag to look, tap to build & pick up!
   </div>
@@ -765,14 +765,25 @@ function spawnBerries() {
   const berryGeo = new THREE.SphereGeometry(0.16, 8, 8);
   const colors = [0xE53935, 0xAB47BC, 0xFF7043];
   trees.forEach((t, ti) => {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {        // four berries per tree, around the outside
       const m = new THREE.Mesh(berryGeo, new THREE.MeshLambertMaterial({ color: colors[(ti + i) % 3] }));
-      const ang = (i / 4) * Math.PI * 2 + ti;
-      m.position.set(t.x + 0.5 + Math.cos(ang) * 1.3, t.topY + 0.4 + (i % 2) * 0.8, t.z + 0.5 + Math.sin(ang) * 1.3);
+      const ang = (i / 4) * Math.PI * 2 + ti * 0.7;
+      m.position.set(t.x + 0.5 + Math.cos(ang) * 1.55, t.topY + 0.1 + (i % 2) * 0.7, t.z + 0.5 + Math.sin(ang) * 1.55);
       scene.add(m);
       berries.push({ mesh: m, alive: true, respawnAt: 0 });
     }
   });
+}
+/* close enough to pick? generous reach, but you must be up at berry height */
+function canReachBerry(b) {
+  const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
+  return head.distanceTo(b.mesh.position) <= 3.2 && (b.mesh.position.y - head.y) <= 1.25;
+}
+function collectBerry(b) {
+  b.alive = false; b.mesh.visible = false;
+  b.respawnAt = performance.now() + 25000;
+  G.berries++; Sound.pop(); refreshHUD();
+  toast('🍓 Yum! +1 berry', 1100);
 }
 
 /* ---- math stations: glowing "?" pillars ---- */
@@ -870,6 +881,12 @@ function addPartyHat() {
   hat.position.set(0, player.avatarData.quad ? 0.4 : 0.5, 0);
   player.avatarData.head.add(hat);
   player.avatarData.hatAdded = true;
+  player.avatarData.hatMesh = hat;
+}
+function removePartyHat() {
+  if (!player.avatarData || !player.avatarData.hatAdded) return;
+  player.avatarData.head.remove(player.avatarData.hatMesh);
+  player.avatarData.hatAdded = false;
 }
 
 function collideAxis(axis, delta) {
@@ -926,9 +943,11 @@ function updatePlayer(dt) {
     player.vel.x = 0; player.vel.z = 0;
   }
 
-  const climbing = G.owned.ladder && nearTrunk() && (keys['Space'] || touch.jump);
-  if (climbing) {
-    player.vel.y = 3.2;
+  const nearLadder = G.owned.ladder && nearTrunk();
+  if (nearLadder && (keys['Space'] || touch.jump)) {
+    player.vel.y = 3.2;                                  // climb up
+  } else if (nearLadder && !player.onGround && player.vel.y <= 0) {
+    player.vel.y = 0;                                    // hang on the ladder — no falling while you pick!
   } else {
     player.vel.y -= 22 * dt;
     if ((keys['Space'] || touch.jump) && player.onGround) {
@@ -1024,15 +1043,8 @@ function collectLoot(l) {
   refreshHUD();
   toast('🧱 +1 block!', 700);
 }
-/* P — pick up the nearest block (loot first, then your own builds) */
-function pickupBlock() {
-  let best = null, bestD = 2.8;
-  for (const l of lootBlocks) {
-    if (!l.alive) continue;
-    const d = Math.hypot(l.mesh.position.x - player.pos.x, l.mesh.position.z - player.pos.z);
-    if (d < bestD) { best = l; bestD = d; }
-  }
-  if (best) { collectLoot(best); return; }
+/* R — remove the nearest block you placed (topmost of a stack first) */
+function removePlacedBlock() {
   let bk = null, be = null, bestY = -1, bestDist = 999;
   blocks.forEach((b, k) => {            // within reach, prefer the topmost block
     if (!b.removable) return;
@@ -1042,15 +1054,35 @@ function pickupBlock() {
     if (d > 1.8) return;
     if (y > bestY || (y === bestY && d < bestDist)) { bk = k; be = b; bestY = y; bestDist = d; }
   });
-  if (bk) {
-    const [x, y, z] = bk.split(',').map(Number);
-    removeBlockAt(x, y, z);
-    if (be.type === 'door') G.doors += 1; else G.blocks += 1;
-    Sound.brk();
-    refreshHUD();
-    return;
+  if (!bk) return false;
+  const [x, y, z] = bk.split(',').map(Number);
+  removeBlockAt(x, y, z);
+  if (be.type === 'door') G.doors += 1; else G.blocks += 1;
+  Sound.brk();
+  refreshHUD();
+  return true;
+}
+/* P — pick up the nearest thing: loot blocks, then berries, then your builds */
+function pickupBlock() {
+  let best = null, bestD = 2.8;
+  for (const l of lootBlocks) {
+    if (!l.alive) continue;
+    const d = Math.hypot(l.mesh.position.x - player.pos.x, l.mesh.position.z - player.pos.z);
+    if (d < bestD) { best = l; bestD = d; }
   }
-  toast('🤲 No block close enough — walk up to one and try P again!', 1800);
+  if (best) { collectLoot(best); return; }
+  if (G.mode === 'store') {
+    let bb = null, bd = 999;
+    const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
+    for (const b of berries) {
+      if (!b.alive || !canReachBerry(b)) continue;
+      const d = head.distanceTo(b.mesh.position);
+      if (d < bd) { bb = b; bd = d; }
+    }
+    if (bb) { collectBerry(bb); return; }
+  }
+  if (removePlacedBlock()) return;
+  toast('🤲 Nothing close enough — walk up to a block' + (G.mode === 'store' ? ' or berry' : '') + ' and try P again!', 1800);
 }
 /* D — put down a block on the square in front of you (stacks for walls) */
 function putDownBlock() {
@@ -1270,9 +1302,9 @@ function renderShop() {
       '<div class="info"><b>' + item.name + ' — ' + priceTxt + '</b><small>' + item.desc + '</small></div>';
     const btn = document.createElement('button');
     btn.className = 'buyBtn' + (owned ? ' owned' : '');
-    btn.textContent = owned ? '✓ Owned' : (item.id === 'sell' ? 'Sell!' : 'Buy');
-    btn.disabled = owned || (item.id === 'sell' ? G.berries === 0 : G.coins < item.price);
-    btn.onclick = () => buyItem(item.id);
+    btn.textContent = owned ? 'Sell back +' + item.price + ' 🪙' : (item.id === 'sell' ? 'Sell!' : 'Buy');
+    btn.disabled = item.id === 'sell' ? G.berries === 0 : (!owned && G.coins < item.price);
+    btn.onclick = () => owned ? sellItem(item.id) : buyItem(item.id);
     row.appendChild(btn);
     wrap.appendChild(row);
   });
@@ -1291,9 +1323,19 @@ function buyItem(id) {
     G.owned[id] = true;
     Sound.coin();
     if (id === 'hat') addPartyHat();
-    if (id === 'ladder') toast('🪜 Ladder! Stand next to a tree trunk and hold JUMP to climb!', 3500);
+    if (id === 'ladder') toast('🪜 Ladder! Hold JUMP by a tree trunk to climb — then press P to pick berries!', 4000);
     else toast(item.icon + ' You bought ' + item.name + '!');
   }
+  renderShop();
+}
+function sellItem(id) {
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  if (!G.owned[id]) return;
+  G.owned[id] = false;
+  G.coins += item.price;
+  if (id === 'hat') removePartyHat();
+  Sound.coin();
+  toast(item.icon + ' Sold ' + item.name + ' back for ' + item.price + ' coins!');
   renderShop();
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
@@ -1318,15 +1360,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
     const hitB = raycaster.intersectObjects(bMeshes)[0];
     if (hitB) {
       const berry = berries.find(b => b.mesh === hitB.object);
-      const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
-      if (head.distanceTo(berry.mesh.position) > 2.2) {
-        toast(G.owned.ladder ? '🪜 Too far! Climb closer — hold JUMP by the trunk!' : '🍓 Too high! A ladder from the shop would help…', 1900);
+      if (!canReachBerry(berry)) {
+        toast(G.owned.ladder ? '🪜 Climb up the trunk (hold JUMP), then press P!' : '🍓 Too high! A ladder from the shop would help…', 1900);
         return;
       }
-      berry.alive = false; berry.mesh.visible = false;
-      berry.respawnAt = performance.now() + 25000;
-      G.berries++; Sound.pop(); refreshHUD();
-      toast('🍓 Yum! +1 berry', 1100);
+      collectBerry(berry);
       return;
     }
   }
@@ -1420,6 +1458,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (e.code === 'KeyP') pickupBlock();
   if (e.code === 'KeyD') putDownBlock();
+  if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
     const ns = nearestStation();
     if (ns.dist < 2.6) { Sound.click(); openMath(ns.st.gives); }

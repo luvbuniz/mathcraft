@@ -33,7 +33,7 @@ again". (In Store Mode, harder equations earn more coins.)
 | --- | --- |
 | 🌼 **Relaxed Mode** | No timer, no enemies. Solve math, earn blocks, build anything you like. |
 | ⏰ **Shelter Rush** | You have **15 minutes** to earn enough blocks and build a shelter — walls all the way around you, plus a **🚪 door**. If the timer runs out… the **Gloomies** come! These grumpy purple one-eyed monsters take about 30 seconds to waddle over, and if one catches you outside a shelter, it's game over. Fully enclosed shelter with a door = **SAFE** (and you win!). |
-| 🏪 **Level 2: Store Mode** | Correct answers earn **🪙 coins** instead of blocks. Spend them at the Block Shop on a **🪜 ladder** (climb trees and pick berries!), speedy shoes, bouncy boots, and a party hat. Sell your berries back for more coins! |
+| 🏪 **Level 2: Store Mode** | Correct answers earn **🪙 coins** instead of blocks. Spend them at the Block Shop on a **🪜 ladder**, speedy shoes, bouncy boots, and a party hat. With the ladder, hold JUMP by a tree trunk to climb (you hang on — no falling!), then press **P** to pick the four berries on each tree. Sell berries — or any item you own — back to the shop for coins! |
 
 ## 🦊 The heroes
 
@@ -57,8 +57,9 @@ four-legged animals really walk on four legs:
 | `↑` / `↓` | Walk forward / backward (`W`/`S` work too) |
 | `←` / `→` | Turn left / right — no mouse needed! |
 | `Space` | Jump (hold near a tree trunk to climb, if you own the ladder) |
-| `P` | **Pick up** the nearest block (loot from math, or your own builds) |
+| `P` | **Pick up** the nearest thing: loot blocks, berries (Store Mode), or your own builds |
 | `D` | **Put down** a block on the square in front of you (stacks into walls) |
+| `R` | **Remove** the nearest block or door you placed (you get it back) |
 | `1` / `2` | Select block 🧱 or door 🚪 (win doors at the orange ❓ station) |
 | `E` | Use a math station / open the shop |
 | `B` | Open the shop (Store Mode) |
