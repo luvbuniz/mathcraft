@@ -19,10 +19,16 @@ No images, models, or audio files to download.
    softballs) — it's added straight to your counter, no pickup needed.
 5. Press **D** to put a block down on the square in front of you. Blocks
    snap to a grid and stack automatically, so building walls is easy.
-6. Spend your coins at the **🏪 shop** (follow the signpost, or press
-   **B**): doors, furniture (chairs, tables, beds, lamps, a kitchen stove
-   & sink, a bathtub & shower, garden planters, bushes, flowers), a tree
-   ladder, and more.
+6. Spend your coins at **🛒 Stack Mart** (follow the signpost, or press
+   **B**): doors, windows, **roof tiles**, furniture (chairs, tables, beds,
+   lamps, a **stove & oven** + sink, a bathtub & shower, garden planters,
+   bushes, flowers), **cooking items** (pots, frying pans, bacon, pies), a
+   tree ladder, and more.
+
+   **Roofs:** stack roof tiles on top of your walls for a peaked roof.
+   **Cooking:** aim at your stove (tap its top) and place a pot, pan, or
+   bacon on a burner to make it steam and sizzle — or put a pie in to bake
+   in the glowing oven.
 
 **Learning, not guessing:** equations are freshly generated every time —
 never the same problem twice in a session. A wrong answer brings up a
@@ -44,10 +50,10 @@ berries:
 
 **Pick your reward:** every correct answer lets you choose what you earn —
 **🟫 wood blocks**, **🩶 stone blocks** (a different color), **🪙 coins** to
-spend at the shop, or (in Shelter Rush) **⚽ softballs**. Choosing a block
+spend at Stack Mart, or (in Shelter Rush) **⚽ softballs**. Choosing a block
 color also sets the color of the blocks you place next.
 
-The shop is open in **both** modes (press **B**); **doors are bought there**
+Stack Mart is open in **both** modes (press **B**); **doors are bought there**
 for coins. To place a door, chair, table, or other item, open your **🎒
 backpack (I)**, tap **Place**, then press **D** where you want it.
 
@@ -78,8 +84,8 @@ four-legged animals really walk on four legs:
 | `R` | **Remove** the nearest thing you placed (it goes back in your backpack) |
 | `I` | Open your **🎒 backpack/inventory** — see your stuff and place furniture |
 | `1` / `2` | Quick-select block 🧱 or door 🚪 (or choose any item in the 🎒 backpack) |
-| `E` | Use a math station / open the shop |
-| `B` | Open the shop — block bundles, doors, chairs, tables, apples, gear |
+| `E` | Use a math station / open Stack Mart |
+| `B` | Open 🛒 Stack Mart — blocks, doors, roof tiles, furniture, cooking items, gear |
 | `C` | Toggle camera: 🧍 see your character / 👁️ look through their eyes |
 | `F` | Throw a softball at the Gloomies (Shelter Rush, after the timer ends) |
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
@@ -103,13 +109,19 @@ softball…) are synthesized live with the Web Audio API.
 ## 🎒 Backpack & furniture
 
 Press **I** (or tap **🎒**) to open your backpack. It shows everything you
-have — blocks, doors, coins, berries, apples, furniture, and gear. Furniture
-includes a **chair, picnic table, bed, lamp, fence, flower**, a kitchen
-**🍳 stove** and **🚰 sink**, a bathroom **🛁 bathtub** and **🚿 shower**, and
-backyard **🌱 garden planters** and **🌳 bushes**. Pick any item, press
-**Place**, then walk where you want it and press **D** (or tap the ground)
-to set it down. Put an apple right on top of a table for a snack scene!
-Anything you place can be picked back up with **P** or **R**.
+have — blocks, doors, windows, roof tiles, coins, berries, apples,
+furniture, cooking items, and gear. Furniture includes a **chair, picnic
+table, bed, lamp, fence, flower**, a kitchen **🔥 stove & oven** and **🚰
+sink**, a bathroom **🛁 bathtub** and **🚿 shower**, and backyard **🌱 garden
+planters** and **🌳 bushes**. Pick any item, press **Place**, then walk
+where you want it and press **D** (or tap the ground) to set it down. Put
+an apple right on top of a table for a snack scene!  Anything you place can
+be picked back up with **P** or **R**.
+
+**🍳 Cooking:** set a **🍲 pot**, **🍳 frying pan**, or **🥓 bacon** on a stove
+burner (aim at the stove and tap its top) to watch it steam and sizzle, or
+slide a **🥧 pie** into the oven and it bakes with a warm glow. **🔺 Roof
+tiles** stack on top of your walls to cap a house with a peaked roof.
 
 ## 💾 Saving with your name, and badges
 

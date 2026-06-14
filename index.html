@@ -840,7 +840,7 @@
 <div class="popup" id="shopPopup">
   <div class="popupCard">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="shopClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏪 The Block Shop</h2>
+    <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🛒 Stack Mart</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
     <div id="shopItems"></div>
   </div>
@@ -1456,7 +1456,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, stove: 0, sink: 0, pot: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
+  furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -1478,9 +1478,13 @@ const SHOP_ITEMS = [
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
   { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A window BLOCK — drops into a wall gap at any height.' },
-  { id: 'stove',  icon: '🍳', name: 'Kitchen Stove', price: 12, kind: 'many', desc: 'A stove with burners and an oven for the kitchen.' },
+  { id: 'roof',   icon: '🔺', name: 'Roof Tiles (×4)', price: 8, kind: 'many', desc: 'Peaked roof tiles — stack them across the top of your walls.' },
+  { id: 'stove',  icon: '🔥', name: 'Stove & Oven', price: 12, kind: 'many', desc: 'Burners on top + a real oven. Cook pots & pans on it; bake in the oven!' },
   { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
-  { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'A soup pot for the stove or kitchen table.' },
+  { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'Soup pot — set it on the stove to make it steam!' },
+  { id: 'pan', icon: '🍳', name: 'Frying Pan', price: 6, kind: 'many', desc: 'Fry an egg on the stove. Aim at a stove and place it on a burner.' },
+  { id: 'bacon', icon: '🥓', name: 'Bacon', price: 4, kind: 'many', desc: 'Sizzle some bacon on a stove burner — yum!' },
+  { id: 'pie', icon: '🥧', name: 'Pie', price: 5, kind: 'many', desc: 'Pop it in the oven and watch it bake with a warm glow.' },
   { id: 'groceries', icon: '🛒', name: 'Grocery Basket', price: 7, kind: 'many', desc: 'Milk, bread, carrots, and fruit for the kitchen.' },
   { id: 'bathtub',icon: '🛁', name: 'Bathtub', price: 14,      kind: 'many',  desc: 'A cozy bathtub for the bathroom.' },
   { id: 'shower', icon: '🚿', name: 'Shower', price: 12,       kind: 'many',  desc: 'A shower for the bathroom.' },
@@ -1662,6 +1666,8 @@ function serializeWorld() {
     else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
     else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
+    else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0]);
+    else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind)]);
     else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant]);
   });
   return placed;
@@ -1747,6 +1753,12 @@ function restoreGame(s) {
       addBlockMesh(x, y, z, null, 'power', true, mesh);
     }
     else if (type === 'window') addWindow(x, y, z, detail);
+    else if (type === 'roof') addRoof(x, y, z, detail);
+    else if (type === 'stove') {
+      placeFurnitureAt('stove', x, z);
+      const st = blocks.get(key(x, 0, z));
+      if (st && Array.isArray(detail)) detail.forEach(k => attachCookware(st, k));
+    }
     else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail);
     else {
       const col = detail || 0xC9B79A;
@@ -1777,6 +1789,7 @@ function resetWorld() {
   projectiles.forEach(p => scene.remove(p.mesh)); projectiles.length = 0;
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
+  cookProps.length = 0; ovenGlows.length = 0;     // stoves are removed above, taking their cookware with them
   player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null;
   if (bedProps) bedProps.visible = false;
   if (shieldBubble) shieldBubble.visible = false;
@@ -1784,7 +1797,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, stove: 0, sink: 0, pot: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
+  G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
   G.over = false; G.doomsday = false; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
@@ -2058,9 +2071,9 @@ const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emiss
   const c = cv.getContext('2d');
   c.fillStyle = '#FFF4E0'; c.fillRect(0, 0, 128, 64);
   for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#E53935' : '#FFF4E0'; c.fillRect(i * 16, 0, 16, 10); }
-  c.fillStyle = '#7a3b12'; c.font = 'bold 26px sans-serif';
+  c.fillStyle = '#7a3b12'; c.font = 'bold 22px sans-serif';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('SHOP ➜', 64, 38);
+  c.fillText('MART ➜', 64, 38);
   const signMat = new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) });
   const sign = new THREE.Group();
   box(sign, 0.12, 1.5, 0.12, 0x8B5A2B, 0, 0.75, 0);
@@ -2094,8 +2107,8 @@ const shopGroup = new THREE.Group();
   const c = cv.getContext('2d');
   c.fillStyle = '#FFD23E'; c.fillRect(0, 0, 256, 96);
   c.strokeStyle = '#b5832a'; c.lineWidth = 8; c.strokeRect(4, 4, 248, 88);
-  c.fillStyle = '#7a3b12'; c.font = 'bold 56px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('🛒 SHOP', 128, 54);
+  c.fillStyle = '#7a3b12'; c.font = 'bold 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('🛒 STACK MART', 128, 54);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 0.12), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 3.05, 0);          // centered on top of the roof
   shopGroup.add(sign);
@@ -2477,6 +2490,7 @@ function refundFor(type) {
   if (type === 'door') G.doors += 1;
   else if (type === 'power') G.powerBlocks += 1;
   else if (type === 'window') { G.furniture.window += 1; toast('📦 Packed up your window — back in your 🎒!', 1600); }
+  else if (type === 'roof') { G.furniture.roof += 1; toast('📦 Packed up a roof tile — back in your 🎒!', 1600); }
   else if (FURNITURE_TYPES.includes(type)) { G.furniture[type] += 1; toast('📦 Packed up your ' + type + ' — back in your 🎒!', 1600); }
   else G.blocks += 1;
 }
@@ -2508,19 +2522,25 @@ function placeSelectedAt(x, z, blockY) {
   if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
   const slot = G.selectedSlot;
   if (slot === 'door') {
-    if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at the 🏪 shop (press B)!', 2400); return false; }
+    if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🛒 Stack Mart (press B)!', 2400); return false; }
     if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
     if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
   }
+  if (COOK_SLOTS[slot]) {                 // pots/pans/bacon/pie cook when set on a stove
+    const stove = blocks.get(key(x, 0, z));
+    if (stove && stove.type === 'stove') return cookOnStove(stove, slot);
+    if (slot !== 'pot') { toast('🔥 Aim at a stove (tap its top) to cook the ' + slot + '!', 2200); return false; }
+    // a pot with no stove nearby just sits on the ground (handled below)
+  }
   if (FURNITURE_TYPES.includes(slot)) {
-    if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     placeFurnitureAt(slot, x, z); G.furniture[slot] -= 1; Sound.place(); refreshHUD(); return true;
   }
   if (slot === 'food') {
-    if (G.furniture.food < 1) { toast('🍎 No apples in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    if (G.furniture.food < 1) { toast('🍎 No apples in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     const cell = blocks.get(key(x, 0, z));
     const onTable = !!(cell && cell.type === 'table');
     if (cell && !onTable) { toast('🍎 Put it on the grass or on a table!', 1600); return false; }
@@ -2528,7 +2548,7 @@ function placeSelectedAt(x, z, blockY) {
     toast(onTable ? '🍎 Snack on the table — yum!' : '🍎 Apple placed!', 1400); return true;
   }
   if (slot === 'power') {
-    if (G.powerBlocks < 1) { toast('⚡ No Power Blocks! Solve math or buy some at the 🏪 shop.', 2200); return false; }
+    if (G.powerBlocks < 1) { toast('⚡ No Power Blocks! Solve math or buy some at 🛒 Stack Mart.', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
     if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
@@ -2539,7 +2559,7 @@ function placeSelectedAt(x, z, blockY) {
     G.powerBlocks -= 1; Sound.powerZap(); refreshHUD(); return true;
   }
   if (slot === 'window') {     // window is a wall block — drops into a gap at any height
-    if (G.furniture.window < 1) { toast('🪟 No windows in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    if (G.furniture.window < 1) { toast('🪟 No windows in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
     if (y > 8) { toast('⬆️ That stack is tall enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
@@ -2547,8 +2567,17 @@ function placeSelectedAt(x, z, blockY) {
     addWindow(x, y, z);
     G.furniture.window -= 1; Sound.place(); refreshHUD(); return true;
   }
+  if (slot === 'roof') {       // roof tiles stack on top of walls, like a peaked cap
+    if (G.furniture.roof < 1) { toast('🔺 No roof tiles in your 🎒 — buy some at 🛒 Stack Mart!', 2200); return false; }
+    const y = blockY == null ? 0 : blockY;
+    if (y > 8) { toast('⬆️ That roof is high enough!', 1400); return false; }
+    if (blocks.has(key(x, y, z))) return false;
+    if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    addRoof(x, y, z);
+    G.furniture.roof -= 1; Sound.place(); refreshHUD(); return true;
+  }
   // plain building block
-  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or the 🏪 shop!', 2000); return false; }
+  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or 🛒 Stack Mart!', 2000); return false; }
   const y = blockY == null ? 0 : blockY;
   if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
   if (blocks.has(key(x, y, z))) return false;
@@ -2567,7 +2596,7 @@ function putDownBlock() {
   const base = blocks.get(key(fx, 0, fz));
   if (base && !base.removable && G.selectedSlot !== 'food') { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
   let blockY = 0;
-  if (G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window') {
+  if (G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window' || G.selectedSlot === 'roof') {
     while (blockY <= 8 && blocks.has(key(fx, blockY, fz))) blockY++;
   }
   placeSelectedAt(fx, fz, blockY);
@@ -2976,6 +3005,7 @@ function buyItem(id) {
     if (id === 'blocks') { G.blocks += 10; toast('🧱 +10 blocks in your backpack!', 2500); }
     else if (id === 'powerBlocks') { G.powerBlocks += 3; toast('⚡ +3 rare Power Blocks — place them carefully!', 2800); }
     else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
+    else if (id === 'roof') { G.furniture.roof += 4; toast('🔺 +4 roof tiles in your 🎒! Stack them on top of your walls.', 3200); }
     else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
     if (G.owned[id] || G.coins < item.price) return;
@@ -3035,6 +3065,34 @@ function addWindow(x, y, z, rot) {
   blocks.get(key(x, y, z)).rot = rot;
   return mesh;
 }
+/* a peaked roof tile — two slopes meeting at a ridge, the classic little-house roof */
+function buildRoofMesh() {
+  const g = new THREE.Group();
+  const tile = 0xB5503C, ridgeCol = 0x8E3B2C;
+  [1, -1].forEach(s => {
+    const slope = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.09, 0.78), mat(tile));
+    slope.position.set(0, 0.18, s * 0.25);
+    slope.rotation.x = s * 0.84;                      // tilt each side down toward the eave
+    g.add(slope);
+  });
+  box(g, 1.08, 0.12, 0.18, ridgeCol, 0, 0.47, 0);     // ridge cap along the top
+  box(g, 1.06, 0.07, 0.09, ridgeCol, 0, -0.04, 0.49); // eave trim
+  box(g, 1.06, 0.07, 0.09, ridgeCol, 0, -0.04, -0.49);
+  return g;
+}
+/* roof tiles line up like windows: ridge runs along the wall you face when placing */
+function roofRotationAt(x, z) {
+  return Math.abs(Math.cos(player.yaw)) >= Math.abs(Math.sin(player.yaw)) ? 0 : Math.PI / 2;
+}
+function addRoof(x, y, z, rot) {
+  if (rot == null) rot = roofRotationAt(x, z);
+  const mesh = buildRoofMesh();
+  mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+  mesh.rotation.y = rot;
+  addBlockMesh(x, y, z, null, 'roof', true, mesh);
+  blocks.get(key(x, y, z)).rot = rot;
+  return mesh;
+}
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
 function buildFurnitureMesh(type, variant) {
   const g = new THREE.Group();
@@ -3079,9 +3137,19 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.82, 0.1, 0.72, 0xC9CDD4, 0, 0.7, 0);                     // cooktop
     [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]].forEach(([x, z]) =>
       box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.76, z));                // 4 burners
-    box(g, 0.62, 0.4, 0.05, 0x4a4a52, 0, 0.3, 0.36);                  // oven door
-    box(g, 0.44, 0.05, 0.05, 0xBBBFC6, 0, 0.5, 0.4);                  // handle
+    // the oven, set into the front of the body
+    box(g, 0.66, 0.42, 0.05, 0x3b3f47, 0, 0.3, 0.355);               // oven door
+    const ovenGlass = box(g, 0.44, 0.26, 0.03, 0x141414, 0, 0.3, 0.37); // dark oven window
+    const ovenGlow = box(g, 0.42, 0.24, 0.02, 0xFF8A3D, 0, 0.3, 0.40);  // warm light in front of the glass
+    ovenGlow.material = new THREE.MeshBasicMaterial({ color: 0xFF8A3D, transparent: true, opacity: 0 });
+    box(g, 0.5, 0.05, 0.05, 0xBBBFC6, 0, 0.54, 0.4);                  // handle
     [-0.3, -0.1, 0.1, 0.3].forEach(x => box(g, 0.06, 0.06, 0.04, 0x222, x, 0.62, 0.37)); // knobs
+    // mount points for cooking (local coords): 4 burner tops + the oven slot inside
+    g.userData.burners = [[-0.18, 0.81, -0.16], [0.18, 0.81, -0.16], [-0.18, 0.81, 0.16], [0.18, 0.81, 0.16]];
+    g.userData.ovenSlot = [0, 0.3, 0.18];
+    g.userData.ovenGlow = ovenGlow;
+    g.userData.ovenGlass = ovenGlass;
+    g.userData.cooking = [];                                          // {kind, prop, slot}
   } else if (type === 'sink') {
     box(g, 0.85, 0.52, 0.7, 0xEFE7D8, 0, 0.26, 0);                    // cabinet
     box(g, 0.88, 0.12, 0.72, 0xCFD3D9, 0, 0.56, 0);                   // counter top
@@ -3133,6 +3201,97 @@ function placeFurnitureAt(type, x, z, variant) {
   mesh.position.set(x + 0.5, 0, z + 0.5);
   scene.add(mesh);
   blocks.set(key(x, 0, z), { mesh, type, removable: true, variant });
+  if (type === 'stove' && mesh.userData.ovenGlow) ovenGlows.push(mesh.userData.ovenGlow);
+  return true;
+}
+
+/* ====================== COOKING: pots, pans & the oven ====================== */
+const COOK_SLOTS = { pot: 1, pan: 1, bacon: 1, pie: 1 };
+const cookProps = [];     // little cooking groups on stoves (for steam animation)
+const ovenGlows = [];     // oven light planes that pulse while something bakes
+function addSteam(parent, baseY) {
+  const puffs = [];
+  for (let i = 0; i < 3; i++) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08),
+      new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.45 }));
+    p.position.set((i - 1) * 0.05, baseY, 0);
+    p.userData.phase = i * 0.34; p.userData.baseY = baseY;
+    parent.add(p); puffs.push(p);
+  }
+  return puffs;
+}
+function buildCookProp(kind) {
+  const g = new THREE.Group();
+  if (kind === 'pot') {
+    box(g, 0.34, 0.22, 0.34, 0x59636F, 0, 0.11, 0);                  // pot body
+    box(g, 0.4, 0.05, 0.4, 0x303740, 0, 0.24, 0);                    // lid
+    box(g, 0.06, 0.05, 0.05, 0x808890, 0, 0.29, 0);                  // lid knob
+    box(g, 0.06, 0.04, 0.1, 0x303740, 0.22, 0.15, 0);                // handles
+    box(g, 0.06, 0.04, 0.1, 0x303740, -0.22, 0.15, 0);
+    g.userData.steam = addSteam(g, 0.34);
+  } else if (kind === 'pan') {
+    box(g, 0.34, 0.05, 0.34, 0x2a2a2e, 0, 0.05, 0);                  // pan
+    box(g, 0.26, 0.05, 0.06, 0x4a4a52, 0.28, 0.06, 0);               // handle
+    box(g, 0.15, 0.035, 0.15, 0xFFFFFF, -0.02, 0.09, 0);             // egg white
+    box(g, 0.06, 0.04, 0.06, 0xFFC83D, -0.02, 0.1, 0);               // yolk
+    g.userData.steam = addSteam(g, 0.18);
+  } else if (kind === 'bacon') {
+    box(g, 0.34, 0.05, 0.34, 0x2a2a2e, 0, 0.05, 0);                  // pan
+    box(g, 0.26, 0.05, 0.06, 0x4a4a52, 0.28, 0.06, 0);               // handle
+    [-0.08, 0, 0.08].forEach(z => box(g, 0.24, 0.04, 0.06, 0xA8412A, 0, 0.09, z));     // bacon strips
+    [-0.08, 0, 0.08].forEach(z => box(g, 0.24, 0.045, 0.02, 0xF1C7A8, 0, 0.092, z - 0.02)); // fatty streaks
+    g.userData.steam = addSteam(g, 0.18);
+  } else if (kind === 'pie') {
+    box(g, 0.42, 0.07, 0.42, 0xD9A441, 0, 0.04, 0);                  // golden crust
+    box(g, 0.32, 0.05, 0.32, 0xC2410C, 0, 0.09, 0);                  // filling
+    [-0.12, 0.12].forEach(x => box(g, 0.06, 0.04, 0.42, 0xE8C25A, x, 0.11, 0));        // lattice
+    [-0.12, 0.12].forEach(z => box(g, 0.42, 0.04, 0.06, 0xE8C25A, 0, 0.11, z));
+  }
+  g.userData.cook = kind;
+  return g;
+}
+function updateOvenGlow(stoveMesh) {
+  const ud = stoveMesh.userData;
+  if (ud && ud.ovenGlow) ud.ovenGlow.userData.baking = ud.cooking.some(c => c.slot === 'oven');
+}
+/* low-level: build & attach a cooking prop to a stove (no inventory / sound) */
+function attachCookware(stoveEntry, kind) {
+  const ud = stoveEntry.mesh.userData;
+  if (!ud || !ud.burners) return false;
+  const isOven = (kind === 'pie');
+  if (isOven) {
+    if (ud.cooking.some(c => c.slot === 'oven')) return false;
+  } else if (ud.cooking.filter(c => c.slot !== 'oven').length >= ud.burners.length) {
+    return false;
+  }
+  const prop = buildCookProp(kind);
+  if (isOven) {
+    prop.position.set(ud.ovenSlot[0], ud.ovenSlot[1], ud.ovenSlot[2]);
+    prop.scale.setScalar(0.7);
+    ud.cooking.push({ kind, prop, slot: 'oven' });
+  } else {
+    const idx = ud.cooking.filter(c => c.slot !== 'oven').length;
+    const b = ud.burners[idx];
+    prop.position.set(b[0], b[1], b[2]);
+    ud.cooking.push({ kind, prop, slot: idx });
+  }
+  stoveEntry.mesh.add(prop);
+  cookProps.push(prop);
+  updateOvenGlow(stoveEntry.mesh);
+  return true;
+}
+/* player action: cook the selected item on a stove, with feedback */
+function cookOnStove(stoveEntry, kind) {
+  if (!stoveEntry || stoveEntry.type !== 'stove') { toast('🔥 Aim at a stove to cook!', 1800); return false; }
+  if (G.furniture[kind] < 1) { toast('No ' + kind + ' in your 🎒 — buy it at 🛒 Stack Mart!', 2200); return false; }
+  if (!attachCookware(stoveEntry, kind)) {
+    toast(kind === 'pie' ? '🥧 The oven is busy — bake one at a time!' : '🍳 All four burners are busy!', 1900);
+    return false;
+  }
+  G.furniture[kind] -= 1; Sound.place(); refreshHUD();
+  toast(kind === 'pie' ? '🥧 Pie is baking in the oven!' :
+        kind === 'bacon' ? '🥓 Bacon is sizzling — yum!' :
+        kind === 'pan' ? '🍳 Frying up an egg!' : '🍲 Soup\'s on!', 1900);
   return true;
 }
 /* ---- apples the player places (on the ground, or on top of a table) ---- */
@@ -3172,7 +3331,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
     if (hitB) {
       const berry = berries.find(b => b.mesh === hitB.object);
       if (!canReachBerry(berry)) {
-        toast(G.owned.ladder ? '🪜 Climb up the trunk (hold JUMP), then press P!' : '🍓 Too high! A ladder from the shop would help…', 1900);
+        toast(G.owned.ladder ? '🪜 Climb up the trunk (hold JUMP), then press P!' : '🍓 Too high! A ladder from 🛒 Stack Mart would help…', 1900);
         return;
       }
       collectBerry(berry);
@@ -3221,10 +3380,12 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   }
 
   // place
+  // tapping a stove with a pot/pan/bacon/pie in hand cooks it right there
+  if (entry && entry.type === 'stove' && COOK_SLOTS[G.selectedSlot]) { cookOnStove(entry, G.selectedSlot); return; }
   // Kid-friendly stacking: tapping one of your solid blocks drops the new block
   // on TOP of that column — no need to hit the exact top face to build upward.
-  const STACK_ON = { placed: 1, power: 1, window: 1 };
-  const stackable = G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window';
+  const STACK_ON = { placed: 1, power: 1, window: 1, roof: 1 };
+  const stackable = G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window' || G.selectedSlot === 'roof';
   if (stackable && entry && entry.removable && entryKey && STACK_ON[entry.type]) {
     const [cx, , cz] = entryKey.split(',').map(Number);
     let cy = 0;
@@ -3285,7 +3446,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', stove: '🍳 Stove', sink: '🚰 Sink', pot: '🍲 Pot', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
   const tag = $('placingTag');
@@ -3325,9 +3486,13 @@ function renderInv() {
     ['🚧', 'Fences', G.furniture.fence, 'fence'],
     ['🌷', 'Flowers', G.furniture.flower, 'flower'],
     ['🪟', 'Windows', G.furniture.window, 'window'],
-    ['🍳', 'Stoves', G.furniture.stove, 'stove'],
+    ['🔺', 'Roof Tiles', G.furniture.roof, 'roof'],
+    ['🔥', 'Stove & Oven', G.furniture.stove, 'stove'],
     ['🚰', 'Sinks', G.furniture.sink, 'sink'],
     ['🍲', 'Cooking Pots', G.furniture.pot, 'pot'],
+    ['🍳', 'Frying Pans', G.furniture.pan, 'pan'],
+    ['🥓', 'Bacon', G.furniture.bacon, 'bacon'],
+    ['🥧', 'Pies', G.furniture.pie, 'pie'],
     ['🛒', 'Grocery Baskets', G.furniture.groceries, 'groceries'],
     ['🛁', 'Bathtubs', G.furniture.bathtub, 'bathtub'],
     ['🚿', 'Showers', G.furniture.shower, 'shower'],
@@ -3341,7 +3506,10 @@ function renderInv() {
     row.innerHTML = '<div class="icon">' + icon + '</div>' +
       '<div class="info"><b>' + name + '</b><small>You have ' + count +
       (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
-       slot === 'window' ? ' • Drops into a wall gap at any height' : '') + '</small></div>';
+       slot === 'window' ? ' • Drops into a wall gap at any height' :
+       slot === 'roof' ? ' • Stacks on top of walls to make a peaked roof' :
+       (slot === 'pot' || slot === 'pan' || slot === 'bacon') ? ' • Aim at a 🔥 stove and place it on a burner to cook' :
+       slot === 'pie' ? ' • Aim at a 🔥 stove to bake it in the oven' : '') + '</small></div>';
     const place = document.createElement('button');
     place.className = 'placeBtn';
     place.textContent = 'Place';
@@ -3765,6 +3933,25 @@ function loop(now) {
     l.mesh.rotation.y = now / 600 + l.phase;
   }
 
+  // kitchen: steam puffs rise off cooking pots/pans, oven glows while baking
+  for (let i = cookProps.length - 1; i >= 0; i--) {
+    const p = cookProps[i];
+    if (!p.parent || !p.parent.parent) { cookProps.splice(i, 1); continue; }  // its stove was removed
+    const puffs = p.userData.steam;
+    if (puffs) for (const s of puffs) {
+      const ph = (now / 1000 * 0.5 + s.userData.phase) % 1;
+      s.position.y = s.userData.baseY + ph * 0.45;
+      s.material.opacity = Math.max(0, 0.45 - ph * 0.45);
+      s.scale.setScalar(0.5 + ph * 0.8);
+    }
+  }
+  for (let i = ovenGlows.length - 1; i >= 0; i--) {
+    const gl = ovenGlows[i];
+    if (!gl.parent || !gl.parent.parent) { ovenGlows.splice(i, 1); continue; }  // its stove was removed
+    const target = gl.userData.baking ? 0.55 + Math.sin(now / 200) * 0.12 : 0;
+    gl.material.opacity += (target - gl.material.opacity) * 0.1;
+  }
+
   // berries respawn
   if (berries.length) {
     for (const b of berries) {
@@ -3781,7 +3968,7 @@ function loop(now) {
       hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and pick a reward!' : '❓ Press E to do math and pick a reward!');
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
-      hint.textContent = isTouch ? '🏪 Tap ⭐ USE to open the shop!' : '🏪 Press E to open the shop!';
+      hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
       hint.style.display = 'block';
     } else if (nearestBed()) {
       hint.textContent = isTouch ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';
