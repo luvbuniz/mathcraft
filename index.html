@@ -2489,7 +2489,8 @@ function placeSelectedAt(x, z, blockY) {
   if (slot === 'power') {
     if (G.powerBlocks < 1) { toast('⚡ No Power Blocks! Solve math or buy some at the 🏪 shop.', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
-    if (y > 8 || blocks.has(key(x, y, z))) return false;
+    if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
+    if (blocks.has(key(x, y, z))) return false;
     if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     const mesh = new THREE.Mesh(blockGeo, powerMat);
     mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
@@ -2499,7 +2500,8 @@ function placeSelectedAt(x, z, blockY) {
   if (slot === 'window') {     // window is a wall block — drops into a gap at any height
     if (G.furniture.window < 1) { toast('🪟 No windows in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
-    if (y > 8 || blocks.has(key(x, y, z))) return false;
+    if (y > 8) { toast('⬆️ That stack is tall enough!', 1400); return false; }
+    if (blocks.has(key(x, y, z))) return false;
     if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     const mesh = buildWindowMesh();
     mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
@@ -3170,6 +3172,17 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   }
 
   // place
+  // Kid-friendly stacking: tapping one of your solid blocks drops the new block
+  // on TOP of that column — no need to hit the exact top face to build upward.
+  const STACK_ON = { placed: 1, power: 1, window: 1 };
+  const stackable = G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window';
+  if (stackable && entry && entry.removable && entryKey && STACK_ON[entry.type]) {
+    const [cx, , cz] = entryKey.split(',').map(Number);
+    let cy = 0;
+    while (cy <= 8 && blocks.has(key(cx, cy, cz))) cy++;       // first empty cell above the column
+    placeSelectedAt(cx, cz, cy);
+    return;
+  }
   const n = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
   if (hit.object === ground) n.set(0, 1, 0);
   else n.transformDirection(hit.object.matrixWorld).round();
