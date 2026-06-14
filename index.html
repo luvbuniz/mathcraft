@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Stackadoo — Build with Math!</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%239ed7a3%22%20stroke-width%3D%222%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+<!-- Bright, kid-friendly look on every device — opt out of browser "auto dark mode" (Brave/Chrome) -->
+<meta name="color-scheme" content="light">
 <!-- "Add to Home Screen" behaves like an app (fullscreen, app name + theme) on tablets -->
 <meta name="theme-color" content="#87CEEB">
 <meta name="mobile-web-app-capable" content="yes">
@@ -18,6 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
+  :root { color-scheme: light; }   /* keep the bright kid palette — opt out of browser auto-dark-mode */
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { width:100%; height:100%; overflow:hidden; font-family:'Comic Sans MS','Chalkboard SE','Segoe UI',sans-serif; background:#87CEEB; }
   canvas { display:block; }
@@ -1708,6 +1711,42 @@ const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
 const UNLOCK_KEY = 'stackadooUnlocked';
 function isUnlocked() { try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; } }
 function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnlocked(); }
+
+/* ===== Payments — how the $5 full-game unlock is purchased =====
+   WEB is first (Stripe). Native app stores (Apple/Google) come later and REQUIRE their own
+   in-app purchase — wire RevenueCat there. Pick the first option you set up; the rest can stay
+   blank until you're ready. After a successful payment the provider should return the player to
+   the site with "?unlocked=1", which flips the unlock flag below. */
+const PAY = {
+  // (1) Simplest, no server: a Stripe **Payment Link** (Stripe Dashboard → Payment Links).
+  //     Set its "after payment" redirect to your site URL + "?unlocked=1", then paste the link here.
+  stripePaymentLink: '',          // e.g. 'https://buy.stripe.com/your_link'
+  // (2) Stronger, needs a tiny backend: your own **Stripe Checkout** endpoint that creates a
+  //     session server-side and verifies it with a webhook before returning "?unlocked=1".
+  checkoutEndpoint: '',           // e.g. 'https://api.stackadoo.com/checkout'
+  // (3) NATIVE APP only: Apple App Store / Google Play in-app purchase (via RevenueCat). The SDK
+  //     flips the unlock on a verified purchase — there's nothing to redirect to.
+  revenueCat: false,
+  price: '$5'
+};
+function beginPurchase() {
+  if (typeof saveGame === 'function' && G.running) saveGame();    // don't lose a build if we navigate away
+  if (PAY.checkoutEndpoint) { location.href = PAY.checkoutEndpoint + '?return=' + encodeURIComponent(location.origin + location.pathname); return; }
+  if (PAY.stripePaymentLink) { location.href = PAY.stripePaymentLink; return; }
+  // No provider connected yet → demo unlock so the flow is fully testable today.
+  if (typeof toast === 'function') toast('🧪 Demo: no payment connected yet — unlocking for testing.', 3000);
+  doUnlock();
+}
+/* If a provider sent the player back with ?unlocked=1, complete the unlock and tidy the URL. */
+(function handlePurchaseReturn() {
+  try {
+    if (new URLSearchParams(location.search).get('unlocked') === '1') {
+      localStorage.setItem(UNLOCK_KEY, '1');
+      history.replaceState(null, '', location.pathname + location.hash);
+      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 Thank you! The full game is unlocked. Enjoy Reading City & Spanish Beach!', 4500); }, 700));
+    }
+  } catch (e) {}
+})();
 
 const SHOP_ITEMS = [
   { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
@@ -4059,7 +4098,7 @@ $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
-$('unlockBuyBtn').onclick = () => { Sound.click(); doUnlock(); };
+$('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
