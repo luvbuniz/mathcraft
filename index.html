@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MathCraft — Build with Math!</title>
+<title>Stackadoo — Build with Math!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -395,7 +395,7 @@
   }
   .timeBtn.selected, #gloomyRow .chooseBtn.selected { letter-spacing:.3px; }
 
-  /* the static "MathCraft Adventure" banner card */
+  /* the static "Stackadoo Adventure" banner card */
   .modeBtn {
     background:linear-gradient(180deg,#eafbe6,#d6f4cf) !important;
     color:#2c6b35 !important; border:2px solid rgba(86,170,90,.5) !important;
@@ -653,7 +653,7 @@
           <svg viewBox="0 0 48 48"><path d="M24 5l16 9v20l-16 9-16-9V14z" fill="#55BC70"/><path d="M24 5l16 9-16 9-16-9z" fill="#86D79A"/><path d="M24 23v20l16-9V14z" fill="#2E8B4A"/></svg>
         </span>
         <div class="brandText">
-          <h1 class="brandName">MathCraft</h1>
+          <h1 class="brandName">Stackadoo</h1>
           <p class="brandTag">Build worlds. Solve math.</p>
         </div>
       </div>
@@ -787,7 +787,7 @@
     <button id="badgeBtn" style="display:none">🏅 Badges</button>
   </div>
   <div class="hudBox" id="hudMode">
-    <div id="modeLabel">🏡 MathCraft Adventure</div>
+    <div id="modeLabel">🏡 Stackadoo Adventure</div>
     <div id="hudTimer">⏰ 15:00</div>
     <div id="timerBar"><div id="timerFill"></div></div>
     <div id="hudShield" style="display:none">🛡️ Shield: <span id="shieldTime">0:00</span></div>
@@ -880,7 +880,7 @@
 <script>
 'use strict';
 /* =====================================================================
-   MathCraft — a voxel math adventure for grades 2–5.
+   Stackadoo — a voxel math adventure for grades 2–5.
    Single file: Three.js r128 world + Web Audio sounds, all procedural.
    ===================================================================== */
 
@@ -1491,7 +1491,8 @@ function freshProfile() {
 }
 let profile = freshProfile();
 let profileDirty = false;
-const profileKey = name => 'mathcraftProfile:' + (name || 'Player');
+const PROFILE_PREFIX = 'stackadooProfile:';
+const profileKey = name => PROFILE_PREFIX + (name || 'Player');
 function loadProfileFor(name) {
   profile = freshProfile();
   try {
@@ -1574,8 +1575,8 @@ function listProfiles() {
   const out = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && k.indexOf('mathcraftProfile:') === 0) {
-      try { const p = JSON.parse(localStorage.getItem(k)); if (p) { p._name = k.slice('mathcraftProfile:'.length); out.push(p); } } catch (e) {}
+    if (k && k.indexOf(PROFILE_PREFIX) === 0) {
+      try { const p = JSON.parse(localStorage.getItem(k)); if (p) { p._name = k.slice(PROFILE_PREFIX.length); out.push(p); } } catch (e) {}
     }
   }
   return out.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
@@ -1624,7 +1625,7 @@ function renderGrownup() {
     reset.textContent = '🗑 Reset ' + p._name + "'s progress";
     reset.onclick = () => {
       Sound.click();
-      try { localStorage.removeItem('mathcraftProfile:' + p._name); } catch (e) {}
+      try { localStorage.removeItem(PROFILE_PREFIX + p._name); localStorage.removeItem('mathcraftProfile:' + p._name); } catch (e) {}
       if (p._name === G.playerName) { profile = freshProfile(); profile.firstPlayed = Date.now(); }
       renderGrownup();
     };
@@ -1649,8 +1650,29 @@ function serializeWorld() {
   });
   return placed;
 }
-const SAVE_PREFIX = 'mathcraftSave:';
+const SAVE_PREFIX = 'stackadooSave:';
 const saveKey = name => SAVE_PREFIX + (name || 'Player');
+/* One-time migration: carry forward saves & profiles from the old name
+   (MathCraft) so kids keep their worlds and progress after the rename. */
+(function migrateOldStorage() {
+  try {
+    const pairs = [['mathcraftSave:', SAVE_PREFIX], ['mathcraftProfile:', PROFILE_PREFIX]];
+    const moves = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      for (const [oldP, newP] of pairs) {
+        if (k.indexOf(oldP) === 0) moves.push([k, newP + k.slice(oldP.length)]);
+      }
+    }
+    moves.forEach(([oldK, newK]) => {
+      if (localStorage.getItem(newK) == null) {
+        const v = localStorage.getItem(oldK);
+        if (v != null) localStorage.setItem(newK, v);
+      }
+    });
+  } catch (e) {}
+})();
 let lastSaveAt = 0;
 function saveGame() {
   if (!G.playerName) return;
@@ -3309,7 +3331,7 @@ function takePhoto() {
     const url = renderer.domElement.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'mathcraft-' + (G.playerName || 'build') + '.png';
+    a.download = 'stackadoo-' + (G.playerName || 'build') + '.png';
     document.body.appendChild(a); a.click(); a.remove();
     toast('📸 Photo of your build saved!', 2200);
   } catch (e) { toast('📸 Couldn\'t save the photo on this device.', 2200); }

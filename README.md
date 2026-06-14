@@ -1,8 +1,8 @@
-# ⛏️ MathCraft — Build with Math!
+# ⛏️ Stackadoo — Build with Math!
 
-MathCraft is a **3D voxel-style math game** for kids in **grades 2–5**. It's
-Minecraft-inspired but completely original: a bright, blocky world where the
-core loop is **solve math → earn blocks → build structures**.
+Stackadoo is a **3D voxel-style math game** for kids in **grades 2–5**. A
+bright, blocky world, completely original, where the core loop is **solve math
+→ earn blocks → build structures**.
 
 Everything lives in a single `index.html` file — all the 3D graphics, sounds,
 and game logic are generated in code (Three.js r128 + the Web Audio API).
