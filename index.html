@@ -173,6 +173,8 @@
   .travelBtn .tInfo small { color:#8a7444; }
   .travelBtn.here { opacity:.6; cursor:default; background:#eceff2; border-color:#d6dae0; }
   .travelBtn.locked { background:#fff6e6; border-color:#f0d9a6; }
+  .travelBtn.soon { background:#eef2f7; border-color:#d6deea; }
+  .travelBtn.soon .tInfo small { color:#6a7da0; font-weight:800; }
   /* ---------- Unlock (full game) ---------- */
   .unlockPerk { background:#f3ecfb; border:1px solid #e0d2f4; border-radius:12px; padding:9px 12px;
     color:#5b4322; font-size:clamp(14px,2.3vw,17px); }
@@ -181,6 +183,8 @@
     background:linear-gradient(180deg,#6fcf63,#3fa24a); box-shadow:0 4px 0 #2f7d39; }
   #unlockBuyBtn:active { transform:translateY(2px); box-shadow:0 2px 0 #2f7d39; }
   #worldRow .choice.locked { position:relative; opacity:.92; }
+  #worldRow .choice.soon { opacity:.9; }
+  #worldRow .choice.soon small { color:#6a7da0; font-weight:800; }
   .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
@@ -1709,13 +1713,18 @@ const G = {
 const WORLDS = {
   meadow: { id: 'meadow', name: 'Math Meadow',    emoji: '🌳', subject: 'math',    chip: 'Math', free: true,
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
-  city:   { id: 'city',   name: 'Reading City',   emoji: '🏙️', subject: 'reading', chip: 'Reading',
+  city:   { id: 'city',   name: 'Reading City',   emoji: '🏙️', subject: 'reading', chip: 'Reading', comingSoon: true,
             sky: 0xAFC4DC, fog: 0xC4D4E6, ground: [0x9aa3ad, 0x8d96a1, 0xa6afb9] },
-  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español',
+  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
 };
 const WORLD_ORDER = ['meadow', 'city', 'beach'];
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
+const worldComingSoon = id => !!(WORLDS[id] && WORLDS[id].comingSoon);
+function comingSoonNote(id) {
+  const w = WORLDS[id] || {};
+  toast('🔜 ' + (w.emoji || '') + ' ' + (w.name || 'This world') + ' is coming soon! For now, keep building in 🌳 Math Meadow.', 3200);
+}
 
 /* ===== Full-game unlock ($5 one-time) — Math Meadow is free; other worlds unlock together.
    Stored locally per device. This is the hook for a real payment (Stripe / RevenueCat) later;
@@ -1892,13 +1901,15 @@ function openTravel() {
   document.exitPointerLock && document.exitPointerLock();
   const wrap = $('travelList'); wrap.innerHTML = '';
   WORLD_ORDER.forEach(id => {
-    const w = WORLDS[id], here = id === G.world, locked = worldLocked(id);
+    const w = WORLDS[id], here = id === G.world, soon = worldComingSoon(id), locked = worldLocked(id);
     const b = document.createElement('button');
-    b.className = 'travelBtn' + (here ? ' here' : (locked ? ' locked' : ''));
-    const sub = here ? 'You are here now' : locked ? '🔒 Unlock for $5' : 'Learn ' + w.chip + ' • build a house here';
+    b.className = 'travelBtn' + (here ? ' here' : (soon ? ' soon' : (locked ? ' locked' : '')));
+    const sub = here ? 'You are here now' : soon ? '🔜 Coming soon' : locked ? '🔒 Unlock for $5' : 'Learn ' + w.chip + ' • build a house here';
     b.innerHTML = '<span class="tEmoji">' + w.emoji + '</span><span class="tInfo"><b>' + w.name +
       '</b><small>' + sub + '</small></span>';
-    if (here) b.disabled = true; else b.onclick = () => { Sound.click(); travelToWorld(id); };
+    if (here) b.disabled = true;
+    else if (soon) b.onclick = () => { Sound.click(); comingSoonNote(id); };
+    else b.onclick = () => { Sound.click(); travelToWorld(id); };
     wrap.appendChild(b);
   });
   $('travelPopup').style.display = 'flex';
@@ -1906,6 +1917,7 @@ function openTravel() {
 function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
 function travelToWorld(id) {
   if (!WORLDS[id] || id === G.world) { closeTravel(); return; }
+  if (worldComingSoon(id)) { closeTravel(); comingSoonNote(id); return; }   // not ready yet → tease it
   if (worldLocked(id)) { closeTravel(); openUnlock(); return; }     // locked → offer the unlock
   closeTravel();
   saveGame();                                   // keep the world we're leaving
@@ -1942,10 +1954,11 @@ function doUnlock() {
 /* reflect lock state on the homepage world picker */
 function renderWorldLocks() {
   document.querySelectorAll('#worldRow button').forEach(b => {
-    const id = b.dataset.world, locked = worldLocked(id);
-    b.classList.toggle('locked', locked);
+    const id = b.dataset.world, soon = worldComingSoon(id), locked = worldLocked(id);
+    b.classList.toggle('locked', locked && !soon);
+    b.classList.toggle('soon', soon);
     const small = b.querySelector('small');
-    if (small) small.textContent = (b.dataset.desc || '') + (locked ? ' • 🔒 $5' : '');
+    if (small) small.textContent = (b.dataset.desc || '') + (soon ? ' • 🔜 Coming soon' : locked ? ' • 🔒 $5' : '');
   });
 }
 
@@ -4325,9 +4338,10 @@ function syncGloomyMenu() {
   $('timeRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
 }
 function buildMenu() {
-  // world buttons (locked worlds open the unlock dialog instead of selecting)
+  // world buttons (coming-soon worlds tease; locked worlds open the unlock dialog instead of selecting)
   $('worldRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
+    if (worldComingSoon(b.dataset.world)) { comingSoonNote(b.dataset.world); return; }
     if (worldLocked(b.dataset.world)) { openUnlock(); return; }
     $('worldRow').querySelectorAll('button').forEach(x => x.classList.remove('selected'));
     b.classList.add('selected');
