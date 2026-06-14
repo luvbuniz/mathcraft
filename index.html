@@ -2531,23 +2531,23 @@ function makeShieldLayer(radius, color, opacity) {
   const m = new THREE.Mesh(
     new THREE.SphereGeometry(radius, 26, 20),
     new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide,
-      depthWrite: false, blending: THREE.AdditiveBlending }));
+      depthWrite: false }));   // soft tint (normal blending), not a harsh glow
   return m;
 }
 function updateShield(now) {
   const shielded = G.running && G.gloomiesEnabled && G.shieldUntil && (now / 1000 < G.shieldUntil);
   if (!shieldBubble) {
     shieldBubble = new THREE.Group();
-    shieldBubble.add(makeShieldLayer(1.28, 0x49d8ff, 0));   // core dome
-    shieldBubble.add(makeShieldLayer(1.42, 0xa9f0ff, 0));   // outer halo glow
+    shieldBubble.add(makeShieldLayer(1.28, 0xff9a3a, 0));   // warm orange dome
+    shieldBubble.add(makeShieldLayer(1.45, 0xffba66, 0));   // soft outer edge
     scene.add(shieldBubble);
   }
   if (shielded && player.avatar && player.avatar.visible) {
     shieldBubble.visible = true;
     shieldBubble.position.set(player.pos.x, player.pos.y + 0.95, player.pos.z);
     const pulse = 0.5 + Math.sin(now / 240) * 0.5;
-    shieldBubble.children[0].material.opacity = 0.22 + pulse * 0.13;   // strong glow, hero still visible
-    shieldBubble.children[1].material.opacity = 0.12 + pulse * 0.14;
+    shieldBubble.children[0].material.opacity = 0.16 + pulse * 0.07;   // gentle orange tint
+    shieldBubble.children[1].material.opacity = 0.09 + pulse * 0.05;
     shieldBubble.rotation.y = now / 1100;
     shieldBubble.scale.setScalar(1 + Math.sin(now / 300) * 0.04);
   } else if (shieldBubble.visible) {
