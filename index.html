@@ -955,7 +955,7 @@
       <div class="unlockPerk">🏖️ <b>Spanish Beach</b> — beginner Spanish</div>
       <div class="unlockPerk">✨ All future worlds &amp; updates</div>
     </div>
-    <button id="unlockBuyBtn">Unlock everything — $5 once</button>
+    <button id="unlockBuyBtn">Unlock everything — $4.99 once</button>
     <div style="color:#9a86b8; font-size:12px; margin-top:8px">One-time purchase • no subscription • saved on this device</div>
   </div>
 </div>
@@ -1720,14 +1720,14 @@ function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnl
 const PAY = {
   // (1) Simplest, no server: a Stripe **Payment Link** (Stripe Dashboard → Payment Links).
   //     Set its "after payment" redirect to your site URL + "?unlocked=1", then paste the link here.
-  stripePaymentLink: '',          // e.g. 'https://buy.stripe.com/your_link'
+  stripePaymentLink: 'https://buy.stripe.com/cNi7sLaD02jfaqi2pw24000',   // Stackadoo Full Game ($4.99)
   // (2) Stronger, needs a tiny backend: your own **Stripe Checkout** endpoint that creates a
   //     session server-side and verifies it with a webhook before returning "?unlocked=1".
   checkoutEndpoint: '',           // e.g. 'https://api.stackadoo.com/checkout'
   // (3) NATIVE APP only: Apple App Store / Google Play in-app purchase (via RevenueCat). The SDK
   //     flips the unlock on a verified purchase — there's nothing to redirect to.
   revenueCat: false,
-  price: '$5'
+  price: '$4.99'
 };
 function beginPurchase() {
   if (typeof saveGame === 'function' && G.running) saveGame();    // don't lose a build if we navigate away
