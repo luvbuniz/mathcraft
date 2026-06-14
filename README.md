@@ -49,6 +49,10 @@ subject at the **❓ stations**, and its own saved build:
 | 🏙️ **Reading City** | English reading & grammar — rhymes, beginning sounds, opposites, synonyms, parts of speech, plurals, past tense, and writing a sentence correctly |
 | 🏖️ **Spanish Beach** | Beginner Spanish words (colors, numbers, animals, basics) |
 
+Each world also looks the part: 🌳 Math Meadow has wildflowers and green grass,
+🏙️ Reading City has a lit skyline on the horizon, and 🏖️ Spanish Beach is a sandy
+island ringed by ocean with palm trees and beach umbrellas.
+
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
 to another world without going back to the home screen — your house in each world
 is saved separately, so you can build different houses in different places.
