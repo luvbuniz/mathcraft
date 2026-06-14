@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MathCraft — Build with Math!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -426,71 +429,304 @@
     background:rgba(255,255,255,.84); border:1.5px solid rgba(81,132,89,.18);
     border-radius:14px; color:#3a5236;
   }
+
+  /* ============================================================
+     SETUP REDESIGN — design system + multi-step landing/setup flow
+     (scoped under #setupCard so it cleanly overrides the old menu CSS)
+     ============================================================ */
+  :root {
+    --indigo:#4B57D6; --indigo-600:#3E49C4; --indigo-50:#ECEEFF; --indigo-100:#D7DCFF;
+    --amber-1:#FFC04D; --amber-2:#FF9F1C;
+    --green:#2FB16B; --green-50:#E6F7EE; --coral:#F2603C;
+    --ink:#1C2333; --slate:#646B82; --line:#E3E7F2; --cloud:#F6F8FD; --mist:#EEF1F8;
+    --r-sm:12px; --r-md:16px; --r-lg:22px; --r-pill:999px;
+    --sh-card:0 2px 10px rgba(28,35,51,.06);
+    --sh-raised:0 16px 40px rgba(28,35,51,.13);
+    --sh-cta:0 10px 22px rgba(75,87,214,.30);
+    --font-display:'Fredoka', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-body:'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  #startScreen {
+    position:fixed; inset:0; z-index:50; overflow-y:auto;
+    display:flex; align-items:center; justify-content:center; padding:24px 16px;
+    font-family:var(--font-body); color:var(--ink); -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1000px 460px at 50% -8%, #ffffff, rgba(255,255,255,0) 62%),
+      radial-gradient(760px 520px at 92% 116%, #E7ECFF, rgba(231,236,255,0) 60%),
+      linear-gradient(180deg,#EAF0FB 0%, #F5F8FD 100%);
+  }
+  #setupCard {
+    width:min(720px,100%); background:#fff; border:1px solid var(--line);
+    border-radius:28px; box-shadow:var(--sh-raised); padding:clamp(20px,3.2vw,30px);
+  }
+  #setupCard *, #setupCard *::before, #setupCard *::after { font-family:inherit; }
+  #setupCard .screen { display:flex; flex-direction:column; gap:18px; }
+  #setupCard [hidden] { display:none !important; }
+
+  #setupCard .brand { display:flex; align-items:center; gap:14px; }
+  #setupCard .brandMark svg { width:54px; height:54px; display:block; filter:drop-shadow(0 4px 8px rgba(75,87,214,.25)); }
+  #setupCard .brandName { font-family:var(--font-display); font-weight:700; font-size:clamp(30px,6vw,40px);
+    color:var(--ink); letter-spacing:-.5px; line-height:1; }
+  #setupCard .brandTag { font-family:var(--font-body); font-weight:700; color:var(--slate); font-size:15px; margin-top:3px; }
+
+  #setupCard .panel { background:var(--cloud); border:1px solid var(--line); border-radius:var(--r-lg);
+    padding:16px; display:flex; flex-direction:column; gap:12px; }
+  #setupCard .panelTitle { font-family:var(--font-display); font-weight:600; font-size:13px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--slate); }
+  #setupCard .muted { color:var(--slate); font-size:14px; }
+  #setupCard .field { display:flex; flex-direction:column; gap:9px; }
+  #setupCard .fieldLabel { font-family:var(--font-body); font-weight:800; font-size:12.5px;
+    letter-spacing:.05em; text-transform:uppercase; color:var(--slate); }
+  #setupCard .fieldLabel.small { font-size:11.5px; }
+
+  #setupCard #nameInput { width:100%; font-family:var(--font-body); font-weight:700; font-size:17px;
+    padding:13px 16px; border-radius:var(--r-md); border:2px solid var(--line); background:#fff; color:var(--ink); }
+  #setupCard #nameInput::placeholder { color:#9aa3b8; font-weight:600; }
+  #setupCard #nameInput:focus { outline:none; border-color:var(--indigo); box-shadow:0 0 0 3px var(--indigo-50); }
+
+  #setupCard .btn { font-family:var(--font-display); font-weight:600; font-size:17px;
+    display:inline-flex; align-items:center; justify-content:center; gap:9px; line-height:1;
+    padding:13px 20px; min-height:50px; border-radius:var(--r-md); border:2px solid transparent;
+    cursor:pointer; transition:transform .08s, background .15s, box-shadow .15s, filter .15s; }
+  #setupCard .btn:active { transform:translateY(1px); }
+  #setupCard .btn-lg { font-size:19px; padding:16px 24px; min-height:58px; }
+  #setupCard .btn-block { width:100%; }
+  #setupCard .btn-primary { background:var(--indigo); color:#fff; box-shadow:var(--sh-cta); }
+  #setupCard .btn-primary:hover { background:var(--indigo-600); }
+  #setupCard .btn-secondary { background:#fff; color:var(--indigo); border-color:var(--indigo-100); box-shadow:none; }
+  #setupCard .btn-secondary:hover { background:var(--indigo-50); }
+  #setupCard .btn-spotlight { background:linear-gradient(180deg,var(--amber-1),var(--amber-2)); color:#3c2600;
+    box-shadow:0 10px 22px rgba(245,158,11,.34); }
+  #setupCard .btn-spotlight:hover { filter:brightness(1.04); }
+  #setupCard .btn-ghost { background:transparent; color:var(--slate); font-family:var(--font-body); font-weight:800; box-shadow:none; }
+  #setupCard .btn-ghost:hover { background:var(--mist); color:var(--ink); }
+  #setupCard .btn-icon { padding:0; width:44px; height:44px; min-height:44px; border-radius:var(--r-sm);
+    background:var(--mist); color:var(--slate); }
+  #setupCard .btn-icon:hover { background:var(--indigo-50); color:var(--indigo); }
+  #setupCard .btn:focus-visible, #setupCard #nameInput:focus-visible, #setupCard .choice:focus-visible,
+  #setupCard .avatarCard:focus-visible, #setupCard .timeBtn:focus-visible {
+    outline:none; box-shadow:0 0 0 3px rgba(75,87,214,.4); }
+
+  #setupCard .ic { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.2;
+    stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  #setupCard .ic-fill { fill:currentColor; stroke:none; }
+  #setupCard .ic-lg { width:26px; height:26px; }
+
+  #setupCard .stepHead { display:flex; align-items:center; gap:12px; }
+  #setupCard .stepper { display:flex; gap:6px; flex:1; justify-content:center; }
+  #setupCard .dot { width:8px; height:8px; border-radius:50%; background:var(--line); transition:.2s; }
+  #setupCard .dot.on { background:var(--indigo); width:24px; border-radius:5px; }
+  #setupCard .stepHint { font-family:var(--font-body); font-weight:800; font-size:12px;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--slate); }
+  #setupCard .screenTitle { font-family:var(--font-display); font-weight:700;
+    font-size:clamp(23px,4.6vw,30px); color:var(--ink); }
+
+  #setupCard .choiceGrid { display:grid; gap:10px; grid-template-columns:repeat(2,1fr); }
+  #setupCard .choice { font-family:var(--font-body); text-align:left; background:#fff; color:var(--ink);
+    border:2px solid var(--line); border-radius:var(--r-md); padding:14px 14px 13px; cursor:pointer;
+    display:flex; flex-direction:column; gap:2px; min-height:64px; position:relative; transition:.12s; }
+  #setupCard .choice b { font-family:var(--font-display); font-weight:600; font-size:16.5px; }
+  #setupCard .choice small { color:var(--slate); font-size:13px; font-weight:700; line-height:1.25; }
+  #setupCard .choice:hover { border-color:var(--indigo-100); background:var(--cloud); }
+  #setupCard .choice.selected { border-color:var(--indigo); background:var(--indigo-50); }
+  #setupCard .choice.selected::after { content:''; position:absolute; top:11px; right:11px; width:20px; height:20px;
+    border-radius:50%; background:var(--indigo)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E")
+      center/13px no-repeat; }
+  #setupCard .choice .ic-lg { color:var(--indigo); margin-bottom:3px; }
+  #setupCard .choiceGrid.two .choice { padding-top:15px; }
+
+  #setupCard #timeRow { margin-top:14px; }
+  #setupCard .segment { display:inline-flex; background:var(--mist); border-radius:var(--r-pill); padding:4px; gap:3px; }
+  #setupCard .timeBtn { font-family:var(--font-body); font-weight:800; font-size:14.5px; color:var(--slate);
+    background:transparent; border:none; border-radius:var(--r-pill); padding:9px 18px; cursor:pointer; transition:.12s; }
+  #setupCard .timeBtn:hover { color:var(--ink); }
+  #setupCard .timeBtn.selected { background:#fff; color:var(--indigo); box-shadow:var(--sh-card); }
+
+  #setupCard #avatarGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  #setupCard .avatarCard { background:var(--cloud); border:2px solid var(--line); border-radius:var(--r-md);
+    padding:8px 4px 9px; text-align:center; cursor:pointer; transition:.12s; box-shadow:none; }
+  #setupCard .avatarCard:hover { border-color:var(--indigo-100); background:#fff; }
+  #setupCard .avatarCard.selected { border-color:var(--indigo); background:var(--indigo-50); outline:none; box-shadow:var(--sh-card); }
+  #setupCard .avatarCard canvas { width:100%; max-width:96px; height:auto; aspect-ratio:1/1; image-rendering:auto; }
+  #setupCard .avatarCard .avName { font-family:var(--font-body); font-weight:800; font-size:12px; color:var(--ink); margin-top:1px; }
+
+  #setupCard #savedList { display:flex; flex-direction:column; gap:8px; }
+  #setupCard .saveRow { display:flex; align-items:center; gap:8px; background:#fff; border:2px solid var(--line);
+    border-radius:var(--r-md); padding:9px 10px 9px 9px; transition:.12s; box-shadow:none; }
+  #setupCard .saveRow:hover { border-color:var(--indigo-100); }
+  #setupCard .saveRow .loadBtn { flex:1; display:flex; align-items:center; gap:11px; background:transparent;
+    border:none; cursor:pointer; text-align:left; padding:2px; min-width:0; box-shadow:none; }
+  #setupCard .savePlay { flex:none; width:38px; height:38px; border-radius:11px; background:var(--indigo-50);
+    color:var(--indigo); display:flex; align-items:center; justify-content:center; }
+  #setupCard .savePlay .ic { width:18px; height:18px; }
+  #setupCard .slotInfo { display:flex; flex-direction:column; gap:1px; min-width:0; }
+  #setupCard .slotName { font-family:var(--font-display); font-weight:600; font-size:16px; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #setupCard .slotMeta { font-family:var(--font-body); font-weight:700; font-size:12.5px; color:var(--slate); }
+  #setupCard .slotChip { display:inline-block; font-weight:800; font-size:11px; padding:1px 8px; border-radius:var(--r-pill);
+    background:var(--indigo-50); color:var(--indigo); margin-left:6px; vertical-align:1px; }
+  #setupCard .slotChip.calm { background:var(--green-50); color:#1f8a52; }
+  #setupCard .saveRow .delBtn { flex:none; width:40px; height:40px; border-radius:11px; background:transparent;
+    border:none; box-shadow:none; color:#b9c0d0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.12s; }
+  #setupCard .saveRow .delBtn:hover { background:#FCE9E4; color:var(--coral); }
+  #setupCard .saveRow .delBtn .ic { width:19px; height:19px; }
+
+  #setupCard .howto { background:var(--cloud); border:1px solid var(--line); border-radius:var(--r-md); padding:2px 14px; }
+  #setupCard .howto summary { font-family:var(--font-display); font-weight:600; color:var(--slate);
+    padding:11px 0; cursor:pointer; list-style:none; display:flex; align-items:center; }
+  #setupCard .howto summary::-webkit-details-marker { display:none; }
+  #setupCard .howto summary::after { content:'+'; margin-left:auto; font-size:20px; color:var(--slate); }
+  #setupCard .howto[open] summary::after { content:'\2212'; }
+  #setupCard .howtoBody { padding:0 0 13px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    font-size:13px; color:var(--slate); }
+  #setupCard .kbd { font-family:var(--font-body); font-weight:800; font-size:11.5px; background:#fff;
+    border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:3px 7px; color:var(--ink); }
+  #setupCard .howtoBody p { flex-basis:100%; margin-top:7px; line-height:1.5; font-weight:600; }
+
+  #setupCard .stepNav { display:flex; gap:12px; margin-top:4px; }
+  #setupCard .stepNav .btn-secondary { flex:0 0 auto; }
+  #setupCard .stepNav .btn-primary, #setupCard .stepNav .btn-spotlight { flex:1; }
+
+  @media (min-width:620px) {
+    #setupCard .choiceGrid.grades { grid-template-columns:repeat(4,1fr); }
+  }
+  @media (max-width:560px) {
+    #startScreen { padding:0; align-items:stretch; }
+    #setupCard { width:100%; min-height:100%; border-radius:0; border:none; padding:18px 16px 26px; }
+    #setupCard #avatarGrid { grid-template-columns:repeat(3,1fr); }
+    #setupCard .stepNav { position:sticky; bottom:0; background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%); padding-top:10px; }
+  }
 </style>
 </head>
 <body>
 
 <!-- ================= START SCREEN ================= -->
 <div id="startScreen">
-  <div id="startShell">
-  <div id="gameTitle">⛏️ MathCraft</div>
-  <div id="gameSub">Solve math • Build your world • Defend it from Gloomies!</div>
+  <div id="setupCard">
 
-  <div id="startMenuGrid">
-  <div class="menuSection">
-    <h2>👋 Who's playing?</h2>
-    <div style="text-align:center"><input id="nameInput" maxlength="14" placeholder="Type your name" autocomplete="off"></div>
-    <div id="savedList"></div>
-    <div id="savedHint">Tap a saved game to keep building, or pick the options below and press <b>Start Adventure</b> for a brand-new world.</div>
-  </div>
-
-  <div class="menuSection">
-    <h2>1️⃣ Pick your grade</h2>
-    <div class="btnRow" id="gradeRow">
-      <button class="chooseBtn selected" data-grade="2">Grade 2</button>
-      <button class="chooseBtn" data-grade="3">Grade 3</button>
-      <button class="chooseBtn" data-grade="4">Grade 4</button>
-      <button class="chooseBtn" data-grade="5">Grade 5</button>
-    </div>
-  </div>
-
-  <div class="menuSection">
-    <h2>2️⃣ Choose your adventure</h2>
-    <div class="chooseBtn modeBtn selected" style="cursor:default">
-      🏡 MathCraft Adventure
-      <small>Build, shop, climb trees, and solve math in one world. You decide whether Gloomies can visit.</small>
-    </div>
-    <div class="btnRow" id="gloomyRow" style="margin-top:12px">
-      <button class="chooseBtn selected" data-gloomies="on">💜 Gloomies On</button>
-      <button class="chooseBtn" data-gloomies="off">🌈 No Gloomies</button>
-    </div>
-    <div id="timeRow" style="margin-top:12px">
-      <span style="font-weight:bold; color:#4a6fb5">⏱️ Calm building time:</span>
-      <div class="btnRow" style="margin-top:6px">
-        <button class="chooseBtn timeBtn" data-mins="5">5 min</button>
-        <button class="chooseBtn timeBtn" data-mins="10">10 min</button>
-        <button class="chooseBtn timeBtn selected" data-mins="15">15 min</button>
+    <!-- ========== SCREEN 0 · LANDING ========== -->
+    <section class="screen" id="screenLanding">
+      <div class="brand">
+        <span class="brandMark" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M24 5l16 9v20l-16 9-16-9V14z" fill="#6E78E8"/><path d="M24 5l16 9-16 9-16-9z" fill="#9AA3F2"/><path d="M24 23v20l16-9V14z" fill="#4B57D6"/></svg>
+        </span>
+        <div class="brandText">
+          <h1 class="brandName">MathCraft</h1>
+          <p class="brandTag">Build worlds. Solve math.</p>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <div class="menuSection">
-    <h2>3️⃣ Pick your hero</h2>
-    <div id="avatarGrid"></div>
-  </div>
-  </div>
+      <div class="panel" id="continuePanel">
+        <h2 class="panelTitle">Continue</h2>
+        <div id="savedList"></div>
+        <p id="noSaves" class="muted">No saved games yet — start a new adventure below.</p>
+      </div>
 
-  <div id="startFooter">
-    <div id="startActions">
-      <button id="startBtn">▶ Start Adventure!</button>
-      <button id="grownupBtn">🧑‍🏫 For Grown-Ups — see math progress</button>
-    </div>
-    <div id="controlsHelp">
-      <b>Move:</b> arrows • <b>Jump:</b> Space • <b>Use:</b> E • <b>Free mouse:</b> M •
-      <b>Backpack:</b> I • <b>Build:</b> D • <b>Remove:</b> R • <b>Bed:</b> L • <b>Shoot:</b> F<br>
-      Solve math to choose build blocks, Power Blocks, coins, or ammo. Tablet players use the joystick and ⭐ Use button.
-    </div>
-  </div>
+      <div class="panel">
+        <h2 class="panelTitle">New game</h2>
+        <label class="field">
+          <span class="fieldLabel">Your name</span>
+          <input id="nameInput" maxlength="14" placeholder="Type a name" autocomplete="off">
+        </label>
+        <button id="newGameBtn" class="btn btn-primary btn-lg btn-block">New Adventure
+          <svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <button id="grownupBtn" class="btn btn-ghost btn-block">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        For Grown-Ups — math progress
+      </button>
+    </section>
+
+    <!-- ========== SCREEN 1 · GAME SETTINGS ========== -->
+    <section class="screen" id="screenSettings" hidden>
+      <div class="stepHead">
+        <button class="btn btn-icon" data-go="screenLanding" aria-label="Back">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <div class="stepper"><span class="dot on"></span><span class="dot"></span></div>
+        <span class="stepHint">Step 1 of 2</span>
+      </div>
+      <h1 class="screenTitle">Set up your game</h1>
+
+      <div class="field">
+        <span class="fieldLabel">Choose your math</span>
+        <div class="choiceGrid grades" id="gradeRow">
+          <button class="choice selected" data-grade="2"><b>Grade 2</b><small>Add &amp; subtract to 100</small></button>
+          <button class="choice" data-grade="3"><b>Grade 3</b><small>To 1,000 &amp; times tables</small></button>
+          <button class="choice" data-grade="4"><b>Grade 4</b><small>Multi-digit × and ÷</small></button>
+          <button class="choice" data-grade="5"><b>Grade 5</b><small>Fractions &amp; decimals</small></button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="fieldLabel">Should Gloomies visit?</span>
+        <div class="choiceGrid two" id="gloomyRow">
+          <button class="choice" data-gloomies="on">
+            <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+            <b>Gloomies On</b><small>Beat the timer or they appear!</small>
+          </button>
+          <button class="choice" data-gloomies="off">
+            <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14c0-3 2.4-5 5.5-5 0 3.3-2.4 5-5.5 5z"/><path d="M12 14c0-2.4-1.9-4.3-4.6-4.3C7 12.4 8.9 14 12 14z"/></svg>
+            <b>No Gloomies</b><small>Calm, open-ended building</small>
+          </button>
+        </div>
+        <div id="timeRow" class="subField">
+          <span class="fieldLabel small">Build time</span>
+          <div class="segment">
+            <button class="timeBtn" data-mins="5">5 min</button>
+            <button class="timeBtn" data-mins="10">10 min</button>
+            <button class="timeBtn selected" data-mins="15">15 min</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stepNav">
+        <button class="btn btn-secondary" data-go="screenLanding">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg> Back
+        </button>
+        <button class="btn btn-primary" id="toHeroBtn">Next
+          <svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========== SCREEN 2 · HERO ========== -->
+    <section class="screen" id="screenHero" hidden>
+      <div class="stepHead">
+        <button class="btn btn-icon" data-go="screenSettings" aria-label="Back">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <div class="stepper"><span class="dot"></span><span class="dot on"></span></div>
+        <span class="stepHint">Step 2 of 2</span>
+      </div>
+      <h1 class="screenTitle">Pick your hero</h1>
+      <div id="avatarGrid"></div>
+
+      <details class="howto">
+        <summary>How to play</summary>
+        <div class="howtoBody">
+          <span class="kbd">Arrows</span> move <span class="kbd">Space</span> jump
+          <span class="kbd">E</span> use / sit <span class="kbd">D</span> build
+          <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
+          <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
+          <span class="kbd">M</span> free mouse
+          <p>Solve math to earn build blocks, Power Blocks, coins, or ammo. On a tablet, use the joystick and the ⭐ Use button.</p>
+        </div>
+      </details>
+
+      <div class="stepNav">
+        <button class="btn btn-secondary" data-go="screenSettings">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg> Back
+        </button>
+        <button id="startBtn" class="btn btn-spotlight btn-lg">
+          <svg class="ic ic-fill" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg> Start Adventure
+        </button>
+      </div>
+    </section>
+
   </div>
 </div>
 
@@ -1437,6 +1673,7 @@ function goHome() {
   refreshSavedList();
   $('nameInput').value = G.playerName;
   syncGloomyMenu();
+  if (typeof showSetupScreen === 'function') showSetupScreen('screenLanding');
   $('startScreen').style.display = 'flex';
 }
 
@@ -3029,23 +3266,31 @@ function buildMenu() {
 }
 buildMenu();
 
+const SVG_PLAY = '<svg class="ic ic-fill" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>';
+const SVG_TRASH = '<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
 function refreshSavedList() {
   const list = $('savedList');
   list.innerHTML = '';
   const saves = listSaves();
+  const noSaves = $('noSaves');
+  if (noSaves) noSaves.style.display = saves.length ? 'none' : 'block';
   saves.forEach(s => {
+    const calm = s.gloomiesEnabled === false;
     const row = document.createElement('div');
     row.className = 'saveRow';
     const load = document.createElement('button');
     load.className = 'loadBtn';
-    const gloomyLabel = s.gloomiesEnabled === false ? '🌈 No Gloomies' : '💜 Gloomies On';
-    load.innerHTML = '▶ <b>' + (s.name || 'Player') + '</b> — 🧱' + (s.blocks || 0) + ' ⚡' + (s.powerBlocks || 0) + ' 🪙' + (s.coins || 0) + ' • ' + gloomyLabel;
+    load.innerHTML =
+      '<span class="savePlay">' + SVG_PLAY + '</span>' +
+      '<span class="slotInfo"><span class="slotName">' + (s.name || 'Player') + '</span>' +
+      '<span class="slotMeta">Grade ' + (s.grade || 2) +
+      '<span class="slotChip' + (calm ? ' calm' : '') + '">' + (calm ? 'No Gloomies' : 'Gloomies') + '</span></span></span>';
     load.onclick = () => { Sound.click(); restoreGame(s); };
     const del = document.createElement('button');
     del.className = 'delBtn';
-    del.textContent = '🗑';
+    del.innerHTML = SVG_TRASH;
     del.title = 'Delete this saved game';
-    del.onclick = () => { Sound.click(); clearSave(s.name); refreshSavedList(); };
+    del.onclick = (e) => { e.stopPropagation(); Sound.click(); clearSave(s.name); refreshSavedList(); };
     row.appendChild(load); row.appendChild(del);
     list.appendChild(row);
   });
@@ -3055,6 +3300,7 @@ refreshSavedList();
   const saves = listSaves();
   if (saves.length) $('nameInput').value = saves[0].name || '';
 }
+syncGloomyMenu();   // set the default Gloomies selection + timer visibility
 
 $('startBtn').onclick = () => {
   Sound.click();
@@ -3068,6 +3314,19 @@ $('startBtn').onclick = () => {
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 $('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
+
+/* ---- multi-step setup navigation ---- */
+const SETUP_SCREENS = ['screenLanding', 'screenSettings', 'screenHero'];
+function showSetupScreen(id) {
+  SETUP_SCREENS.forEach(s => { const el = $(s); if (el) el.hidden = (s !== id); });
+  const card = $('setupCard'); if (card) card.scrollTop = 0;
+  if ($('startScreen')) $('startScreen').scrollTop = 0;
+}
+$('newGameBtn').onclick = () => { Sound.click(); showSetupScreen('screenSettings'); };
+$('toHeroBtn').onclick = () => { Sound.click(); showSetupScreen('screenHero'); };
+document.querySelectorAll('#setupCard [data-go]').forEach(b => {
+  b.addEventListener('click', () => { Sound.click(); showSetupScreen(b.dataset.go); });
+});
 
 function startGame() {
   $('startScreen').style.display = 'none';
