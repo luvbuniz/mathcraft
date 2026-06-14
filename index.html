@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stackadoo">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1808,7 +1809,7 @@ function resetWorld() {
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
   G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
-  G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false;
+  G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
@@ -2430,7 +2431,18 @@ function updatePlayer(dt) {
     const cx = player.pos.x + Math.sin(player.yaw) * dist * Math.cos(player.pitch);
     const cz = player.pos.z + Math.cos(player.yaw) * dist * Math.cos(player.pitch);
     const cy = headY + dist * Math.sin(-player.pitch) * 0.8 + 0.9;
-    camera.position.lerp(new THREE.Vector3(cx, Math.max(0.4, cy), cz), 0.35);
+    // Pull the camera in if a wall or roof sits between the player and the camera,
+    // so you can still see your avatar (and the room) when you're inside a house.
+    const head = new THREE.Vector3(player.pos.x, headY, player.pos.z);
+    const dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
+    const far = dir.length(); dir.normalize();
+    let allowed = far;
+    for (let d = 0.5; d < far; d += 0.3) {
+      if (solidAt(Math.floor(head.x + dir.x * d), Math.floor(head.y + dir.y * d), Math.floor(head.z + dir.z * d))) {
+        allowed = Math.max(0.7, d - 0.3); break;
+      }
+    }
+    camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
   }
   const look = new THREE.Vector3(
     player.pos.x - Math.sin(player.yaw) * Math.cos(player.pitch) * 8,
@@ -2438,6 +2450,18 @@ function updatePlayer(dt) {
     player.pos.z - Math.cos(player.yaw) * Math.cos(player.pitch) * 8
   );
   camera.lookAt(look);
+
+  // first time you stand under your own roof, suggest first-person for a look around inside
+  if (!G.firstPerson && !G.roofHintShown) {
+    const hx = Math.floor(player.pos.x), hz = Math.floor(player.pos.z);
+    for (let y = Math.floor(player.pos.y) + 2; y <= 9; y++) {
+      if (blocks.has(key(hx, y, hz))) {
+        G.roofHintShown = true;
+        toast('🏠 You\'re inside your house! Tap 👁️ (or press C) for a first-person look at your windows & kitchen.', 4500);
+        break;
+      }
+    }
+  }
 }
 
 /* ---- loot: blank blocks (building) and GOLD blocks (coins!) ---- */
@@ -3180,17 +3204,29 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.08, 1.04, 0.16, 0xFFFFFF, 0, 0.72, 0);
     box(g, 0.76, 0.08, 0.16, 0xFFFFFF, 0, 0.72, 0);
   } else if (type === 'stove') {
-    box(g, 0.8, 0.66, 0.7, 0xE8E8EC, 0, 0.33, 0);                     // steel body
-    box(g, 0.82, 0.1, 0.72, 0xC9CDD4, 0, 0.7, 0);                     // cooktop
-    [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]].forEach(([x, z]) =>
-      box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.76, z));                // 4 burners
+    box(g, 0.82, 0.06, 0.72, 0x9aa0a8, 0, 0.03, 0);                  // kick plate / base
+    box(g, 0.8, 0.62, 0.7, 0xE8E8EC, 0, 0.35, 0);                    // steel body
+    box(g, 0.82, 0.1, 0.72, 0xC9CDD4, 0, 0.7, 0);                    // cooktop
+    [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]].forEach(([x, z]) => {
+      box(g, 0.22, 0.02, 0.22, 0x22252b, x, 0.745, z);              // burner ring/drip pan
+      box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.77, z);               // burner
+      box(g, 0.2, 0.015, 0.04, 0x4a4f59, x, 0.8, z);                // grate bars
+      box(g, 0.04, 0.015, 0.2, 0x4a4f59, x, 0.8, z);
+    });
+    // a back control panel / backsplash with little dials and a readout
+    box(g, 0.82, 0.3, 0.07, 0xDDE0E6, 0, 0.88, -0.32);              // backsplash
+    box(g, 0.2, 0.08, 0.03, 0x2b6cb0, -0.22, 0.93, -0.28);          // blue digital readout
+    [0.06, 0.2].forEach(x => box(g, 0.07, 0.07, 0.03, 0x3b3f47, x, 0.9, -0.28)); // dials
     // the oven, set into the front of the body
-    box(g, 0.66, 0.42, 0.05, 0x3b3f47, 0, 0.3, 0.355);               // oven door
+    box(g, 0.66, 0.42, 0.05, 0x3b3f47, 0, 0.3, 0.355);              // oven door
     const ovenGlass = box(g, 0.44, 0.26, 0.03, 0x141414, 0, 0.3, 0.37); // dark oven window
+    box(g, 0.5, 0.03, 0.04, 0x2b2e34, 0, 0.43, 0.385);             // oven rack line through the window
     const ovenGlow = box(g, 0.42, 0.24, 0.02, 0xFF8A3D, 0, 0.3, 0.40);  // warm light in front of the glass
     ovenGlow.material = new THREE.MeshBasicMaterial({ color: 0xFF8A3D, transparent: true, opacity: 0 });
-    box(g, 0.5, 0.05, 0.05, 0xBBBFC6, 0, 0.54, 0.4);                  // handle
-    [-0.3, -0.1, 0.1, 0.3].forEach(x => box(g, 0.06, 0.06, 0.04, 0x222, x, 0.62, 0.37)); // knobs
+    box(g, 0.54, 0.06, 0.06, 0xBBBFC6, 0, 0.55, 0.41);             // chunky oven handle bar
+    box(g, 0.05, 0.05, 0.05, 0x8d9298, -0.25, 0.55, 0.41);         // handle end caps
+    box(g, 0.05, 0.05, 0.05, 0x8d9298, 0.25, 0.55, 0.41);
+    [-0.3, -0.1, 0.1, 0.3].forEach(x => box(g, 0.07, 0.07, 0.04, 0x222, x, 0.62, 0.37)); // control knobs
     // mount points for cooking (local coords): 4 burner tops + the oven slot inside
     g.userData.burners = [[-0.18, 0.81, -0.16], [0.18, 0.81, -0.16], [-0.18, 0.81, 0.16], [0.18, 0.81, 0.16]];
     g.userData.ovenSlot = [0, 0.3, 0.18];
@@ -4113,6 +4149,12 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
+
+// Offline install: register the service worker so the game works without Wi-Fi once loaded.
+// (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 </script>
 </body>
 </html>

@@ -101,6 +101,18 @@ place come out in that color — great for decorating houses.
 **tap** to place/break (toggle with the 🧱/⛏️ button), plus JUMP and ⭐ USE
 buttons.
 
+**🏠 Go inside your house:** build walls, add a 🚪 door and a 🔺 roof, then walk
+in. The camera tucks in close so it isn't blocked by the walls, and you can
+tap **👁️** (or press **C**) for a **first-person** look around at your windows,
+kitchen stove, and furniture.
+
+**📲 Put it on a tablet:** Stackadoo is a web app, so the *same code* runs on
+Android and iPad — no separate apps. Open it in the browser and choose **Add
+to Home Screen** for an app icon that launches fullscreen. It's also an
+installable **PWA** (`manifest.json` + `sw.js`): once it has loaded online, it
+keeps working **offline**, which is handy for tablets on spotty Wi-Fi. (Saves
+live in the browser on each device.)
+
 A **🔊 sound toggle** lives in the top-right corner — handy for classrooms.
 All sound effects (footsteps, block thunks, berry pops, happy chimes, coin
 sounds, Gloomy hisses, and a satisfying *bonk* when you hit one with a
