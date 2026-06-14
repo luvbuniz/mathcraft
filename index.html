@@ -2541,25 +2541,48 @@ function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.po
 
 /* ---- per-world decor: a skyline for Reading City, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group() };
-function cityTexture() {
+function cityTexture(bodyN, litN) {
+  const hx = n => '#' + n.toString(16).padStart(6, '0');
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 128;
   const c = cv.getContext('2d');
-  c.fillStyle = '#5b6675'; c.fillRect(0, 0, 64, 128);
-  for (let y = 8; y < 120; y += 15) for (let x = 7; x < 56; x += 16) {
-    c.fillStyle = Math.random() < 0.55 ? '#ffe9a0' : '#39414e';
-    c.fillRect(x, y, 9, 10);
+  c.fillStyle = hx(bodyN); c.fillRect(0, 0, 64, 128);
+  for (let y = 7; y < 122; y += 13) for (let x = 6; x < 58; x += 13) {
+    c.fillStyle = Math.random() < 0.5 ? hx(litN) : 'rgba(0,0,0,0.22)';   // lit & dark windows
+    c.fillRect(x, y, 8, 8);
   }
   return new THREE.CanvasTexture(cv);
 }
+const CITY_PALETTE = [
+  [0x6b7280, 0xffe9a0], [0x7c4a3a, 0xffd27a], [0x46637e, 0xbfe6ff],
+  [0x8a8f98, 0xfff1c2], [0x3f5a52, 0xcfeede], [0x5b5560, 0xffe0b0]
+];
 function buildCityDecor(g) {
-  for (let a = 0; a < 30; a++) {
-    const ang = (a / 30) * Math.PI * 2, r = 26 + (a % 4) * 2.2;
-    const h = 6 + (a % 6) * 2.4, w = 2.4 + (a % 3) * 0.7;
+  const N = 40;
+  for (let i = 0; i < N; i++) {
+    const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.05;
+    const r = 24.5 + Math.random() * 11;                 // varied distance — a layered skyline
+    const w = 2.2 + Math.random() * 2, d = 2.2 + Math.random() * 2;
+    let h = 5 + Math.random() * 12;
+    if (Math.random() < 0.14) h += 4 + Math.random() * 7;            // a few towers stand tall
+    const [body, lit] = CITY_PALETTE[i % CITY_PALETTE.length];
     const bx = Math.cos(ang) * r, bz = Math.sin(ang) * r;
-    const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), new THREE.MeshLambertMaterial({ map: cityTexture() }));
+    const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ map: cityTexture(body, lit) }));
     tower.position.set(bx, h / 2, bz); tower.rotation.y = ang;
     g.add(tower);
-    box(g, w * 0.45, 0.6, w * 0.45, 0x4a5360, bx, h + 0.3, bz);     // rooftop box
+    const top = Math.random();
+    if (top < 0.28) {                                                 // stepped setback + antenna
+      box(g, w * 0.62, 1.4 + Math.random() * 1.8, d * 0.62, body, bx, h + 0.7, bz);
+      box(g, 0.1, 1.2 + Math.random(), 0.1, 0xcfd3d9, bx, h + 2.2, bz);
+    } else if (top < 0.5) {                                           // rooftop water tower (NYC classic)
+      box(g, 1.0, 0.5, 1.0, 0x4a3a2a, bx, h + 0.25, bz);
+      const wt = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.85, 8), mat(0x8a5c33));
+      wt.position.set(bx, h + 0.9, bz); g.add(wt);
+      box(g, 0.84, 0.3, 0.84, 0x6d4326, bx, h + 1.45, bz);
+    } else if (top < 0.72) {                                          // thin spire / antenna
+      box(g, 0.12, 2 + Math.random() * 3, 0.12, 0xcfd3d9, bx, h + 1.4, bz);
+    } else {                                                          // flat parapet roof
+      box(g, w * 0.96, 0.4, d * 0.96, body, bx, h + 0.2, bz);
+    }
   }
 }
 function buildPalm(g, x, z, lean) {
