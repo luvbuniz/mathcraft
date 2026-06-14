@@ -801,7 +801,7 @@
     <div id="coinRow" style="display:none">🪙 Coins: <span id="coinCount">0</span></div>
     <div id="berryRow" style="display:none">🍓 Berries: <span id="berryCount">0</span></div>
     <div id="ballRow" style="display:none">⚽ Softballs: <span id="ballCount">0</span></div>
-    <div id="solvedRow" style="display:none">✅ Solved: <span id="solvedCount">0</span>/10</div>
+    <div id="solvedRow" style="display:none">✅ Solved: <span id="solvedCount">0</span><span id="solvedGoal" style="opacity:.85"></span></div>
     <button id="badgeBtn" style="display:none">🏅 Badges</button>
   </div>
   <div class="hudBox" id="hudMode">
@@ -1580,7 +1580,7 @@ function renderBadges() {
     const card = document.createElement('div');
     card.className = 'badgeCard' + (earned ? '' : ' locked');
     card.innerHTML = '<div class="bIcon">' + b.icon + '</div><b>' + b.name + '</b><small>' +
-      (earned ? 'Earned! 🎉' : 'Solve ' + b.n) + '</small>';
+      (earned ? 'Earned! 🎉' : Math.min(profile.totalSolved, b.n) + '/' + b.n + ' solved') + '</small>';
     grid.appendChild(card);
   });
 }
@@ -2817,7 +2817,11 @@ function refreshHUD() {
   $('coinCount').textContent = G.coins;
   $('berryCount').textContent = G.berries;
   $('ballCount').textContent = G.balls;
-  $('solvedCount').textContent = G.solved;
+  // show lifetime problems solved and the next goal (no more "16/10"!)
+  $('solvedCount').textContent = profile.totalSolved;
+  const nextBadge = BADGES.find(b => profile.totalSolved < b.n);
+  if (nextBadge) $('solvedGoal').textContent = ' • next 🏅 at ' + nextBadge.n;
+  else { const next10 = (Math.floor(profile.totalSolved / 10) + 1) * 10; $('solvedGoal').textContent = ' • ' + profile.totalSolved + '/' + next10 + ' ⭐'; }
   $('shopCoins').textContent = G.coins;
 }
 function fmtTime(s) {
