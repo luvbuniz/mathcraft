@@ -72,6 +72,7 @@
   #timerBar { display:none; width:170px; max-width:60vw; height:12px; margin:4px auto 0; background:rgba(0,0,0,.18);
     border-radius:6px; overflow:hidden; }
   #timerFill { height:100%; width:100%; background:#5cc24f; border-radius:6px; transition:width .3s linear, background .3s; }
+  #hudShield { font-size:.92em; color:#1f8a52; font-weight:bold; }
   #hudShelter { font-size:.8em; display:none; }
   #soundBtn { position:absolute; top:10px; right:10px; pointer-events:auto; font-size:24px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
@@ -118,8 +119,16 @@
   #mathFeedback { min-height:28px; font-size:clamp(16px,2.6vw,21px); font-weight:bold; margin-top:8px; color:#2f7d27; }
   #hintBtn { margin-top:8px; background:#FFE9A0; color:#7a5c00; font-weight:bold; font-size:clamp(13px,2.2vw,17px);
     padding:8px 16px; border-radius:12px; box-shadow:0 3px 0 #d4b44a; }
-  #hintBox { display:none; margin-top:8px; background:#E3F2FD; color:#22456b; border-radius:12px; padding:9px 12px;
-    font-size:clamp(13px,2.2vw,17px); font-weight:bold; text-align:left; line-height:1.35; }
+  #hintBox { display:none; margin-top:8px; background:#E9F5FF; color:#22456b; border-radius:14px; padding:11px 14px;
+    font-size:clamp(13px,2.2vw,17px); font-weight:bold; text-align:left; line-height:1.4; }
+  #hintBox .hintLead { font-size:1.05em; color:#1f6fb2; margin-bottom:6px; }
+  #hintBox .hintSay { margin-top:6px; color:#2e5a7a; }
+  #hintBox .picrow { display:flex; flex-wrap:wrap; align-items:center; gap:3px; margin:4px 0; }
+  #hintBox .picrow.grid { gap:4px; margin:2px 0; }
+  #hintBox .plab { display:inline-block; min-width:46px; font-size:.8em; color:#5b7388; margin-right:4px; }
+  #hintBox .one { display:inline-block; color:#3aa0e0; font-size:1.15em; line-height:1; }
+  #hintBox .ten { display:inline-block; font-size:1.05em; line-height:1; }
+  #hintBox .ask { color:#1f7bbf; margin-left:6px; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
   #rewardChoice { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px; }
   .rewardBtn { font-weight:bold; font-size:clamp(14px,2.6vw,19px); padding:13px 16px; border-radius:14px; color:#fff;
@@ -128,8 +137,11 @@
   .rewardBtn.power { background:linear-gradient(180deg,#40d9f2,#168fb8); }
   .rewardBtn.coins { background:linear-gradient(180deg,#f2cf6a,#e0a21c); color:#5b4302; }
   .rewardBtn.balls { background:linear-gradient(180deg,#ff8a5c,#e0613a); }
-  .closeX { position:absolute; margin-left:auto; background:#ff9d8a; color:#7c2413; font-weight:bold;
-    border-radius:10px; padding:6px 14px; font-size:16px; box-shadow:0 3px 0 #c96b59; }
+  .closeX { width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    background:#ffe2da; color:#c0432a; font-weight:bold; font-size:18px; line-height:1;
+    border-radius:50%; box-shadow:0 2px 0 #e3a99c; }
+  .closeX:hover { background:#ffd0c4; }
+  .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
   #shopItems { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
@@ -542,11 +554,11 @@
   #setupCard .choiceGrid.two .choice { padding-top:15px; }
 
   #setupCard #timeRow { margin-top:14px; }
-  #setupCard .segment { display:inline-flex; background:var(--mist); border-radius:var(--r-pill); padding:4px; gap:3px; }
+  #setupCard .segment { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; max-width:340px; }
   #setupCard .timeBtn { font-family:var(--font-body); font-weight:800; font-size:14.5px; color:var(--slate);
-    background:transparent; border:none; border-radius:var(--r-pill); padding:9px 18px; cursor:pointer; transition:.12s; }
-  #setupCard .timeBtn:hover { color:var(--ink); }
-  #setupCard .timeBtn.selected { background:#fff; color:var(--indigo); box-shadow:var(--sh-card); }
+    background:#fff; border:2px solid var(--line); border-radius:var(--r-md); padding:10px 6px; cursor:pointer; transition:.12s; }
+  #setupCard .timeBtn:hover { border-color:var(--indigo-100); color:var(--ink); }
+  #setupCard .timeBtn.selected { background:var(--indigo-50); border-color:var(--indigo); color:var(--indigo-600); }
 
   #setupCard #avatarGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
   #setupCard .avatarCard { background:var(--cloud); border:2px solid var(--line); border-radius:var(--r-md);
@@ -706,6 +718,9 @@
             <button class="timeBtn" data-mins="5">5 min</button>
             <button class="timeBtn" data-mins="10">10 min</button>
             <button class="timeBtn selected" data-mins="15">15 min</button>
+            <button class="timeBtn" data-mins="20">20 min</button>
+            <button class="timeBtn" data-mins="25">25 min</button>
+            <button class="timeBtn" data-mins="30">30 min</button>
           </div>
         </div>
       </div>
@@ -739,8 +754,8 @@
           <span class="kbd">E</span> use / sit <span class="kbd">D</span> build
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
           <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
-          <span class="kbd">M</span> free mouse
-          <p>Solve math to earn build blocks, Power Blocks, coins, or ammo. On a tablet, use the joystick and the ⭐ Use button.</p>
+          <p><b>Mouse:</b> drag to look around, click to build, right-click to remove. Arrow keys turn too.</p>
+          <p>Solve math to earn build blocks, Power Blocks, coins, or ammo — and a 🛡️ Shield from the Gloomies! On a tablet, use the joystick and the ⭐ Use button.</p>
         </div>
       </details>
 
@@ -773,6 +788,7 @@
     <div id="modeLabel">🏡 MathCraft Adventure</div>
     <div id="hudTimer">⏰ 15:00</div>
     <div id="timerBar"><div id="timerFill"></div></div>
+    <div id="hudShield" style="display:none">🛡️ Shield: <span id="shieldTime">0:00</span></div>
     <div id="hudShelter">🏗️ Not enclosed yet</div>
   </div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
@@ -781,7 +797,7 @@
   <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
   <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
-  <button id="cursorBtn" class="hudBtn" title="Free the mouse (M)">Ⓜ Mouse</button>
+  <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <div id="crosshair">＋</div>
   <div id="hintBar"></div>
   <div id="placingTag"></div>
@@ -791,7 +807,7 @@
 <!-- ================= MATH POPUP ================= -->
 <div class="popup" id="mathPopup">
   <div class="popupCard">
-    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="mathClose">✖ Close</button></div>
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="mathClose" title="Close" aria-label="Close">✕</button></div>
     <div id="mathEquation">7 + 5 = ?</div>
     <div id="mathPrompt">Find the right block! Tap the block with the answer.</div>
     <div id="mathChoices"></div>
@@ -805,7 +821,7 @@
 <!-- ================= SHOP POPUP ================= -->
 <div class="popup" id="shopPopup">
   <div class="popupCard">
-    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="shopClose">✖ Close</button></div>
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="shopClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏪 The Block Shop</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
     <div id="shopItems"></div>
@@ -815,7 +831,7 @@
 <!-- ================= GROWN-UPS DASHBOARD ================= -->
 <div class="popup" id="grownupPopup">
   <div class="popupCard" style="width:min(620px,95vw)">
-    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="grownupClose">✖ Close</button></div>
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="grownupClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🧑‍🏫 Math Progress</h2>
     <div style="color:#6c84a6; font-size:clamp(13px,2.2vw,16px); margin-bottom:6px">For parents & teachers — saved on this device, one card per player.</div>
     <div id="grownupList"></div>
@@ -825,7 +841,7 @@
 <!-- ================= INVENTORY POPUP ================= -->
 <div class="popup" id="invPopup">
   <div class="popupCard">
-    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="invClose">✖ Close</button></div>
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="invClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🎒 Your Backpack</h2>
     <div id="invList"></div>
   </div>
@@ -834,7 +850,7 @@
 <!-- ================= BADGES POPUP ================= -->
 <div class="popup" id="badgePopup">
   <div class="popupCard">
-    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="badgeClose">✖ Close</button></div>
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="badgeClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏅 My Badges</h2>
     <div style="font-weight:bold; color:#7a6a35">Problems solved: <span id="badgeSolved">0</span></div>
     <div id="badgeGrid"></div>
@@ -971,20 +987,55 @@ function stepHint(a, b, sub) {
   }
   return txt + '. Now ' + (sub ? 'take away ' : 'add ') + comps[comps.length - 1] + ' more!';
 }
+/* Step-by-step picture hints for young kids: tens as bars, ones as dots, leading questions. */
+function repPic(cls, ch, n) { let s = ''; for (let i = 0; i < n; i++) s += '<span class="' + cls + '">' + ch + '</span>'; return s; }
+function kidHintHTML(a, b, op) {
+  const at = Math.floor(a / 10), ao = a % 10, bt = Math.floor(b / 10), bo = b % 10;
+  if (op === '+') {
+    if (a < 10 && b < 10) {
+      return '<div class="hintLead">Count them all together!</div>' +
+        '<div class="picrow">' + repPic('one', '●', a) + ' <b>and</b> ' + repPic('one', '●', b) + '</div>' +
+        '<div class="hintSay">Start at <b>' + a + '</b>, then count up <b>' + b + '</b> more.</div>';
+    }
+    return '<div class="hintLead">Split it into tens and ones!</div>' +
+      '<div class="picrow"><span class="plab">Ones</span>' + repPic('one', '●', ao) + ' <b>+</b> ' + repPic('one', '●', bo) +
+        ' <span class="ask">what is <b>' + ao + ' + ' + bo + '</b>?</span></div>' +
+      '<div class="picrow"><span class="plab">Tens</span>' + repPic('ten', '🟦', at) + ' <b>+</b> ' + repPic('ten', '🟦', bt) +
+        ' <span class="ask">what is <b>' + (at * 10) + ' + ' + (bt * 10) + '</b>?</span></div>' +
+      '<div class="hintSay">Then add your two answers together. 🙂</div>';
+  }
+  // subtraction: count back the tens, then the ones
+  return '<div class="hintLead">Count back in hops!</div>' +
+    '<div class="hintSay">Start at <b>' + a + '</b>.</div>' +
+    (bt > 0 ? '<div class="picrow"><span class="plab">Tens</span>' + repPic('ten', '🟦', bt) +
+        ' <span class="ask">hop back <b>' + (bt * 10) + '</b></span></div>' : '') +
+    '<div class="picrow"><span class="plab">Ones</span>' + repPic('one', '●', bo) +
+      ' <span class="ask">hop back <b>' + bo + '</b> more</span></div>' +
+    '<div class="hintSay">Where do you land? 🦘</div>';
+}
+function mulHintHTML(a, b) {
+  if (a > 10 || b > 10) return null;
+  let rows = '';
+  for (let i = 0; i < a; i++) rows += '<div class="picrow grid">' + repPic('one', '●', b) + '</div>';
+  return '<div class="hintLead">' + a + ' rows of ' + b + ' — count the dots!</div>' + rows +
+    '<div class="hintSay">Or skip-count by <b>' + b + '</b>: ' + b + ', ' + (b * 2) + ', ' + (b * 3) + '…</div>';
+}
 const WORD_NAMES = ['Mia', 'Leo', 'Ava', 'Sam', 'Zoe', 'Max', 'Lily', 'Eli', 'Nia', 'Ben'];
 const WORD_THINGS = ['🍎 apples', '🪙 coins', '⭐ stickers', '🧱 blocks', '🍪 cookies', '🌸 flowers', '🐚 shells', '🚗 toy cars'];
 function generateOnce(grade) {
-  let text, answer, reward, hint, skill = 'other', distractors = [];
+  let text, answer, reward, hint, hintHTML = null, skill = 'other', distractors = [];
   if (grade === 1) {                       // a gentle confidence-building level
     const subtract = Math.random() < 0.45;
     if (subtract) {
       const a = ri(6, 20), b = ri(1, a - 1);
       text = a + ' - ' + b; answer = a - b; skill = 'sub';
       hint = 'Start at ' + a + ' and count back ' + b + ' steps.';
+      hintHTML = kidHintHTML(a, b, '-');
     } else {
       const a = ri(1, 12), b = ri(1, 20 - a);
       text = a + ' + ' + b; answer = a + b; skill = 'add';
       hint = 'Start at ' + a + ' and count up ' + b + ' more.';
+      hintHTML = kidHintHTML(a, b, '+');
     }
     reward = 2;
     distractors = [answer + 1, Math.max(0, answer - 1), answer + 2];
@@ -994,11 +1045,13 @@ function generateOnce(grade) {
       const a = ri(5, 80), b = ri(3, 99 - a);
       text = a + ' + ' + b; answer = a + b; skill = 'add';
       hint = stepHint(a, b, false);
+      hintHTML = kidHintHTML(a, b, '+');
       distractors = [answer + ri(1, 3), Math.max(0, answer - ri(1, 3)), answer + 10];
     } else if (kind === 'sub') {
       const a = ri(20, 99), b = ri(2, a - 1);
       text = a + ' − ' + b; answer = a - b; skill = 'sub';
       hint = stepHint(a, b, true);
+      hintHTML = kidHintHTML(a, b, '-');
       distractors = [answer + ri(1, 3), Math.max(0, answer - ri(1, 3)), answer + 10];
     } else if (kind === 'missing') {
       const a = ri(3, 40), answerN = ri(3, 40); const s = a + answerN;
@@ -1033,6 +1086,7 @@ function generateOnce(grade) {
       const a = ri(2, 10), b = ri(1, 10);
       text = a + ' × ' + b; answer = a * b; reward = 5; skill = 'mul';
       hint = a + ' × ' + b + ' means ' + a + ' groups of ' + b + '. Skip-count by ' + b + ': ' + b + ', ' + (b * 2) + ', ' + (b * 3) + '… do it ' + a + ' times!';
+      hintHTML = mulHintHTML(a, b);
       distractors = [answer + a, Math.max(0, answer - a), answer + b];
     } else if (kind === 'round') {
       const n = ri(112, 988), to = pick([10, 100]);
@@ -1151,7 +1205,7 @@ function generateOnce(grade) {
     else extra = String(Number.isFinite(base) ? Math.round(base) + ri(2, 9) : ri(2, 20));
     if (!opts.includes(extra)) opts.push(extra);
   }
-  return { text, answer, reward, hint, skill, options: shuffle(opts) };
+  return { text, answer, reward, hint, hintHTML, skill, options: shuffle(opts) };
 }
 
 /* ============================ AVATARS ============================ */
@@ -1317,9 +1371,9 @@ const AVATARS = [
       box(a.head, 0.05, 0.12, 0.04, 0x222222, -0.13, 0.13, 0.21);       // forehead stripes
       box(a.head, 0.05, 0.15, 0.04, 0x222222, 0, 0.15, 0.21);
       box(a.head, 0.05, 0.12, 0.04, 0x222222, 0.13, 0.13, 0.21);
-      for (let i = 0; i < 4; i++)                                       // stripes across the back
-        box(a.group, 0.5, 0.1, 0.09, 0x222222, 0, 0.86, 0.33 - i * 0.22);
-      box(a.group, 0.48, 0.16, 0.5, 0xFFF4E0, 0, 0.52, 0.08);           // white belly underneath
+      for (let i = 0; i < 4; i++)                                       // stripes across the back (raised to avoid flicker)
+        box(a.group, 0.52, 0.14, 0.1, 0x222222, 0, 0.9, 0.33 - i * 0.22);
+      box(a.group, 0.5, 0.18, 0.52, 0xFFF4E0, 0, 0.5, 0.08);            // white belly underneath
       const tail = box(a.group, 0.12, 0.12, 0.55, 0xF28C28, 0, 0.78, -0.68);
       tail.rotation.x = 0.35;
       box(a.group, 0.13, 0.13, 0.13, 0x222222, 0, 0.88, -0.94);         // black tail tip
@@ -1678,6 +1732,8 @@ function resetWorld() {
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null;
+  if (bedProps) bedProps.visible = false;
+  if (shieldBubble) shieldBubble.visible = false;
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
@@ -1685,6 +1741,7 @@ function resetGameState() {
   G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, stove: 0, sink: 0, pot: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
   G.over = false; G.doomsday = false; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
+  G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false };
@@ -2085,13 +2142,39 @@ function nearTrunk() {
   return null;
 }
 
+let bedProps = null;
+function makeZTexture() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const c = cv.getContext('2d');
+  c.font = 'bold 50px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 6; c.strokeStyle = '#ffffff'; c.strokeText('Z', 32, 34);
+  c.fillStyle = '#5aa7e8'; c.fillText('Z', 32, 34);
+  return new THREE.CanvasTexture(cv);
+}
+function ensureBedProps() {
+  if (bedProps) return bedProps;
+  const g = new THREE.Group();
+  box(g, 1.04, 0.18, 1.12, 0x4f9bd8, 0, 0, 0.22);          // cozy blanket over the body
+  box(g, 1.06, 0.07, 0.2, 0xEAF3FB, 0, 0.1, -0.34);        // folded top trim
+  const zTex = makeZTexture();
+  g.userData.zs = [];
+  for (let i = 0; i < 3; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthWrite: false }));
+    sp.scale.set(0.3, 0.3, 0.3);
+    g.add(sp); g.userData.zs.push(sp);
+  }
+  bedProps = g; scene.add(g); g.visible = false;
+  return g;
+}
 function updatePlayer(dt) {
+  if (bedProps && !player.restingBed) bedProps.visible = false;
   if (player.restingBed) {
     const bed = player.restingBed;
     let stillPlaced = false;
     blocks.forEach(b => { if (b.mesh === bed.mesh) stillPlaced = true; });
     if (!stillPlaced) {
       player.restingBed = null;
+      if (bedProps) bedProps.visible = false;
     } else {
       player.vel.set(0, 0, 0);
       player.pos.set(bed.mesh.position.x, 0.5, bed.mesh.position.z);
@@ -2099,6 +2182,17 @@ function updatePlayer(dt) {
       av.position.set(bed.mesh.position.x, 0.58, bed.mesh.position.z);
       av.rotation.set(Math.PI / 2, bed.mesh.rotation.y + Math.PI, 0);
       av.visible = true;
+      const props = ensureBedProps();          // tuck them in under the covers, with sleepy Z's
+      props.visible = true;
+      props.position.set(bed.mesh.position.x, 0.62, bed.mesh.position.z);
+      props.rotation.y = bed.mesh.rotation.y;
+      const tt = performance.now() / 1000;
+      props.userData.zs.forEach((sp, i) => {
+        const ph = (tt * 0.45 + i * 0.34) % 1;
+        sp.position.set(0.22, 0.55 + ph * 0.95, -0.5);
+        sp.material.opacity = Math.max(0, 1 - ph);
+        sp.scale.setScalar(0.26 + i * 0.05 + ph * 0.12);
+      });
       camera.position.lerp(new THREE.Vector3(bed.mesh.position.x + 3.2, 3.1, bed.mesh.position.z + 3.2), 0.25);
       camera.lookAt(bed.mesh.position.x, 0.55, bed.mesh.position.z);
       return;
@@ -2385,9 +2479,13 @@ function spawnGloomies() {
     gloomies.push(c);
   }
 }
+function mathProtected() {   // safe from Gloomies while doing a math question or while the shield is up
+  return popupOpen || (G.shieldUntil && performance.now() / 1000 < G.shieldUntil);
+}
 function updateGloomies(dt) {
   if (!gloomies.length || G.over) return;
   const now = performance.now() / 1000;
+  const protectedNow = mathProtected();
   let nearest = 999;
   for (const c of gloomies) {
     let stunned = c.userData.stunUntil && now < c.userData.stunUntil;
@@ -2410,7 +2508,7 @@ function updateGloomies(dt) {
         toast('⚡ ZAP! A Power Block stopped a Gloomy!', 1100);
       }
     }
-    if (dist > 0.5 && !stunned) {
+    if (dist > 0.5 && !stunned && !protectedNow) {
       const sp = 0.8 * dt;             // a slow waddle ≈ 30s across the world
       const nx = c.position.x + (dx / dist) * sp;
       const nz = c.position.z + (dz / dist) * sp;
@@ -2422,8 +2520,29 @@ function updateGloomies(dt) {
     c.rotation.z = stunned ? 1.3 : Math.sin(now * 6 + c.position.x) * 0.08;   // tipped over when stunned
     nearest = Math.min(nearest, Math.hypot(player.pos.x - c.position.x, player.pos.z - c.position.z));
   }
-  if (nearest < 8 && now - lastHiss > 2.5) { Sound.hiss(); lastHiss = now; }
-  if (nearest < 1.1 && !G.safe) loseGame();
+  if (nearest < 8 && now - lastHiss > 2.5 && !protectedNow) { Sound.hiss(); lastHiss = now; }
+  if (nearest < 1.1 && !G.safe && !protectedNow) loseGame();
+}
+
+/* a glowing protective bubble so kids can SEE they're safe from the Gloomies */
+let shieldBubble = null;
+function updateShield(now) {
+  const shielded = G.running && G.gloomiesEnabled && G.shieldUntil && (now / 1000 < G.shieldUntil);
+  if (!shieldBubble) {
+    shieldBubble = new THREE.Mesh(
+      new THREE.SphereGeometry(1.2, 22, 16),
+      new THREE.MeshBasicMaterial({ color: 0x6fc8ff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+    scene.add(shieldBubble);
+  }
+  if (shielded && player.avatar && player.avatar.visible) {
+    shieldBubble.visible = true;
+    shieldBubble.position.set(player.pos.x, player.pos.y + 0.95, player.pos.z);
+    shieldBubble.material.opacity = 0.17 + Math.sin(now / 220) * 0.06;
+    shieldBubble.rotation.y = now / 1400;
+    shieldBubble.scale.setScalar(1 + Math.sin(now / 300) * 0.03);
+  } else if (shieldBubble.visible) {
+    shieldBubble.visible = false;
+  }
 }
 
 /* ---- the math-earned ball shooter: knock Gloomies back to the edge ---- */
@@ -2562,7 +2681,8 @@ function renderMathQuestion() {
 }
 function showHint() {
   if (!currentEq) return;
-  $('hintBox').textContent = '💡 ' + currentEq.hint;
+  if (currentEq.hintHTML) $('hintBox').innerHTML = currentEq.hintHTML;
+  else $('hintBox').textContent = '💡 ' + currentEq.hint;
   $('hintBox').style.display = 'block';
 }
 function openMath() {
@@ -2595,6 +2715,17 @@ function answerPicked(btn, opt) {
       levelNote = ' New challenge level unlocked!';
     }
     if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900);
+    // math shield: every 3 correct answers earns +1 minute of Gloomy protection (accrues)
+    if (G.gloomiesEnabled) {
+      G.shieldStreak = (G.shieldStreak || 0) + 1;
+      if (G.shieldStreak >= 3) {
+        G.shieldStreak = 0;
+        const nowS = performance.now() / 1000;
+        G.shieldUntil = Math.max(G.shieldUntil || 0, nowS) + 60;
+        const mins = Math.round((G.shieldUntil - nowS) / 60);
+        setTimeout(() => { Sound.fanfare(); toast('🛡️ Shield up! Safe from Gloomies for ' + mins + ' more minute' + (mins > 1 ? 's' : '') + '!', 3200); }, 700);
+      }
+    }
     recordSolve(currentEq);
     // every correct answer: pick your reward
     const balls = Math.max(2, Math.round(reward * 0.7));
@@ -3096,12 +3227,7 @@ $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' +
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
 function freeMouse() {
-  if (document.pointerLockElement) {
-    document.exitPointerLock();
-    toast('Mouse is free! Click the game when you want mouse-look again.', 2200);
-  } else {
-    toast('Mouse is already free.', 1200);
-  }
+  toast('🖱️ Drag to look around • click to build • right-click to remove. Arrow keys + D work too!', 3200);
 }
 $('cursorBtn').onclick = () => { Sound.click(); freeMouse(); };
 function takePhoto() {
@@ -3121,25 +3247,31 @@ $('soundBtn').onclick = () => {
   if (!m) Sound.click();
 };
 
-/* mouse look (pointer lock) */
+/* mouse: drag to look, click to build — no pointer-lock, cursor always free (friendlier) */
 const canvas = renderer.domElement;
-canvas.addEventListener('click', () => {
-  if (G.running && !popupOpen && !isTouch && document.pointerLockElement !== canvas) canvas.requestPointerLock();
-});
-document.addEventListener('mousemove', e => {
-  if (document.pointerLockElement === canvas && !popupOpen) {
-    player.yaw -= e.movementX * 0.0024;
-    player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch - e.movementY * 0.0024));
-  }
-});
-document.addEventListener('pointerlockchange', () => {
-  if (document.pointerLockElement === canvas) toast('Mouse-look is on. Press M or tap the Mouse button to free it.', 2300);
-});
+let mouseDrag = null;
 canvas.addEventListener('mousedown', e => {
   if (!G.running || popupOpen || isTouch) return;
-  if (document.pointerLockElement !== canvas) return;     // first click locks, next clicks act
-  if (e.button === 0) interact(0, 0, 'place');
-  if (e.button === 2) interact(0, 0, 'break');
+  e.preventDefault();
+  mouseDrag = { x: e.clientX, y: e.clientY, moved: 0, button: e.button };
+});
+window.addEventListener('mousemove', e => {
+  if (!mouseDrag) return;
+  const dx = e.clientX - mouseDrag.x, dy = e.clientY - mouseDrag.y;
+  mouseDrag.x = e.clientX; mouseDrag.y = e.clientY;
+  mouseDrag.moved += Math.abs(dx) + Math.abs(dy);
+  player.yaw -= dx * 0.005;
+  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch - dy * 0.005));
+});
+window.addEventListener('mouseup', e => {
+  if (!mouseDrag) return;
+  const drag = mouseDrag; mouseDrag = null;
+  if (drag.moved < 7 && G.running && !popupOpen && !isTouch && e.target === canvas) {
+    const r = canvas.getBoundingClientRect();
+    const ndcX = ((e.clientX - r.left) / r.width) * 2 - 1;
+    const ndcY = -((e.clientY - r.top) / r.height) * 2 + 1;
+    interact(ndcX, ndcY, drag.button === 2 ? 'break' : 'place');
+  }
 });
 addEventListener('contextmenu', e => e.preventDefault());
 
@@ -3254,22 +3386,26 @@ function buildMenu() {
 
   // avatar cards with live 3D previews
   const grid = $('avatarGrid');
+  const PV = 320;                                    // higher-res preview for crisp avatars
   const pvScene = new THREE.Scene();
-  pvScene.background = new THREE.Color(0xDFF1FF);
-  pvScene.add(new THREE.AmbientLight(0xffffff, 0.75));
-  const pvLight = new THREE.DirectionalLight(0xffffff, 0.7);
-  pvLight.position.set(2, 4, 3);
+  pvScene.background = new THREE.Color(0xEEF4FB);
+  pvScene.add(new THREE.AmbientLight(0xffffff, 0.82));
+  const pvLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  pvLight.position.set(2.6, 5, 3.2);
   pvScene.add(pvLight);
-  const pvCam = new THREE.PerspectiveCamera(40, 1, 0.1, 20);
-  pvCam.position.set(0, 1.25, 3.1);
-  pvCam.lookAt(0, 0.85, 0);
-  renderer.setSize(140, 140);
+  const pvFill = new THREE.DirectionalLight(0xc4d8ff, 0.42);   // soft fill from the other side
+  pvFill.position.set(-3, 2.2, -2);
+  pvScene.add(pvFill);
+  const pvCam = new THREE.PerspectiveCamera(37, 1, 0.1, 20);
+  pvCam.position.set(0, 1.22, 3.3);
+  pvCam.lookAt(0, 0.82, 0);
+  renderer.setSize(PV, PV);
 
   AVATARS.forEach((av, i) => {
     const card = document.createElement('button');
     card.className = 'avatarCard' + (i === 0 ? ' selected' : '');
     const cv = document.createElement('canvas');
-    cv.width = 140; cv.height = 140;
+    cv.width = PV; cv.height = PV;
     const nm = document.createElement('div');
     nm.className = 'avName'; nm.textContent = av.name;
     card.appendChild(cv); card.appendChild(nm);
@@ -3279,7 +3415,7 @@ function buildMenu() {
     data.group.rotation.y = data.quad ? 0.85 : 0.5;   // angle quadrupeds to show all four legs
     pvScene.add(data.group);
     renderer.render(pvScene, pvCam);
-    cv.getContext('2d').drawImage(renderer.domElement, 0, 0, 140, 140);
+    cv.getContext('2d').drawImage(renderer.domElement, 0, 0, PV, PV);
     pvScene.remove(data.group);
 
     card.onclick = () => {
@@ -3513,7 +3649,12 @@ function loop(now) {
         G.safe = false;
       }
     }
+    // math shield countdown in the HUD
+    const sLeft = (G.shieldUntil || 0) - now / 1000;
+    if (sLeft > 0) { $('hudShield').style.display = 'block'; $('shieldTime').textContent = fmtTime(sLeft); }
+    else $('hudShield').style.display = 'none';
   }
+  updateShield(now);
 
   // track time played for the grown-up progress page
   if (G.running && !G.over && !popupOpen) { profile.secondsPlayed = (profile.secondsPlayed || 0) + dt; profileDirty = true; }
