@@ -241,9 +241,11 @@
   .guReset { margin-top:8px; background:#ffd0c6; color:#7c2413; font-weight:bold; font-size:13px;
     padding:7px 12px; border-radius:10px; box-shadow:0 2px 0 #d99; }
   .guEmpty { color:#6c84a6; font-style:italic; padding:10px 0; }
-  /* ---------- Paint swatches (in the backpack) ---------- */
-  #paintRow { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
-  .swatch { width:34px; height:34px; border-radius:8px; border:3px solid #fff; box-shadow:0 2px 0 rgba(0,0,0,.2); cursor:pointer; }
+  /* ---------- Paint swatches (right under Build Blocks in the backpack) ---------- */
+  .invPaint { background:#fff7e6; border:2px dashed #f0c668; border-radius:14px; padding:8px 12px 10px; margin:-4px 0 4px; }
+  .invPaintLabel { display:block; font-weight:bold; color:#9a6a00; font-size:14px; margin-bottom:6px; }
+  .paintRow { display:flex; flex-wrap:wrap; gap:8px; }
+  .swatch { width:34px; height:34px; border-radius:8px; border:3px solid #fff; box-shadow:0 2px 0 rgba(0,0,0,.2); cursor:pointer; padding:0; }
   .swatch.sel { outline:4px solid #2f7d27; }
 
   @media (min-width: 821px) {
@@ -949,6 +951,8 @@ const Sound = {
     this.tone(180, 0.18, 'sawtooth', 0.12, 0, 920);
     this.tone(1250, 0.1, 'square', 0.1, 0.08, 650);
   },
+  doorOpen()  { this.tone(300, 0.22, 'sine', 0.12, 0, 520); this.noise(0.12, 0.05, 700); },   // soft creak up
+  doorClose() { this.tone(520, 0.12, 'sine', 0.13, 0, 240); this.noise(0.1, 0.12, 320, 0.05); }, // gentle thud/click
   toggleMute() { this.muted = !this.muted; return this.muted; }
 };
 document.addEventListener('pointerdown', function initAudioOnce() {
@@ -1457,7 +1461,7 @@ const SHOP_ITEMS = [
   { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
-  { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A bright blue window for the walls of your home.' },
+  { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A window BLOCK — drops into a wall gap at any height.' },
   { id: 'stove',  icon: '🍳', name: 'Kitchen Stove', price: 12, kind: 'many', desc: 'A stove with burners and an oven for the kitchen.' },
   { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
   { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'A soup pot for the stove or kitchen table.' },
@@ -1640,6 +1644,7 @@ function serializeWorld() {
     if (b.type === 'door' && b.partner) placed.push([x, Math.min(y, Number(b.partner.split(',')[1])), z, 'door']);
     else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
+    else if (b.type === 'window') placed.push([x, y, z, 'window']);
     else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant]);
   });
   return placed;
@@ -1703,6 +1708,11 @@ function restoreGame(s) {
       mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
       addBlockMesh(x, y, z, null, 'power', true, mesh);
     }
+    else if (type === 'window') {
+      const mesh = buildWindowMesh();
+      mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+      addBlockMesh(x, y, z, null, 'window', true, mesh);
+    }
     else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail);
     else {
       const col = detail || 0xC9B79A;
@@ -1727,6 +1737,7 @@ function resetWorld() {
   toDelete.forEach(k => blocks.delete(k));
   meshes.forEach(m => scene.remove(m));
   lootBlocks.forEach(l => scene.remove(l.mesh)); lootBlocks.length = 0;
+  doorList.length = 0;
   gloomies.forEach(g => scene.remove(g)); gloomies.length = 0;
   projectiles.forEach(p => scene.remove(p.mesh)); projectiles.length = 0;
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
@@ -1810,7 +1821,10 @@ const blocks = new Map();              // "x,y,z" -> {mesh, type, removable}
 const key = (x, y, z) => x + ',' + y + ',' + z;
 function solidAt(x, y, z) {
   if (y < 0) return true;              // the ground itself
-  return blocks.has(key(x, y, z));
+  const b = blocks.get(key(x, y, z));
+  if (!b) return false;
+  if (b.type === 'door' && b.state && b.state.swing > 1.0) return false;   // an open door lets you through
+  return true;
 }
 const blockGeo = new THREE.BoxGeometry(0.98, 0.98, 0.98);
 const placedMat = new THREE.MeshLambertMaterial({ color: 0xC9B79A });   // blank/plain block
@@ -1848,18 +1862,41 @@ function removeBlockAt(x, y, z) {
   return b;
 }
 
-/* ---- door (1x2, brown, counts as wall for safety) ---- */
+/* ---- door (1x2): swings open when you walk up, closes with a sound ---- */
+const doorList = [];
 function placeDoor(x, y, z) {
   const grp = new THREE.Group();
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.92, 1.96, 0.95), mat(0x9C6B3F));
-  panel.position.set(0, 0, 0);
-  grp.add(panel);
-  box(grp, 0.6, 0.6, 0.97, 0x7d5430, 0, 0.4, 0);                       // door window frame
-  box(grp, 0.12, 0.12, 0.99, 0xFFD23E, 0.3, 0, 0);                     // handle
+  const hinge = new THREE.Group();
+  hinge.position.set(-0.45, 0, 0);                                     // hinge at the left edge
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.94, 0.14), mat(0x9C6B3F));
+  panel.position.set(0.45, 0, 0);                                     // panel extends right from hinge
+  hinge.add(panel);
+  box(hinge, 0.5, 0.5, 0.16, 0x7d5430, 0.45, 0.42, 0);               // little window on the door
+  box(hinge, 0.1, 0.1, 0.2, 0xFFD23E, 0.8, 0, 0);                    // handle near the free edge
+  grp.add(hinge);
   grp.position.set(x + 0.5, y + 1, z + 0.5);
   scene.add(grp);
-  blocks.set(key(x, y, z),     { mesh: grp, type: 'door', removable: true, partner: key(x, y + 1, z) });
-  blocks.set(key(x, y + 1, z), { mesh: grp, type: 'door', removable: true, partner: key(x, y, z) });
+  const state = { open: false, swing: 0, hinge, cx: x + 0.5, cz: z + 0.5, didClose: false, didOpen: false };
+  blocks.set(key(x, y, z),     { mesh: grp, type: 'door', removable: true, partner: key(x, y + 1, z), state });
+  blocks.set(key(x, y + 1, z), { mesh: grp, type: 'door', removable: true, partner: key(x, y, z), state });
+  doorList.push(state);
+}
+function updateDoors(dt) {
+  for (let i = doorList.length - 1; i >= 0; i--) {
+    const d = doorList[i];
+    if (!d.hinge.parent) { doorList.splice(i, 1); continue; }          // door was removed
+    const near = Math.hypot(player.pos.x - d.cx, player.pos.z - d.cz) < 1.6 && !player.restingBed;
+    const prev = d.swing;
+    d.swing += ((near ? 1.45 : 0) - d.swing) * Math.min(1, dt * 8);
+    d.hinge.rotation.y = d.swing;
+    if (near) {
+      d.didClose = false;
+      if (!d.didOpen) { Sound.doorOpen(); d.didOpen = true; }
+    } else {
+      d.didOpen = false;
+      if (prev > 0.12 && d.swing <= 0.12 && !d.didClose) { Sound.doorClose(); d.didClose = true; }
+    }
+  }
 }
 
 /* ---- trees (trunks are solid & climbable; canopies hold berries) ---- */
@@ -2360,6 +2397,7 @@ function removePlacedBlock() {
 function refundFor(type) {
   if (type === 'door') G.doors += 1;
   else if (type === 'power') G.powerBlocks += 1;
+  else if (type === 'window') { G.furniture.window += 1; toast('📦 Packed up your window — back in your 🎒!', 1600); }
   else if (FURNITURE_TYPES.includes(type)) { G.furniture[type] += 1; toast('📦 Packed up your ' + type + ' — back in your 🎒!', 1600); }
   else G.blocks += 1;
 }
@@ -2420,6 +2458,16 @@ function placeSelectedAt(x, z, blockY) {
     addBlockMesh(x, y, z, null, 'power', true, mesh);
     G.powerBlocks -= 1; Sound.powerZap(); refreshHUD(); return true;
   }
+  if (slot === 'window') {     // window is a wall block — drops into a gap at any height
+    if (G.furniture.window < 1) { toast('🪟 No windows in your 🎒 — buy one at the 🏪 shop!', 2200); return false; }
+    const y = blockY == null ? 0 : blockY;
+    if (y > 8 || blocks.has(key(x, y, z))) return false;
+    if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    const mesh = buildWindowMesh();
+    mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+    addBlockMesh(x, y, z, null, 'window', true, mesh);
+    G.furniture.window -= 1; Sound.place(); refreshHUD(); return true;
+  }
   // plain building block
   if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or the 🏪 shop!', 2000); return false; }
   const y = blockY == null ? 0 : blockY;
@@ -2440,7 +2488,7 @@ function putDownBlock() {
   const base = blocks.get(key(fx, 0, fz));
   if (base && !base.removable && G.selectedSlot !== 'food') { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
   let blockY = 0;
-  if (G.selectedSlot === 'block' || G.selectedSlot === 'power') {
+  if (G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window') {
     while (blockY <= 8 && blocks.has(key(fx, blockY, fz))) blockY++;
   }
   placeSelectedAt(fx, fz, blockY);
@@ -2879,7 +2927,22 @@ function eatSnack() {
   toast('🍎 Yum yum! ZOOMY speed for 20 seconds!', 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower', 'window', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush'];
+const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush'];
+/* a window is a wall block — it fills a cell at any height so it fits between blocks */
+function buildWindowMesh() {
+  const g = new THREE.Group();
+  const fc = 0x8a5c33;
+  box(g, 0.98, 0.14, 0.92, fc, 0, 0.42, 0);     // frame top
+  box(g, 0.98, 0.14, 0.92, fc, 0, -0.42, 0);    // frame bottom
+  box(g, 0.14, 0.98, 0.92, fc, -0.42, 0, 0);    // frame left
+  box(g, 0.14, 0.98, 0.92, fc, 0.42, 0, 0);     // frame right
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.74, 0.4),
+    new THREE.MeshLambertMaterial({ color: 0xBFE6F5, transparent: true, opacity: 0.62 }));
+  g.add(glass);
+  box(g, 0.78, 0.08, 0.44, 0xF4FBFF, 0, 0, 0);  // white mullion bars
+  box(g, 0.08, 0.78, 0.44, 0xF4FBFF, 0, 0, 0);
+  return g;
+}
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
 function buildFurnitureMesh(type, variant) {
   const g = new THREE.Group();
@@ -3174,7 +3237,8 @@ function renderInv() {
     row.className = 'invItem';
     row.innerHTML = '<div class="icon">' + icon + '</div>' +
       '<div class="info"><b>' + name + '</b><small>You have ' + count +
-      (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' : '') + '</small></div>';
+      (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
+       slot === 'window' ? ' • Drops into a wall gap at any height' : '') + '</small></div>';
     const place = document.createElement('button');
     place.className = 'placeBtn';
     place.textContent = 'Place';
@@ -3190,6 +3254,27 @@ function renderInv() {
     }
     row.appendChild(place);
     wrap.appendChild(row);
+    if (slot === 'block') {                 // color picker right under the blocks, so it's easy to find
+      const paint = document.createElement('div');
+      paint.className = 'invPaint';
+      paint.innerHTML = '<span class="invPaintLabel">🎨 Block color</span><div class="paintRow"></div>';
+      wrap.appendChild(paint);
+      const prow = paint.querySelector('.paintRow');
+      PAINTS.forEach(pc => {
+        const sw = document.createElement('button');
+        sw.className = 'swatch' + (G.blockColor === pc.color ? ' sel' : '');
+        sw.title = pc.name;
+        sw.style.background = '#' + pc.color.toString(16).padStart(6, '0');
+        sw.onclick = () => {
+          Sound.click();
+          G.blockColor = pc.color; selectSlot('block', true);
+          prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+          sw.classList.add('sel');
+          toast('🎨 ' + pc.name + ' blocks selected! Press D or tap to build.', 2000);
+        };
+        prow.appendChild(sw);
+      });
+    }
   });
   // money + gear
   const money = document.createElement('div');
@@ -3206,28 +3291,6 @@ function renderInv() {
       gear.map(g => g[0] + ' ' + g[1]).join(' • ') + '</small></div>';
     wrap.appendChild(row);
   }
-  // paint palette: choose a color for the blocks you place
-  const paint = document.createElement('div');
-  paint.className = 'invItem';
-  paint.innerHTML = '<div class="icon">🎨</div><div class="info"><b>Paint your blocks</b>' +
-    '<small>Pick a color, then place blocks (press D)</small><div id="paintRow"></div></div>';
-  wrap.appendChild(paint);
-  const prow = paint.querySelector('#paintRow');
-  PAINTS.forEach(p => {
-    const sw = document.createElement('div');
-    sw.className = 'swatch' + (G.blockColor === p.color ? ' sel' : '');
-    sw.title = p.name;
-    sw.style.background = '#' + p.color.toString(16).padStart(6, '0');
-    sw.onclick = () => {
-      Sound.click();
-      G.blockColor = p.color;
-      G.selectedSlot = 'block';
-      prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
-      sw.classList.add('sel');
-      toast('🎨 ' + p.name + ' blocks selected! Press D to build.', 2000);
-    };
-    prow.appendChild(sw);
-  });
 }
 $('invClose').onclick = () => { Sound.click(); closeInv(); };
 $('invBtn').onclick = () => { Sound.click(); openInv(); };
@@ -3575,6 +3638,7 @@ function loop(now) {
   if (!G.running) { renderer.render(scene, camera); return; }
 
   if (!popupOpen && !G.over) updatePlayer(dt);
+  if (!G.over) updateDoors(dt);
 
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
