@@ -2969,16 +2969,19 @@ const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower', 'st
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
-  const fc = 0x8a5c33;
-  box(g, 0.98, 0.14, 0.92, fc, 0, 0.42, 0);     // frame top
-  box(g, 0.98, 0.14, 0.92, fc, 0, -0.42, 0);    // frame bottom
-  box(g, 0.14, 0.98, 0.92, fc, -0.42, 0, 0);    // frame left
-  box(g, 0.14, 0.98, 0.92, fc, 0.42, 0, 0);     // frame right
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.74, 0.4),
-    new THREE.MeshLambertMaterial({ color: 0xBFE6F5, transparent: true, opacity: 0.62 }));
+  const fc = 0x6d4326;                            // warm brown frame
+  const t = 0.12;                                 // frame bar thickness
+  const D = 0.96;                                 // depth ~fills the wall so there are no gaps
+  box(g, 1.0, t, D, fc, 0, 0.5 - t / 2, 0);       // frame top
+  box(g, 1.0, t, D, fc, 0, -0.5 + t / 2, 0);      // frame bottom
+  box(g, t, 1.0, D, fc, -0.5 + t / 2, 0, 0);      // frame left
+  box(g, t, 1.0, D, fc, 0.5 - t / 2, 0, 0);       // frame right
+  // big light-blue pane that sits flush with the frame so it clearly reads as glass
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.84, 0.9),
+    new THREE.MeshLambertMaterial({ color: 0x9FD8F0, transparent: true, opacity: 0.82 }));
   g.add(glass);
-  box(g, 0.78, 0.08, 0.44, 0xF4FBFF, 0, 0, 0);  // white mullion bars
-  box(g, 0.08, 0.78, 0.44, 0xF4FBFF, 0, 0, 0);
+  box(g, 0.86, 0.08, 0.94, 0xFFFFFF, 0, 0, 0);    // white mullion — horizontal bar
+  box(g, 0.08, 0.86, 0.94, 0xFFFFFF, 0, 0, 0);    // white mullion — vertical bar
   return g;
 }
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
