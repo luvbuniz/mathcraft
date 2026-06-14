@@ -1299,7 +1299,7 @@ function generateOnce(grade) {
     } else if (kind === 'missing') {
       const a = ri(3, 40), answerN = ri(3, 40); const s = a + answerN;
       text = a + ' + ? = ' + s; answer = answerN; skill = 'add';
-      hint = 'Count up from ' + a + ' until you reach ' + s + ' — how many steps?';
+      hint = 'Two ways: count up from ' + a + ' to ' + s + ', OR subtract — ' + s + ' − ' + a + ' gives the missing number!';
       distractors = [answer + 1, Math.max(0, answer - 1), answer + 10];
     } else if (kind === 'word') {
       const a = ri(4, 30), b = ri(3, 25), thing = pick(WORD_THINGS), nm = pick(WORD_NAMES);
@@ -3335,7 +3335,10 @@ function renderMathQuestion() {
   mathLocked = false;
   $('hintBox').style.display = 'none';
   const eqBox = $('mathEquation');
-  eqBox.textContent = curWorld().subject === 'math' ? currentEq.text + ' = ?' : currentEq.text + '?';
+  // Math: append " = ?" only for plain equations — not when the prompt already has an "=" ("16 + ? = 43") or ends with "?" (word problems)
+  const qt = currentEq.text;
+  eqBox.textContent = curWorld().subject !== 'math' ? qt + '?'
+    : (qt.indexOf('=') >= 0 || qt.trim().slice(-1) === '?') ? qt : qt + ' = ?';
   eqBox.classList.toggle('wordy', currentEq.text.length > 20);
   // nudge kids to use paper on the bigger math problems
   const bigMath = curWorld().subject === 'math' &&
