@@ -75,7 +75,13 @@
   #hud { position:fixed; inset:0; pointer-events:none; z-index:20; display:none; }
   .hudBox { position:absolute; background:rgba(255,255,255,.88); border-radius:14px; padding:8px 14px;
     font-weight:bold; box-shadow:0 3px 0 rgba(0,0,0,.15); font-size:clamp(15px,2.4vw,20px); }
-  #hudTop { top:10px; left:10px; color:#4a3b16; display:flex; flex-direction:column; gap:4px; }
+  #hudTop { top:10px; left:10px; color:#4a3b16; display:flex; flex-direction:column; gap:6px; max-width:62vw; padding:7px 9px; }
+  #hudNameRow { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  #playerRow { font-weight:800; }
+  #hudChips { display:flex; flex-wrap:wrap; gap:5px; }
+  .stat { display:inline-flex; align-items:center; gap:3px; background:rgba(0,0,0,.06);
+    border-radius:9px; padding:2px 8px; white-space:nowrap; font-size:.92em; line-height:1.5; }
+  #solvedGoal { opacity:.65; font-size:.82em; margin-left:2px; }
   #blockCount, #powerCount, #coinCount { display:inline-block; }
   .countPop { animation:countPop .5s; color:#2f7d27; }
   @keyframes countPop { 0%{transform:scale(1)} 40%{transform:scale(1.7)} 100%{transform:scale(1)} }
@@ -344,7 +350,9 @@
   @media (max-width: 820px) {
     #startShell { width:100%; }
     .hudBox { font-size:12px; padding:5px 8px; border-radius:10px; gap:2px; }
-    #hudTop { top:8px; left:8px; max-width:42vw; }
+    #hudTop { top:8px; left:8px; max-width:54vw; gap:5px; }
+    #hudChips { gap:4px; }
+    .stat { padding:1px 6px; }
     #hudMode { top:8px; max-width:44vw; font-size:12px; line-height:1.2; padding:5px 8px; }
     #hudTimer { font-size:16px; }
     #badgeBtn { font-size:12px; padding:4px 8px; }
@@ -836,14 +844,18 @@
 <!-- ================= HUD ================= -->
 <div id="hud">
   <div class="hudBox" id="hudTop">
-    <div id="playerRow" style="display:none; color:#2f7d27">🙂 <span id="playerName"></span></div>
-    <div>🧱 Build Blocks: <span id="blockCount">0</span></div>
-    <div id="powerRow" style="display:none">⚡ Power Blocks: <span id="powerCount">0</span></div>
-    <div id="coinRow" style="display:none">🪙 Coins: <span id="coinCount">0</span></div>
-    <div id="berryRow" style="display:none">🍓 Berries: <span id="berryCount">0</span></div>
-    <div id="ballRow" style="display:none">⚽ Softballs: <span id="ballCount">0</span></div>
-    <div id="solvedRow" style="display:none">✅ Solved: <span id="solvedCount">0</span><span id="solvedGoal" style="opacity:.85"></span></div>
-    <button id="badgeBtn" style="display:none">🏅 Badges</button>
+    <div id="hudNameRow">
+      <span id="playerRow" style="display:none; color:#2f7d27">🙂 <span id="playerName"></span></span>
+      <button id="badgeBtn" style="display:none">🏅 Badges</button>
+    </div>
+    <div id="hudChips">
+      <span class="stat" title="Build Blocks">🧱 <span id="blockCount">0</span></span>
+      <span class="stat" id="powerRow" style="display:none" title="Power Blocks">⚡ <span id="powerCount">0</span></span>
+      <span class="stat" id="coinRow" style="display:none" title="Coins">🪙 <span id="coinCount">0</span></span>
+      <span class="stat" id="berryRow" style="display:none" title="Berries">🍓 <span id="berryCount">0</span></span>
+      <span class="stat" id="ballRow" style="display:none" title="Softballs">⚽ <span id="ballCount">0</span></span>
+      <span class="stat" id="solvedRow" style="display:none" title="Problems solved">✅ <span id="solvedCount">0</span><span id="solvedGoal"></span></span>
+    </div>
   </div>
   <div class="hudBox" id="hudMode">
     <div id="modeLabel">🏡 Stackadoo Adventure</div>
@@ -2519,22 +2531,52 @@ for (let x = -10; x <= -8; x++) for (let z = -10; z <= -8; z++)       // buildin
 const portals = [];
 const PORTAL_POS = { x: 8, z: 7 };
 const portalGroup = new THREE.Group();
+function portalSwirlTexture() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const c = cv.getContext('2d');
+  const g = c.createRadialGradient(64, 64, 3, 64, 64, 64);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(.35, '#e0c4ff'); g.addColorStop(.7, '#9b6fe0'); g.addColorStop(1, '#4a1f8a');
+  c.fillStyle = g; c.beginPath(); c.arc(64, 64, 64, 0, 6.283); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 4; c.lineCap = 'round';
+  for (let a = 0; a < 3; a++) {                                         // swirling spiral arms
+    c.beginPath();
+    for (let t = 0; t < 19; t += 0.12) { const r = t * 3.1, x = 64 + Math.cos(t + a * 2.09) * r, y = 64 + Math.sin(t + a * 2.09) * r; t ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.stroke();
+  }
+  return new THREE.CanvasTexture(cv);
+}
 {
   box(portalGroup, 2.1, 0.2, 0.6, 0x7d5a3a, 0, 0.1, 0);                // base platform
   box(portalGroup, 0.2, 2.0, 0.2, 0x6d4326, -0.95, 1.05, 0);          // side posts
   box(portalGroup, 0.2, 2.0, 0.2, 0x6d4326, 0.95, 1.05, 0);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.15, 14, 30),
-    new THREE.MeshLambertMaterial({ color: 0x9b6fe0, emissive: 0x3a1f6a }));
+  // swirling vortex disc
+  const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.86, 32),
+    new THREE.MeshBasicMaterial({ map: portalSwirlTexture(), transparent: true, opacity: 0.92, side: THREE.DoubleSide }));
+  swirl.position.set(0, 1.25, 0.02); portalGroup.add(swirl);
+  // solid frame ring
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.13, 16, 32),
+    new THREE.MeshLambertMaterial({ color: 0x9b6fe0, emissive: 0x4a1f8a }));
   ring.position.set(0, 1.25, 0); portalGroup.add(ring);
-  const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.82, 28),
-    new THREE.MeshBasicMaterial({ color: 0xCDA9FF, transparent: true, opacity: 0.65, side: THREE.DoubleSide }));
-  swirl.position.set(0, 1.25, 0); portalGroup.add(swirl);
+  // glowing concentric rings (additive blending = glow), counter-rotating + hue-cycling
+  const glowRings = [];
+  [[1.02, 0xff7ad9, 14], [0.74, 0x7ad9ff, 14]].forEach(([rad, col, seg]) => {
+    const gr = new THREE.Mesh(new THREE.TorusGeometry(rad, 0.05, 10, 40),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
+    gr.position.set(0, 1.25, 0); portalGroup.add(gr); glowRings.push(gr);
+  });
+  // orbiting sparkles
+  const sparkles = [];
+  for (let i = 0; i < 7; i++) {
+    const sp = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xFFF3B0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    sp.userData.phase = (i / 7) * 6.283; portalGroup.add(sp); sparkles.push(sp);
+  }
   const star = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1),
     new THREE.MeshBasicMaterial({ color: 0xFFF3B0 }));
   star.position.set(0, 2.4, 0); portalGroup.add(star);
   portalGroup.position.set(PORTAL_POS.x, 0, PORTAL_POS.z);
   scene.add(portalGroup);
-  portalGroup.userData = { ring, swirl, star };
+  portalGroup.userData = { ring, swirl, star, glowRings, sparkles };
   portals.push(ring, swirl);
 }
 function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.pos.z - PORTAL_POS.z); }
@@ -3313,7 +3355,7 @@ function refreshHUD() {
   // show lifetime problems solved and the next goal (no more "16/10"!)
   $('solvedCount').textContent = profile.totalSolved;
   const nextBadge = BADGES.find(b => profile.totalSolved < b.n);
-  $('solvedGoal').textContent = nextBadge ? ' • next 🏅 at ' + nextBadge.n : ' • all 🏅 earned! 🎉';
+  $('solvedGoal').textContent = nextBadge ? '→🏅' + nextBadge.n : '🏅✓';
   $('shopCoins').textContent = G.coins;
 }
 function fmtTime(s) {
@@ -4518,12 +4560,25 @@ function loop(now) {
   powerMat.emissive.setRGB(0.02, 0.22 + pulse * 0.18, 0.28 + pulse * 0.22);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
 
-  // the portal swirls and twinkles
+  // the portal swirls, glows, and twinkles
   if (portalGroup) {
-    portalGroup.userData.swirl.rotation.z = now / 600;
-    portalGroup.userData.swirl.material.opacity = 0.5 + pulse * 0.3;
-    portalGroup.userData.star.rotation.y = now / 300;
-    portalGroup.userData.star.position.y = 2.4 + Math.sin(now / 350) * 0.08;
+    const pu = portalGroup.userData, ts = now / 1000;
+    pu.swirl.rotation.z = -now / 700;                                   // vortex spins
+    const hue = (ts * 0.08) % 1;                                        // slow rainbow shimmer on the frame
+    pu.ring.material.emissive.setHSL(hue, 0.7, 0.32);
+    pu.glowRings.forEach((gr, i) => {
+      gr.rotation.z = (i ? -1 : 1) * now / 500;                        // counter-rotating glow rings
+      gr.material.color.setHSL((hue + (i ? 0.5 : 0.85)) % 1, 0.9, 0.62);
+      gr.material.opacity = 0.45 + (0.5 + Math.sin(now / 240 + i) * 0.5) * 0.4;   // breathing glow
+      gr.scale.setScalar(1 + Math.sin(now / 420 + i * 1.7) * 0.05);
+    });
+    pu.sparkles.forEach((sp, i) => {                                    // sparkles orbit the ring
+      const a = sp.userData.phase + ts * 1.1;
+      sp.position.set(Math.cos(a) * 0.92, 1.25 + Math.sin(a) * 0.92, 0.05);
+      sp.material.opacity = 0.4 + (0.5 + Math.sin(now / 180 + i * 2) * 0.5) * 0.6;
+    });
+    pu.star.rotation.y = now / 300;
+    pu.star.position.y = 2.4 + Math.sin(now / 350) * 0.08;
   }
 
   // clouds drift
