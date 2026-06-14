@@ -141,8 +141,8 @@ panel:
 | --- | --- |
 | 5 | ⭐ Math Star |
 | 10 | 🎩 Fancy Top Hat — your hero wears it! |
-| 20 | 👑 Golden Crown — your hero wears it! |
-| 35 | 🏆 Math Champion |
+| 15 | 👑 Golden Crown — your hero wears it! |
+| 25 | 🏆 Math Champion |
 
 ## 🧑‍🏫 For grown-ups — progress tracking
 
