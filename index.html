@@ -115,6 +115,8 @@
   #mathPrompt { font-size:clamp(14px,2.2vw,18px); color:#7a6a35; margin-bottom:8px; }
   #mathNote { font-size:clamp(12px,2vw,15px); color:#6a4ea0; background:#f1ecfb; border:1px solid #d9cdf2;
     border-radius:12px; padding:7px 10px; margin:0 0 9px; line-height:1.35; }
+  #paperTip { font-size:clamp(12px,2vw,15px); font-weight:700; color:#8a5c1e; background:#FFF3D6;
+    border:1px solid #ECD89A; border-radius:12px; padding:6px 10px; margin:0 0 9px; }
   #mathChoices { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; }
   .answerBlock {
     font-size:clamp(23px,4vw,34px); font-weight:bold; color:#fff; padding:14px 6px; border-radius:14px;
@@ -161,6 +163,15 @@
   .travelBtn .tInfo b { display:block; color:#5b4322; font-size:clamp(16px,2.6vw,20px); }
   .travelBtn .tInfo small { color:#8a7444; }
   .travelBtn.here { opacity:.6; cursor:default; background:#eceff2; border-color:#d6dae0; }
+  .travelBtn.locked { background:#fff6e6; border-color:#f0d9a6; }
+  /* ---------- Unlock (full game) ---------- */
+  .unlockPerk { background:#f3ecfb; border:1px solid #e0d2f4; border-radius:12px; padding:9px 12px;
+    color:#5b4322; font-size:clamp(14px,2.3vw,17px); }
+  #unlockBuyBtn { width:100%; padding:14px; border:none; border-radius:16px; cursor:pointer;
+    font-family:inherit; font-weight:800; font-size:clamp(16px,2.8vw,20px); color:#fff;
+    background:linear-gradient(180deg,#6fcf63,#3fa24a); box-shadow:0 4px 0 #2f7d39; }
+  #unlockBuyBtn:active { transform:translateY(2px); box-shadow:0 2px 0 #2f7d39; }
+  #worldRow .choice.locked { position:relative; opacity:.92; }
   .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
@@ -730,9 +741,9 @@
       <div class="field">
         <span class="fieldLabel">Choose your world</span>
         <div class="choiceGrid grades" id="worldRow">
-          <button class="choice selected" data-world="meadow"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
-          <button class="choice" data-world="city"><b>🏙️ Reading City</b><small>Rhymes, opposites &amp; words</small></button>
-          <button class="choice" data-world="beach"><b>🏖️ Spanish Beach</b><small>Beginner Spanish words</small></button>
+          <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
+          <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏙️ Reading City</b><small>Reading &amp; grammar</small></button>
+          <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
       </div>
@@ -858,6 +869,7 @@
     <div id="mathEquation">7 + 5 = ?</div>
     <div id="mathPrompt">Find the right block! Tap the block with the answer.</div>
     <div id="mathNote" style="display:none"></div>
+    <div id="paperTip" style="display:none">✏️ Tricky one — grab paper and work it out!</div>
     <div id="mathChoices"></div>
     <button id="hintBtn">🤔 Need a hint?</button>
     <div id="hintBox"></div>
@@ -889,6 +901,10 @@
       Working it out on paper builds real number sense (and makes the tricky ones much easier!).
     </div>
     <div id="grownupList"></div>
+    <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
+      <span style="color:#6c84a6; font-size:13px">Full game: <b id="purchaseStatus">—</b></span>
+      <button id="resetPurchaseBtn" style="font-size:12px; background:#eef1f5; color:#6c84a6; border:none; border-radius:8px; padding:5px 11px; cursor:pointer; font-family:inherit">Reset purchase (testing)</button>
+    </div>
   </div>
 </div>
 
@@ -918,6 +934,26 @@
     <h2 style="color:#7a4ea0; font-size:clamp(24px,4vw,32px)">🌀 Travel to a world</h2>
     <div style="font-weight:bold; color:#7a6a35; margin-bottom:6px">Your build here is saved — hop to another world!</div>
     <div id="travelList"></div>
+  </div>
+</div>
+
+<!-- ================= UNLOCK (FULL GAME) POPUP ================= -->
+<div class="popup" id="unlockPopup">
+  <div class="popupCard" style="text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="unlockClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="font-size:46px">🔓</div>
+    <h2 style="color:#7a4ea0; font-size:clamp(24px,4vw,32px)">Unlock the Full Game</h2>
+    <p style="color:#6b5a8a; font-size:clamp(14px,2.4vw,17px); line-height:1.5; margin:6px 4px 4px">
+      🌳 <b>Math Meadow is free, forever.</b> One small unlock opens the other worlds —
+      and any new worlds we add later.
+    </p>
+    <div style="display:flex; flex-direction:column; gap:8px; margin:12px 0; text-align:left">
+      <div class="unlockPerk">🏙️ <b>Reading City</b> — reading &amp; grammar</div>
+      <div class="unlockPerk">🏖️ <b>Spanish Beach</b> — beginner Spanish</div>
+      <div class="unlockPerk">✨ All future worlds &amp; updates</div>
+    </div>
+    <button id="unlockBuyBtn">Unlock everything — $5 once</button>
+    <div style="color:#9a86b8; font-size:12px; margin-top:8px">One-time purchase • no subscription • saved on this device</div>
   </div>
 </div>
 
@@ -1656,7 +1692,7 @@ const G = {
    The stations ask questions from this world's subject; each world has its own
    saved build, and a portal travels between them. */
 const WORLDS = {
-  meadow: { id: 'meadow', name: 'Math Meadow',    emoji: '🌳', subject: 'math',    chip: 'Math',
+  meadow: { id: 'meadow', name: 'Math Meadow',    emoji: '🌳', subject: 'math',    chip: 'Math', free: true,
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
   city:   { id: 'city',   name: 'Reading City',   emoji: '🏙️', subject: 'reading', chip: 'Reading',
             sky: 0xAFC4DC, fog: 0xC4D4E6, ground: [0x9aa3ad, 0x8d96a1, 0xa6afb9] },
@@ -1665,6 +1701,13 @@ const WORLDS = {
 };
 const WORLD_ORDER = ['meadow', 'city', 'beach'];
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
+
+/* ===== Full-game unlock ($5 one-time) — Math Meadow is free; other worlds unlock together.
+   Stored locally per device. This is the hook for a real payment (Stripe / RevenueCat) later;
+   for now doUnlock() just flips the flag so the model can be demoed. ===== */
+const UNLOCK_KEY = 'stackadooUnlocked';
+function isUnlocked() { try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; } }
+function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnlocked(); }
 
 const SHOP_ITEMS = [
   { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
@@ -1797,11 +1840,12 @@ function openTravel() {
   document.exitPointerLock && document.exitPointerLock();
   const wrap = $('travelList'); wrap.innerHTML = '';
   WORLD_ORDER.forEach(id => {
-    const w = WORLDS[id], here = id === G.world;
+    const w = WORLDS[id], here = id === G.world, locked = worldLocked(id);
     const b = document.createElement('button');
-    b.className = 'travelBtn' + (here ? ' here' : '');
+    b.className = 'travelBtn' + (here ? ' here' : (locked ? ' locked' : ''));
+    const sub = here ? 'You are here now' : locked ? '🔒 Unlock for $5' : 'Learn ' + w.chip + ' • build a house here';
     b.innerHTML = '<span class="tEmoji">' + w.emoji + '</span><span class="tInfo"><b>' + w.name +
-      '</b><small>' + (here ? 'You are here now' : 'Learn ' + w.chip + ' • build a house here') + '</small></span>';
+      '</b><small>' + sub + '</small></span>';
     if (here) b.disabled = true; else b.onclick = () => { Sound.click(); travelToWorld(id); };
     wrap.appendChild(b);
   });
@@ -1810,6 +1854,7 @@ function openTravel() {
 function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
 function travelToWorld(id) {
   if (!WORLDS[id] || id === G.world) { closeTravel(); return; }
+  if (worldLocked(id)) { closeTravel(); openUnlock(); return; }     // locked → offer the unlock
   closeTravel();
   saveGame();                                   // keep the world we're leaving
   const dest = loadSaveFor(G.playerName, id);
@@ -1824,6 +1869,32 @@ function travelToWorld(id) {
   setTimeout(() => toast('🌀 Welcome to ' + WORLDS[id].emoji + ' ' + WORLDS[id].name + '! ' +
     (subj === 'math' ? 'Solve math' : subj === 'spanish' ? 'Learn Spanish' : 'Practice reading') +
     ' at the ❓ stations to earn blocks.', 4500), 250);
+}
+
+/* ---------- Full-game unlock dialog ---------- */
+function openUnlock() {
+  if (G.running) popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  $('unlockPopup').style.display = 'flex';
+}
+function closeUnlock() { $('unlockPopup').style.display = 'none'; if (G.running) popupOpen = false; }
+function doUnlock() {
+  // TODO: wire to a real payment (Stripe Checkout / RevenueCat). For now this flips the local flag.
+  try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {}
+  closeUnlock();
+  renderWorldLocks();
+  if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
+  toast('🎉 Full game unlocked! Reading City and Spanish Beach are open — find a 🌀 portal to visit them!', 4500);
+  if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
+}
+/* reflect lock state on the homepage world picker */
+function renderWorldLocks() {
+  document.querySelectorAll('#worldRow button').forEach(b => {
+    const id = b.dataset.world, locked = worldLocked(id);
+    b.classList.toggle('locked', locked);
+    const small = b.querySelector('small');
+    if (small) small.textContent = (b.dataset.desc || '') + (locked ? ' • 🔒 $5' : '');
+  });
 }
 
 /* ---------- Grown-ups progress dashboard ---------- */
@@ -1889,7 +1960,11 @@ function renderGrownup() {
     list.appendChild(card);
   });
 }
-function openGrownup() { renderGrownup(); $('grownupPopup').style.display = 'flex'; }
+function openGrownup() {
+  renderGrownup();
+  $('purchaseStatus').textContent = isUnlocked() ? 'Unlocked ✓' : 'Free (Math Meadow only)';
+  $('grownupPopup').style.display = 'flex';
+}
 function closeGrownup() { $('grownupPopup').style.display = 'none'; }
 
 function serializeWorld() {
@@ -3142,6 +3217,10 @@ function renderMathQuestion() {
   const eqBox = $('mathEquation');
   eqBox.textContent = curWorld().subject === 'math' ? currentEq.text + ' = ?' : currentEq.text + '?';
   eqBox.classList.toggle('wordy', currentEq.text.length > 20);
+  // nudge kids to use paper on the bigger math problems
+  const bigMath = curWorld().subject === 'math' &&
+    (level >= 3 || (typeof currentEq.answer === 'number' && Math.abs(currentEq.answer) >= 20));
+  $('paperTip').style.display = bigMath ? 'block' : 'none';
   $('mathPrompt').textContent = 'Read the whole question. Answers unlock in a moment...';
   const wrap = $('mathChoices');
   wrap.innerHTML = '';
@@ -3922,6 +4001,8 @@ $('invBtn').onclick = () => { Sound.click(); openInv(); };
 $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
+$('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
+$('unlockBuyBtn').onclick = () => { Sound.click(); doUnlock(); };
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
@@ -4079,13 +4160,15 @@ function syncGloomyMenu() {
   $('timeRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
 }
 function buildMenu() {
-  // world buttons
+  // world buttons (locked worlds open the unlock dialog instead of selecting)
   $('worldRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
+    if (worldLocked(b.dataset.world)) { openUnlock(); return; }
     $('worldRow').querySelectorAll('button').forEach(x => x.classList.remove('selected'));
     b.classList.add('selected');
     G.world = b.dataset.world;
   });
+  renderWorldLocks();
   // grade buttons
   $('gradeRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
@@ -4196,6 +4279,7 @@ $('startBtn').onclick = () => {
   Sound.click();
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
+  if (worldLocked(G.world)) G.world = 'meadow';   // safety: never start in a locked world
   clearSave(nm, G.world);              // Start Adventure = a brand-new build for this name + chosen world
   resetWorld();
   resetGameState();
@@ -4204,6 +4288,13 @@ $('startBtn').onclick = () => {
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 $('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
+$('resetPurchaseBtn').onclick = () => {
+  Sound.click();
+  try { localStorage.removeItem(UNLOCK_KEY); } catch (e) {}
+  $('purchaseStatus').textContent = 'Free (Math Meadow only)';
+  renderWorldLocks();
+  toast('🔒 Premium worlds locked again (for testing).', 2600);
+};
 
 /* ---- multi-step setup navigation ---- */
 const SETUP_SCREENS = ['screenLanding', 'screenSettings', 'screenHero'];

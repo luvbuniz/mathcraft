@@ -53,6 +53,12 @@ Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **tr
 to another world without going back to the home screen — your house in each world
 is saved separately, so you can build different houses in different places.
 
+🌳 **Math Meadow is free.** Reading City and Spanish Beach (and any worlds added
+later) unlock together with a one-time purchase — no subscription. The unlock flag
+is stored on the device; the purchase button is currently a stub ready to wire to a
+real payment provider (Stripe / RevenueCat). For demos, a **Reset purchase
+(testing)** button lives in the 🧑‍🏫 For Grown-Ups panel.
+
 ## 🗺️ Game modes
 
 There are two modes, and both let you build, shop, climb trees, and pick
