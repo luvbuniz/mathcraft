@@ -152,6 +152,15 @@
     background:#ffe2da; color:#c0432a; font-weight:bold; font-size:18px; line-height:1;
     border-radius:50%; box-shadow:0 2px 0 #e3a99c; }
   .closeX:hover { background:#ffd0c4; }
+  /* ---------- Travel (portal) ---------- */
+  #travelList { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+  .travelBtn { display:flex; align-items:center; gap:12px; width:100%; text-align:left; cursor:pointer;
+    background:#f3ecfb; border:2px solid #e0d2f4; border-radius:16px; padding:12px 14px; }
+  .travelBtn:hover { background:#ece0fa; }
+  .travelBtn .tEmoji { font-size:34px; }
+  .travelBtn .tInfo b { display:block; color:#5b4322; font-size:clamp(16px,2.6vw,20px); }
+  .travelBtn .tInfo small { color:#8a7444; }
+  .travelBtn.here { opacity:.6; cursor:default; background:#eceff2; border-color:#d6dae0; }
   .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
@@ -719,7 +728,17 @@
       <h1 class="screenTitle">Set up your game</h1>
 
       <div class="field">
-        <span class="fieldLabel">Choose your math</span>
+        <span class="fieldLabel">Choose your world</span>
+        <div class="choiceGrid grades" id="worldRow">
+          <button class="choice selected" data-world="meadow"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
+          <button class="choice" data-world="city"><b>🏙️ Reading City</b><small>Rhymes, opposites &amp; words</small></button>
+          <button class="choice" data-world="beach"><b>🏖️ Spanish Beach</b><small>Beginner Spanish words</small></button>
+        </div>
+        <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
+      </div>
+
+      <div class="field">
+        <span class="fieldLabel">Choose your level</span>
         <div class="choiceGrid grades" id="gradeRow">
           <button class="choice selected" data-grade="2"><b>Grade 2</b><small>Add &amp; subtract to 100</small></button>
           <button class="choice" data-grade="3"><b>Grade 3</b><small>To 1,000 &amp; times tables</small></button>
@@ -886,6 +905,16 @@
   </div>
 </div>
 
+<!-- ================= TRAVEL (PORTAL) POPUP ================= -->
+<div class="popup" id="travelPopup">
+  <div class="popupCard">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="travelClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 style="color:#7a4ea0; font-size:clamp(24px,4vw,32px)">🌀 Travel to a world</h2>
+    <div style="font-weight:bold; color:#7a6a35; margin-bottom:6px">Your build here is saved — hop to another world!</div>
+    <div id="travelList"></div>
+  </div>
+</div>
+
 <!-- ================= END SCREEN ================= -->
 <div id="endScreen">
   <div id="endCard">
@@ -999,6 +1028,95 @@ function makeEquation(grade) {
     if (!usedEquations.has(eq.text)) { usedEquations.add(eq.text); return eq; }
   }
   return generateOnce(grade);             // session has seen a LOT of math — allow anything
+}
+
+/* ===================== READING CITY (English literacy) ===================== */
+const RHYME_FAMILIES = [
+  ['cat', 'hat', 'bat', 'mat', 'rat'], ['man', 'can', 'pan', 'fan', 'van'],
+  ['dog', 'log', 'fog', 'frog', 'hog'], ['pig', 'wig', 'dig', 'fig', 'big'],
+  ['sun', 'run', 'bun', 'fun', 'nun'], ['top', 'hop', 'mop', 'pop', 'cop'],
+  ['bed', 'red', 'fed', 'led', 'sled'], ['cake', 'lake', 'rake', 'bake', 'snake'],
+  ['ring', 'king', 'sing', 'wing', 'swing'], ['ball', 'tall', 'wall', 'fall', 'hall'],
+  ['bug', 'rug', 'mug', 'hug', 'jug'], ['star', 'car', 'jar', 'far', 'bar']
+];
+const OPPOSITES = [['big', 'small'], ['hot', 'cold'], ['up', 'down'], ['day', 'night'], ['fast', 'slow'],
+  ['happy', 'sad'], ['old', 'new'], ['in', 'out'], ['open', 'closed'], ['tall', 'short'], ['wet', 'dry'],
+  ['hard', 'soft'], ['light', 'dark'], ['full', 'empty'], ['high', 'low'], ['loud', 'quiet'], ['clean', 'dirty']];
+const SYNONYMS = [['happy', 'glad'], ['big', 'large'], ['small', 'little'], ['fast', 'quick'], ['mad', 'angry'],
+  ['sad', 'unhappy'], ['smart', 'clever'], ['nice', 'kind'], ['jump', 'hop'], ['look', 'see'], ['talk', 'speak'],
+  ['start', 'begin'], ['pretty', 'lovely'], ['scared', 'afraid'], ['tired', 'sleepy']];
+const ALL_READ_WORDS = [].concat(...RHYME_FAMILIES, ...OPPOSITES, ...SYNONYMS);
+function langReward(level) { return 3 + Math.min(3, level); }     // 4..6, similar to easy math
+function fourChoices(answer, distractors) {
+  const opts = [answer];
+  for (const w of shuffle(distractors.slice())) { if (opts.length >= 4) break; if (!opts.includes(w)) opts.push(w); }
+  return shuffle(opts);
+}
+function makeReadingQuestion(level) {
+  const kind = pick(level >= 3 ? ['rhyme', 'opposite', 'synonym', 'beginsound'] : ['rhyme', 'opposite', 'beginsound']);
+  if (kind === 'rhyme') {
+    const fam = pick(RHYME_FAMILIES), target = pick(fam);
+    const answer = pick(fam.filter(w => w !== target));
+    const distractors = ALL_READ_WORDS.filter(w => !fam.includes(w));     // non-rhyming words only
+    return { text: 'Which word rhymes with “' + target.toUpperCase() + '”', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading',
+      hint: 'Say each word out loud and listen to the ending. Which one ends like “' + target + '”?' };
+  }
+  if (kind === 'beginsound') {
+    const fam = pick(RHYME_FAMILIES), target = pick(fam), first = target[0];
+    const same = ALL_READ_WORDS.filter(w => w[0] === first && w !== target);
+    const answer = same.length ? pick(same) : pick(fam.filter(w => w !== target));
+    const distractors = ALL_READ_WORDS.filter(w => w[0] !== first);
+    return { text: 'Which word STARTS with the same sound as “' + target.toUpperCase() + '”', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading',
+      hint: '“' + target + '” begins with the “' + first.toUpperCase() + '” sound. Which word also starts with “' + first.toUpperCase() + '”?' };
+  }
+  if (kind === 'synonym') {
+    const pair = pick(SYNONYMS), flip = Math.random() < 0.5;
+    const target = pair[flip ? 0 : 1], answer = pair[flip ? 1 : 0];
+    const distractors = [].concat(...SYNONYMS).filter(w => w !== answer && w !== target);
+    return { text: 'Which word MEANS the same as “' + target.toUpperCase() + '”', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading',
+      hint: 'Find the word that means almost the same as “' + target + '”.' };
+  }
+  const pair = pick(OPPOSITES), flip = Math.random() < 0.5;
+  const target = pair[flip ? 0 : 1], answer = pair[flip ? 1 : 0];
+  const distractors = [].concat(...OPPOSITES).filter(w => w !== answer && w !== target);
+  return { text: 'What is the OPPOSITE of “' + target.toUpperCase() + '”', options: fourChoices(answer, distractors),
+    answer, reward: langReward(level), skill: 'reading',
+    hint: 'Picture “' + target + '” — the opposite is its very different partner.' };
+}
+
+/* ===================== SPANISH BEACH (basic vocabulary) =====================
+   Curated correct pairs [english, español]. Kept to simple, safe words. */
+const ES_PAIRS = [].concat(
+  [['red', 'rojo'], ['blue', 'azul'], ['green', 'verde'], ['yellow', 'amarillo'], ['black', 'negro'], ['white', 'blanco'], ['orange', 'naranja'], ['purple', 'morado']],
+  [['one', 'uno'], ['two', 'dos'], ['three', 'tres'], ['four', 'cuatro'], ['five', 'cinco'], ['six', 'seis'], ['seven', 'siete'], ['eight', 'ocho']],
+  [['dog', 'perro'], ['cat', 'gato'], ['bird', 'pájaro'], ['fish', 'pez'], ['cow', 'vaca'], ['horse', 'caballo'], ['duck', 'pato'], ['pig', 'cerdo']],
+  [['house', 'casa'], ['sun', 'sol'], ['water', 'agua'], ['book', 'libro'], ['friend', 'amigo'], ['hello', 'hola'], ['tree', 'árbol'], ['apple', 'manzana']]
+);
+function makeSpanishQuestion(level) {
+  const pair = pick(ES_PAIRS), eng = pair[0], esp = pair[1];
+  if (Math.random() < 0.6) {
+    const distractors = ES_PAIRS.filter(p => p[1] !== esp).map(p => p[1]);
+    return { text: 'How do you say “' + eng + '” in Spanish', options: fourChoices(esp, distractors),
+      answer: esp, reward: langReward(level), skill: 'spanish',
+      hint: 'In Spanish, “' + eng + '” is “' + esp + '”. Say it out loud!' };
+  }
+  const distractors = ES_PAIRS.filter(p => p[0] !== eng).map(p => p[0]);
+  return { text: 'What does “' + esp + '” mean in English', options: fourChoices(eng, distractors),
+    answer: eng, reward: langReward(level), skill: 'spanish',
+    hint: '“' + esp + '” is the Spanish word for “' + eng + '”.' };
+}
+
+/* pick a fresh question for the current world's subject */
+const usedLangQ = new Set();
+function makeQuestion(level) {
+  const subj = curWorld().subject;
+  if (subj === 'math') return makeEquation(level);
+  const gen = subj === 'spanish' ? makeSpanishQuestion : makeReadingQuestion;
+  for (let i = 0; i < 40; i++) { const q = gen(level); if (!usedLangQ.has(q.text)) { usedLangQ.add(q.text); return q; } }
+  return gen(level);
 }
 
 /* Hints teach the place-value method but never reveal the final answer. */
@@ -1472,11 +1590,26 @@ const G = {
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
   selectedSlot: 'block', blockColor: 0xC9B79A,
+  world: 'meadow',
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
   warned60: false, warned10: false,
   mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0
 };
+
+/* ===== Stackadoo Worlds: each is its own themed place + question subject =====
+   The stations ask questions from this world's subject; each world has its own
+   saved build, and a portal travels between them. */
+const WORLDS = {
+  meadow: { id: 'meadow', name: 'Math Meadow',    emoji: '🌳', subject: 'math',    chip: 'Math',
+            sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
+  city:   { id: 'city',   name: 'Reading City',   emoji: '🏙️', subject: 'reading', chip: 'Reading',
+            sky: 0xAFC4DC, fog: 0xC4D4E6, ground: [0x9aa3ad, 0x8d96a1, 0xa6afb9] },
+  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español',
+            sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
+};
+const WORLD_ORDER = ['meadow', 'city', 'beach'];
+const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
 
 const SHOP_ITEMS = [
   { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
@@ -1542,7 +1675,8 @@ function saveProfile() {
 const SKILL_LABELS = {
   add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division',
   frac: 'Fractions', dec: 'Decimals', money: 'Money', round: 'Rounding',
-  multi: 'Multi-step', order: 'Order of ops', geo: 'Area & shapes', word: 'Word problems', other: 'Other'
+  multi: 'Multi-step', order: 'Order of ops', geo: 'Area & shapes', word: 'Word problems',
+  reading: 'Reading', spanish: 'Spanish', other: 'Other'
 };
 function recordWrong(eq) {
   profile.totalWrong = (profile.totalWrong || 0) + 1;
@@ -1600,6 +1734,42 @@ function openBadges() {
   $('badgePopup').style.display = 'flex';
 }
 function closeBadges() { $('badgePopup').style.display = 'none'; popupOpen = false; }
+
+/* ---------- Portal travel between worlds ---------- */
+function openTravel() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  const wrap = $('travelList'); wrap.innerHTML = '';
+  WORLD_ORDER.forEach(id => {
+    const w = WORLDS[id], here = id === G.world;
+    const b = document.createElement('button');
+    b.className = 'travelBtn' + (here ? ' here' : '');
+    b.innerHTML = '<span class="tEmoji">' + w.emoji + '</span><span class="tInfo"><b>' + w.name +
+      '</b><small>' + (here ? 'You are here now' : 'Learn ' + w.chip + ' • build a house here') + '</small></span>';
+    if (here) b.disabled = true; else b.onclick = () => { Sound.click(); travelToWorld(id); };
+    wrap.appendChild(b);
+  });
+  $('travelPopup').style.display = 'flex';
+}
+function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
+function travelToWorld(id) {
+  if (!WORLDS[id] || id === G.world) { closeTravel(); return; }
+  closeTravel();
+  saveGame();                                   // keep the world we're leaving
+  const dest = loadSaveFor(G.playerName, id);
+  if (dest) { restoreGame(dest); }              // resume that world's build + theme
+  else {                                         // first visit: a fresh place, same hero & grade
+    resetWorld(); resetGameState();
+    G.world = id;
+    loadProfileFor(G.playerName);
+    startGame();
+  }
+  const subj = WORLDS[id].subject;
+  setTimeout(() => toast('🌀 Welcome to ' + WORLDS[id].emoji + ' ' + WORLDS[id].name + '! ' +
+    (subj === 'math' ? 'Solve math' : subj === 'spanish' ? 'Learn Spanish' : 'Practice reading') +
+    ' at the ❓ stations to earn blocks.', 4500), 250);
+}
 
 /* ---------- Grown-ups progress dashboard ---------- */
 function listProfiles() {
@@ -1684,7 +1854,8 @@ function serializeWorld() {
   return placed;
 }
 const SAVE_PREFIX = 'stackadooSave:';
-const saveKey = name => SAVE_PREFIX + (name || 'Player');
+// Each (player, world) gets its own save. Meadow keeps the original key so old saves still load.
+const saveKey = (name, world) => SAVE_PREFIX + (name || 'Player') + (world && world !== 'meadow' ? '::' + world : '');
 /* One-time migration: carry forward saves & profiles from the old name
    (MathCraft) so kids keep their worlds and progress after the rename. */
 (function migrateOldStorage() {
@@ -1710,8 +1881,8 @@ let lastSaveAt = 0;
 function saveGame() {
   if (!G.playerName) return;
   try {
-    localStorage.setItem(saveKey(G.playerName), JSON.stringify({
-      name: G.playerName, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
+    localStorage.setItem(saveKey(G.playerName, G.world), JSON.stringify({
+      name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
       blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
@@ -1733,14 +1904,15 @@ function listSaves() {
   }
   return out.sort((a, b) => (b.when || 0) - (a.when || 0));
 }
-function loadSaveFor(name) {
-  try { return JSON.parse(localStorage.getItem(saveKey(name))); } catch (e) { return null; }
+function loadSaveFor(name, world) {
+  try { return JSON.parse(localStorage.getItem(saveKey(name, world))); } catch (e) { return null; }
 }
-function clearSave(name) { try { localStorage.removeItem(saveKey(name || G.playerName)); } catch (e) {} }
+function clearSave(name, world) { try { localStorage.removeItem(saveKey(name || G.playerName, world)); } catch (e) {} }
 function restoreGame(s) {
   resetWorld();
   resetGameState();
   G.playerName = s.name || 'Player';
+  G.world = WORLDS[s.world] ? s.world : 'meadow';
   G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex;
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
@@ -1874,6 +2046,22 @@ const ground = new THREE.InstancedMesh(groundGeo, groundMat, groundCount);
   if (ground.instanceColor) ground.instanceColor.needsUpdate = true;
 }
 scene.add(ground);
+
+/* recolor the ground + sky + fog to match the current world's theme */
+function applyGroundColors(cols) {
+  const c = [new THREE.Color(cols[0]), new THREE.Color(cols[1]), new THREE.Color(cols[2])];
+  let idx = 0;
+  for (let x = -WORLD_R; x < WORLD_R; x++) for (let z = -WORLD_R; z < WORLD_R; z++) {
+    ground.setColorAt(idx, (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1])); idx++;
+  }
+  if (ground.instanceColor) ground.instanceColor.needsUpdate = true;
+}
+function applyWorldTheme(worldId) {
+  const w = WORLDS[worldId] || WORLDS.meadow;
+  scene.background = new THREE.Color(w.sky);
+  if (scene.fog) scene.fog.color.setHex(w.fog);
+  applyGroundColors(w.ground);
+}
 
 /* ---- voxel block storage ---- */
 const blocks = new Map();              // "x,y,z" -> {mesh, type, removable}
@@ -2155,6 +2343,30 @@ scene.add(shopGroup);
 const SHOP_POS = { x: -8.5, z: -8.5 };
 for (let x = -10; x <= -8; x++) for (let z = -10; z <= -8; z++)       // building footprint is solid
   blocks.set(key(x, 0, z), { mesh: shopGroup, type: 'shop', removable: false });
+
+/* ---- THE PORTAL: tap it (or press E nearby) to travel to another Stackadoo world ---- */
+const portals = [];
+const PORTAL_POS = { x: 8, z: 7 };
+const portalGroup = new THREE.Group();
+{
+  box(portalGroup, 2.1, 0.2, 0.6, 0x7d5a3a, 0, 0.1, 0);                // base platform
+  box(portalGroup, 0.2, 2.0, 0.2, 0x6d4326, -0.95, 1.05, 0);          // side posts
+  box(portalGroup, 0.2, 2.0, 0.2, 0x6d4326, 0.95, 1.05, 0);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.15, 14, 30),
+    new THREE.MeshLambertMaterial({ color: 0x9b6fe0, emissive: 0x3a1f6a }));
+  ring.position.set(0, 1.25, 0); portalGroup.add(ring);
+  const swirl = new THREE.Mesh(new THREE.CircleGeometry(0.82, 28),
+    new THREE.MeshBasicMaterial({ color: 0xCDA9FF, transparent: true, opacity: 0.65, side: THREE.DoubleSide }));
+  swirl.position.set(0, 1.25, 0); portalGroup.add(swirl);
+  const star = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1),
+    new THREE.MeshBasicMaterial({ color: 0xFFF3B0 }));
+  star.position.set(0, 2.4, 0); portalGroup.add(star);
+  portalGroup.position.set(PORTAL_POS.x, 0, PORTAL_POS.z);
+  scene.add(portalGroup);
+  portalGroup.userData = { ring, swirl, star };
+  portals.push(ring, swirl);
+}
+function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.pos.z - PORTAL_POS.z); }
 
 /* ---- clouds & flowers ---- */
 const clouds = [];
@@ -2868,13 +3080,13 @@ function renderMathQuestion() {
   if (answerUnlockTimer) clearTimeout(answerUnlockTimer);
   if (nextQuestionTimer) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
   const level = adaptiveMathLevel();
-  currentEq = makeEquation(level);
+  currentEq = makeQuestion(level);
   currentEq.level = level;
   mathLocked = false;
   $('hintBox').style.display = 'none';
   const eqBox = $('mathEquation');
-  eqBox.textContent = currentEq.text + ' = ?';
-  eqBox.classList.toggle('wordy', currentEq.text.length > 28);
+  eqBox.textContent = curWorld().subject === 'math' ? currentEq.text + ' = ?' : currentEq.text + '?';
+  eqBox.classList.toggle('wordy', currentEq.text.length > 20);
   $('mathPrompt').textContent = 'Read the whole question. Answers unlock in a moment...';
   const wrap = $('mathChoices');
   wrap.innerHTML = '';
@@ -3422,6 +3634,9 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
     }
   }
 
+  // 1.5) the portal — tap it to travel to another world
+  if (portals.length && raycaster.intersectObjects(portals, false)[0]) { openTravel(); return; }
+
   // 2) blocks / stations / ground
   const meshes = [];
   const seenMesh = new Set();
@@ -3509,6 +3724,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyE') {
     if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop(); }
+    else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
   }
   if (e.code === 'KeyL') { Sound.click(); toggleBedRest(); }
@@ -3650,6 +3866,7 @@ $('invClose').onclick = () => { Sound.click(); closeInv(); };
 $('invBtn').onclick = () => { Sound.click(); openInv(); };
 $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
+$('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
@@ -3756,6 +3973,7 @@ if (isTouch) {
     e.preventDefault();
     if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop(); }
+    else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
     else pickupBlock();
   }, { passive: false });
@@ -3806,6 +4024,13 @@ function syncGloomyMenu() {
   $('timeRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
 }
 function buildMenu() {
+  // world buttons
+  $('worldRow').querySelectorAll('button').forEach(b => b.onclick = () => {
+    Sound.click();
+    $('worldRow').querySelectorAll('button').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    G.world = b.dataset.world;
+  });
   // grade buttons
   $('gradeRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
@@ -3889,17 +4114,18 @@ function refreshSavedList() {
     row.className = 'saveRow';
     const load = document.createElement('button');
     load.className = 'loadBtn';
+    const w = WORLDS[s.world] || WORLDS.meadow;
     load.innerHTML =
       '<span class="savePlay">' + SVG_PLAY + '</span>' +
-      '<span class="slotInfo"><span class="slotName">' + (s.name || 'Player') + '</span>' +
-      '<span class="slotMeta">Grade ' + (s.grade || 2) +
+      '<span class="slotInfo"><span class="slotName">' + w.emoji + ' ' + (s.name || 'Player') + '</span>' +
+      '<span class="slotMeta">' + w.name + ' • Grade ' + (s.grade || 2) +
       '<span class="slotChip' + (calm ? ' calm' : '') + '">' + (calm ? 'No Gloomies' : 'Gloomies') + '</span></span></span>';
     load.onclick = () => { Sound.click(); restoreGame(s); };
     const del = document.createElement('button');
     del.className = 'delBtn';
     del.innerHTML = SVG_TRASH;
     del.title = 'Delete this saved game';
-    del.onclick = (e) => { e.stopPropagation(); Sound.click(); clearSave(s.name); refreshSavedList(); };
+    del.onclick = (e) => { e.stopPropagation(); Sound.click(); clearSave(s.name, s.world); refreshSavedList(); };
     row.appendChild(load); row.appendChild(del);
     list.appendChild(row);
   });
@@ -3915,7 +4141,7 @@ $('startBtn').onclick = () => {
   Sound.click();
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
-  clearSave(nm);                       // Start Adventure = a brand-new world for this name
+  clearSave(nm, G.world);              // Start Adventure = a brand-new build for this name + chosen world
   resetWorld();
   resetGameState();
   loadProfileFor(nm);
@@ -3941,6 +4167,8 @@ function startGame() {
   $('startScreen').style.display = 'none';
   $('hud').style.display = 'block';
   if (isTouch) $('touchUI').style.display = 'block';
+  applyWorldTheme(G.world);                    // sky, fog & ground match the chosen world
+  usedLangQ.clear();
   setAvatar(G.avatarIndex);
   updateBadgeBtn(false);
   selectSlot('block', true);
@@ -3964,7 +4192,7 @@ function startGame() {
   spawnBerries();
   G.running = true;
 
-  $('modeLabel').textContent = (G.gloomiesEnabled ? '💜 Gloomies On' : '🌈 No Gloomies') + ' • Grade ' + G.grade;
+  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 Calm') + ' • Grade ' + G.grade;
   if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
@@ -4021,6 +4249,14 @@ function loop(now) {
   powerMat.emissive.setRGB(0.02, 0.22 + pulse * 0.18, 0.28 + pulse * 0.22);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
 
+  // the portal swirls and twinkles
+  if (portalGroup) {
+    portalGroup.userData.swirl.rotation.z = now / 600;
+    portalGroup.userData.swirl.material.opacity = 0.5 + pulse * 0.3;
+    portalGroup.userData.star.rotation.y = now / 300;
+    portalGroup.userData.star.position.y = 2.4 + Math.sin(now / 350) * 0.08;
+  }
+
   // clouds drift
   clouds.forEach((c, i) => {
     c.position.x += dt * (0.4 + i * 0.1);
@@ -4069,10 +4305,14 @@ function loop(now) {
     const hint = $('hintBar');
     const ns = nearestStation();
     if (ns.dist < 2.6) {
-      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to do math and pick a reward!' : '❓ Press E to do math and pick a reward!');
+      const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
+      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ Press E to ' + verb + ' and pick a reward!');
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
+      hint.style.display = 'block';
+    } else if (portalDist() < 2.8) {
+      hint.textContent = isTouch ? '🌀 Tap ⭐ USE (or tap the portal) to travel!' : '🌀 Press E (or click the portal) to travel to another world!';
       hint.style.display = 'block';
     } else if (nearestBed()) {
       hint.textContent = isTouch ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';

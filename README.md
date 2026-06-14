@@ -38,6 +38,21 @@ hint. Stuck? The **🤔 hint button** teaches the place-value way to solve it
 ("Tens first: 40 + 20 = 60, then the ones…") without giving the answer
 away.
 
+## 🌍 Worlds
+
+Pick a **world** on the setup screen — each is its own themed place with its own
+subject at the **❓ stations**, and its own saved build:
+
+| World | Subject |
+| --- | --- |
+| 🌳 **Math Meadow** | Math problems (the classic game) |
+| 🏙️ **Reading City** | English reading — rhymes, beginning sounds, opposites, synonyms |
+| 🏖️ **Spanish Beach** | Beginner Spanish words (colors, numbers, animals, basics) |
+
+Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
+to another world without going back to the home screen — your house in each world
+is saved separately, so you can build different houses in different places.
+
 ## 🗺️ Game modes
 
 There are two modes, and both let you build, shop, climb trees, and pick
