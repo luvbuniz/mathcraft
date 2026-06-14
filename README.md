@@ -46,7 +46,7 @@ subject at the **❓ stations**, and its own saved build:
 | World | Subject |
 | --- | --- |
 | 🌳 **Math Meadow** | Math problems (the classic game) |
-| 🏙️ **Reading City** | English reading — rhymes, beginning sounds, opposites, synonyms |
+| 🏙️ **Reading City** | English reading & grammar — rhymes, beginning sounds, opposites, synonyms, parts of speech, plurals, past tense, and writing a sentence correctly |
 | 🏖️ **Spanish Beach** | Beginner Spanish words (colors, numbers, animals, basics) |
 
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**

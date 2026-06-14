@@ -1053,7 +1053,10 @@ function fourChoices(answer, distractors) {
   return shuffle(opts);
 }
 function makeReadingQuestion(level) {
-  const kind = pick(level >= 3 ? ['rhyme', 'opposite', 'synonym', 'beginsound'] : ['rhyme', 'opposite', 'beginsound']);
+  const kind = pick(level >= 3
+    ? ['rhyme', 'opposite', 'synonym', 'beginsound', 'grammar', 'grammar']
+    : ['rhyme', 'opposite', 'beginsound', 'grammar', 'grammar']);
+  if (kind === 'grammar') return makeGrammarQuestion(level);
   if (kind === 'rhyme') {
     const fam = pick(RHYME_FAMILIES), target = pick(fam);
     const answer = pick(fam.filter(w => w !== target));
@@ -1085,6 +1088,52 @@ function makeReadingQuestion(level) {
   return { text: 'What is the OPPOSITE of “' + target.toUpperCase() + '”', options: fourChoices(answer, distractors),
     answer, reward: langReward(level), skill: 'reading',
     hint: 'Picture “' + target + '” — the opposite is its very different partner.' };
+}
+
+/* ---- Grammar (also asked in Reading City): parts of speech, plurals, past tense, sentences ---- */
+const GRAM_NOUNS = ['dog', 'cat', 'ball', 'tree', 'house', 'car', 'book', 'apple', 'chair', 'table', 'cup', 'shoe', 'box', 'bed', 'door', 'star', 'cake', 'sock'];
+const GRAM_VERBS = ['run', 'jump', 'eat', 'sing', 'swim', 'read', 'sleep', 'hop', 'clap', 'throw', 'draw', 'dig', 'kick', 'laugh', 'sit', 'fly'];
+const GRAM_ADJS = ['happy', 'big', 'small', 'red', 'soft', 'fast', 'cold', 'funny', 'tall', 'shiny', 'loud', 'wet', 'sweet', 'silly', 'warm', 'clean'];
+const PLURALS = [['cat', 'cats'], ['dog', 'dogs'], ['ball', 'balls'], ['book', 'books'], ['tree', 'trees'], ['cup', 'cups'],
+  ['box', 'boxes'], ['bus', 'buses'], ['fox', 'foxes'], ['dish', 'dishes'], ['baby', 'babies'], ['pony', 'ponies'], ['city', 'cities'],
+  ['child', 'children'], ['foot', 'feet'], ['mouse', 'mice'], ['man', 'men'], ['tooth', 'teeth'], ['goose', 'geese']];
+const PAST_TENSE = [['run', 'ran'], ['go', 'went'], ['eat', 'ate'], ['see', 'saw'], ['swim', 'swam'], ['sing', 'sang'],
+  ['jump', 'jumped'], ['play', 'played'], ['walk', 'walked'], ['look', 'looked'], ['help', 'helped'], ['talk', 'talked'],
+  ['make', 'made'], ['come', 'came'], ['give', 'gave'], ['take', 'took'], ['ride', 'rode'], ['write', 'wrote']];
+const GRAM_SENTENCES = ['the dog ran', 'i like cake', 'we can play', 'she has a cat', 'my book is red', 'the sun is hot', 'he ate lunch', 'birds can fly'];
+function makeGrammarQuestion(level) {
+  const t = pick(level >= 3 ? ['pos', 'plural', 'past', 'sentence'] : ['pos', 'plural', 'sentence']);
+  if (t === 'pos') {
+    const which = pick(['noun', 'verb', 'adjective']);
+    const lists = { noun: GRAM_NOUNS, verb: GRAM_VERBS, adjective: GRAM_ADJS };
+    const answer = pick(lists[which]);
+    const distractors = Object.keys(lists).filter(k => k !== which).reduce((a, k) => a.concat(lists[k]), []);
+    const desc = which === 'noun' ? 'a person, place, or thing' : which === 'verb' ? 'an action word' : 'a describing word';
+    return { text: 'Which word is a ' + which.toUpperCase() + ' (' + desc + ')', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading', hint: 'A ' + which + ' is ' + desc + '. Which word fits?' };
+  }
+  if (t === 'plural') {
+    const [sing, plur] = pick(PLURALS), naive = sing + 's';
+    const others = PLURALS.filter(p => p[1] !== plur).map(p => p[1]);
+    const distract = []; if (naive !== plur) distract.push(naive); distract.push(sing);
+    for (const o of shuffle(others.slice())) { if (distract.length >= 3) break; if (!distract.includes(o) && o !== plur) distract.push(o); }
+    return { text: 'What is MORE THAN ONE “' + sing + '”', options: fourChoices(plur, distract),
+      answer: plur, reward: langReward(level), skill: 'reading',
+      hint: 'Some words change in a special way for “more than one” — picture two of them!' };
+  }
+  if (t === 'past') {
+    const [pres, past] = pick(PAST_TENSE), naive = pres + 'ed';
+    const others = PAST_TENSE.filter(p => p[1] !== past).map(p => p[1]);
+    const distract = []; if (naive !== past) distract.push(naive); distract.push(pres);
+    for (const o of shuffle(others.slice())) { if (distract.length >= 3) break; if (!distract.includes(o) && o !== past) distract.push(o); }
+    return { text: 'Finish it — “Yesterday I ___.” (past tense of “' + pres + '”)', options: fourChoices(past, distract),
+      answer: past, reward: langReward(level), skill: 'reading',
+      hint: 'Past tense tells what already happened. Some words change in a special way!' };
+  }
+  const s = pick(GRAM_SENTENCES), cap = s.charAt(0).toUpperCase() + s.slice(1), correct = cap + '.';
+  return { text: 'Which one is written correctly', options: fourChoices(correct, [s + '.', cap, s]),
+    answer: correct, reward: langReward(level), skill: 'reading',
+    hint: 'A sentence starts with a CAPITAL letter and ends with a period (.)' };
 }
 
 /* ===================== SPANISH BEACH (basic vocabulary) =====================
