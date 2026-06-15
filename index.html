@@ -1699,11 +1699,11 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
+  furniture: { chair: 0, table: 0, bed: 0, couch: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed',
+  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0,
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
@@ -1781,6 +1781,11 @@ const SHOP_ITEMS = [
   { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 10,  kind: 'many',  desc: 'Goes in your backpack. Open it (I) to place it.' },
   { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'Goes in your backpack. Put food on top!' },
   { id: 'bed',    icon: '🛏️', name: 'Big Comfy Bed', price: 14, kind: 'many', desc: 'Avatar-sized bed. Place it, walk close, then press L to lie down.' },
+  { id: 'couch',  icon: '🛋️', name: 'Comfy Couch', price: 16, kind: 'many', desc: 'A cozy couch! Pick a style and color in your 🎒 backpack.' },
+  { id: 'tv',     icon: '📺', name: 'Television', price: 14, kind: 'many', desc: 'A flat-screen TV on a stand for the living room.' },
+  { id: 'bookshelf', icon: '📚', name: 'Bookshelf', price: 12, kind: 'many', desc: 'A shelf full of colorful books.' },
+  { id: 'plant',  icon: '🪴', name: 'House Plant', price: 7,  kind: 'many', desc: 'A leafy potted plant to bring a room to life.' },
+  { id: 'rug',    icon: '🟫', name: 'Cozy Rug', price: 6,    kind: 'many', desc: 'A soft rug — a fresh color every time.' },
   { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
@@ -2179,7 +2184,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, bed: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
+  G.furniture = { chair: 0, table: 0, bed: 0, couch: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
@@ -3111,7 +3116,8 @@ function placeSelectedAt(x, z, blockY) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    placeFurnitureAt(slot, x, z, null, facePlayerRotation(x, z)); G.furniture[slot] -= 1; Sound.place(); refreshHUD();
+    const fv = slot === 'couch' ? G.couchVariant : null;
+    placeFurnitureAt(slot, x, z, fv, facePlayerRotation(x, z)); G.furniture[slot] -= 1; Sound.place(); refreshHUD();
     toast('✅ Placed! Tap it to turn it 🔄', 1800); return true;
   }
   if (slot === 'food') {
@@ -3663,7 +3669,7 @@ function eatSnack() {
   toast('🍎 Yum yum! ZOOMY speed for 20 seconds!', 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'bed', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush'];
+const FURNITURE_TYPES = ['chair', 'table', 'bed', 'couch', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -3730,6 +3736,44 @@ function addRoof(x, y, z, rot, style) {
   return mesh;
 }
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
+const COUCH_STYLES = ['modern', 'classic', 'loveseat'];
+const COUCH_COLORS = [0x4F7CB0, 0xC0504D, 0x6FA85B, 0x8E7CC3, 0xD9A441, 0xCF6F9B, 0x57606B, 0xE4E1D8];
+const RUG_COLORS = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0x55606B];
+const shade = (c, f) => {                 // scale a hex color's brightness by f (clamped)
+  const cl = v => Math.max(0, Math.min(255, Math.round(v)));
+  return (cl((c >> 16 & 255) * f) << 16) | (cl((c >> 8 & 255) * f) << 8) | cl((c & 255) * f);
+};
+function buildCouch(g, variant) {
+  const si = Math.floor((variant || 0) / 100) % COUCH_STYLES.length;
+  const ci = ((variant || 0) % 100) % COUCH_COLORS.length;
+  const col = COUCH_COLORS[ci], dark = shade(col, 0.78), legC = 0x4a3526;
+  const style = COUCH_STYLES[si];
+  if (style === 'loveseat') {            // small, plush, 2 seats
+    box(g, 0.74, 0.2, 0.5, dark, 0, 0.24, 0.02);                     // base
+    box(g, 0.32, 0.16, 0.42, col, -0.18, 0.36, 0.04);               // 2 plump cushions
+    box(g, 0.32, 0.16, 0.42, col, 0.18, 0.36, 0.04);
+    box(g, 0.74, 0.36, 0.12, col, 0, 0.5, -0.2);                    // back
+    box(g, 0.12, 0.34, 0.5, dark, -0.37, 0.42, 0.02);               // rounded arms
+    box(g, 0.12, 0.34, 0.5, dark, 0.37, 0.42, 0.02);
+    [[-0.3, -0.18], [0.3, -0.18], [-0.3, 0.2], [0.3, 0.2]].forEach(([x, z]) => box(g, 0.06, 0.14, 0.06, legC, x, 0.08, z));
+  } else if (style === 'classic') {      // tall back, rolled arms, throw pillows
+    box(g, 0.92, 0.22, 0.5, dark, 0, 0.25, 0.02);                   // base
+    box(g, 0.62, 0.16, 0.44, col, 0, 0.38, 0.04);                  // seat cushion
+    box(g, 0.92, 0.5, 0.12, col, 0, 0.6, -0.2);                    // tall back
+    box(g, 0.14, 0.42, 0.52, col, -0.4, 0.46, 0.02);              // rolled arms
+    box(g, 0.14, 0.42, 0.52, col, 0.4, 0.46, 0.02);
+    box(g, 0.2, 0.2, 0.08, shade(col, 1.3), -0.22, 0.5, -0.1);     // throw pillows (lighter + darker)
+    box(g, 0.2, 0.2, 0.08, shade(col, 0.6), 0.22, 0.5, -0.1);
+    [[-0.38, -0.18], [0.38, -0.18], [-0.38, 0.2], [0.38, 0.2]].forEach(([x, z]) => box(g, 0.07, 0.16, 0.07, legC, x, 0.09, z));
+  } else {                               // modern: low, straight arms, 3 cushions
+    box(g, 0.94, 0.18, 0.5, dark, 0, 0.22, 0.02);                  // base
+    [-0.3, 0, 0.3].forEach(x => box(g, 0.28, 0.14, 0.44, col, x, 0.33, 0.04));   // 3 seat cushions
+    box(g, 0.94, 0.3, 0.1, col, 0, 0.46, -0.2);                   // low back
+    box(g, 0.08, 0.3, 0.5, dark, -0.43, 0.36, 0.02);             // slim arms
+    box(g, 0.08, 0.3, 0.5, dark, 0.43, 0.36, 0.02);
+    [[-0.4, -0.18], [0.4, -0.18], [-0.4, 0.2], [0.4, 0.2]].forEach(([x, z]) => box(g, 0.05, 0.12, 0.05, legC, x, 0.07, z));
+  }
+}
 function buildFurnitureMesh(type, variant) {
   const g = new THREE.Group();
   if (type === 'chair') {
@@ -3747,6 +3791,35 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.94, 0.14, 0.34, 0xFFFFFF, 0, 0.42, -0.68);                // pillow
     [[-0.48, -0.86], [0.48, -0.86], [-0.48, 0.86], [0.48, 0.86]].forEach(([lx, lz]) =>
       box(g, 0.1, 0.18, 0.1, 0x4a2c18, lx, 0.09, lz));                 // legs
+  } else if (type === 'couch') {
+    buildCouch(g, variant);
+  } else if (type === 'tv') {
+    box(g, 0.6, 0.1, 0.32, 0x6d4326, 0, 0.18, 0);                      // stand top
+    box(g, 0.12, 0.18, 0.12, 0x4a2c18, -0.22, 0.09, 0);               // stand legs
+    box(g, 0.12, 0.18, 0.12, 0x4a2c18, 0.22, 0.09, 0);
+    box(g, 0.16, 0.5, 0.16, 0x3a3a3a, 0, 0.5, 0);                     // pedestal
+    box(g, 0.86, 0.5, 0.07, 0x111316, 0, 0.78, 0);                    // black screen frame
+    box(g, 0.78, 0.42, 0.03, 0x4a90d9, 0, 0.78, 0.05);               // glowing blue screen
+  } else if (type === 'bookshelf') {
+    box(g, 0.8, 1.3, 0.34, 0x7a5230, 0, 0.65, 0);                     // wooden cabinet
+    box(g, 0.72, 0.05, 0.3, 0x5a3a1e, 0, 0.42, 0.02);                // shelves
+    box(g, 0.72, 0.05, 0.3, 0x5a3a1e, 0, 0.86, 0.02);
+    const bookCols = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0xCF6F9B];
+    [0.2, 0.64, 1.06].forEach((yy, row) => {
+      for (let i = 0; i < 6; i++) box(g, 0.09, 0.28, 0.22, bookCols[(i + row) % bookCols.length], -0.3 + i * 0.12, yy + 0.16, 0.05);
+    });
+  } else if (type === 'plant') {
+    box(g, 0.32, 0.28, 0.32, 0xC97B4A, 0, 0.14, 0);                   // terracotta pot
+    box(g, 0.34, 0.06, 0.34, 0xA9613A, 0, 0.3, 0);                    // pot rim
+    box(g, 0.1, 0.5, 0.1, 0x4a7a2e, 0, 0.55, 0);                      // stem
+    [[0.22, 0.62, 0], [-0.22, 0.62, 0], [0, 0.62, 0.22], [0, 0.62, -0.22], [0.16, 0.8, 0.16], [-0.16, 0.82, -0.16]].forEach(([x, y, z]) =>
+      box(g, 0.34, 0.12, 0.34, 0x4CAF50, x, y, z));                   // big leaves
+    box(g, 0.36, 0.14, 0.36, 0x5FBF5F, 0, 0.92, 0);                   // leafy top
+  } else if (type === 'rug') {
+    const rc = RUG_COLORS[(variant || 0) % RUG_COLORS.length];
+    box(g, 0.92, 0.04, 0.66, rc, 0, 0.02, 0);                         // soft rug
+    box(g, 0.74, 0.05, 0.5, shade(rc, 0.7), 0, 0.025, 0);            // inner border
+    box(g, 0.5, 0.06, 0.32, shade(rc, 1.3), 0, 0.03, 0);            // center pattern
   } else if (type === 'lamp') {
     box(g, 0.14, 1.5, 0.14, 0x6d6d6d, 0, 0.75, 0);                     // post
     box(g, 0.34, 0.14, 0.34, 0x5a5a5a, 0, 0.04, 0);                    // base
@@ -3845,6 +3918,7 @@ function buildFurnitureMesh(type, variant) {
 function placeFurnitureAt(type, x, z, variant, rotY) {
   if (blocks.has(key(x, 0, z))) return false;
   if (type === 'flower' && variant == null) variant = Math.floor(Math.random() * FLOWER_COLORS.length);
+  if (type === 'rug' && variant == null) variant = Math.floor(Math.random() * RUG_COLORS.length);   // a fresh rug color each time
   const mesh = buildFurnitureMesh(type, variant);
   mesh.position.set(x + 0.5, 0, z + 0.5);
   mesh.rotation.y = rotY || 0;
@@ -4114,7 +4188,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', bed: '🛏️ Bed', couch: '🛋️ Couch', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
   const tag = $('placingTag');
@@ -4150,6 +4224,11 @@ function renderInv() {
     ['🪑', 'Chairs', G.furniture.chair, 'chair'],
     ['🍽️', 'Picnic Tables', G.furniture.table, 'table'],
     ['🛏️', 'Beds', G.furniture.bed, 'bed'],
+    ['🛋️', 'Couches', G.furniture.couch, 'couch'],
+    ['📺', 'Televisions', G.furniture.tv, 'tv'],
+    ['📚', 'Bookshelves', G.furniture.bookshelf, 'bookshelf'],
+    ['🪴', 'House Plants', G.furniture.plant, 'plant'],
+    ['🟫', 'Rugs', G.furniture.rug, 'rug'],
     ['💡', 'Lamps', G.furniture.lamp, 'lamp'],
     ['🚧', 'Fences', G.furniture.fence, 'fence'],
     ['🌷', 'Flowers', G.furniture.flower, 'flower'],
@@ -4232,6 +4311,36 @@ function renderInv() {
           toast('🏠 ' + (st === 'flat' ? 'Flat' : 'Pointed') + ' roof selected! Tap the top of a wall to place it.', 2400);
         };
         srow.appendChild(btn);
+      });
+    }
+    if (slot === 'couch') {                 // pick couch style + color
+      const cbox = document.createElement('div');
+      cbox.className = 'invPaint';
+      cbox.innerHTML = '<span class="invPaintLabel">🛋️ Couch style &amp; color</span>' +
+        '<div class="roofStyleRow" id="couchStyleRow"></div><div class="paintRow" id="couchColorRow" style="margin-top:8px"></div>';
+      wrap.appendChild(cbox);
+      let si = Math.floor((G.couchVariant || 0) / 100), ci = (G.couchVariant || 0) % 100;
+      const srow = cbox.querySelector('#couchStyleRow');
+      ['Modern', 'Classic', 'Loveseat'].forEach((label, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'roofStyleBtn' + (si === idx ? ' sel' : '');
+        btn.textContent = label;
+        btn.onclick = () => {
+          Sound.click(); si = idx; G.couchVariant = si * 100 + ci; selectSlot('couch', true);
+          srow.querySelectorAll('.roofStyleBtn').forEach(b => b.classList.remove('sel')); btn.classList.add('sel');
+        };
+        srow.appendChild(btn);
+      });
+      const crow = cbox.querySelector('#couchColorRow');
+      COUCH_COLORS.forEach((col, idx) => {
+        const sw = document.createElement('button');
+        sw.className = 'swatch' + (ci === idx ? ' sel' : '');
+        sw.style.background = '#' + col.toString(16).padStart(6, '0');
+        sw.onclick = () => {
+          Sound.click(); ci = idx; G.couchVariant = si * 100 + ci; selectSlot('couch', true);
+          crow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel')); sw.classList.add('sel');
+        };
+        crow.appendChild(sw);
       });
     }
   });
