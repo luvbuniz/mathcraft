@@ -117,7 +117,7 @@
     background:rgba(30,50,90,.45); }
   .popupCard { background:#fffef2; border-radius:24px; padding:22px 26px; width:min(560px,94vw);
     text-align:center; box-shadow:0 8px 0 rgba(0,0,0,.2); max-height:92vh; overflow-y:auto; }
-  #mathPopup .popupCard { width:min(640px,96vw); max-height:96vh; overflow:hidden; padding:14px 20px 16px; }
+  #mathPopup .popupCard { position:relative; width:min(640px,96vw); max-height:96vh; overflow:hidden; padding:14px 20px 16px; }
   #mathEquation { font-size:clamp(32px,6vw,48px); color:#34495e; font-weight:bold; margin:4px 0 5px;
     background:#eef7ff; border:4px solid #7fb4dc; border-radius:16px; padding:10px 14px; line-height:1.15; }
   #mathEquation.wordy { font-size:clamp(19px,3.5vw,30px); }
@@ -143,14 +143,33 @@
     padding:8px 16px; border-radius:12px; box-shadow:0 3px 0 #d4b44a; }
   #hintBox { display:none; margin-top:8px; background:#E9F5FF; color:#22456b; border-radius:14px; padding:11px 14px;
     font-size:clamp(13px,2.2vw,17px); font-weight:bold; text-align:left; line-height:1.4; }
-  #hintBox .hintLead { font-size:1.05em; color:#1f6fb2; margin-bottom:6px; }
-  #hintBox .hintSay { margin-top:6px; color:#2e5a7a; }
-  #hintBox .picrow { display:flex; flex-wrap:wrap; align-items:center; gap:3px; margin:4px 0; }
-  #hintBox .picrow.grid { gap:4px; margin:2px 0; }
-  #hintBox .plab { display:inline-block; min-width:46px; font-size:.8em; color:#5b7388; margin-right:4px; }
-  #hintBox .one { display:inline-block; color:#3aa0e0; font-size:1.15em; line-height:1; }
-  #hintBox .ten { display:inline-block; font-size:1.05em; line-height:1; }
-  #hintBox .ask { color:#1f7bbf; margin-left:6px; }
+  #hintBox .hintLead, #fixBody .hintLead { font-size:1.05em; color:#1f6fb2; margin-bottom:6px; }
+  #hintBox .hintSay, #fixBody .hintSay { margin-top:6px; color:#2e5a7a; }
+  #hintBox .picrow, #fixBody .picrow { display:flex; flex-wrap:wrap; align-items:center; gap:3px; margin:4px 0; }
+  #hintBox .picrow.grid, #fixBody .picrow.grid { gap:4px; margin:2px 0; }
+  #hintBox .plab, #fixBody .plab { display:inline-block; min-width:46px; font-size:.8em; color:#5b7388; margin-right:4px; }
+  #hintBox .one, #fixBody .one { display:inline-block; color:#3aa0e0; font-size:1.15em; line-height:1; }
+  #hintBox .ten, #fixBody .ten { display:inline-block; font-size:1.05em; line-height:1; }
+  #hintBox .ask, #fixBody .ask { color:#1f7bbf; margin-left:6px; }
+  /* ---- "Let's fix it!" teaching banner shown on a wrong answer ---- */
+  #fixIt { position:absolute; inset:0; z-index:6; display:none; flex-direction:column;
+    background:linear-gradient(180deg,#FFF6E6,#FFFDF5); border-radius:24px; padding:18px 20px 16px;
+    text-align:center; overflow:auto; }
+  #fixIt.show { display:flex; }
+  #fixIt .fixTitle { font-size:clamp(20px,3.6vw,27px); font-weight:900; color:#e07b2a; margin-bottom:4px; }
+  #fixIt .fixProblem { font-size:clamp(20px,4.4vw,30px); font-weight:900; color:#2f4a33; margin:2px 0; }
+  #fixIt .fixAns { font-size:clamp(18px,3.4vw,24px); font-weight:900; color:#2f7d27; margin:4px 0 10px; }
+  #fixBody { flex:1 1 auto; background:#E9F5FF; color:#22456b; border-radius:16px; padding:12px 14px;
+    text-align:left; line-height:1.45; font-weight:bold; font-size:clamp(13px,2.3vw,17px); }
+  #fixBody .fixStep { margin:3px 0; color:#1f6fb2; }
+  #fixBody .fixAnsLine { margin-top:6px; font-size:1.15em; color:#176b2a; }
+  #fixBody .fixSeq { margin-top:4px; color:#2e5a7a; font-weight:600; }
+  #fixNote { color:#9a6a1e; font-weight:700; font-size:.95em; margin:8px 0 0; min-height:1em; }
+  #fixClose { margin-top:12px; font-family:inherit; font-size:clamp(16px,2.6vw,20px); font-weight:900;
+    border:none; border-radius:16px; padding:14px 22px; color:#fff; cursor:pointer;
+    background:#3f9d34; box-shadow:0 5px 0 #2c6f24; }
+  #fixClose:active { transform:translateY(4px); box-shadow:0 1px 0 #2c6f24; }
+  #fixClose.locked { background:#c4b48f; box-shadow:0 5px 0 #a3946f; cursor:default; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
   #rewardChoice { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px; }
   .rewardBtn { font-weight:bold; font-size:clamp(14px,2.6vw,19px); padding:13px 16px; border-radius:14px; color:#fff;
@@ -918,6 +937,16 @@
     <div id="hintBox"></div>
     <div id="mathFeedback"></div>
     <div id="rewardChoice" style="display:none"></div>
+
+    <!-- Teaching banner: appears on a wrong answer, locked for a few seconds so kids read it -->
+    <div id="fixIt">
+      <div class="fixTitle">🛠️ Oops — let's fix it together!</div>
+      <div id="fixProblem" class="fixProblem"></div>
+      <div id="fixAns" class="fixAns"></div>
+      <div id="fixBody"></div>
+      <div id="fixNote"></div>
+      <button id="fixClose" class="locked" disabled></button>
+    </div>
   </div>
 </div>
 
@@ -3833,10 +3862,120 @@ function showHint() {
   else $('hintBox').textContent = '💡 ' + currentEq.hint;
   $('hintBox').style.display = 'block';
 }
+
+/* ===== "Let's fix it!" banner: on a wrong answer, reveal the answer AND show the
+   easiest way to get there (pictures + worked-out numbers), then hold it on screen
+   for a few seconds so younger kids actually read it before the next question. ===== */
+const FIX_LOCK_SECONDS = 20;
+let fixLocked = false, fixLockTimer = null;
+
+function eqDisplay(eq) {
+  const qt = eq.text;
+  return curWorld().subject !== 'math' ? qt + '?'
+    : (qt.indexOf('=') >= 0 || qt.trim().slice(-1) === '?') ? qt : qt + ' = ?';
+}
+function addSteps(a, b) {
+  // detailed ones/tens breakdown for two-digit numbers; just the answer for bigger ones
+  if (a >= 100 || b >= 100 || (a < 10 && b < 10))
+    return '<div class="fixAnsLine">' + a + ' + ' + b + ' = <b>' + (a + b) + '</b></div>';
+  const ao = a % 10, bo = b % 10, at = a - ao, bt = b - bo;
+  return '<div class="fixStep">Ones: ' + ao + ' + ' + bo + ' = ' + (ao + bo) + '</div>' +
+    '<div class="fixStep">Tens: ' + at + ' + ' + bt + ' = ' + (at + bt) + '</div>' +
+    '<div class="fixAnsLine">Put them together → <b>' + (a + b) + '</b></div>';
+}
+function subSteps(a, b) {
+  if (a >= 100 || b >= 100 || (b < 10 && a % 10 >= b))
+    return '<div class="fixAnsLine">' + a + ' − ' + b + ' = <b>' + (a - b) + '</b></div>';
+  const bt = Math.floor(b / 10) * 10, bo = b % 10, mid = a - bt;
+  return '<div class="fixStep">Start at ' + a + '.</div>' +
+    (bt > 0 ? '<div class="fixStep">Hop back ' + bt + ' → ' + mid + '</div>' : '') +
+    '<div class="fixStep">Hop back ' + bo + ' more → ' + (mid - bo) + '</div>' +
+    '<div class="fixAnsLine">' + a + ' − ' + b + ' = <b>' + (a - b) + '</b></div>';
+}
+// Worked-out "easiest way" for the simple number problems; '' for anything we can't parse.
+function workedSteps(eq) {
+  const t = String(eq.text).replace(/−/g, '-');   // normalize the fancy minus
+  let m;
+  if ((m = t.match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/))) return addSteps(+m[1], +m[2]);
+  if ((m = t.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/)))  return subSteps(+m[1], +m[2]);
+  if ((m = t.match(/^\s*(\d+)\s*[×x*]\s*(\d+)\s*$/i))) {
+    const a = +m[1], b = +m[2], seq = [];
+    for (let i = 1; i <= Math.min(a, 12); i++) seq.push(b * i);
+    return '<div class="fixSeq">Count by ' + b + ', ' + a + ' times: ' + seq.join(', ') + '</div>' +
+      '<div class="fixAnsLine">So ' + a + ' × ' + b + ' = <b>' + (a * b) + '</b></div>';
+  }
+  if ((m = t.match(/^\s*(\d+)\s*[÷\/]\s*(\d+)\s*$/))) {
+    const a = +m[1], b = +m[2], q = a / b;
+    return '<div class="fixStep">How many ' + b + "'s make " + a + '?</div>' +
+      '<div class="fixAnsLine">' + b + ' × <b>' + q + '</b> = ' + a + ', so ' + a + ' ÷ ' + b + ' = <b>' + q + '</b></div>';
+  }
+  if ((m = t.match(/^\s*(\d+)\s*\+\s*(\d+)\s*\+\s*(\d+)\s*$/))) {
+    const a = +m[1], b = +m[2], c = +m[3];
+    return '<div class="fixStep">Add two at a time:</div>' +
+      '<div class="fixStep">' + a + ' + ' + b + ' = ' + (a + b) + '</div>' +
+      '<div class="fixAnsLine">' + (a + b) + ' + ' + c + ' = <b>' + (a + b + c) + '</b></div>';
+  }
+  if ((m = t.match(/^\s*(\d+)\s*\+\s*\?\s*=\s*(\d+)\s*$/))) {
+    const a = +m[1], s = +m[2];
+    return '<div class="fixStep">Take away to find the missing part:</div>' +
+      '<div class="fixAnsLine">' + s + ' − ' + a + ' = <b>' + (s - a) + '</b></div>';
+  }
+  return '';
+}
+function solveHTML(eq) {
+  let html = '';
+  if (eq.hintHTML) html += eq.hintHTML;                       // the picture method (dots & tens)
+  else if (eq.hint) html += '<div class="hintLead">💡 ' + eq.hint + '</div>';
+  const worked = workedSteps(eq);
+  if (worked) html += worked;
+  else if (!eq.hint && !eq.hintHTML)                          // reading/word answers: the reveal above is enough
+    html += '<div class="fixStep">Read the green answer above out loud. You\'ve got this! 🙂</div>';
+  return html;
+}
+function showFixIt(note) {
+  if (!currentEq) return;
+  $('fixProblem').textContent = eqDisplay(currentEq);
+  $('fixAns').innerHTML = '✅ The answer is <b>' + currentEq.answer + '</b>';
+  $('fixBody').innerHTML = solveHTML(currentEq);
+  $('fixNote').textContent = note || '';
+  $('fixIt').classList.add('show');
+  startFixLock();
+}
+function startFixLock() {
+  fixLocked = true;
+  let secs = FIX_LOCK_SECONDS;
+  const btn = $('fixClose'), mc = $('mathClose');
+  if (mc) mc.style.visibility = 'hidden';                     // no escaping past the lesson via the popup X
+  btn.disabled = true; btn.classList.add('locked');
+  if (fixLockTimer) clearInterval(fixLockTimer);
+  const tick = () => {
+    if (secs > 0) { btn.textContent = '👀 Keep looking… ' + secs; secs--; return; }
+    clearInterval(fixLockTimer); fixLockTimer = null;
+    fixLocked = false;
+    btn.disabled = false; btn.classList.remove('locked');
+    btn.textContent = '✅ Got it! Next question';
+    if (mc) mc.style.visibility = 'visible';
+  };
+  tick();
+  fixLockTimer = setInterval(tick, 1000);
+}
+function hideFixIt() {
+  if (fixLockTimer) { clearInterval(fixLockTimer); fixLockTimer = null; }
+  fixLocked = false;
+  $('fixIt').classList.remove('show');
+  const mc = $('mathClose'); if (mc) mc.style.visibility = 'visible';
+}
+function closeFixIt() {
+  if (fixLocked) return;
+  hideFixIt();
+  renderMathQuestion();                                       // a fresh problem to try
+}
+$('fixClose').onclick = () => { if (fixLocked) return; Sound.click(); closeFixIt(); };
 function openMath() {
   if (popupOpen || G.over || performance.now() < mathCooldownUntil) return;   // brief cooldown stops spam-reopening
   popupOpen = true;
   wrongStreak = 0; pendingReward = 0;
+  hideFixIt();
   document.exitPointerLock && document.exitPointerLock();
   $('mathPrompt').textContent = 'Find the answer — then pick your reward!';
   $('mathFeedback').textContent = '';
@@ -3926,34 +4065,18 @@ function answerPicked(btn, opt) {
     if (G.mathMisses >= 2 && G.mathLevel > 1) {
       G.mathLevel--;
       G.mathMisses = 0;
-      easierNote = ' I made the next one a little easier.';
+      easierNote = '🌱 The next question will be a little easier.';
     }
-    if (wrongStreak >= 3) {            // breather: show the hint, then a fresh question
-      showHint();
-      let secs = 8;
-      $('mathFeedback').textContent = '🧘 Let\'s slow down and read the hint!' + easierNote + ' New question in ' + secs + '…';
-      breatherTimer = setInterval(() => {
-        secs--;
-        if (secs <= 0) {
-          clearInterval(breatherTimer); breatherTimer = null;
-          wrongStreak = 0;
-          renderMathQuestion();
-          $('mathFeedback').textContent = '🌟 Fresh question — try the hint trick!';
-        } else {
-          $('mathFeedback').textContent = '🧘 Let\'s slow down and read the hint! New question in ' + secs + '…';
-        }
-      }, 1000);
-    } else {
-      // kids rarely tap the hint — so teach the method automatically on every miss,
-      // then give a fresh question (no guessing by elimination) once they've had a beat to read it.
-      showHint();
-      $('mathFeedback').textContent = pick(['💪 Good try!', '🌱 Almost!', '🙂 Not quite!']) + ' 👇 Read the hint — then try the new one!' + easierNote;
-      nextQuestionTimer = setTimeout(renderMathQuestion, 2400);
-    }
+    // Teach the method automatically on every miss: reveal the answer + the easiest way,
+    // and hold it on screen (locked) so younger kids read it before the next question.
+    $('mathFeedback').textContent = '';
+    showFixIt(easierNote);
   }
 }
 $('hintBtn').onclick = () => { Sound.click(); showHint(); };
 function closeMath() {
+  if (fixLocked) return;            // the "let's fix it" lesson is still locked — can't leave yet
+  hideFixIt();
   if (breatherTimer) { clearInterval(breatherTimer); breatherTimer = null; }
   if (answerUnlockTimer) { clearTimeout(answerUnlockTimer); answerUnlockTimer = null; }
   if (nextQuestionTimer) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
