@@ -944,6 +944,11 @@
       <span style="color:#6c84a6; font-size:13px">Full game: <b id="purchaseStatus">—</b></span>
       <button id="resetPurchaseBtn" style="font-size:12px; background:#eef1f5; color:#6c84a6; border:none; border-radius:8px; padding:5px 11px; cursor:pointer; font-family:inherit">Reset purchase (testing)</button>
     </div>
+    <div style="margin-top:8px; color:#9aa9bd; font-size:11px; text-align:center">
+      <a href="support.html#privacy" target="_blank" style="color:#9aa9bd; text-decoration:none">Privacy</a> ·
+      <a href="support.html#terms" target="_blank" style="color:#9aa9bd; text-decoration:none">Terms</a> ·
+      <a href="support.html" target="_blank" style="color:#9aa9bd; text-decoration:none">Support</a>
+    </div>
   </div>
 </div>
 
@@ -1319,7 +1324,7 @@ function generateOnce(grade) {
     reward = 2;
     distractors = [answer + 1, Math.max(0, answer - 1), answer + 2];
   } else if (grade === 2) {                // add/subtract within 100
-    const kind = pick(['add', 'add', 'sub', 'sub', 'missing', 'word', 'ten']);
+    const kind = pick(['add', 'add', 'sub', 'sub', 'missing', 'word', 'three', 'ten']);
     if (kind === 'add') {
       const a = ri(5, 80), b = ri(3, 99 - a);
       text = a + ' + ' + b; answer = a + b; skill = 'add';
@@ -1342,6 +1347,11 @@ function generateOnce(grade) {
       if (Math.random() < 0.5) { answer = a + b; text = nm + ' has ' + a + ' ' + thing + ' and gets ' + b + ' more. How many?'; skill = 'word'; hint = 'Getting more means add — put ' + a + ' and ' + b + ' together!'; }
       else { const hi = Math.max(a, b) + 5, lo = Math.min(a, b); answer = hi - lo; text = nm + ' has ' + hi + ' ' + thing + ' and gives away ' + lo + '. How many left?'; skill = 'word'; hint = 'Giving away means take away — subtract ' + lo + ' from ' + hi + '!'; }
       distractors = [answer + 1, Math.max(0, answer - 2), answer + 10];
+    } else if (kind === 'three') {
+      const a = ri(5, 30), b = ri(5, 25), c = ri(2, 20);
+      text = a + ' + ' + b + ' + ' + c; answer = a + b + c; skill = 'add';
+      hint = 'Add two at a time: ' + a + ' + ' + b + ' = ' + (a + b) + ', then + ' + c + '.';
+      distractors = [answer + 1, Math.max(0, answer - 1), answer + 10];
     } else {
       const n = ri(15, 80);
       if (Math.random() < 0.5) { answer = n + 10; text = n + ' + 10'; skill = 'add'; hint = 'Adding 10 bumps the tens digit up by one!'; }
@@ -1350,7 +1360,7 @@ function generateOnce(grade) {
     }
     reward = 3 + (Number(answer) > 50 ? 1 : 0);
   } else if (grade === 3) {                // within 1000 + intro multiplication
-    const kind = pick(['add', 'sub', 'mul', 'mul', 'round', 'word']);
+    const kind = pick(['add', 'sub', 'mul', 'mul', 'div', 'round', 'word']);
     if (kind === 'add') {
       const a = ri(100, 800), b = ri(50, 999 - a);
       text = a + ' + ' + b; answer = a + b; reward = 4; skill = 'add';
@@ -1373,6 +1383,11 @@ function generateOnce(grade) {
       text = 'Round ' + n + ' to the nearest ' + to;
       hint = to === 10 ? 'Look at the ones digit: 5 or more rounds up, less than 5 rounds down.' : 'Look at the tens digit: 50 or more rounds up, less rounds down.';
       distractors = [answer + to, Math.max(0, answer - to), answer + to * 2];
+    } else if (kind === 'div') {
+      const b = ri(2, 9), q = ri(2, 9), a = b * q;
+      text = a + ' ÷ ' + b; answer = q; reward = 5; skill = 'div';
+      hint = 'How many ' + b + "'s fit in " + a + '? Skip-count by ' + b + ' until you reach ' + a + '.';
+      distractors = [q + 1, Math.max(1, q - 1), q + 2];
     } else {
       const a = ri(2, 9), b = ri(3, 8), nm = pick(WORD_NAMES);
       answer = a * b; reward = 5; skill = 'word';
@@ -1381,7 +1396,7 @@ function generateOnce(grade) {
       distractors = [answer + b, Math.max(0, answer - a), a + b];
     }
   } else if (grade === 4) {                // multi-digit ×/÷, multi-step, area
-    const kind = pick(['mul', 'mul', 'div', 'multi', 'area', 'word', 'missing']);
+    const kind = pick(['mul', 'mul', 'div', 'multi', 'area', 'perim', 'word', 'missing']);
     if (kind === 'mul') {
       const a = ri(11, 99), b = ri(2, 9);
       text = a + ' × ' + b; answer = a * b; reward = 6 + (a > 50 ? 1 : 0); skill = 'mul';
@@ -1405,6 +1420,12 @@ function generateOnce(grade) {
       text = 'A rug is ' + l + ' by ' + w + '. What is its area?'; answer = l * w; reward = 7; skill = 'geo';
       hint = 'Area = length × width. Multiply ' + l + ' by ' + w + '!';
       distractors = [2 * (l + w), answer + l, answer - w];
+    } else if (kind === 'perim') {
+      const l = ri(3, 12), w = ri(2, 9);
+      text = 'A garden is ' + l + ' by ' + w + '. What is the perimeter (distance all the way around)?';
+      answer = 2 * (l + w); reward = 7; skill = 'geo';
+      hint = 'Perimeter adds up all four sides: ' + l + ' + ' + w + ' + ' + l + ' + ' + w + '.';
+      distractors = [l * w, 2 * (l + w) + 2, l + w];
     } else if (kind === 'missing') {
       const b = ri(3, 9), q = ri(3, 9); const p = b * q;
       text = '? × ' + b + ' = ' + p; answer = q; reward = 6; skill = 'mul';
@@ -1418,7 +1439,7 @@ function generateOnce(grade) {
       distractors = [each + 1, Math.max(1, each - 1), g + each];
     }
   } else {                                 // grade 5: big ×, fractions, decimals, order, %, money
-    const kind = pick(['bigmul', 'frac', 'fracOf', 'dec', 'order', 'percent', 'money']);
+    const kind = pick(['bigmul', 'frac', 'fracOf', 'fracNum', 'dec', 'order', 'percent', 'money']);
     if (kind === 'bigmul') {
       const a = ri(11, 25), b = ri(11, 19);
       text = a + ' × ' + b; answer = a * b; reward = 9; skill = 'mul';
@@ -1436,6 +1457,11 @@ function generateOnce(grade) {
       text = '1/' + d + ' of ' + whole; answer = q; reward = 8; skill = 'frac';
       hint = 'Split ' + whole + ' into ' + d + ' equal groups. How big is one group?';
       distractors = [q + 1, Math.max(1, q - 1), q + d];
+    } else if (kind === 'fracNum') {
+      const d = pick([3, 4, 5]), q = ri(2, 8), whole = d * q, n = ri(2, d - 1);
+      text = n + '/' + d + ' of ' + whole; answer = n * q; reward = 9; skill = 'frac';
+      hint = 'First find 1/' + d + ' of ' + whole + ' = ' + q + ', then take ' + n + ' of those: ' + n + ' × ' + q + '.';
+      distractors = [answer + q, Math.max(1, answer - q), q];
     } else if (kind === 'order') {
       const a = ri(2, 12), b = ri(2, 9), c = ri(2, 9);
       text = a + ' + ' + b + ' × ' + c; answer = a + b * c; reward = 9; skill = 'order';
