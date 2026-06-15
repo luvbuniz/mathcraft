@@ -113,11 +113,13 @@
     font-size:clamp(17px,3vw,24px); font-weight:bold; display:none; text-align:center; max-width:90vw; }
 
   /* ---------- Math popup ---------- */
-  .popup { position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center;
-    background:rgba(30,50,90,.45); }
+  .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
+    background:rgba(30,50,90,.45); padding:14px 10px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .popupCard { background:#fffef2; border-radius:24px; padding:22px 26px; width:min(560px,94vw);
-    text-align:center; box-shadow:0 8px 0 rgba(0,0,0,.2); max-height:92vh; overflow-y:auto; }
-  #mathPopup .popupCard { position:relative; width:min(640px,96vw); max-height:96vh; overflow:hidden; padding:14px 20px 16px; }
+    text-align:center; box-shadow:0 8px 0 rgba(0,0,0,.2); }
+  /* keep the ✕ reachable even on a tall, scrolling card */
+  .popupCard > div:first-child { position:sticky; top:-2px; z-index:3; }
+  #mathPopup .popupCard { position:relative; width:min(640px,96vw); max-height:94dvh; overflow:hidden; padding:14px 20px 16px; }
   #mathEquation { font-size:clamp(32px,6vw,48px); color:#34495e; font-weight:bold; margin:4px 0 5px;
     background:#eef7ff; border:4px solid #7fb4dc; border-radius:16px; padding:10px 14px; line-height:1.15; }
   #mathEquation.wordy { font-size:clamp(19px,3.5vw,30px); }
@@ -5535,6 +5537,7 @@ function spawnFoodAt(x, z, onTable, kind, surfY, variant) {
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
 $('shopClose').onclick = () => { Sound.click(); closeShop(); };
+$('shopPopup').addEventListener('click', e => { if (e.target === $('shopPopup')) { Sound.click(); closeShop(); } });  // tap outside the card to close
 
 /* ============================ BUILD / INTERACT ============================ */
 const raycaster = new THREE.Raycaster();
