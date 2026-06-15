@@ -924,6 +924,7 @@
     <div id="hudShield" style="display:none">🛡️ Shield: <span id="shieldTime">0:00</span></div>
     <div id="hudShelter">🏗️ Not enclosed yet</div>
   </div>
+  <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes">🧍</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
@@ -971,6 +972,19 @@
     <div id="petSub" style="color:#7a6a35; font-weight:700; margin-bottom:14px">What should they do?</div>
     <div id="petModes"></div>
     <button id="petPutAway" class="petBtn putAway">🎒 Put away</button>
+  </div>
+</div>
+
+<!-- ================= TREASURE QUEST ================= -->
+<div class="popup" id="questPopup">
+  <div class="popupCard" style="width:min(440px,94vw); text-align:center">
+    <div style="font-size:48px">🗺️</div>
+    <h2 style="color:#b5832a; margin:6px 0">A Treasure Quest!</h2>
+    <p style="color:#5a4632; font-weight:700; line-height:1.5">Legend says the magic gemstone <b>💎 Archimedes' Pom-pom</b> is hidden somewhere in the meadow. Follow the glowing beam to find it — then carry it <b>home to a house you've built!</b></p>
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap">
+      <button id="questStartBtn" class="petBtn">🚀 Start the hunt!</button>
+      <button id="questLaterBtn" class="petBtn putAway">Maybe later</button>
+    </div>
   </div>
 </div>
 
@@ -2145,14 +2159,15 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
   selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0,
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
-  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false },
+  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false },
+  quest: { stage: 'none', spot: null },
   warned60: false, warned10: false,
   mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
 };
@@ -2273,6 +2288,7 @@ const SHOP_ITEMS = [
   { id: 'corn',    icon: '🌽', name: 'Corn on the Cob', price: 4, kind: 'many', desc: 'Buttery corn on the cob — a summer classic.' },
   { id: 'sparkler',icon: '🎇', name: 'Sparkler', price: 5,    kind: 'many',  desc: 'A fizzing, sparkling stick of light. Set a few around the yard!' },
   { id: 'fireworks',icon: '🎆', name: 'Fireworks Launcher', price: 35, kind: 'many', desc: '⭐ Premium! Earn the coins, then dazzle the sky with bursting fireworks.' },
+  { id: 'treasuremap', icon: '🗺️', name: 'Treasure Map', price: 6, kind: 'own', desc: 'Start a quest! Hunt the gemstone 💎 Archimedes\' Pom-pom and bring it home.' },
   { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP by a trunk, press P for berries.' },
   { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
   { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, kind: 'own',   desc: 'Jump higher!' },
@@ -2286,7 +2302,7 @@ const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🛒 Stack Mart — the general store
   blocks: 'build', powerBlocks: 'build', door: 'build', window: 'build', roof: 'build',
-  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',
+  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear', treasuremap: 'gear',
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
   petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets',
   usahat: 'july4', flag: 'july4', bunting: 'july4', bbq: 'july4', hotdog: 'july4', sausage: 'july4', ribs: 'july4', corn: 'july4', sparkler: 'july4', fireworks: 'july4',
@@ -2674,6 +2690,7 @@ function saveGame() {
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
       foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0]),
+      quest: G.quest,
       pos: [player.pos.x, player.pos.y, player.pos.z],
       when: Date.now()
     }));
@@ -2719,6 +2736,7 @@ function restoreGame(s) {
   G.playerName = s.name || 'Player';
   G.world = WORLDS[s.world] ? s.world : 'meadow';
   G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex;
+  G.quest = s.quest || { stage: 'none', spot: null };
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
@@ -2761,6 +2779,7 @@ function restoreGame(s) {
   (s.foods || []).forEach(([x, z, onTable, kind, y, variant]) => spawnFoodAt(x, z, !!onTable, kind, y, variant));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   startGame();
+  restoreQuest();
   toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
 }
 addEventListener('beforeunload', () => { if (G.running && !G.over) saveGame(); });
@@ -2778,6 +2797,8 @@ function resetWorld() {
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   pets.length = 0;
+  if (typeof removeQuestGem === 'function') { removeQuestGem(); removeCarriedGem(); }
+  const qh = $('questHud'); if (qh) qh.style.display = 'none';
   sparkleProps.length = 0;
   fireworkLaunchers.length = 0;
   fireworkSparks.forEach(s => scene.remove(s.mesh)); fireworkSparks.length = 0;
@@ -2789,14 +2810,15 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
-  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false };
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false };
+  G.quest = { stage: 'none', spot: null };
 }
 function goHome() {
   if (G.running && !G.over) saveGame();
@@ -4639,6 +4661,14 @@ function renderShop() {
 }
 function buyItem(id) {
   const item = SHOP_ITEMS.find(i => i.id === id);
+  if (id === 'treasuremap') {                          // owning the map lets you (re)start the hunt any time
+    if (!G.owned.treasuremap) {
+      if (G.coins < item.price) return;
+      G.coins -= item.price; G.owned.treasuremap = true; Sound.coin();
+    }
+    refreshHUD(); renderShop(); closeShop(); offerQuest();
+    return;
+  }
   if (item.kind === 'sell') {
     if (G.berries === 0) return;
     G.coins += G.berries;
@@ -4686,7 +4716,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -4903,6 +4933,15 @@ function buildFurnitureMesh(type, variant) {
     for (let i = -2; i <= 2; i++) box(g, 0.045, 0.02, 0.14, 0xE0B020, i * 0.07, 0.165, 0);  // kernel rows
     box(g, 0.06, 0.06, 0.13, 0x6FA85B, 0.24, 0.1, 0);              // green husk handle
     box(g, 0.05, 0.05, 0.05, 0xFFF1C0, -0.15, 0.13, 0.04);        // butter pat
+  } else if (type === 'gem') {
+    box(g, 0.4, 0.12, 0.4, 0xC9A24A, 0, 0.06, 0);                    // gold base
+    box(g, 0.3, 0.16, 0.3, 0xE0C56A, 0, 0.18, 0);                    // pedestal
+    box(g, 0.14, 0.16, 0.14, 0xB5832a, 0, 0.3, 0);                   // neck
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), new THREE.MeshBasicMaterial({ color: 0xE85AD8 }));
+    gem.position.y = 0.56; gem.scale.y = 1.4; g.add(gem);
+    const glow = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshBasicMaterial({ color: 0xFF9BEE, transparent: true, opacity: 0.3 }));
+    glow.position.y = 0.56; glow.scale.y = 1.4; g.add(glow);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; box(g, 0.07, 0.07, 0.07, 0xFFF1FA, Math.cos(a) * 0.22, 0.56, Math.sin(a) * 0.22); }  // pom-pom tufts
   } else if (type === 'sparkler') {
     box(g, 0.025, 0.55, 0.025, 0x555a60, 0, 0.27, 0);                 // wire stick
     const sg = new THREE.Group(); sg.position.set(0, 0.58, 0); g.add(sg);
@@ -5422,6 +5461,104 @@ $('petPutAway').onclick = () => {
   G.furniture[pet.kind] = (G.furniture[pet.kind] || 0) + 1; Sound.pop(); refreshHUD();
   toast('🐾 ' + (pet.kind === 'dog' ? 'Doggo' : 'Kitty') + ' back in your 🎒!', 1500);
 };
+
+/* ============================ TREASURE QUEST ============================
+   Buy the Treasure Map → hunt the gemstone "Archimedes' Pom-pom" (follow the beam)
+   → carry it home to a house you built. A first, self-contained quest "episode". */
+const QUEST_GEM_SPOTS = [[16, 16], [18, -13], [-15, 17], [13, 19], [19, 5], [-17, -12]];
+let questGem = null, questBeacon = null, questCarry = null;
+function buildGemMesh() {
+  const g = new THREE.Group();
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0), new THREE.MeshBasicMaterial({ color: 0xE85AD8 }));
+  gem.scale.y = 1.5; g.add(gem);
+  const glow = new THREE.Mesh(new THREE.OctahedronGeometry(0.48, 0), new THREE.MeshBasicMaterial({ color: 0xFF9BEE, transparent: true, opacity: 0.35 }));
+  glow.scale.y = 1.5; g.add(glow);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; box(g, 0.1, 0.1, 0.1, 0xFFF1FA, Math.cos(a) * 0.34, 0, Math.sin(a) * 0.34); }  // pom-pom tufts
+  return g;
+}
+function removeQuestGem() {
+  if (questGem) { scene.remove(questGem); questGem = null; }
+  if (questBeacon) { scene.remove(questBeacon); questBeacon = null; }
+}
+function removeCarriedGem() { if (questCarry) { scene.remove(questCarry); questCarry = null; } }
+function spawnQuestGem() {
+  removeQuestGem();
+  const sp = G.quest.spot || QUEST_GEM_SPOTS[0];
+  questGem = buildGemMesh();
+  questGem.position.set(sp[0] + 0.5, 0.7, sp[1] + 0.5);
+  scene.add(questGem);
+  questBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.4, 16, 8), new THREE.MeshBasicMaterial({ color: 0xFF7AE0, transparent: true, opacity: 0.2 }));
+  questBeacon.position.set(sp[0] + 0.5, 8, sp[1] + 0.5);
+  scene.add(questBeacon);
+}
+function attachCarriedGem() { if (!questCarry) { questCarry = buildGemMesh(); questCarry.scale.setScalar(0.6); scene.add(questCarry); } }
+function updateQuestHud() {
+  const el = $('questHud'); if (!el) return;
+  const st = G.quest && G.quest.stage;
+  if (st === 'seek') { el.style.display = 'block'; el.innerHTML = '🗺️ <b>Quest:</b> Find 💎 Archimedes\' Pom-pom — head for the pink beam!'; }
+  else if (st === 'carry') { el.style.display = 'block'; el.innerHTML = '💎 <b>Quest:</b> Carry it <b>home</b> — step inside a house you built!'; }
+  else { el.style.display = 'none'; }
+}
+function offerQuest() {
+  if (G.quest && (G.quest.stage === 'seek' || G.quest.stage === 'carry')) { toast('🗺️ You\'re already on the hunt!', 2200); return; }
+  if (G.quest && G.quest.stage === 'done') { toast('🏆 You already found the Pom-pom!', 2400); return; }
+  document.exitPointerLock && document.exitPointerLock();
+  popupOpen = true;
+  $('questPopup').style.display = 'flex';
+}
+function startPompomQuest() {
+  G.quest.stage = 'seek';
+  G.quest.spot = QUEST_GEM_SPOTS[Math.floor(Math.random() * QUEST_GEM_SPOTS.length)];
+  spawnQuestGem();
+  updateQuestHud();
+  if (Sound.fanfare) Sound.fanfare();
+  toast('🗺️ The hunt is on! Follow the glowing pink beam to find 💎 Archimedes\' Pom-pom!', 4500);
+}
+function collectQuestGem() {
+  if (G.quest.stage !== 'seek') return;
+  G.quest.stage = 'carry';
+  removeQuestGem();
+  attachCarriedGem();
+  updateQuestHud();
+  if (Sound.fanfare) Sound.fanfare();
+  toast('💎 You found Archimedes\' Pom-pom! Now carry it HOME — inside a house you built (or back to the start).', 5000);
+}
+function questAtHome() {
+  const cx = Math.floor(player.pos.x), cz = Math.floor(player.pos.z);
+  if (isEnclosedCell(cx, cz)) return true;
+  return Math.hypot(player.pos.x - SPAWN.x, player.pos.z - SPAWN.z) < 3.5;
+}
+function completePompomQuest() {
+  G.quest.stage = 'done';
+  removeCarriedGem();
+  G.coins += 25; G.furniture.gem = (G.furniture.gem || 0) + 1;
+  refreshHUD(); updateQuestHud();
+  if (Sound.fanfare) Sound.fanfare();
+  toast('🎉 Quest complete! +25 🪙 and a 💎 Pom-pom Trophy in your 🎒 — place it in your home!', 5500);
+}
+function updateQuest(dt, now) {
+  if (questGem) {
+    questGem.rotation.y = now / 600;
+    questGem.position.y = 0.7 + Math.sin(now / 400) * 0.12;
+    if (questBeacon) questBeacon.material.opacity = 0.14 + (0.5 + Math.sin(now / 300) * 0.5) * 0.16;
+    if (G.quest.stage === 'seek' && Math.hypot(player.pos.x - questGem.position.x, player.pos.z - questGem.position.z) < 1.5) collectQuestGem();
+  }
+  if (questCarry) {
+    questCarry.position.set(player.pos.x, player.pos.y + 2.2 + Math.sin(now / 300) * 0.08, player.pos.z);
+    questCarry.rotation.y = now / 400;
+    if (questAtHome()) completePompomQuest();
+  }
+}
+function restoreQuest() {
+  if (!G.quest) G.quest = { stage: 'none', spot: null };
+  removeQuestGem(); removeCarriedGem();
+  if (G.quest.stage === 'seek') spawnQuestGem();
+  else if (G.quest.stage === 'carry') attachCarriedGem();
+  updateQuestHud();
+}
+$('questStartBtn').onclick = () => { Sound.click(); $('questPopup').style.display = 'none'; popupOpen = false; startPompomQuest(); };
+$('questLaterBtn').onclick = () => { Sound.click(); $('questPopup').style.display = 'none'; popupOpen = false; toast('🗺️ Changed your mind? Buy the map again any time to start the hunt!', 3200); };
+
 function buildAppleMesh() {
   const g = new THREE.Group();
   box(g, 0.18, 0.18, 0.18, 0xE53935, 0, 0, 0);
@@ -5551,6 +5688,9 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
     const hitL = raycaster.intersectObjects(lMeshes)[0];
     if (hitL) { collectLoot(lootBlocks.find(l => l.mesh === hitL.object)); return; }
   }
+
+  // 0.5) the quest gemstone — tap it to pick it up
+  if (questGem && G.quest.stage === 'seek' && raycaster.intersectObject(questGem, true)[0]) { collectQuestGem(); return; }
 
   // 1) berries
   if (berries.length) {
@@ -5702,7 +5842,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -5761,6 +5901,7 @@ function renderInv() {
     ['🌽', 'Corn on the Cob', G.furniture.corn, 'corn'],
     ['🎇', 'Sparklers', G.furniture.sparkler, 'sparkler'],
     ['🎆', 'Fireworks', G.furniture.fireworks, 'fireworks'],
+    ['💎', 'Pom-pom Trophy', G.furniture.gem, 'gem'],
     ['🪵', 'Coffee Tables', G.furniture.coffeetable, 'coffeetable'],
     ['🗄️', 'Dressers', G.furniture.dresser, 'dresser'],
     ['📺', 'Televisions', G.furniture.tv, 'tv'],
@@ -6431,6 +6572,7 @@ function loop(now) {
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (!G.over) updateDoors(dt);
   if (!popupOpen && !G.over) updatePets(dt, now);
+  if (!G.over) updateQuest(dt, now);
 
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
