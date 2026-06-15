@@ -260,10 +260,6 @@
   #btnAction { right:26px; bottom:170px; background:rgba(255,233,150,.85); }
   #btnModeTouch { right:104px; bottom:96px; }
   #btnShoot { right:104px; bottom:170px; background:rgba(255,170,150,.9); }
-  /* easy turn buttons for younger players — no dragging needed */
-  .turnBtn { font-size:30px; line-height:1; padding:8px 18px; bottom:30px; background:rgba(110,170,235,.85); color:#16334f; }
-  #btnTurnL { left:calc(50% - 96px); }
-  #btnTurnR { left:calc(50% + 16px); }
 
   /* ---------- Names + saved games ---------- */
   #nameInput { width:min(420px,90%); font-family:inherit; font-size:clamp(16px,2.6vw,20px);
@@ -1125,8 +1121,6 @@
 <!-- ================= TOUCH CONTROLS ================= -->
 <div id="touchUI">
   <div id="joyBase"><div id="joyStick"></div></div>
-  <button class="touchBtn turnBtn" id="btnTurnL" aria-label="Turn left">⟲</button>
-  <button class="touchBtn turnBtn" id="btnTurnR" aria-label="Turn right">⟳</button>
   <button class="touchBtn" id="btnJump">⬆ JUMP</button>
   <button class="touchBtn" id="btnAction">⭐ USE</button>
   <button class="touchBtn" id="btnModeTouch">🧱 Place</button>
@@ -3658,8 +3652,8 @@ function updatePlayer(dt) {
   let speed = G.owned.shoes ? 7 : 5;
   if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
   const jumpV = G.owned.boots ? 10 : 7.5;
-  if (keys['ArrowLeft'] || touch.turnLeft) player.yaw += 2.4 * dt;     // turn with arrows or the ⟲⟳ buttons — no dragging needed
-  if (keys['ArrowRight'] || touch.turnRight) player.yaw -= 2.4 * dt;
+  if (keys['ArrowLeft']) player.yaw += 2.4 * dt;     // turn with arrows — no mouse needed
+  if (keys['ArrowRight']) player.yaw -= 2.4 * dt;
   let mx = 0, mz = 0;
   if (keys['ArrowUp'] || keys['KeyW'] || touch.joyY < -0.25) mz -= 1;
   if (keys['ArrowDown'] || keys['KeyS'] || touch.joyY > 0.25) mz += 1;
@@ -6193,7 +6187,7 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
-const touch = { joyX: 0, joyY: 0, jump: false, placeMode: true, turnLeft: false, turnRight: false };
+const touch = { joyX: 0, joyY: 0, jump: false, placeMode: true };
 if (isTouch) {
   const joy = $('joyBase'), stick = $('joyStick');
   let joyId = null;
@@ -6222,14 +6216,6 @@ if (isTouch) {
 
   $('btnJump').addEventListener('touchstart', e => { touch.jump = true; e.preventDefault(); }, { passive: false });
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
-  // hold-to-turn buttons (so you don't have to drag to look around)
-  const bindTurn = (id, prop) => {
-    const b = $(id);
-    b.addEventListener('touchstart', e => { touch[prop] = true; e.preventDefault(); }, { passive: false });
-    ['touchend', 'touchcancel'].forEach(ev => b.addEventListener(ev, () => touch[prop] = false));
-  };
-  bindTurn('btnTurnL', 'turnLeft');
-  bindTurn('btnTurnR', 'turnRight');
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
     if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
