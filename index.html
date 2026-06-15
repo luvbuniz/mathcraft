@@ -1981,15 +1981,38 @@ const AVATARS = [
   {
     id: 'bunny', name: 'Bunny 🐰',
     build() {
-      const a = buildBiped(0xF3E9E0, 0xF7EFE8, 0xE8DCD0, 0xF3E9E0);
-      addEyes(a.head, 0x6b3a3a, 0.26);
-      box(a.head, 0.14, 0.1, 0.1, 0xF7EFE8, 0, -0.12, 0.24);           // muzzle
-      box(a.head, 0.07, 0.05, 0.05, 0xE89BB0, 0, -0.1, 0.3);           // pink nose
-      box(a.head, 0.1, 0.36, 0.06, 0xF7EFE8, -0.1, 0.42, -0.02);       // tall ears
-      box(a.head, 0.1, 0.36, 0.06, 0xF7EFE8, 0.1, 0.42, -0.02);
-      box(a.head, 0.05, 0.24, 0.04, 0xE89BB0, -0.1, 0.4, 0.005);       // inner ear
-      box(a.head, 0.05, 0.24, 0.04, 0xE89BB0, 0.1, 0.4, 0.005);
-      box(a.group, 0.15, 0.15, 0.13, 0xFFFFFF, 0, 0.7, -0.18);         // fluffy tail
+      const fur = 0xF2E8DE, furSh = 0xE3D6C8, pink = 0xE89BB0, deep = 0xD98099;
+      const a = buildBiped(fur, fur, furSh, fur);
+      box(a.group, 0.48, 0.42, 0.36, fur, 0, 0.7, 0.02);              // plump round tummy
+      box(a.group, 0.3, 0.24, 0.12, 0xFFFFFF, 0, 0.66, 0.21);         // cream chest fluff
+      // rounder face with cheek puffs
+      box(a.head, 0.5, 0.34, 0.44, fur, 0, -0.03, 0.02);
+      box(a.head, 0.14, 0.14, 0.12, fur, -0.21, -0.05, 0.14);
+      box(a.head, 0.14, 0.14, 0.12, fur, 0.21, -0.05, 0.14);
+      addEyes(a.head, 0x3a2a2a, 0.27);
+      box(a.head, 0.035, 0.035, 0.02, 0xFFFFFF, -0.13, 0.08, 0.275);  // eye sparkles
+      box(a.head, 0.035, 0.035, 0.02, 0xFFFFFF, 0.09, 0.08, 0.275);
+      box(a.head, 0.1, 0.07, 0.06, deep, 0, -0.05, 0.28);             // pink nose
+      box(a.head, 0.03, 0.05, 0.03, 0x9a6b6b, 0, -0.11, 0.29);        // mouth
+      box(a.head, 0.05, 0.07, 0.03, 0xFFFFFF, -0.035, -0.17, 0.285);  // buck teeth
+      box(a.head, 0.05, 0.07, 0.03, 0xFFFFFF, 0.035, -0.17, 0.285);
+      [-1, 1].forEach(s => {                                          // whiskers
+        const w1 = box(a.head, 0.22, 0.012, 0.012, 0xCDBBA8, s * 0.22, -0.04, 0.2); w1.rotation.z = s * 0.12;
+        const w2 = box(a.head, 0.2, 0.012, 0.012, 0xCDBBA8, s * 0.21, -0.09, 0.2); w2.rotation.z = -s * 0.05;
+      });
+      [-1, 1].forEach(s => {                                          // long ears, tilted out, pink inside
+        const ear = new THREE.Group(); ear.position.set(s * 0.12, 0.24, -0.03); ear.rotation.z = -s * 0.14; a.head.add(ear);
+        box(ear, 0.13, 0.46, 0.08, fur, 0, 0.23, 0);
+        box(ear, 0.07, 0.34, 0.05, pink, 0, 0.22, 0.03);
+        box(ear, 0.13, 0.06, 0.08, furSh, 0, 0.45, 0);               // rounded ear tip
+      });
+      [0, 1].forEach(i => {                                           // big hind feet (swing with the legs)
+        box(a.legs[i], 0.22, 0.11, 0.36, fur, 0, -0.5, 0.11);
+        box(a.legs[i], 0.15, 0.06, 0.12, pink, 0, -0.55, 0.26);      // pink paw pad
+      });
+      box(a.group, 0.22, 0.22, 0.2, 0xFFFFFF, 0, 0.66, -0.2);        // fluffy round cottontail
+      box(a.group, 0.12, 0.12, 0.1, 0xF3F0EC, -0.08, 0.75, -0.22);
+      box(a.group, 0.12, 0.12, 0.1, 0xF3F0EC, 0.09, 0.58, -0.23);
       return a;
     }
   },
