@@ -968,6 +968,24 @@
   </div>
 </div>
 
+<!-- ================= DELETE-A-SAVE CONFIRM (typed code so kids can't accidentally erase a game) ================= -->
+<div class="popup" id="delPopup">
+  <div class="popupCard" style="width:min(440px,94vw); text-align:center">
+    <div style="font-size:46px">🗑️</div>
+    <h2 style="color:#c0392b; margin:6px 0">Delete this game?</h2>
+    <p id="delWho" style="font-weight:800; color:#2f4a33; margin:4px 0"></p>
+    <p style="color:#7a6a35; font-weight:700">This <u>permanently</u> erases the whole build — it can't be brought back.</p>
+    <p style="color:#2f4a33; font-weight:800; margin:14px 0 2px">A grown-up step — type this code to delete:</p>
+    <div id="delCode" style="font-size:34px; font-weight:900; letter-spacing:8px; color:#c0392b; margin:2px 0"></div>
+    <input id="delInput" inputmode="numeric" autocomplete="off" placeholder="type the code"
+      style="font-size:22px; text-align:center; letter-spacing:6px; padding:10px; border:2px solid #cfe0cb; border-radius:12px; width:210px; max-width:80%">
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap">
+      <button id="delCancel" class="petBtn putAway" style="margin:0">↩️ Keep my game</button>
+      <button id="delConfirm" class="petBtn" style="margin:0; background:#c0392b; box-shadow:0 5px 0 #8e2820" disabled>Delete forever</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================= SHOP POPUP ================= -->
 <div class="popup" id="shopPopup">
   <div class="popupCard">
@@ -3921,8 +3939,13 @@ function showHint() {
 /* ===== "Let's fix it!" banner: on a wrong answer, reveal the answer AND show the
    easiest way to get there (pictures + worked-out numbers), then hold it on screen
    for a few seconds so younger kids actually read it before the next question. ===== */
-const FIX_LOCK_SECONDS = 20;
 let fixLocked = false, fixLockTimer = null;
+// How long the lesson stays locked: a one-off slip while mostly getting them right
+// gets the gentle 10s minimum; several wrong in a row ramps up to 20s to really study it.
+function fixLockSeconds() {
+  const streak = Math.max(1, wrongStreak || 1);
+  return Math.max(10, Math.min(20, 10 + (streak - 1) * 5));
+}
 
 function eqDisplay(eq) {
   const qt = eq.text;
@@ -3977,13 +4000,23 @@ function workedSteps(eq) {
   }
   return '';
 }
+// Build a dots-and-tens picture on the fly for small problems, so younger kids get a
+// visual even when the question didn't come with one pre-drawn.
+function pictureFor(eq) {
+  const t = String(eq.text).replace(/−/g, '-'); let m;
+  if ((m = t.match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/))) { const a = +m[1], b = +m[2]; if (a <= 20 && b <= 20) return kidHintHTML(a, b, '+'); }
+  if ((m = t.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/)))  { const a = +m[1], b = +m[2]; if (a <= 20) return kidHintHTML(a, b, '-'); }
+  if ((m = t.match(/^\s*(\d+)\s*[×x*]\s*(\d+)\s*$/i))) { const h = mulHintHTML(+m[1], +m[2]); if (h) return h; }
+  return null;
+}
 function solveHTML(eq) {
   let html = '';
-  if (eq.hintHTML) html += eq.hintHTML;                       // the picture method (dots & tens)
+  const pic = eq.hintHTML || pictureFor(eq);                  // a picture method (dots & tens) when we can draw one
+  if (pic) html += pic;
   else if (eq.hint) html += '<div class="hintLead">💡 ' + eq.hint + '</div>';
   const worked = workedSteps(eq);
   if (worked) html += worked;
-  else if (!eq.hint && !eq.hintHTML)                          // reading/word answers: the reveal above is enough
+  else if (!pic && !eq.hint)                                  // reading/word answers: the reveal above is enough
     html += '<div class="fixStep">Read the green answer above out loud. You\'ve got this! 🙂</div>';
   return html;
 }
@@ -3998,7 +4031,7 @@ function showFixIt(note) {
 }
 function startFixLock() {
   fixLocked = true;
-  let secs = FIX_LOCK_SECONDS;
+  let secs = fixLockSeconds();
   const btn = $('fixClose'), mc = $('mathClose');
   if (mc) mc.style.visibility = 'hidden';                     // no escaping past the lesson via the popup X
   btn.disabled = true; btn.classList.add('locked');
@@ -5659,6 +5692,31 @@ function buildMenu() {
 }
 buildMenu();
 
+/* Deleting a saved game asks for a typed code first, so a button-happy little one
+   can't wipe out a build by accident (this really happened to Leo!). */
+let delTarget = null, delCodeVal = '';
+function askDelete(name, world) {
+  delTarget = { name: name, world: world };
+  delCodeVal = String(Math.floor(1000 + Math.random() * 9000));     // a fresh 4-digit code each time
+  const w = WORLDS[world] || WORLDS.meadow;
+  $('delWho').textContent = w.emoji + ' ' + (name || 'Player') + ' — ' + w.name;
+  $('delCode').textContent = delCodeVal;
+  $('delInput').value = '';
+  $('delConfirm').disabled = true;
+  $('delPopup').style.display = 'flex';
+  setTimeout(() => $('delInput').focus(), 60);
+}
+function closeDel() { $('delPopup').style.display = 'none'; delTarget = null; }
+$('delInput').oninput = () => { $('delConfirm').disabled = $('delInput').value.trim() !== delCodeVal; };
+$('delInput').onkeydown = (e) => { if (e.key === 'Enter' && !$('delConfirm').disabled) $('delConfirm').onclick(); };
+$('delCancel').onclick = () => { Sound.click(); closeDel(); };
+$('delConfirm').onclick = () => {
+  if (!delTarget || $('delInput').value.trim() !== delCodeVal) return;
+  Sound.click();
+  clearSave(delTarget.name, delTarget.world);
+  closeDel();
+  refreshSavedList();
+};
 const SVG_PLAY = '<svg class="ic ic-fill" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>';
 const SVG_TRASH = '<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
 function refreshSavedList() {
@@ -5684,7 +5742,7 @@ function refreshSavedList() {
     del.className = 'delBtn';
     del.innerHTML = SVG_TRASH;
     del.title = 'Delete this saved game';
-    del.onclick = (e) => { e.stopPropagation(); Sound.click(); clearSave(s.name, s.world); refreshSavedList(); };
+    del.onclick = (e) => { e.stopPropagation(); Sound.click(); askDelete(s.name, s.world); };
     row.appendChild(load); row.appendChild(del);
     list.appendChild(row);
   });
