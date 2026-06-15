@@ -170,6 +170,13 @@
     background:#3f9d34; box-shadow:0 5px 0 #2c6f24; }
   #fixClose:active { transform:translateY(4px); box-shadow:0 1px 0 #2c6f24; }
   #fixClose.locked { background:#c4b48f; box-shadow:0 5px 0 #a3946f; cursor:default; }
+  /* ---- pet "what should they do?" menu ---- */
+  #petModes { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .petBtn { font-family:inherit; font-size:clamp(15px,2.6vw,18px); font-weight:800; border:none; border-radius:14px;
+    padding:14px 16px; color:#fff; cursor:pointer; background:#3f9d34; box-shadow:0 5px 0 #2c6f24; min-width:122px; }
+  .petBtn:active { transform:translateY(4px); box-shadow:0 1px 0 #2c6f24; }
+  .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
+  .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
   #rewardChoice { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px; }
   .rewardBtn { font-weight:bold; font-size:clamp(14px,2.6vw,19px); padding:13px 16px; border-radius:14px; color:#fff;
@@ -947,6 +954,17 @@
       <div id="fixNote"></div>
       <button id="fixClose" class="locked" disabled></button>
     </div>
+  </div>
+</div>
+
+<!-- ================= PET MENU ================= -->
+<div class="popup" id="petPopup">
+  <div class="popupCard" style="width:min(420px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="petClose" title="Close" aria-label="Close">✕</button></div>
+    <div id="petTitle" style="font-size:clamp(20px,4vw,26px); font-weight:900; color:#3f7d27; margin-bottom:2px"></div>
+    <div id="petSub" style="color:#7a6a35; font-weight:700; margin-bottom:14px">What should they do?</div>
+    <div id="petModes"></div>
+    <button id="petPutAway" class="petBtn putAway">🎒 Put away</button>
   </div>
 </div>
 
@@ -2449,6 +2467,7 @@ function resetWorld() {
   projectiles.forEach(p => scene.remove(p.mesh)); projectiles.length = 0;
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
+  pets.length = 0;
   cookProps.length = 0; ovenGlows.length = 0;     // stoves are removed above, taking their cookware with them
   player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null;
   if (bedProps) bedProps.visible = false;
@@ -3407,12 +3426,16 @@ function collectLoot(l) {
 }
 /* R — remove the nearest block you placed (topmost of a stack first) */
 function removePlacedBlock() {
-  for (let i = 0; i < placedFood.length; i++) {     // an apple you placed comes first
+  for (let i = 0; i < placedFood.length; i++) {     // an apple (or pet) you placed comes first
     const f = placedFood[i];
-    if (Math.hypot(f.x + 0.5 - player.pos.x, f.z + 0.5 - player.pos.z) <= 1.8) {
+    const fx = f.mesh ? f.mesh.position.x : f.x + 0.5, fz = f.mesh ? f.mesh.position.z : f.z + 0.5;
+    if (Math.hypot(fx - player.pos.x, fz - player.pos.z) <= 1.8) {
       scene.remove(f.mesh); placedFood.splice(i, 1);
-      G.furniture.food += 1; Sound.pop(); refreshHUD();
-      toast('🍎 Apple back in your 🎒!', 1400);
+      const pi = pets.findIndex(p => p.f === f); if (pi >= 0) pets.splice(pi, 1);   // un-live the pet
+      const isPet = f.kind === 'cat' || f.kind === 'dog' || f.kind === 'fish';
+      const back = isPet ? f.kind : 'food';
+      G.furniture[back] = (G.furniture[back] || 0) + 1; Sound.pop(); refreshHUD();
+      toast(isPet ? '🐾 ' + (f.kind === 'dog' ? 'Doggo' : f.kind === 'fish' ? 'Fishy' : 'Kitty') + ' back in your 🎒!' : '🍎 Apple back in your 🎒!', 1400);
       return true;
     }
   }
@@ -4698,6 +4721,114 @@ function cookOnStove(stoveEntry, kind) {
 }
 /* ---- apples the player places (on the ground, or on top of a table) ---- */
 const placedFood = [];
+
+/* ============================ LIVING PETS ============================
+   A cat or dog set on the floor comes to life: it wanders, and you can tap it to
+   give it a job — Walk, Purr/Wag, Sleep, or Eat. (Cats on furniture stay put as a
+   cozy decoration.) */
+const pets = [];
+function petClampX(v) { return Math.max(-WORLD_R + 1.5, Math.min(WORLD_R - 1.5, v)); }
+function shortAngle(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
+function registerPet(f) {
+  const m = f.mesh;
+  const home = { x: m.position.x, z: m.position.z };
+  pets.push({
+    f: f, kind: f.kind, mode: 'walk', baseY: f.y || 0, home: home,
+    tx: home.x, tz: home.z, timer: 1 + Math.random() * 2, moving: true, pause: false,
+    phase: Math.random() * 6.28, facing: 0,
+    tail: m.userData.tail, head: m.userData.head
+  });
+}
+function petLabel(kind) { return kind === 'dog' ? '🐶 your dog' : '🐱 your cat'; }
+function updatePets(dt, now) {
+  if (!pets.length) return;
+  for (const p of pets) {
+    const m = p.f.mesh;
+    p.phase += dt;
+    if (p.mode !== 'eat') m.rotation.x += (0 - m.rotation.x) * 0.2;          // un-tip the nose
+    if (p.mode !== 'sleep') { m.scale.x += (1 - m.scale.x) * 0.12; m.scale.y += (1 - m.scale.y) * 0.12; }
+
+    if (p.mode === 'sleep') {                                                // curl down & breathe
+      m.scale.x += (1.12 - m.scale.x) * 0.1; m.scale.y += (0.72 - m.scale.y) * 0.1;
+      m.position.y = p.baseY - 0.03 + Math.sin(p.phase * 1.6) * 0.012;
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 1.6) * 0.06;
+      continue;
+    }
+    if (p.mode === 'purr') {                                                 // sit & gently rumble / wag
+      m.position.y = p.baseY + Math.sin(p.phase * 9) * 0.008;
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 3) * 0.28;
+      continue;
+    }
+    if (p.mode === 'eat') {                                                  // head dips down to nibble
+      m.position.y = p.baseY;
+      const nod = (Math.sin(p.phase * 7) * 0.5 + 0.5);
+      m.rotation.x = nod * 0.5;
+      if (p.head) p.head.position.y = 0.4 - nod * 0.06;
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 4) * 0.12;
+      continue;
+    }
+    // 'walk' — amble to random nearby spots, sit a beat, repeat
+    p.timer -= dt;
+    if (p.timer <= 0) {
+      p.tx = petClampX(p.home.x + (Math.random() * 2 - 1) * 3.2);
+      p.tz = petClampX(p.home.z + (Math.random() * 2 - 1) * 3.2);
+      p.timer = 2 + Math.random() * 3.5;
+      p.moving = true;
+      p.pause = Math.random() < 0.35;                                        // sometimes just sit & look around
+    }
+    const dx = p.tx - m.position.x, dz = p.tz - m.position.z, dist = Math.hypot(dx, dz);
+    if (p.pause || dist < 0.08) {                                           // resting: tail flick
+      m.position.y = p.baseY;
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 2) * 0.12;
+      if (p.head) p.head.position.y = 0.4;
+    } else {                                                                // stepping toward the target
+      const sp = (p.kind === 'dog' ? 1.5 : 1.05) * dt;
+      m.position.x += dx / dist * sp;
+      m.position.z += dz / dist * sp;
+      p.facing += shortAngle(p.facing, Math.atan2(dx, dz)) * 0.2;
+      m.rotation.y = p.facing;
+      m.position.y = p.baseY + Math.abs(Math.sin(p.phase * 10)) * 0.045;     // bouncy steps
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 8) * 0.32;          // happy wag
+      if (p.head) p.head.position.y = 0.4;
+    }
+    p.f.x = Math.floor(m.position.x); p.f.z = Math.floor(m.position.z);      // keep save/pickup in sync
+  }
+}
+function setPetMode(pet, mode) {
+  pet.mode = mode;
+  if (mode === 'walk') { pet.timer = 0; pet.moving = true; pet.pause = false; }
+  Sound.click();
+}
+let petMenuTarget = null;
+function openPetMenu(pet) {
+  if (popupOpen) return;
+  petMenuTarget = pet;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  $('petTitle').textContent = pet.kind === 'dog' ? '🐶 Good doggo!' : '🐱 Here, kitty!';
+  const modes = pet.kind === 'dog'
+    ? [['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
+    : [['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
+  const wrap = $('petModes'); wrap.innerHTML = '';
+  modes.forEach(([m, label]) => {
+    const b = document.createElement('button');
+    b.className = 'petBtn' + (pet.mode === m ? ' sel' : '');
+    b.textContent = label;
+    b.onclick = () => { setPetMode(pet, m); toast(petLabel(pet.kind) + ' will ' + label.split(' ').slice(1).join(' ').toLowerCase() + '!', 1500); closePetMenu(); };
+    wrap.appendChild(b);
+  });
+  $('petPopup').style.display = 'flex';
+}
+function closePetMenu() { $('petPopup').style.display = 'none'; popupOpen = false; petMenuTarget = null; }
+$('petClose').onclick = () => { Sound.click(); closePetMenu(); };
+$('petPutAway').onclick = () => {
+  const pet = petMenuTarget; closePetMenu();
+  if (!pet) return;
+  const i = placedFood.indexOf(pet.f); if (i >= 0) { scene.remove(pet.f.mesh); placedFood.splice(i, 1); }
+  const pi = pets.indexOf(pet); if (pi >= 0) pets.splice(pi, 1);
+  G.furniture[pet.kind] = (G.furniture[pet.kind] || 0) + 1; Sound.pop(); refreshHUD();
+  toast('🐾 ' + (pet.kind === 'dog' ? 'Doggo' : 'Kitty') + ' back in your 🎒!', 1500);
+};
 function buildAppleMesh() {
   const g = new THREE.Group();
   box(g, 0.18, 0.18, 0.18, 0xE53935, 0, 0, 0);
@@ -4779,6 +4910,8 @@ function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a c
   const tail = box(g, 0.05, 0.22, 0.05, feat === 'fluffy' ? shade(fur, 1.04) : fur, 0, 0.26, -0.2);
   tail.rotation.x = 0.6;
   if (feat === 'fluffy') tail.scale.set(1.7, 1, 1.7);                 // bushy tail
+  g.userData.tail = tail;                                             // so the pet can wag it
+  g.userData.head = g.children[2];                                    // head box — nods when eating
   return g;
 }
 function buildTabletopMesh(kind, variant) {
@@ -4793,7 +4926,10 @@ function spawnFoodAt(x, z, onTable, kind, surfY, variant) {
   const y = surfY != null ? surfY : (onTable ? 0.82 : 0.2);
   g.position.set(x + 0.5, y, z + 0.5);
   scene.add(g);
-  placedFood.push({ mesh: g, x, z, onTable, kind, y, variant: variant || 0 });
+  const f = { mesh: g, x, z, onTable, kind, y, variant: variant || 0 };
+  placedFood.push(f);
+  if ((kind === 'cat' || kind === 'dog') && y < 0.3) registerPet(f);   // floor cats/dogs come alive
+  return f;
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
 $('shopClose').onclick = () => { Sound.click(); closeShop(); };
@@ -4828,6 +4964,16 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
 
   // 1.5) the portal — tap it to travel to another world
   if (portals.length && raycaster.intersectObjects(portals, false)[0]) { openTravel(); return; }
+
+  // 1.7) tap a pet to give it a job (walk / purr / sleep / eat)
+  if (action === 'place' && pets.length) {
+    const petHit = raycaster.intersectObjects(pets.map(p => p.f.mesh), true)[0];
+    if (petHit) {
+      let o = petHit.object; while (o.parent && o.parent !== scene) o = o.parent;
+      const pet = pets.find(p => p.f.mesh === o);
+      if (pet) { openPetMenu(pet); return; }
+    }
+  }
 
   // 2) blocks / stations / ground
   const meshes = [];
@@ -5629,6 +5775,7 @@ function loop(now) {
 
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (!G.over) updateDoors(dt);
+  if (!popupOpen && !G.over) updatePets(dt, now);
 
   // pulse the math stations
   const pulse = 0.5 + Math.sin(now / 300) * 0.5;
