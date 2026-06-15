@@ -284,8 +284,9 @@
   #homeBtn { top:114px; }
   #saveBtn { top:166px; }
   #invBtn  { top:218px; }
-  #photoBtn { top:270px; }
-  #cursorBtn { top:322px; font-size:16px; font-weight:bold; }
+  #questBtn { top:270px; }
+  #photoBtn { top:322px; }
+  #cursorBtn { top:374px; font-size:16px; font-weight:bold; }
   #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
     padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
   @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
@@ -930,6 +931,7 @@
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
   <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
+  <button id="questBtn" class="hudBtn" title="Quest Board">🗺️</button>
   <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <div id="crosshair">＋</div>
@@ -975,16 +977,13 @@
   </div>
 </div>
 
-<!-- ================= TREASURE QUEST ================= -->
+<!-- ================= QUEST BOARD ================= -->
 <div class="popup" id="questPopup">
-  <div class="popupCard" style="width:min(440px,94vw); text-align:center">
-    <div style="font-size:48px">🗺️</div>
-    <h2 style="color:#b5832a; margin:6px 0">A Treasure Quest!</h2>
-    <p style="color:#5a4632; font-weight:700; line-height:1.5">Legend says the magic gemstone <b>💎 Archimedes' Pom-pom</b> is hidden somewhere in the meadow. Follow the glowing beam to find it — then carry it <b>home to a house you've built!</b></p>
-    <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap">
-      <button id="questStartBtn" class="petBtn">🚀 Start the hunt!</button>
-      <button id="questLaterBtn" class="petBtn putAway">Maybe later</button>
-    </div>
+  <div class="popupCard" style="width:min(460px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="questClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="font-size:42px">🗺️</div>
+    <h2 style="color:#b5832a; margin:2px 0 8px">Quest Board</h2>
+    <div id="questBoardBody"></div>
   </div>
 </div>
 
@@ -2167,7 +2166,7 @@ const G = {
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false },
-  quest: { stage: 'none', spot: null },
+  quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
   mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
 };
@@ -2736,7 +2735,7 @@ function restoreGame(s) {
   G.playerName = s.name || 'Player';
   G.world = WORLDS[s.world] ? s.world : 'meadow';
   G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex;
-  G.quest = s.quest || { stage: 'none', spot: null };
+  G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
@@ -2818,7 +2817,7 @@ function resetGameState() {
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false };
-  G.quest = { stage: 'none', spot: null };
+  G.quest = { stage: 'none', spot: null, tid: null, found: [] };
 }
 function goHome() {
   if (G.running && !G.over) saveGame();
@@ -4666,7 +4665,7 @@ function buyItem(id) {
       if (G.coins < item.price) return;
       G.coins -= item.price; G.owned.treasuremap = true; Sound.coin();
     }
-    refreshHUD(); renderShop(); closeShop(); offerQuest();
+    refreshHUD(); renderShop(); closeShop(); openQuestBoard();
     return;
   }
   if (item.kind === 'sell') {
@@ -5462,18 +5461,27 @@ $('petPutAway').onclick = () => {
   toast('🐾 ' + (pet.kind === 'dog' ? 'Doggo' : 'Kitty') + ' back in your 🎒!', 1500);
 };
 
-/* ============================ TREASURE QUEST ============================
-   Buy the Treasure Map → hunt the gemstone "Archimedes' Pom-pom" (follow the beam)
-   → carry it home to a house you built. A first, self-contained quest "episode". */
-const QUEST_GEM_SPOTS = [[16, 16], [18, -13], [-15, 17], [13, 19], [19, 5], [-17, -12]];
+/* ============================ TREASURE QUESTS ============================
+   Open the Quest Board (🗺️ HUD button) any time — "quest mode". Start a hunt for a
+   hidden gemstone (follow the beam), then carry it home to a house you built. Collect
+   them all. Self-contained episodes that cross over with the building sandbox. */
+const QUEST_GEM_SPOTS = [[16, 16], [18, -13], [-15, 17], [13, 19], [19, 5], [-17, -12], [-14, 13]];
+const TREASURES = [
+  { id: 'pompom',   name: "Archimedes' Pom-pom", emoji: '💎', color: 0xE85AD8, glow: 0xFF9BEE },
+  { id: 'emerald',  name: "Euler's Emerald",     emoji: '💚', color: 0x2ECC71, glow: 0x9BF0C2 },
+  { id: 'sapphire', name: "Gauss's Sapphire",    emoji: '🔷', color: 0x4A90E2, glow: 0xA8CFF5 },
+  { id: 'ruby',     name: "Newton's Ruby",       emoji: '❤️', color: 0xE5394B, glow: 0xFF9BA6 },
+  { id: 'topaz',    name: "Pythagoras' Topaz",   emoji: '🟡', color: 0xF5B301, glow: 0xFFE08A }
+];
+function treasureById(id) { return TREASURES.find(t => t.id === id) || TREASURES[0]; }
 let questGem = null, questBeacon = null, questCarry = null;
-function buildGemMesh() {
+function buildGemMesh(t) {
   const g = new THREE.Group();
-  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0), new THREE.MeshBasicMaterial({ color: 0xE85AD8 }));
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0), new THREE.MeshBasicMaterial({ color: t.color }));
   gem.scale.y = 1.5; g.add(gem);
-  const glow = new THREE.Mesh(new THREE.OctahedronGeometry(0.48, 0), new THREE.MeshBasicMaterial({ color: 0xFF9BEE, transparent: true, opacity: 0.35 }));
+  const glow = new THREE.Mesh(new THREE.OctahedronGeometry(0.48, 0), new THREE.MeshBasicMaterial({ color: t.glow, transparent: true, opacity: 0.35 }));
   glow.scale.y = 1.5; g.add(glow);
-  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; box(g, 0.1, 0.1, 0.1, 0xFFF1FA, Math.cos(a) * 0.34, 0, Math.sin(a) * 0.34); }  // pom-pom tufts
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; box(g, 0.09, 0.09, 0.09, 0xFFFFFF, Math.cos(a) * 0.34, 0, Math.sin(a) * 0.34); }  // sparkle bits
   return g;
 }
 function removeQuestGem() {
@@ -5483,36 +5491,33 @@ function removeQuestGem() {
 function removeCarriedGem() { if (questCarry) { scene.remove(questCarry); questCarry = null; } }
 function spawnQuestGem() {
   removeQuestGem();
-  const sp = G.quest.spot || QUEST_GEM_SPOTS[0];
-  questGem = buildGemMesh();
+  const t = treasureById(G.quest.tid), sp = G.quest.spot || QUEST_GEM_SPOTS[0];
+  questGem = buildGemMesh(t);
   questGem.position.set(sp[0] + 0.5, 0.7, sp[1] + 0.5);
   scene.add(questGem);
-  questBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.4, 16, 8), new THREE.MeshBasicMaterial({ color: 0xFF7AE0, transparent: true, opacity: 0.2 }));
+  questBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.4, 16, 8), new THREE.MeshBasicMaterial({ color: t.glow, transparent: true, opacity: 0.2 }));
   questBeacon.position.set(sp[0] + 0.5, 8, sp[1] + 0.5);
   scene.add(questBeacon);
 }
-function attachCarriedGem() { if (!questCarry) { questCarry = buildGemMesh(); questCarry.scale.setScalar(0.6); scene.add(questCarry); } }
+function attachCarriedGem() { if (!questCarry) { questCarry = buildGemMesh(treasureById(G.quest.tid)); questCarry.scale.setScalar(0.6); scene.add(questCarry); } }
 function updateQuestHud() {
   const el = $('questHud'); if (!el) return;
-  const st = G.quest && G.quest.stage;
-  if (st === 'seek') { el.style.display = 'block'; el.innerHTML = '🗺️ <b>Quest:</b> Find 💎 Archimedes\' Pom-pom — head for the pink beam!'; }
-  else if (st === 'carry') { el.style.display = 'block'; el.innerHTML = '💎 <b>Quest:</b> Carry it <b>home</b> — step inside a house you built!'; }
+  const st = G.quest && G.quest.stage, t = treasureById(G.quest && G.quest.tid);
+  if (st === 'seek') { el.style.display = 'block'; el.innerHTML = '🗺️ <b>Quest:</b> Find ' + t.emoji + ' ' + t.name + ' — head for the glowing beam!'; }
+  else if (st === 'carry') { el.style.display = 'block'; el.innerHTML = '💎 <b>Quest:</b> Carry ' + t.name + ' <b>home</b> — step inside a house you built!'; }
   else { el.style.display = 'none'; }
 }
-function offerQuest() {
-  if (G.quest && (G.quest.stage === 'seek' || G.quest.stage === 'carry')) { toast('🗺️ You\'re already on the hunt!', 2200); return; }
-  if (G.quest && G.quest.stage === 'done') { toast('🏆 You already found the Pom-pom!', 2400); return; }
-  document.exitPointerLock && document.exitPointerLock();
-  popupOpen = true;
-  $('questPopup').style.display = 'flex';
-}
-function startPompomQuest() {
-  G.quest.stage = 'seek';
+function startTreasureQuest(tid) {
+  const found = (G.quest && G.quest.found) || [];
+  let t;
+  if (tid) t = treasureById(tid);
+  else { const pool = TREASURES.filter(x => !found.includes(x.id)); const from = pool.length ? pool : TREASURES; t = from[Math.floor(Math.random() * from.length)]; }
+  G.quest.stage = 'seek'; G.quest.tid = t.id;
   G.quest.spot = QUEST_GEM_SPOTS[Math.floor(Math.random() * QUEST_GEM_SPOTS.length)];
   spawnQuestGem();
   updateQuestHud();
   if (Sound.fanfare) Sound.fanfare();
-  toast('🗺️ The hunt is on! Follow the glowing pink beam to find 💎 Archimedes\' Pom-pom!', 4500);
+  toast('🗺️ The hunt is on! Follow the glowing beam to find ' + t.emoji + ' ' + t.name + '!', 4500);
 }
 function collectQuestGem() {
   if (G.quest.stage !== 'seek') return;
@@ -5521,20 +5526,24 @@ function collectQuestGem() {
   attachCarriedGem();
   updateQuestHud();
   if (Sound.fanfare) Sound.fanfare();
-  toast('💎 You found Archimedes\' Pom-pom! Now carry it HOME — inside a house you built (or back to the start).', 5000);
+  toast('💎 You found ' + treasureById(G.quest.tid).name + '! Now carry it HOME — inside a house you built (or back to the start).', 5000);
 }
 function questAtHome() {
   const cx = Math.floor(player.pos.x), cz = Math.floor(player.pos.z);
   if (isEnclosedCell(cx, cz)) return true;
   return Math.hypot(player.pos.x - SPAWN.x, player.pos.z - SPAWN.z) < 3.5;
 }
-function completePompomQuest() {
+function completeTreasureQuest() {
+  const t = treasureById(G.quest.tid);
   G.quest.stage = 'done';
+  if (!G.quest.found) G.quest.found = [];
+  if (!G.quest.found.includes(t.id)) G.quest.found.push(t.id);
   removeCarriedGem();
   G.coins += 25; G.furniture.gem = (G.furniture.gem || 0) + 1;
   refreshHUD(); updateQuestHud();
   if (Sound.fanfare) Sound.fanfare();
-  toast('🎉 Quest complete! +25 🪙 and a 💎 Pom-pom Trophy in your 🎒 — place it in your home!', 5500);
+  const more = TREASURES.length - G.quest.found.length;
+  toast('🎉 ' + t.name + ' is yours! +25 🪙 and a 💎 trophy in your 🎒.' + (more > 0 ? ' ' + more + ' more treasure' + (more > 1 ? 's' : '') + ' to find!' : ' You found them ALL! 🏆'), 5600);
 }
 function updateQuest(dt, now) {
   if (questGem) {
@@ -5546,18 +5555,54 @@ function updateQuest(dt, now) {
   if (questCarry) {
     questCarry.position.set(player.pos.x, player.pos.y + 2.2 + Math.sin(now / 300) * 0.08, player.pos.z);
     questCarry.rotation.y = now / 400;
-    if (questAtHome()) completePompomQuest();
+    if (questAtHome()) completeTreasureQuest();
   }
 }
 function restoreQuest() {
-  if (!G.quest) G.quest = { stage: 'none', spot: null };
+  if (!G.quest) G.quest = { stage: 'none', spot: null, tid: null, found: [] };
+  if (!G.quest.found) G.quest.found = [];
   removeQuestGem(); removeCarriedGem();
   if (G.quest.stage === 'seek') spawnQuestGem();
   else if (G.quest.stage === 'carry') attachCarriedGem();
   updateQuestHud();
 }
-$('questStartBtn').onclick = () => { Sound.click(); $('questPopup').style.display = 'none'; popupOpen = false; startPompomQuest(); };
-$('questLaterBtn').onclick = () => { Sound.click(); $('questPopup').style.display = 'none'; popupOpen = false; toast('🗺️ Changed your mind? Buy the map again any time to start the hunt!', 3200); };
+/* ---- Quest Board ("quest mode" menu) ---- */
+function renderQuestBoard() {
+  const body = $('questBoardBody'); if (!body) return;
+  const q = G.quest || {}, found = q.found || [];
+  let html = '';
+  if (q.stage === 'seek' || q.stage === 'carry') {
+    const t = treasureById(q.tid);
+    html += q.stage === 'seek'
+      ? '<p style="color:#1f6b3a;font-weight:800;font-size:1.05em">🔎 On the hunt for ' + t.emoji + ' ' + t.name + '!</p><p style="color:#5a4632">Follow the glowing beam in the meadow, then carry it home.</p>'
+      : '<p style="color:#1f6b3a;font-weight:800;font-size:1.05em">💎 You\'re carrying ' + t.name + '!</p><p style="color:#5a4632">Step inside a house you built (or return to the start) to finish.</p>';
+  } else {
+    const left = TREASURES.length - found.length;
+    html += '<p style="color:#5a4632;font-weight:700">🧭 ' + (left > 0 ? 'Hunt a hidden gemstone and bring it home for coins + a trophy!' : 'You\'ve found every treasure — go for a victory lap!') + '</p>'
+      + '<button id="questGoBtn" class="petBtn" style="margin-top:4px">🚀 Start a Treasure Hunt</button>';
+  }
+  html += '<div style="margin-top:14px; border-top:1px solid #e2d8c0; padding-top:10px; text-align:left">'
+    + '<b style="color:#b5832a">💎 Treasures found: ' + found.length + ' / ' + TREASURES.length + '</b>';
+  TREASURES.forEach(t => {
+    const got = found.includes(t.id);
+    html += '<div style="color:' + (got ? '#2f8a52' : '#9a8f7a') + ';font-weight:700;margin:4px 0">' + (got ? '✅' : '🔒') + ' ' + t.emoji + ' ' + t.name + '</div>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  const go = $('questGoBtn');
+  if (go) go.onclick = () => { Sound.click(); closeQuestBoard(); startTreasureQuest(null); };
+}
+function openQuestBoard() {
+  if (popupOpen || G.over || !G.running) return;
+  document.exitPointerLock && document.exitPointerLock();
+  popupOpen = true;
+  renderQuestBoard();
+  $('questPopup').style.display = 'flex';
+}
+function closeQuestBoard() { $('questPopup').style.display = 'none'; popupOpen = false; }
+$('questClose').onclick = () => { Sound.click(); closeQuestBoard(); };
+$('questPopup').addEventListener('click', e => { if (e.target === $('questPopup')) closeQuestBoard(); });
+$('questBtn').onclick = () => { Sound.click(); openQuestBoard(); };
 
 function buildAppleMesh() {
   const g = new THREE.Group();
