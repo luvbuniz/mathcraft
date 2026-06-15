@@ -2047,8 +2047,8 @@ function serializeWorld() {
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
     else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
     else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0, b.roofStyle || 'pointed']);
-    else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind)]);
-    else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant]);
+    else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind), b.rotY || 0]);
+    else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant, b.rotY || 0]);
   });
   return placed;
 }
@@ -2137,11 +2137,11 @@ function restoreGame(s) {
     else if (type === 'window') addWindow(x, y, z, detail);
     else if (type === 'roof') addRoof(x, y, z, detail, extra);
     else if (type === 'stove') {
-      placeFurnitureAt('stove', x, z);
+      placeFurnitureAt('stove', x, z, null, extra);
       const st = blocks.get(key(x, 0, z));
       if (st && Array.isArray(detail)) detail.forEach(k => attachCookware(st, k));
     }
-    else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail);
+    else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail, extra);
     else {
       const col = detail || 0xC9B79A;
       const isPlain = col === 0xC9B79A;
@@ -3111,7 +3111,8 @@ function placeSelectedAt(x, z, blockY) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    placeFurnitureAt(slot, x, z); G.furniture[slot] -= 1; Sound.place(); refreshHUD(); return true;
+    placeFurnitureAt(slot, x, z, null, facePlayerRotation(x, z)); G.furniture[slot] -= 1; Sound.place(); refreshHUD();
+    toast('✅ Placed! Tap it to turn it 🔄', 1800); return true;
   }
   if (slot === 'food') {
     if (G.furniture.food < 1) { toast('🍎 No apples in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
@@ -3841,15 +3842,21 @@ function buildFurnitureMesh(type, variant) {
   }
   return g;
 }
-function placeFurnitureAt(type, x, z, variant) {
+function placeFurnitureAt(type, x, z, variant, rotY) {
   if (blocks.has(key(x, 0, z))) return false;
   if (type === 'flower' && variant == null) variant = Math.floor(Math.random() * FLOWER_COLORS.length);
   const mesh = buildFurnitureMesh(type, variant);
   mesh.position.set(x + 0.5, 0, z + 0.5);
+  mesh.rotation.y = rotY || 0;
   scene.add(mesh);
-  blocks.set(key(x, 0, z), { mesh, type, removable: true, variant });
+  blocks.set(key(x, 0, z), { mesh, type, removable: true, variant, rotY: rotY || 0 });
   if (type === 'stove' && mesh.userData.ovenGlow) ovenGlows.push(mesh.userData.ovenGlow);
   return true;
+}
+/* furniture faces the player when placed (snapped to 90°) — so it drops in the right direction */
+function facePlayerRotation(x, z) {
+  const dx = player.pos.x - (x + 0.5), dz = player.pos.z - (z + 0.5);
+  return Math.round(Math.atan2(dx, dz) / (Math.PI / 2)) * (Math.PI / 2);
 }
 
 /* ====================== COOKING: pots, pans & the oven ====================== */
@@ -4032,6 +4039,14 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   // place
   // tapping a stove with a pot/pan/bacon/pie in hand cooks it right there
   if (entry && entry.type === 'stove' && COOK_SLOTS[G.selectedSlot]) { cookOnStove(entry, G.selectedSlot); return; }
+  // tap any furniture you placed to spin it 90° (so it faces the way you want)
+  if (entry && entry.removable && FURNITURE_TYPES.includes(entry.type)
+      && G.selectedSlot !== 'food' && !COOK_SLOTS[G.selectedSlot]) {
+    entry.rotY = ((entry.rotY || 0) + Math.PI / 2) % (Math.PI * 2);
+    entry.mesh.rotation.y = entry.rotY;
+    Sound.place(); toast('🔄 Turned it! Tap again to keep turning.', 1100);
+    return;
+  }
   // Kid-friendly stacking: tapping one of your solid blocks drops the new block
   // on TOP of that column — no need to hit the exact top face to build upward.
   // (Roofs are NOT auto-stacked — they place on the surface you tap, so you can roof
