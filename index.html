@@ -1902,6 +1902,111 @@ const AVATARS = [
       tail.rotation.x = 0.4;
       return a;
     }
+  },
+  {
+    id: 'robot', name: 'Robot 🤖',
+    build() {
+      const a = buildBiped(0x9aa7b4, 0xB8C2CC, 0x7c8794, 0x9aa7b4);
+      addEyes(a.head, 0x33d6ff, 0.26);                                 // glowing cyan eyes
+      box(a.head, 0.3, 0.05, 0.04, 0x222a33, 0, -0.13, 0.26);          // mouth grille
+      box(a.head, 0.04, 0.16, 0.04, 0x7c8794, 0, 0.34, 0);             // antenna
+      box(a.head, 0.08, 0.08, 0.08, 0xE53935, 0, 0.45, 0);            // antenna light
+      box(a.head, 0.07, 0.14, 0.06, 0xB8C2CC, -0.28, 0, 0);            // ear bolts
+      box(a.head, 0.07, 0.14, 0.06, 0xB8C2CC, 0.28, 0, 0);
+      box(a.group, 0.3, 0.18, 0.06, 0x33d6ff, 0, 0.9, 0.15);           // chest panel
+      box(a.group, 0.08, 0.08, 0.06, 0xFFD23E, -0.08, 0.86, 0.16);     // buttons
+      box(a.group, 0.08, 0.08, 0.06, 0xE53935, 0.08, 0.86, 0.16);
+      return a;
+    }
+  },
+  {
+    id: 'astronaut', name: 'Astronaut 🚀',
+    build() {
+      const a = buildBiped(0xF2F4F7, 0xF2F4F7, 0xE3E7EC, 0xF2F4F7);
+      box(a.head, 0.56, 0.56, 0.56, 0xDDE3EA, 0, 0.02, -0.02);         // helmet shell
+      box(a.head, 0.42, 0.27, 0.06, 0x1b2a3a, 0, 0.02, 0.27);          // dark visor
+      box(a.head, 0.12, 0.06, 0.05, 0x66e0ff, -0.09, 0.09, 0.29);      // visor glint
+      box(a.group, 0.22, 0.2, 0.08, 0xC0C6CD, 0, 0.9, 0.16);           // chest control box
+      box(a.group, 0.06, 0.06, 0.06, 0xE53935, -0.05, 0.93, 0.2);
+      box(a.group, 0.06, 0.06, 0.06, 0x2f8a52, 0.05, 0.93, 0.2);
+      box(a.group, 0.3, 0.36, 0.18, 0xCED4DB, 0, 0.85, -0.2);          // oxygen backpack
+      box(a.group, 0.12, 0.06, 0.05, 0x2255cc, 0, 0.62, 0.15);         // mission badge
+      return a;
+    }
+  },
+  {
+    id: 'wizard', name: 'Wizard 🧙',
+    build() {
+      const a = buildBiped(0x5e3aa6, 0xF0C9A0, 0x4a2e82, 0x5e3aa6);
+      addEyes(a.head, 0x222222, 0.26);
+      box(a.head, 0.3, 0.24, 0.08, 0xEDEDED, 0, -0.2, 0.22);           // beard
+      box(a.head, 0.18, 0.16, 0.06, 0xEDEDED, 0, -0.34, 0.2);          // beard point
+      box(a.head, 0.58, 0.1, 0.58, 0x3b2470, 0, 0.2, 0);               // hat brim
+      const hat = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.32, 0.55, 8), mat(0x3b2470));
+      hat.position.set(0, 0.52, 0); a.head.add(hat);                   // tall pointy hat
+      box(a.head, 0.08, 0.08, 0.05, 0xFFD23E, 0, 0.26, 0.27);          // star on the brim
+      box(a.group, 0.08, 0.08, 0.04, 0xFFD23E, -0.13, 0.78, 0.15);     // robe stars
+      box(a.group, 0.06, 0.06, 0.04, 0xFFE680, 0.14, 0.58, 0.15);
+      return a;
+    }
+  },
+  {
+    id: 'panda', name: 'Panda 🐼',
+    build() {
+      const a = buildQuad(0xF4F4F4, 0xF4F4F4, 0x2b2b2b);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.14, 0.16, 0.05, 0x222222, -0.12, 0.05, 0.205);     // black eye patches
+      box(a.head, 0.14, 0.16, 0.05, 0x222222, 0.12, 0.05, 0.205);
+      box(a.head, 0.16, 0.12, 0.12, 0xF4F4F4, 0, -0.12, 0.22);         // muzzle
+      box(a.head, 0.08, 0.06, 0.05, 0x222222, 0, -0.1, 0.3);           // nose
+      box(a.head, 0.14, 0.14, 0.08, 0x222222, -0.16, 0.26, -0.02);     // black ears
+      box(a.head, 0.14, 0.14, 0.08, 0x222222, 0.16, 0.26, -0.02);
+      box(a.group, 0.48, 0.22, 0.34, 0x222222, 0, 0.72, 0);            // black shoulders
+      return a;
+    }
+  },
+  {
+    id: 'penguin', name: 'Penguin 🐧',
+    build() {
+      const a = buildBiped(0x20242a, 0x20242a, 0xF5A623, 0x20242a);
+      box(a.head, 0.34, 0.32, 0.06, 0xF4F4F4, 0, -0.06, 0.24);         // white face patch
+      addEyes(a.head, 0x111111, 0.27);
+      box(a.head, 0.15, 0.09, 0.12, 0xF5A623, 0, -0.1, 0.29);          // beak
+      box(a.group, 0.34, 0.46, 0.08, 0xF4F4F4, 0, 0.82, 0.13);         // white tummy
+      box(a.group, 0.14, 0.08, 0.16, 0xF5A623, -0.13, 0.04, 0.05);     // orange feet
+      box(a.group, 0.14, 0.08, 0.16, 0xF5A623, 0.13, 0.04, 0.05);
+      return a;
+    }
+  },
+  {
+    id: 'bunny', name: 'Bunny 🐰',
+    build() {
+      const a = buildBiped(0xF3E9E0, 0xF7EFE8, 0xE8DCD0, 0xF3E9E0);
+      addEyes(a.head, 0x6b3a3a, 0.26);
+      box(a.head, 0.14, 0.1, 0.1, 0xF7EFE8, 0, -0.12, 0.24);           // muzzle
+      box(a.head, 0.07, 0.05, 0.05, 0xE89BB0, 0, -0.1, 0.3);           // pink nose
+      box(a.head, 0.1, 0.36, 0.06, 0xF7EFE8, -0.1, 0.42, -0.02);       // tall ears
+      box(a.head, 0.1, 0.36, 0.06, 0xF7EFE8, 0.1, 0.42, -0.02);
+      box(a.head, 0.05, 0.24, 0.04, 0xE89BB0, -0.1, 0.4, 0.005);       // inner ear
+      box(a.head, 0.05, 0.24, 0.04, 0xE89BB0, 0.1, 0.4, 0.005);
+      box(a.group, 0.15, 0.15, 0.13, 0xFFFFFF, 0, 0.7, -0.18);         // fluffy tail
+      return a;
+    }
+  },
+  {
+    id: 'superhero', name: 'Superhero 🦸',
+    build() {
+      const a = buildBiped(0x2255cc, 0xF0C9A0, 0x1b3fa0, 0x2255cc);
+      addEyes(a.head, 0x222222, 0.26);
+      box(a.head, 0.1, 0.04, 0.03, 0x9a3b2a, 0, -0.13, 0.26);          // smile
+      box(a.head, 0.5, 0.18, 0.5, 0x2b2b2b, 0, 0.18, 0);               // hair
+      box(a.head, 0.34, 0.12, 0.04, 0x111111, 0, 0.06, 0.25);          // domino mask
+      const cape = box(a.group, 0.5, 0.7, 0.05, 0xE53935, 0, 0.8, -0.18);  // cape
+      cape.rotation.x = -0.12;
+      box(a.group, 0.16, 0.16, 0.06, 0xFFD23E, 0, 0.92, 0.15);         // chest emblem
+      box(a.group, 0.07, 0.07, 0.07, 0xE53935, 0, 0.92, 0.18);
+      return a;
+    }
   }
 ];
 
