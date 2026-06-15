@@ -3817,6 +3817,23 @@ function bumpSkill(skill, correct) {
     if (G.skillMiss[skill] >= 2) { G.skillLevel[skill] = Math.max(1, cur - 1); G.skillMiss[skill] = 0; }
   }
 }
+/* Is this problem actually hard enough to deserve the "✏️ Tricky one — grab paper" nudge?
+   Single-digit and no-regrouping problems (like 8 − 1) are NOT tricky. */
+function isTrickyQuestion(eq) {
+  if (!eq || curWorld().subject !== 'math') return false;
+  const sk = eq.skill;
+  if (sk === 'multi' || sk === 'order' || sk === 'geo' || sk === 'frac' || sk === 'round') return true;
+  const t = String(eq.text).replace(/−/g, '-');
+  const nums = (t.match(/\d+/g) || []).map(Number);
+  if (sk === 'word') return Math.max(0, ...nums) >= 12;
+  let m;
+  if ((m = t.match(/(\d+)\s*[×x*]\s*(\d+)/i))) return (+m[1]) * (+m[2]) >= 30;          // 6×7 yes, 2×3 no
+  if ((m = t.match(/(\d+)\s*[÷\/]\s*(\d+)/)))  return (+m[1]) >= 30;
+  if (nums.length >= 3) return true;                                                    // three numbers in a row
+  if ((m = t.match(/(\d+)\s*\+\s*(\d+)/))) { const a = +m[1], b = +m[2]; return (a + b) >= 30 || (a % 10 + b % 10) >= 10 || a >= 25 || b >= 25; }
+  if ((m = t.match(/(\d+)\s*-\s*(\d+)/)))  { const a = +m[1], b = +m[2]; return a >= 30 || (a % 10) < (b % 10) || b >= 20; }
+  return false;
+}
 function renderMathQuestion() {
   if (answerUnlockTimer) clearTimeout(answerUnlockTimer);
   if (nextQuestionTimer) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
@@ -3833,10 +3850,8 @@ function renderMathQuestion() {
   eqBox.textContent = curWorld().subject !== 'math' ? qt + '?'
     : (qt.indexOf('=') >= 0 || qt.trim().slice(-1) === '?') ? qt : qt + ' = ?';
   eqBox.classList.toggle('wordy', currentEq.text.length > 20);
-  // nudge kids to use paper on the bigger math problems
-  const bigMath = curWorld().subject === 'math' &&
-    (level >= 3 || (typeof currentEq.answer === 'number' && Math.abs(currentEq.answer) >= 20));
-  $('paperTip').style.display = bigMath ? 'block' : 'none';
+  // nudge kids to use paper — but only on genuinely tricky problems, not easy ones like "8 - 1"
+  $('paperTip').style.display = isTrickyQuestion(currentEq) ? 'block' : 'none';
   $('mathPrompt').textContent = 'Read the whole question. Answers unlock in a moment...';
   const wrap = $('mathChoices');
   wrap.innerHTML = '';
