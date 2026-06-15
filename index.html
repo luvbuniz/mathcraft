@@ -1699,7 +1699,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -1778,18 +1778,20 @@ const SHOP_ITEMS = [
   { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
   { id: 'powerBlocks', icon: '⚡', name: 'Power Blocks (×3)', price: 18, kind: 'many', desc: 'Rare cyan defense blocks that zap nearby Gloomies.' },
   { id: 'door',   icon: '🚪', name: 'House Door', price: 5,   kind: 'many',  desc: 'A door for your house — goes in your backpack.' },
-  { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 10,  kind: 'many',  desc: 'Goes in your backpack. Open it (I) to place it.' },
+  { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 12,  kind: 'many',  desc: 'Pick a style & color in your 🎒 backpack — sit in it with USE!' },
   { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'Goes in your backpack. Put food on top!' },
   { id: 'bed',    icon: '🛏️', name: 'Big Comfy Bed', price: 14, kind: 'many', desc: 'Avatar-sized bed. Place it, walk close, then press L to lie down.' },
-  { id: 'dtable', icon: '🍽️', name: 'Dining Table', price: 18, kind: 'many', desc: 'A fancy dining table — pick a style in your 🎒 backpack. Set plates on it!' },
-  { id: 'plates', icon: '🍴', name: 'Plates & Cutlery', price: 6, kind: 'many', desc: 'A place setting — put it on a table to set it for dinner.' },
-  { id: 'couch',  icon: '🛋️', name: 'Comfy Couch', price: 16, kind: 'many', desc: 'A cozy couch! Pick a style and color in your 🎒 backpack.' },
-  { id: 'coffeetable', icon: '🪵', name: 'Coffee Table', price: 12, kind: 'many', desc: 'A low table for in front of the couch.' },
-  { id: 'dresser', icon: '🗄️', name: 'Dresser', price: 15, kind: 'many', desc: 'A wooden chest of drawers for the bedroom.' },
-  { id: 'tv',     icon: '📺', name: 'Television', price: 14, kind: 'many', desc: 'A flat-screen TV on a stand for the living room.' },
-  { id: 'bookshelf', icon: '📚', name: 'Bookshelf', price: 12, kind: 'many', desc: 'A shelf full of colorful books.' },
-  { id: 'plant',  icon: '🪴', name: 'House Plant', price: 7,  kind: 'many', desc: 'A leafy potted plant to bring a room to life.' },
-  { id: 'rug',    icon: '🟫', name: 'Cozy Rug', price: 6,    kind: 'many', desc: 'A soft rug — a fresh color every time.' },
+  { id: 'dtable', icon: '🍽️', name: 'Dining Table', price: 24, kind: 'many', desc: 'A fancy dining table — pick a style in your 🎒 backpack. Set plates on it!' },
+  { id: 'plates', icon: '🍴', name: 'Plates & Cutlery', price: 8, kind: 'many', desc: 'A place setting — put it on a table to set it for dinner.' },
+  { id: 'couch',  icon: '🛋️', name: 'Comfy Couch', price: 24, kind: 'many', desc: 'A plush couch — pick a style & color, and pets can curl up on it!' },
+  { id: 'cat',    icon: '🐱', name: 'Pet Cat', price: 16, kind: 'many', desc: 'A cuddly cat. Put it on the floor, a couch, a bed, or a chair.' },
+  { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'A friendly dog. Put it on the floor, a couch, a bed, or a chair.' },
+  { id: 'coffeetable', icon: '🪵', name: 'Coffee Table', price: 16, kind: 'many', desc: 'A low table for in front of the couch.' },
+  { id: 'dresser', icon: '🗄️', name: 'Dresser', price: 22, kind: 'many', desc: 'A wooden chest of drawers with knobs.' },
+  { id: 'tv',     icon: '📺', name: 'Television', price: 20, kind: 'many', desc: 'A flat-screen TV on a stand for the living room.' },
+  { id: 'bookshelf', icon: '📚', name: 'Bookshelf', price: 16, kind: 'many', desc: 'A shelf full of colorful books.' },
+  { id: 'plant',  icon: '🪴', name: 'House Plant', price: 10, kind: 'many', desc: 'A leafy potted plant to bring a room to life.' },
+  { id: 'rug',    icon: '🟫', name: 'Cozy Rug', price: 9,    kind: 'many', desc: 'A soft rug — a fresh color every time.' },
   { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
@@ -1811,7 +1813,7 @@ const SHOP_ITEMS = [
   { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
   { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, kind: 'own',   desc: 'Jump higher!' },
   { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    kind: 'own',   desc: 'A snazzy hat for your hero.' },
-  { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.' }
+  { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.', hidden: true }
 ];
 
 /* ============================ BADGES & SAVING ============================ */
@@ -2096,7 +2098,7 @@ function saveGame() {
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
-      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple']),
+      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y]),
       pos: [player.pos.x, player.pos.y, player.pos.z],
       when: Date.now()
     }));
@@ -2161,7 +2163,7 @@ function restoreGame(s) {
     }
   });
   reorientFixtures();        // now that every wall is back, line up doors & windows with them
-  (s.foods || []).forEach(([x, z, onTable, kind]) => spawnFoodAt(x, z, !!onTable, kind));
+  (s.foods || []).forEach(([x, z, onTable, kind, y]) => spawnFoodAt(x, z, !!onTable, kind, y));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   startGame();
   toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
@@ -2188,7 +2190,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
@@ -2408,20 +2410,24 @@ const trees = [];                      // {x,z,topY}
 const berries = [];                    // {mesh, alive, respawnAt}
 const treeSpots = [[-14, -10], [12, -14], [16, 9], [-10, 14], [-18, 3], [7, 18], [18, -3], [-5, -18], [10, 4]];
 function buildTrees() {
-  const trunkMat = mat(0x8B5A2B);
-  const leafMats = [mat(0x3E9B3E), mat(0x4CAF50), mat(0x2E8B2E)];
+  const trunkMat = mat(0x7a5230);
+  const leafMats = [mat(0x4C8C3A), mat(0x5BA546), mat(0x3E7A2E), mat(0x69B84F)];
   treeSpots.forEach(([tx, tz], ti) => {
-    const h = 4 + (ti % 3);
+    const h = 3 + (ti % 2);                                  // sturdy oak trunk
     for (let y = 0; y < h; y++) {
       const trunk = new THREE.Mesh(blockGeo, trunkMat);
       trunk.position.set(tx + 0.5, y + 0.5, tz + 0.5);
       addBlockMesh(tx, y, tz, null, 'tree', false, trunk);
     }
-    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (let dy = 0; dy <= 1; dy++) {
-      if (dy === 1 && (Math.abs(dx) + Math.abs(dz)) > 1) continue;
-      const lx = tx + dx, ly = h + dy, lz = tz + dz;
+    // big rounded oak canopy: a voxel blob centered above the trunk
+    const cy = h + 1;
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 2; dy++) {
+      const d = Math.sqrt(dx * dx + dz * dz + (dy * 1.15) * (dy * 1.15));
+      if (d > 2.3) continue;                                 // sphere-ish shape
+      if (d > 1.5 && Math.random() < 0.14) continue;         // a few gaps for a natural leafy edge
+      const lx = tx + dx, ly = cy + dy, lz = tz + dz;
       if (blocks.has(key(lx, ly, lz))) continue;
-      const leaf = new THREE.Mesh(blockGeo, leafMats[(ti + dx + dz + 9) % 3]);
+      const leaf = new THREE.Mesh(blockGeo, leafMats[(ti + dx + dz + dy + 12) % leafMats.length]);
       leaf.position.set(lx + 0.5, ly + 0.5, lz + 0.5);
       addBlockMesh(lx, ly, lz, null, 'leaf', false, leaf);
     }
@@ -2431,6 +2437,8 @@ function buildTrees() {
 buildTrees();
 
 function spawnBerries() {
+  return;   // berries removed — kids weren't using them; coins come from solving math
+  /* eslint-disable no-unreachable */
   const berryGeo = new THREE.SphereGeometry(0.16, 8, 8);
   const colors = [0xE53935, 0xAB47BC, 0xFF7043];
   trees.forEach((t, ti) => {
@@ -3179,6 +3187,19 @@ function placeSelectedAt(x, z, blockY) {
     spawnFoodAt(x, z, true, 'plates'); G.furniture.plates -= 1; Sound.pop(); refreshHUD();
     toast('🍴 Table set — dinner time!', 1600); return true;
   }
+  if (slot === 'cat' || slot === 'dog') {     // pets curl up on the floor or on furniture
+    if (G.furniture[slot] < 1) { toast((slot === 'cat' ? '🐱' : '🐶') + ' None in your 🎒 — adopt one at 🛒 Stack Mart!', 2200); return false; }
+    const cell = blocks.get(key(x, 0, z));
+    let surfY = 0;
+    if (cell) {
+      if (cell.type === 'couch') surfY = 0.42;
+      else if (cell.type === 'bed') surfY = 0.42;
+      else if (cell.type === 'chair') surfY = 0.5;
+      else { toast('🐾 Put your pet on the floor, a couch, a bed, or a chair!', 2400); return false; }
+    } else if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    spawnFoodAt(x, z, false, slot, surfY); G.furniture[slot] -= 1; Sound.pop(); refreshHUD();
+    toast(slot === 'cat' ? '🐱 Meow! Cozy kitty.' : '🐶 Woof! Good doggo.', 1600); return true;
+  }
   if (FURNITURE_TYPES.includes(slot)) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
@@ -3661,6 +3682,7 @@ function renderShop() {
   wrap.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
     // (berries can be sold in any mode now)
+    if (item.hidden) return;
     if (item.id === 'powerBlocks' && !G.gloomiesEnabled) return;   // no Gloomy-zappers in the no-Gloomies game
     const row = document.createElement('div');
     row.className = 'shopItem';
@@ -3816,32 +3838,36 @@ const shade = (c, f) => {                 // scale a hex color's brightness by f
 function buildCouch(g, variant) {
   const si = Math.floor((variant || 0) / 100) % COUCH_STYLES.length;
   const ci = ((variant || 0) % 100) % COUCH_COLORS.length;
-  const col = COUCH_COLORS[ci], dark = shade(col, 0.78), legC = 0x4a3526;
+  const col = COUCH_COLORS[ci], dark = shade(col, 0.8), light = shade(col, 1.2), legC = 0x4a3526;
   const style = COUCH_STYLES[si];
-  if (style === 'loveseat') {            // small, plush, 2 seats
-    box(g, 0.74, 0.2, 0.5, dark, 0, 0.24, 0.02);                     // base
-    box(g, 0.32, 0.16, 0.42, col, -0.18, 0.36, 0.04);               // 2 plump cushions
-    box(g, 0.32, 0.16, 0.42, col, 0.18, 0.36, 0.04);
-    box(g, 0.74, 0.36, 0.12, col, 0, 0.5, -0.2);                    // back
-    box(g, 0.12, 0.34, 0.5, dark, -0.37, 0.42, 0.02);               // rounded arms
-    box(g, 0.12, 0.34, 0.5, dark, 0.37, 0.42, 0.02);
-    [[-0.3, -0.18], [0.3, -0.18], [-0.3, 0.2], [0.3, 0.2]].forEach(([x, z]) => box(g, 0.06, 0.14, 0.06, legC, x, 0.08, z));
-  } else if (style === 'classic') {      // tall back, rolled arms, throw pillows
-    box(g, 0.92, 0.22, 0.5, dark, 0, 0.25, 0.02);                   // base
-    box(g, 0.62, 0.16, 0.44, col, 0, 0.38, 0.04);                  // seat cushion
-    box(g, 0.92, 0.5, 0.12, col, 0, 0.6, -0.2);                    // tall back
-    box(g, 0.14, 0.42, 0.52, col, -0.4, 0.46, 0.02);              // rolled arms
-    box(g, 0.14, 0.42, 0.52, col, 0.4, 0.46, 0.02);
-    box(g, 0.2, 0.2, 0.08, shade(col, 1.3), -0.22, 0.5, -0.1);     // throw pillows (lighter + darker)
-    box(g, 0.2, 0.2, 0.08, shade(col, 0.6), 0.22, 0.5, -0.1);
-    [[-0.38, -0.18], [0.38, -0.18], [-0.38, 0.2], [0.38, 0.2]].forEach(([x, z]) => box(g, 0.07, 0.16, 0.07, legC, x, 0.09, z));
-  } else {                               // modern: low, straight arms, 3 cushions
-    box(g, 0.94, 0.18, 0.5, dark, 0, 0.22, 0.02);                  // base
-    [-0.3, 0, 0.3].forEach(x => box(g, 0.28, 0.14, 0.44, col, x, 0.33, 0.04));   // 3 seat cushions
-    box(g, 0.94, 0.3, 0.1, col, 0, 0.46, -0.2);                   // low back
-    box(g, 0.08, 0.3, 0.5, dark, -0.43, 0.36, 0.02);             // slim arms
-    box(g, 0.08, 0.3, 0.5, dark, 0.43, 0.36, 0.02);
-    [[-0.4, -0.18], [0.4, -0.18], [-0.4, 0.2], [0.4, 0.2]].forEach(([x, z]) => box(g, 0.05, 0.12, 0.05, legC, x, 0.07, z));
+  const width = style === 'loveseat' ? 0.74 : 0.94, halfW = width / 2;
+  const backH = style === 'classic' ? 0.5 : style === 'loveseat' ? 0.42 : 0.34;
+  const seats = style === 'loveseat' ? 2 : 3, innerW = width - 0.22, seatW = innerW / seats;
+  box(g, width, 0.26, 0.5, dark, 0, 0.25, 0);                          // plush base body
+  box(g, width - 0.04, 0.05, 0.5, light, 0, 0.39, 0);                  // seat deck highlight
+  for (let i = 0; i < seats; i++) {                                    // seat cushions w/ rounded fronts + a seam
+    const cx = -innerW / 2 + seatW * (i + 0.5);
+    box(g, seatW - 0.03, 0.17, 0.42, col, cx, 0.41, 0.03);
+    const fr = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, seatW - 0.04, 10), mat(col));
+    fr.rotation.z = Math.PI / 2; fr.position.set(cx, 0.37, 0.24); g.add(fr);
+    box(g, seatW - 0.05, 0.02, 0.4, dark, cx, 0.5, 0.03);             // seam top
+  }
+  for (let i = 0; i < seats; i++) {                                    // back cushions
+    const cx = -innerW / 2 + seatW * (i + 0.5);
+    box(g, seatW - 0.04, backH, 0.15, col, cx, 0.45 + backH / 2, -0.18);
+    box(g, seatW - 0.08, backH - 0.06, 0.03, light, cx, 0.45 + backH / 2, -0.1);   // soft tuft
+  }
+  box(g, width, 0.07, 0.16, dark, 0, 0.46 + backH, -0.18);             // back top rail
+  [-1, 1].forEach(s => {                                               // arms with rounded bolster tops
+    box(g, 0.13, 0.36, 0.5, dark, s * (halfW - 0.065), 0.43, 0.02);
+    const bol = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.5, 12), mat(col));
+    bol.rotation.x = Math.PI / 2; bol.position.set(s * (halfW - 0.065), 0.6, 0.02); g.add(bol);
+  });
+  [[-halfW + 0.06, -0.18], [halfW - 0.06, -0.18], [-halfW + 0.06, 0.2], [halfW - 0.06, 0.2]]
+    .forEach(([x, z]) => box(g, 0.06, 0.16, 0.06, legC, x, 0.08, z));  // turned feet
+  if (style !== 'loveseat') {                                         // throw pillows
+    box(g, 0.19, 0.19, 0.08, light, -innerW / 2 + 0.13, 0.56, -0.04);
+    box(g, 0.19, 0.19, 0.08, shade(col, 0.62), innerW / 2 - 0.13, 0.56, -0.04);
   }
 }
 const CHAIR_STYLES = ['wood', 'modern', 'cushioned'];
@@ -4159,17 +4185,43 @@ function buildPlatesMesh() {            // a place setting: plate, fork, knife, 
   cup.position.set(0.2, 0.05, -0.18); g.add(cup);                     // cup
   return g;
 }
+function buildPetMesh(kind) {              // a little sitting cat or dog
+  const g = new THREE.Group();
+  const cat = kind === 'cat';
+  const fur = cat ? 0x8d8d92 : 0xB07D4A, ear = cat ? 0x70707a : 0x8a5f33;
+  box(g, 0.26, 0.26, 0.34, fur, 0, 0.2, -0.02);                       // body (sitting)
+  box(g, 0.16, 0.12, 0.2, fur, 0, 0.12, 0.16);                        // chest/front
+  box(g, 0.22, 0.2, 0.2, fur, 0, 0.4, 0.1);                           // head
+  if (cat) {                                                          // pointy ears
+    box(g, 0.06, 0.09, 0.03, ear, -0.07, 0.53, 0.1);
+    box(g, 0.06, 0.09, 0.03, ear, 0.07, 0.53, 0.1);
+  } else {                                                            // floppy ears + snout
+    box(g, 0.06, 0.12, 0.04, ear, -0.1, 0.44, 0.1);
+    box(g, 0.06, 0.12, 0.04, ear, 0.1, 0.44, 0.1);
+    box(g, 0.1, 0.08, 0.08, fur, 0, 0.36, 0.22);                      // snout
+  }
+  box(g, 0.04, 0.04, 0.02, 0x222, -0.05, 0.43, 0.21);                 // eyes
+  box(g, 0.04, 0.04, 0.02, 0x222, 0.05, 0.43, 0.21);
+  box(g, 0.04, 0.04, 0.03, cat ? 0xE8A0B0 : 0x3a2a1a, 0, 0.37, 0.25); // nose
+  box(g, 0.06, 0.12, 0.06, fur, -0.07, 0.06, 0.16);                   // front paws
+  box(g, 0.06, 0.12, 0.06, fur, 0.07, 0.06, 0.16);
+  const tail = box(g, 0.05, 0.22, 0.05, fur, 0, 0.26, -0.2);          // tail curling up
+  tail.rotation.x = 0.6;
+  return g;
+}
 function buildTabletopMesh(kind) {
   if (kind === 'plates') return buildPlatesMesh();
+  if (kind === 'cat' || kind === 'dog') return buildPetMesh(kind);
   if (kind === 'bacon' || kind === 'pie') { const m = buildCookProp(kind); m.scale.setScalar(0.66); return m; }
   return buildAppleMesh();
 }
-function spawnFoodAt(x, z, onTable, kind) {
+function spawnFoodAt(x, z, onTable, kind, surfY) {
   kind = kind || 'apple';
   const g = buildTabletopMesh(kind);
-  g.position.set(x + 0.5, onTable ? 0.82 : 0.2, z + 0.5);
+  const y = surfY != null ? surfY : (onTable ? 0.82 : 0.2);
+  g.position.set(x + 0.5, y, z + 0.5);
   scene.add(g);
-  placedFood.push({ mesh: g, x, z, onTable, kind });
+  placedFood.push({ mesh: g, x, z, onTable, kind, y });
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
 $('shopClose').onclick = () => { Sound.click(); closeShop(); };
@@ -4324,7 +4376,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
   const tag = $('placingTag');
@@ -4363,6 +4415,8 @@ function renderInv() {
     ['🍴', 'Place Settings', G.furniture.plates, 'plates'],
     ['🛏️', 'Beds', G.furniture.bed, 'bed'],
     ['🛋️', 'Couches', G.furniture.couch, 'couch'],
+    ['🐱', 'Pet Cats', G.furniture.cat, 'cat'],
+    ['🐶', 'Pet Dogs', G.furniture.dog, 'dog'],
     ['🪵', 'Coffee Tables', G.furniture.coffeetable, 'coffeetable'],
     ['🗄️', 'Dressers', G.furniture.dresser, 'dresser'],
     ['📺', 'Televisions', G.furniture.tv, 'tv'],
@@ -4880,7 +4934,7 @@ function startGame() {
   $('hudShelter').style.display = 'none';
   $('berryRow').style.display = 'none';
   $('ballRow').style.display = 'none';
-  $('berryRow').style.display = 'block';        // trees & berries exist in every mode now
+  $('berryRow').style.display = 'none';         // berries removed
   $('powerRow').style.display = G.gloomiesEnabled ? 'block' : 'none';   // Power Blocks are a Gloomies-mode defense
   $('solvedRow').style.display = 'block';
   $('ballRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
