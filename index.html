@@ -1719,7 +1719,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0,
+  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0,
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
@@ -2133,7 +2133,7 @@ function saveGame() {
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
-      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y]),
+      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0]),
       pos: [player.pos.x, player.pos.y, player.pos.z],
       when: Date.now()
     }));
@@ -2198,7 +2198,7 @@ function restoreGame(s) {
     }
   });
   reorientFixtures();        // now that every wall is back, line up doors & windows with them
-  (s.foods || []).forEach(([x, z, onTable, kind, y]) => spawnFoodAt(x, z, !!onTable, kind, y));
+  (s.foods || []).forEach(([x, z, onTable, kind, y, variant]) => spawnFoodAt(x, z, !!onTable, kind, y, variant));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   startGame();
   toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
@@ -2728,13 +2728,13 @@ function buildBeachDecor(g) {
 /* Math Meadow gets a countryside feel: rolling green hills on the horizon */
 function buildMeadowDecor(g) {
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843];
-  for (let i = 0; i < 11; i++) {
-    const ang = (i / 11) * Math.PI * 2 + 0.35;
-    const r = 25 + (i % 4) * 3;                         // out past the play area = backdrop
-    const rad = 4 + (i % 5) * 1.7;
+  for (let i = 0; i < 12; i++) {
+    const ang = (i / 12) * Math.PI * 2 + 0.35;
+    const rad = 4 + (i % 4) * 2;                        // 4..10
+    const r = 27 + rad + (i % 3) * 3;                   // inner edge stays well outside the play area (no walking through)
     const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 12), mat(greens[i % greens.length]));
     hill.scale.y = 0.42;                                // flatten into a rolling dome
-    hill.position.set(Math.cos(ang) * r, -rad * 0.18, Math.sin(ang) * r);   // sink the base below the grass
+    hill.position.set(Math.cos(ang) * r, -rad * 0.18, Math.sin(ang) * r);
     g.add(hill);
   }
 }
@@ -3231,7 +3231,7 @@ function placeSelectedAt(x, z, blockY) {
       if (SURF[cell.type] != null) surfY = SURF[cell.type];
       else { toast('🐾 Put it on the floor or on a couch, bed, chair, or table!', 2600); return false; }
     } else if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    spawnFoodAt(x, z, false, slot, surfY); G.furniture[slot] -= 1; Sound.pop(); refreshHUD();
+    spawnFoodAt(x, z, false, slot, surfY, G[slot + 'Variant'] || 0); G.furniture[slot] -= 1; Sound.pop(); refreshHUD();
     toast(slot === 'cat' ? '🐱 Meow! Cozy kitty.' : slot === 'dog' ? '🐶 Woof! Good doggo.' : '🐠 Blub blub!', 1600); return true;
   }
   if (FURNITURE_TYPES.includes(slot)) {
@@ -3715,7 +3715,7 @@ const thumbCache = {};
 let thumbRenderer, thumbScene, thumbCam;
 const PET_KINDS = { cat: 1, dog: 1, fish: 1 };
 function thumbMeshFor(type, variant) {
-  return PET_KINDS[type] ? buildTabletopMesh(type) : buildFurnitureMesh(type, variant);
+  return PET_KINDS[type] ? buildTabletopMesh(type, variant) : buildFurnitureMesh(type, variant);
 }
 function getThumb(type, variant) {
   const id = type + ':' + (variant || 0);
@@ -4277,28 +4277,42 @@ function buildPlatesMesh() {            // a place setting: plate, fork, knife, 
   cup.position.set(0.2, 0.05, -0.18); g.add(cup);                     // cup
   return g;
 }
-function buildFishbowl() {                 // a goldfish in a glass bowl
+/* pet breeds: [label, color, feature] */
+const CAT_BREEDS = [['Gray', 0x8d8d92, 'plain'], ['White Persian', 0xEDE9E0, 'fluffy'], ['Black', 0x2f3136, 'plain'],
+  ['Orange', 0xD98B3A, 'plain'], ['Brown', 0x6b4a30, 'plain'], ['Calico', 0xEDE9E0, 'calico']];
+const DOG_BREEDS = [['Brown', 0xB07D4A, 'plain'], ['Golden', 0xE0B062, 'plain'], ['Black', 0x3a3a3a, 'plain'],
+  ['Pomeranian', 0xDDA24F, 'fluffy'], ['White', 0xEDE7D8, 'fluffy'], ['Spotted', 0xEDE7D8, 'spotted']];
+const FISH_BREEDS = [['Goldfish', 0xFF8A3D], ['Yellow', 0xFFD23E], ['Red', 0xE5534B], ['Blue', 0x4FA3E0], ['Pink', 0xF09BB5]];
+function buildFishbowl(variant) {          // a fish in a glass bowl
   const g = new THREE.Group();
+  const fc = FISH_BREEDS[(variant || 0) % FISH_BREEDS.length][1];
   box(g, 0.18, 0.04, 0.18, 0x6d4326, 0, 0.02, 0);                      // wooden base
   const water = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 12), new THREE.MeshLambertMaterial({ color: 0x5aa7e8, transparent: true, opacity: 0.55 }));
   water.position.y = 0.2; water.scale.y = 0.8; g.add(water);
   const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 14), new THREE.MeshLambertMaterial({ color: 0xCDEBF7, transparent: true, opacity: 0.32, side: THREE.DoubleSide }));
   bowl.position.y = 0.22; bowl.scale.y = 0.92; g.add(bowl);
   box(g, 0.04, 0.04, 0.04, 0x3E9B3E, -0.08, 0.1, 0.04);                // pebble plant
-  box(g, 0.1, 0.06, 0.05, 0xFF8A3D, 0.01, 0.22, 0.02);                 // goldfish body
-  const tail = box(g, 0.05, 0.07, 0.03, 0xFFB060, -0.07, 0.22, 0.02);  // tail
+  box(g, 0.1, 0.06, 0.05, fc, 0.01, 0.22, 0.02);                      // fish body
+  const tail = box(g, 0.05, 0.07, 0.03, shade(fc, 1.15), -0.07, 0.22, 0.02);
   tail.rotation.z = 0.3;
   box(g, 0.02, 0.02, 0.02, 0x222, 0.05, 0.24, 0.05);                   // eye
   return g;
 }
-function buildPetMesh(kind) {              // a little sitting cat or dog
-  if (kind === 'fish') return buildFishbowl();
+function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a chosen breed
+  if (kind === 'fish') return buildFishbowl(variant);
   const g = new THREE.Group();
   const cat = kind === 'cat';
-  const fur = cat ? 0x8d8d92 : 0xB07D4A, ear = cat ? 0x70707a : 0x8a5f33;
+  const breeds = cat ? CAT_BREEDS : DOG_BREEDS;
+  const br = breeds[(variant || 0) % breeds.length], fur = br[1], feat = br[2], ear = shade(fur, 0.72);
   box(g, 0.26, 0.26, 0.34, fur, 0, 0.2, -0.02);                       // body (sitting)
   box(g, 0.16, 0.12, 0.2, fur, 0, 0.12, 0.16);                        // chest/front
   box(g, 0.22, 0.2, 0.2, fur, 0, 0.4, 0.1);                           // head
+  if (feat === 'fluffy') {                                            // pomeranian / persian fluff
+    box(g, 0.34, 0.3, 0.42, shade(fur, 1.06), 0, 0.22, -0.02);        // fluffy mane
+    box(g, 0.27, 0.25, 0.25, shade(fur, 1.04), 0, 0.42, 0.08);        // fluffy head
+  }
+  if (feat === 'spotted') { box(g, 0.11, 0.02, 0.11, 0x33363b, 0.07, 0.33, -0.02); box(g, 0.08, 0.02, 0.08, 0x33363b, -0.08, 0.31, 0.12); }
+  if (feat === 'calico') { box(g, 0.1, 0.02, 0.1, 0xD98B3A, 0.06, 0.33, 0.0); box(g, 0.08, 0.02, 0.08, 0x6b4a30, -0.07, 0.42, 0.1); }
   if (cat) {                                                          // pointy ears
     box(g, 0.06, 0.09, 0.03, ear, -0.07, 0.53, 0.1);
     box(g, 0.06, 0.09, 0.03, ear, 0.07, 0.53, 0.1);
@@ -4312,23 +4326,24 @@ function buildPetMesh(kind) {              // a little sitting cat or dog
   box(g, 0.04, 0.04, 0.03, cat ? 0xE8A0B0 : 0x3a2a1a, 0, 0.37, 0.25); // nose
   box(g, 0.06, 0.12, 0.06, fur, -0.07, 0.06, 0.16);                   // front paws
   box(g, 0.06, 0.12, 0.06, fur, 0.07, 0.06, 0.16);
-  const tail = box(g, 0.05, 0.22, 0.05, fur, 0, 0.26, -0.2);          // tail curling up
+  const tail = box(g, 0.05, 0.22, 0.05, feat === 'fluffy' ? shade(fur, 1.04) : fur, 0, 0.26, -0.2);
   tail.rotation.x = 0.6;
+  if (feat === 'fluffy') tail.scale.set(1.7, 1, 1.7);                 // bushy tail
   return g;
 }
-function buildTabletopMesh(kind) {
+function buildTabletopMesh(kind, variant) {
   if (kind === 'plates') return buildPlatesMesh();
-  if (kind === 'cat' || kind === 'dog' || kind === 'fish') return buildPetMesh(kind);
+  if (kind === 'cat' || kind === 'dog' || kind === 'fish') return buildPetMesh(kind, variant);
   if (kind === 'bacon' || kind === 'pie') { const m = buildCookProp(kind); m.scale.setScalar(0.66); return m; }
   return buildAppleMesh();
 }
-function spawnFoodAt(x, z, onTable, kind, surfY) {
+function spawnFoodAt(x, z, onTable, kind, surfY, variant) {
   kind = kind || 'apple';
-  const g = buildTabletopMesh(kind);
+  const g = buildTabletopMesh(kind, variant);
   const y = surfY != null ? surfY : (onTable ? 0.82 : 0.2);
   g.position.set(x + 0.5, y, z + 0.5);
   scene.add(g);
-  placedFood.push({ mesh: g, x, z, onTable, kind, y });
+  placedFood.push({ mesh: g, x, z, onTable, kind, y, variant: variant || 0 });
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
 $('shopClose').onclick = () => { Sound.click(); closeShop(); };
@@ -4553,6 +4568,7 @@ function renderInv() {
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
   placeables.forEach(([icon, name, count, slot]) => {
+    if (count < 1 && slot !== 'block') return;   // only show what you actually have (blocks always shown for the paint picker)
     const row = document.createElement('div');
     row.className = 'invItem';
     row.innerHTML = '<div class="icon">' + icon + '</div>' +
@@ -4658,6 +4674,21 @@ function renderInv() {
         b.innerHTML = '<img src="' + getThumb('dtable', idx) + '" alt="">' + label;
         b.onclick = () => { Sound.click(); G.dtableVariant = idx; selectSlot('dtable', true); renderInv(); };
         drow.appendChild(b);
+      });
+    }
+    if (slot === 'cat' || slot === 'dog' || slot === 'fish') {     // pick a breed
+      const breeds = slot === 'cat' ? CAT_BREEDS : slot === 'dog' ? DOG_BREEDS : FISH_BREEDS;
+      const vkey = slot + 'Variant';
+      const pbox = document.createElement('div'); pbox.className = 'invPaint';
+      pbox.innerHTML = '<span class="invPaintLabel">🐾 Choose a ' + slot + '</span><div class="styleThumbRow" id="petRow"></div>';
+      wrap.appendChild(pbox);
+      const prow = pbox.querySelector('#petRow');
+      breeds.forEach((br, idx) => {
+        const b = document.createElement('button');
+        b.className = 'styleThumb' + ((G[vkey] || 0) === idx ? ' sel' : '');
+        b.innerHTML = '<img src="' + getThumb(slot, idx) + '" alt="">' + br[0];
+        b.onclick = () => { Sound.click(); G[vkey] = idx; selectSlot(slot, true); renderInv(); };
+        prow.appendChild(b);
       });
     }
   });
