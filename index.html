@@ -2521,25 +2521,8 @@ const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emiss
   scene.add(topper);
   stations.push({ x: sx, z: sz, mesh: m, topper });
 });
-/* a friendly signpost where the door station used to be — points to the shop */
-{
-  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
-  const c = cv.getContext('2d');
-  c.fillStyle = '#FFF4E0'; c.fillRect(0, 0, 128, 64);
-  for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#E53935' : '#FFF4E0'; c.fillRect(i * 16, 0, 16, 10); }
-  c.fillStyle = '#7a3b12'; c.font = 'bold 22px sans-serif';
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('MART ➜', 64, 38);
-  const signMat = new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) });
-  const sign = new THREE.Group();
-  box(sign, 0.12, 1.5, 0.12, 0x8B5A2B, 0, 0.75, 0);
-  const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 0.08), signMat);
-  board.position.set(0, 1.35, 0);
-  sign.add(board);
-  sign.position.set(-2.5, 0, 6.5);
-  sign.rotation.y = 2.5;               // face roughly toward the shop stall
-  scene.add(sign);
-}
+/* (removed the standalone MART ➜ signpost — it crowded the spawn area;
+   the shop building already has its own sign on the roof) */
 
 /* ---- THE SHOP: a little 3D store building with a sign and a shopkeeper ---- */
 const shopGroup = new THREE.Group();
