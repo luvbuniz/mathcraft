@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Stackadoo · Admin</title>
+<style>
+  :root { --green:#3f9d34; --ink:#2f4a33; --cream:#FFFDF5; --card:#ffffff; --muted:#6a7b6c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink);
+    background:linear-gradient(180deg,#bfe3ff,#e9f7e4 60%,#dff0d6); min-height:100vh; padding:18px; }
+  .wrap { max-width:680px; margin:0 auto; }
+  h1 { font-size:clamp(22px,5vw,30px); margin:6px 0 2px; }
+  .sub { color:var(--muted); margin:0 0 16px; font-size:14px; }
+  .card { background:var(--card); border-radius:16px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.08); margin-bottom:14px; }
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .stat { background:var(--card); border-radius:16px; padding:14px 16px; box-shadow:0 6px 18px rgba(0,0,0,.08); }
+  .stat .n { font-size:clamp(26px,7vw,40px); font-weight:800; line-height:1; }
+  .stat .l { color:var(--muted); font-size:13px; margin-top:6px; font-weight:600; }
+  .stat .s { color:var(--muted); font-size:12px; margin-top:2px; }
+  .big { grid-column:1 / -1; background:linear-gradient(120deg,#eafbe4,#d6f3ff); }
+  .big .n { color:var(--green); }
+  .barRow { display:flex; align-items:center; gap:8px; font-size:13px; margin:4px 0; }
+  .barRow .d { width:84px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .barRow .t { flex:1; height:12px; background:#eef3ec; border-radius:6px; overflow:hidden; }
+  .barRow .f { height:100%; background:linear-gradient(90deg,#69d05c,#3f9d34); }
+  .barRow .v { width:34px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+  input { font-size:16px; padding:10px 12px; border:2px solid #cfe0cb; border-radius:10px; width:100%; }
+  button { font-size:16px; font-weight:700; padding:10px 16px; border:none; border-radius:10px;
+    background:var(--green); color:#fff; cursor:pointer; box-shadow:0 4px 0 #2c6f24; }
+  button:active { transform:translateY(3px); box-shadow:0 1px 0 #2c6f24; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .note { font-size:13px; color:var(--muted); }
+  .note code { background:#eef3ec; padding:1px 5px; border-radius:5px; }
+  a { color:var(--green); }
+  .err { color:#c0392b; font-weight:600; }
+  .foot { text-align:center; color:var(--muted); font-size:12px; margin-top:10px; }
+  .refresh { background:#eef3ec; color:var(--ink); box-shadow:0 4px 0 #cdddc8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔑 Stackadoo Admin</h1>
+  <p class="sub">Private dashboard · anonymous counts only (no names, no personal data)</p>
+
+  <!-- ====== CONFIG: fill these in after you deploy the backend (see analytics/SETUP.md) ====== -->
+  <script>
+    // Paste the SAME Google Apps Script Web App URL you put in index.html:
+    const ANALYTICS_URL = '';
+    // A secret word of your choosing — must match the ADMIN_KEY in your Apps Script:
+    const ADMIN_KEY = 'changeme';
+    // A passphrase to open THIS page (light gate; the real protection is the key above):
+    const PAGE_PASS = 'letmein';
+  </script>
+
+  <div id="gate" class="card" style="display:none">
+    <p class="note">Enter the admin passphrase:</p>
+    <div class="row">
+      <input id="pass" type="password" placeholder="passphrase" autocomplete="off">
+      <button onclick="tryUnlock()">Open</button>
+    </div>
+    <p id="gateErr" class="err" style="display:none">Nope — try again.</p>
+  </div>
+
+  <div id="setup" class="card" style="display:none">
+    <h3 style="margin-top:0">Not connected yet</h3>
+    <p class="note">This page needs your free backend before it can show numbers.
+      Follow the 5-minute guide in <code>analytics/SETUP.md</code>, then paste your
+      Web App URL into <code>ANALYTICS_URL</code> here (and in <code>index.html</code>),
+      pick an <code>ADMIN_KEY</code>, and reload.</p>
+  </div>
+
+  <div id="dash" style="display:none">
+    <div class="grid">
+      <div class="stat big">
+        <div class="n" id="drawRate">—</div>
+        <div class="l">Draw rate — visitors who actually played</div>
+        <div class="s" id="drawDetail"></div>
+      </div>
+      <div class="stat"><div class="n" id="visitors">—</div><div class="l">👀 Visitors (all time)</div><div class="s" id="visitors7"></div></div>
+      <div class="stat"><div class="n" id="players">—</div><div class="l">🎮 Players (all time)</div><div class="s" id="players7"></div></div>
+      <div class="stat"><div class="n" id="activeNow">—</div><div class="l">🟢 Active right now</div><div class="s">in the last 5 min</div></div>
+      <div class="stat"><div class="n" id="activeGames">—</div><div class="l">🏠 Active games</div><div class="s">played in last 7 days</div></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px">Visitors — last 7 days</h3>
+      <div id="daily"></div>
+    </div>
+
+    <div class="row" style="justify-content:space-between">
+      <button class="refresh" onclick="loadStats()">↻ Refresh</button>
+      <span class="foot" id="updated"></span>
+    </div>
+  </div>
+
+  <p class="foot">Stackadoo · admin view</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function tryUnlock() {
+  if ($('pass').value === PAGE_PASS) {
+    try { sessionStorage.setItem('sa_admin_ok', '1'); } catch (e) {}
+    $('gate').style.display = 'none';
+    boot();
+  } else { $('gateErr').style.display = 'block'; }
+}
+function pct(n) { return Math.round((n || 0) * 100) + '%'; }
+function fmt(n) { return (n || 0).toLocaleString('en-US'); }
+
+function boot() {
+  if (!ANALYTICS_URL) { $('setup').style.display = 'block'; return; }
+  $('dash').style.display = 'block';
+  loadStats();
+}
+
+function loadStats() {
+  $('updated').textContent = 'loading…';
+  const url = ANALYTICS_URL + (ANALYTICS_URL.indexOf('?') < 0 ? '?' : '&') +
+    'report=1&key=' + encodeURIComponent(ADMIN_KEY) + '&_=' + Date.now();
+  fetch(url, { method: 'GET' })
+    .then(r => r.json())
+    .then(render)
+    .catch(() => { $('updated').innerHTML = '<span class="err">Could not reach the backend. Check your URL / key.</span>'; });
+}
+
+function render(d) {
+  if (!d || !d.ok) { $('updated').innerHTML = '<span class="err">Backend said: not authorized (check ADMIN_KEY).</span>'; return; }
+  const visitors = d.visitorsAll || 0, players = d.playersAll || 0;
+  $('visitors').textContent = fmt(visitors);
+  $('visitors7').textContent = fmt(d.visitors7 || 0) + ' this week';
+  $('players').textContent = fmt(players);
+  $('players7').textContent = fmt(d.players7 || 0) + ' this week';
+  $('activeNow').textContent = fmt(d.activeNow || 0);
+  $('activeGames').textContent = fmt(d.activeGames7 || 0);
+  const rate = visitors ? players / visitors : 0;
+  $('drawRate').textContent = pct(rate);
+  $('drawDetail').textContent = fmt(players) + ' of ' + fmt(visitors) + ' visitors started a game';
+  // daily mini-bars
+  const daily = d.daily || [];
+  const max = Math.max(1, ...daily.map(x => x.visitors || 0));
+  $('daily').innerHTML = daily.map(x =>
+    '<div class="barRow"><span class="d">' + x.date.slice(5) + '</span>' +
+    '<span class="t"><span class="f" style="width:' + Math.round((x.visitors || 0) / max * 100) + '%"></span></span>' +
+    '<span class="v">' + (x.visitors || 0) + '</span></div>'
+  ).join('') || '<p class="note">No data yet.</p>';
+  $('updated').textContent = 'updated ' + new Date(d.generated || Date.now()).toLocaleString();
+}
+
+// gate: skip if already unlocked this session
+(function () {
+  let ok = false;
+  try { ok = sessionStorage.getItem('sa_admin_ok') === '1'; } catch (e) {}
+  if (ok) boot(); else $('gate').style.display = 'block';
+})();
+</script>
+</body>
+</html>
