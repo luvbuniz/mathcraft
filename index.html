@@ -188,6 +188,10 @@
   .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
+  #shopTabs { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .shopTab { font-family:inherit; font-weight:800; font-size:13px; padding:6px 11px; border-radius:999px;
+    border:2px solid #ecd9a6; background:#fff; color:#8a6a2a; cursor:pointer; }
+  .shopTab.sel { background:#FFE9A0; border-color:#c79a2e; color:#6b4e10; }
   #shopItems { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
   .shopItem { display:flex; align-items:center; gap:12px; background:#fdf3d8; border-radius:14px; padding:10px 14px; }
   .shopItem .icon { font-size:32px; width:56px; text-align:center; flex:none; }
@@ -914,6 +918,7 @@
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="shopClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🛒 Stack Mart</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
+    <div id="shopTabs"></div>
     <div id="shopItems"></div>
   </div>
 </div>
@@ -1710,7 +1715,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0,
+  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0,
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
@@ -1823,6 +1828,24 @@ const SHOP_ITEMS = [
   { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    kind: 'own',   desc: 'A snazzy hat for your hero.' },
   { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.', hidden: true }
 ];
+/* Stack Mart departments — a tabbed catalog with preview pictures */
+const SHOP_CATS = [
+  ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'],
+  ['bath', '🛁 Bath'], ['outdoor', '🌳 Outdoor'], ['build', '🧱 Building'], ['gear', '⭐ Gear']
+];
+const ITEM_CAT = {
+  blocks: 'build', powerBlocks: 'build', door: 'build', window: 'build', roof: 'build',
+  chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
+  rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living',
+  dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen', pot: 'kitchen',
+  pan: 'kitchen', bacon: 'kitchen', pie: 'kitchen', groceries: 'kitchen', food: 'kitchen',
+  bed: 'bedroom', dresser: 'bedroom',
+  bathtub: 'bath', shower: 'bath',
+  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor',
+  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear'
+};
+const catOf = id => ITEM_CAT[id] || 'gear';
+let shopCat = 'living';
 
 /* ============================ BADGES & SAVING ============================ */
 const BADGES = [
@@ -3211,7 +3234,7 @@ function placeSelectedAt(x, z, blockY) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    const fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'dtable' ? G.dtableVariant : null;
+    const fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'bed' ? G.bedVariant : slot === 'dtable' ? G.dtableVariant : null;
     placeFurnitureAt(slot, x, z, fv, facePlayerRotation(x, z)); G.furniture[slot] -= 1; Sound.place(); refreshHUD();
     toast('✅ Placed! Tap it to turn it 🔄', 1800); return true;
   }
@@ -3722,11 +3745,20 @@ function thumbIcon(type, variant, emoji) {
 }
 function renderShop() {
   refreshHUD();
+  // department tabs
+  const tabs = $('shopTabs'); tabs.innerHTML = '';
+  SHOP_CATS.forEach(([id, label]) => {
+    const t = document.createElement('button');
+    t.className = 'shopTab' + (shopCat === id ? ' sel' : '');
+    t.textContent = label;
+    t.onclick = () => { Sound.click(); shopCat = id; renderShop(); };
+    tabs.appendChild(t);
+  });
   const wrap = $('shopItems');
   wrap.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
-    // (berries can be sold in any mode now)
     if (item.hidden) return;
+    if (catOf(item.id) !== shopCat) return;                        // show only the active department
     if (item.id === 'powerBlocks' && !G.gloomiesEnabled) return;   // no Gloomy-zappers in the no-Gloomies game
     const row = document.createElement('div');
     row.className = 'shopItem';
@@ -3918,6 +3950,8 @@ function buildCouch(g, variant) {
 }
 const CHAIR_STYLES = ['wood', 'modern', 'cushioned'];
 const CHAIR_COLORS = [0xB07B4F, 0x4F7CB0, 0xC0504D, 0x6FA85B, 0x33373F, 0xD9A441, 0xE4E1D8, 0xCF6F9B];
+const BED_STYLES = ['cozy', 'striped', 'quilted'];
+const BED_COLORS = [0x5aa7e8, 0xE05A6B, 0x6FA85B, 0xC79AE0, 0xF0B450, 0xF09BB5, 0x57606B, 0xEDE7D8];
 function buildChair(g, variant) {
   const si = Math.floor((variant || 0) / 100) % CHAIR_STYLES.length;
   const ci = ((variant || 0) % 100) % CHAIR_COLORS.length;
@@ -3976,8 +4010,16 @@ function buildFurnitureMesh(type, variant) {
     [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38]].forEach(([lx, lz]) =>
       box(g, 0.08, 0.72, 0.08, 0x8a5c33, lx, 0.36, lz));
   } else if (type === 'bed') {
+    const bst = BED_STYLES[Math.floor((variant || 0) / 100) % BED_STYLES.length];
+    const bcol = BED_COLORS[((variant || 0) % 100) % BED_COLORS.length];
     box(g, 1.15, 0.22, 1.95, 0x6d4326, 0, 0.2, 0);                     // avatar-sized frame
-    box(g, 1.05, 0.16, 1.55, 0x5aa7e8, 0, 0.36, 0.16);                // blue blanket
+    box(g, 1.05, 0.16, 1.55, bcol, 0, 0.36, 0.16);                    // comforter
+    box(g, 1.05, 0.05, 0.3, shade(bcol, 0.82), 0, 0.45, -0.5);        // folded top trim
+    if (bst === 'striped') for (let i = 0; i < 4; i++) box(g, 1.06, 0.02, 0.16, shade(bcol, 1.3), 0, 0.45, -0.28 + i * 0.42);  // cozy stripes
+    if (bst === 'quilted') {                                          // quilted seams (grid)
+      [-0.35, 0, 0.35].forEach(x => box(g, 0.02, 0.03, 1.5, shade(bcol, 0.78), x, 0.45, 0.16));
+      [-0.5, 0, 0.5].forEach(z => box(g, 1.04, 0.03, 0.02, shade(bcol, 0.78), 0, 0.45, 0.16 + z));
+    }
     box(g, 0.94, 0.14, 0.34, 0xFFFFFF, 0, 0.42, -0.68);                // pillow
     [[-0.48, -0.86], [0.48, -0.86], [-0.48, 0.86], [0.48, 0.86]].forEach(([lx, lz]) =>
       box(g, 0.1, 0.18, 0.1, 0x4a2c18, lx, 0.09, lz));                 // legs
@@ -4569,30 +4611,32 @@ function renderInv() {
         srow.appendChild(btn);
       });
     }
-    if (slot === 'couch' || slot === 'chair') {     // style pictures + color
-      const isCouch = slot === 'couch';
-      const cur = isCouch ? (G.couchVariant || 0) : (G.chairVariant || 0);
+    const STYLED = {
+      couch: { label: '🛋️ Couch style', styles: ['Modern', 'Classic', 'Loveseat'], colors: COUCH_COLORS, vkey: 'couchVariant' },
+      chair: { label: '🪑 Chair style', styles: ['Wood', 'Modern', 'Cushioned'], colors: CHAIR_COLORS, vkey: 'chairVariant' },
+      bed: { label: '🛏️ Comforter style', styles: ['Cozy', 'Striped', 'Quilted'], colors: BED_COLORS, vkey: 'bedVariant' }
+    };
+    if (STYLED[slot]) {                       // style pictures + color (couch / chair / bed comforter)
+      const cfg = STYLED[slot], cur = G[cfg.vkey] || 0;
       let si = Math.floor(cur / 100), ci = cur % 100;
-      const styles = isCouch ? ['Modern', 'Classic', 'Loveseat'] : ['Wood', 'Modern', 'Cushioned'];
-      const colors = isCouch ? COUCH_COLORS : CHAIR_COLORS;
       const box2 = document.createElement('div'); box2.className = 'invPaint';
-      box2.innerHTML = '<span class="invPaintLabel">' + (isCouch ? '🛋️ Couch style' : '🪑 Chair style') + '</span>' +
+      box2.innerHTML = '<span class="invPaintLabel">' + cfg.label + '</span>' +
         '<div class="styleThumbRow" id="stRow"></div><span class="invPaintLabel" style="margin-top:8px">Color</span><div class="paintRow" id="clRow"></div>';
       wrap.appendChild(box2);
       const srow = box2.querySelector('#stRow');
-      styles.forEach((label, idx) => {
+      cfg.styles.forEach((label, idx) => {
         const b = document.createElement('button');
         b.className = 'styleThumb' + (si === idx ? ' sel' : '');
         b.innerHTML = '<img src="' + getThumb(slot, idx * 100 + ci) + '" alt="">' + label;
-        b.onclick = () => { Sound.click(); const v = idx * 100 + ci; if (isCouch) G.couchVariant = v; else G.chairVariant = v; selectSlot(slot, true); renderInv(); };
+        b.onclick = () => { Sound.click(); G[cfg.vkey] = idx * 100 + ci; selectSlot(slot, true); renderInv(); };
         srow.appendChild(b);
       });
       const crow = box2.querySelector('#clRow');
-      colors.forEach((col, idx) => {
+      cfg.colors.forEach((col, idx) => {
         const sw = document.createElement('button');
         sw.className = 'swatch' + (ci === idx ? ' sel' : '');
         sw.style.background = '#' + col.toString(16).padStart(6, '0');
-        sw.onclick = () => { Sound.click(); const v = si * 100 + idx; if (isCouch) G.couchVariant = v; else G.chairVariant = v; selectSlot(slot, true); renderInv(); };
+        sw.onclick = () => { Sound.click(); G[cfg.vkey] = si * 100 + idx; selectSlot(slot, true); renderInv(); };
         crow.appendChild(sw);
       });
     }
