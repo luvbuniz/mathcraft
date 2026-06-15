@@ -117,6 +117,20 @@ Park it until Reading Town proves the "walk-in building + learning quest" model.
 
 ---
 
+## 🏪 Two stores (when there are enough items)
+
+Split Stack Mart into two once the catalog is big enough:
+- **🛒 General / Grocery Store** — food, groceries, garden/outdoor, basics.
+- **🏚️ "Stack Barn"** (furniture & household) — couches, tables, chairs, decor,
+  pets, roof tiles, building materials, kitchen/bathroom.
+
+Could be tabs in one shop, or two walk-in buildings in the world. Decorating is
+clearly the engine (Fiona), so the furniture store deserves to feel special.
+
+**Quality bar for decor:** expensive, very pretty, **very detailed** — kids love
+seeing knobs, handles, seams, and little decorations up close. Items should read
+as the real thing (a couch that looks like a couch, not a square).
+
 ## ❓ Open decisions
 
 - Confirm the rename **Reading City → Reading Town** (and tweak the city decor
