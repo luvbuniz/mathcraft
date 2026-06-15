@@ -4126,7 +4126,7 @@ function addRoof(x, y, z, rot, style) {
   return mesh;
 }
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
-const COUCH_STYLES = ['modern', 'classic', 'loveseat'];
+const COUCH_STYLES = ['modern', 'classic', 'loveseat', 'chesterfield'];
 const COUCH_COLORS = [0x4F7CB0, 0xC0504D, 0x6FA85B, 0x8E7CC3, 0xD9A441, 0xCF6F9B, 0x57606B, 0xE4E1D8];
 const RUG_COLORS = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0x55606B];
 const shade = (c, f) => {                 // scale a hex color's brightness by f (clamped)
@@ -4139,7 +4139,7 @@ function buildCouch(g, variant) {
   const col = COUCH_COLORS[ci], dark = shade(col, 0.8), light = shade(col, 1.2), legC = 0x4a3526;
   const style = COUCH_STYLES[si];
   const width = style === 'loveseat' ? 0.74 : 0.94, halfW = width / 2;
-  const backH = style === 'classic' ? 0.5 : style === 'loveseat' ? 0.42 : 0.34;
+  const backH = style === 'classic' || style === 'chesterfield' ? 0.5 : style === 'loveseat' ? 0.42 : 0.34;
   const seats = style === 'loveseat' ? 2 : 3, innerW = width - 0.22, seatW = innerW / seats;
   box(g, width, 0.26, 0.5, dark, 0, 0.25, 0);                          // plush base body
   box(g, width - 0.04, 0.05, 0.5, light, 0, 0.39, 0);                  // seat deck highlight
@@ -4167,10 +4167,15 @@ function buildCouch(g, variant) {
     box(g, 0.19, 0.19, 0.08, light, -innerW / 2 + 0.13, 0.56, -0.04);
     box(g, 0.19, 0.19, 0.08, shade(col, 0.62), innerW / 2 - 0.13, 0.56, -0.04);
   }
+  if (style === 'chesterfield') {                                     // deep button tufting on the back
+    const btn = shade(col, 0.6);
+    for (let r = 0; r < 2; r++) for (let cI = 0; cI < 4; cI++)
+      box(g, 0.025, 0.025, 0.04, btn, -0.3 + cI * 0.2, 0.52 + r * 0.16, -0.07);
+  }
 }
-const CHAIR_STYLES = ['wood', 'modern', 'cushioned'];
+const CHAIR_STYLES = ['wood', 'modern', 'cushioned', 'armchair'];
 const CHAIR_COLORS = [0xB07B4F, 0x4F7CB0, 0xC0504D, 0x6FA85B, 0x33373F, 0xD9A441, 0xE4E1D8, 0xCF6F9B];
-const BED_STYLES = ['cozy', 'striped', 'quilted'];
+const BED_STYLES = ['cozy', 'striped', 'quilted', 'plaid'];
 const BED_COLORS = [0x5aa7e8, 0xE05A6B, 0x6FA85B, 0xC79AE0, 0xF0B450, 0xF09BB5, 0x57606B, 0xEDE7D8];
 function buildChair(g, variant) {
   const si = Math.floor((variant || 0) / 100) % CHAIR_STYLES.length;
@@ -4185,6 +4190,12 @@ function buildChair(g, variant) {
     box(g, 0.54, 0.5, 0.12, col, 0, 0.74, -0.22);                   // padded back
     box(g, 0.46, 0.4, 0.05, shade(col, 1.2), 0, 0.74, -0.16);       // back highlight
     [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([x, z]) => box(g, 0.07, 0.42, 0.07, legC, x, 0.21, z));
+  } else if (style === 'armchair') {     // cozy upholstered armchair with armrests
+    box(g, 0.58, 0.16, 0.56, col, 0, 0.44, 0);                       // thick seat cushion
+    box(g, 0.58, 0.54, 0.14, col, 0, 0.76, -0.23);                  // padded back
+    box(g, 0.5, 0.44, 0.04, shade(col, 1.18), 0, 0.76, -0.16);      // back highlight
+    [-1, 1].forEach(s => box(g, 0.12, 0.32, 0.52, shade(col, 0.92), s * 0.27, 0.54, 0.02));  // armrests
+    [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]].forEach(([x, z]) => box(g, 0.07, 0.4, 0.07, legC, x, 0.2, z));
   } else {                               // classic wooden chair
     box(g, 0.55, 0.08, 0.55, col, 0, 0.42, 0);                       // seat
     box(g, 0.55, 0.6, 0.08, col, 0, 0.7, -0.24);                    // back
@@ -4250,6 +4261,10 @@ function buildFurnitureMesh(type, variant) {
     if (bst === 'quilted') {                                          // quilted seams (grid)
       [-0.35, 0, 0.35].forEach(x => box(g, 0.02, 0.03, 1.5, shade(bcol, 0.78), x, 0.45, 0.16));
       [-0.5, 0, 0.5].forEach(z => box(g, 1.04, 0.03, 0.02, shade(bcol, 0.78), 0, 0.45, 0.16 + z));
+    }
+    if (bst === 'plaid') {                                            // crossing plaid stripes
+      [-0.35, 0, 0.35].forEach(x => box(g, 0.07, 0.03, 1.5, shade(bcol, 1.3), x, 0.45, 0.16));
+      [-0.55, -0.05, 0.45].forEach(z => box(g, 1.06, 0.03, 0.07, shade(bcol, 0.66), 0, 0.45, 0.16 + z));
     }
     box(g, 0.94, 0.14, 0.34, 0xFFFFFF, 0, 0.42, -0.68);                // pillow
     [[-0.48, -0.86], [0.48, -0.86], [-0.48, 0.86], [0.48, 0.86]].forEach(([lx, lz]) =>
@@ -4877,9 +4892,9 @@ function renderInv() {
       });
     }
     const STYLED = {
-      couch: { label: '🛋️ Couch style', styles: ['Modern', 'Classic', 'Loveseat'], colors: COUCH_COLORS, vkey: 'couchVariant' },
-      chair: { label: '🪑 Chair style', styles: ['Wood', 'Modern', 'Cushioned'], colors: CHAIR_COLORS, vkey: 'chairVariant' },
-      bed: { label: '🛏️ Comforter style', styles: ['Cozy', 'Striped', 'Quilted'], colors: BED_COLORS, vkey: 'bedVariant' }
+      couch: { label: '🛋️ Couch style', styles: ['Modern', 'Classic', 'Loveseat', 'Chesterfield'], colors: COUCH_COLORS, vkey: 'couchVariant' },
+      chair: { label: '🪑 Chair style', styles: ['Wood', 'Modern', 'Cushioned', 'Armchair'], colors: CHAIR_COLORS, vkey: 'chairVariant' },
+      bed: { label: '🛏️ Comforter style', styles: ['Cozy', 'Striped', 'Quilted', 'Plaid'], colors: BED_COLORS, vkey: 'bedVariant' }
     };
     if (STYLED[slot]) {                       // style pictures + color (couch / chair / bed comforter)
       const cfg = STYLED[slot], cur = G[cfg.vkey] || 0;
@@ -4910,7 +4925,8 @@ function renderInv() {
       dbox.innerHTML = '<span class="invPaintLabel">🍽️ Table style</span><div class="styleThumbRow" id="dtRow"></div>';
       wrap.appendChild(dbox);
       const drow = dbox.querySelector('#dtRow');
-      ['Round', 'Rectangular', 'Farmhouse'].forEach((label, idx) => {
+      DTABLE_STYLES.forEach((st, idx) => {
+        const label = st.charAt(0).toUpperCase() + st.slice(1);
         const b = document.createElement('button');
         b.className = 'styleThumb' + ((G.dtableVariant || 0) === idx ? ' sel' : '');
         b.innerHTML = '<img src="' + getThumb('dtable', idx) + '" alt="">' + label;
