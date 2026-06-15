@@ -2007,6 +2007,52 @@ const AVATARS = [
       box(a.group, 0.07, 0.07, 0.07, 0xE53935, 0, 0.92, 0.18);
       return a;
     }
+  },
+  {
+    id: 'mermaid', name: 'Mermaid 🧜‍♀️',
+    build() {
+      const a = buildBiped(0x2EC4B6, 0xFFD9B3, 0x1f9c91, 0xFFD9B3);    // teal tail, peach skin
+      addEyes(a.head, 0x35506e, 0.26);
+      box(a.head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.26);          // smile
+      box(a.head, 0.56, 0.2, 0.52, 0xE0533B, 0, 0.16, -0.02);          // red hair top
+      box(a.head, 0.16, 0.5, 0.14, 0xE0533B, -0.3, -0.1, -0.04);       // hair locks
+      box(a.head, 0.16, 0.5, 0.14, 0xE0533B, 0.3, -0.1, -0.04);
+      box(a.head, 0.07, 0.07, 0.05, 0xFFE680, 0.26, 0.12, 0.18);       // flower clip
+      box(a.group, 0.52, 0.16, 0.32, 0xC2185B, 0, 1.06, 0);            // shell bodice
+      const fluke = box(a.group, 0.5, 0.06, 0.34, 0x29b3a6, 0, 0.06, -0.16);  // tail fluke
+      fluke.rotation.x = 0.5;
+      return a;
+    }
+  },
+  {
+    id: 'knight', name: 'Knight 🛡️',
+    build() {
+      const a = buildBiped(0xB8BCC2, 0xC9CED4, 0x9aa0a8, 0xB8BCC2);    // silver armor
+      box(a.head, 0.52, 0.32, 0.52, 0xA9AEB5, 0, 0.05, 0);            // helmet
+      box(a.head, 0.42, 0.08, 0.06, 0x1b2330, 0, 0.02, 0.25);         // visor slit
+      box(a.head, 0.08, 0.24, 0.08, 0xE53935, 0, 0.36, -0.04);        // red plume
+      box(a.group, 0.3, 0.3, 0.06, 0xE0E3E8, 0, 0.88, 0.15);          // breastplate shine
+      box(a.group, 0.07, 0.36, 0.28, 0x2255cc, -0.42, 0.95, 0.05);    // shield
+      box(a.group, 0.04, 0.18, 0.06, 0xFFD23E, -0.45, 0.95, 0.05);    // shield cross (vertical)
+      box(a.group, 0.04, 0.06, 0.16, 0xFFD23E, -0.45, 0.95, 0.05);    // shield cross (horizontal)
+      return a;
+    }
+  },
+  {
+    id: 'trex', name: 'T-Rex 🦖',
+    build() {
+      const a = buildBiped(0x4CAF50, 0x4CAF50, 0x3d8b41, 0x57c05b);
+      addEyes(a.head, 0xFFC400, 0.26);
+      box(a.head, 0.42, 0.2, 0.32, 0x57c05b, 0, -0.14, 0.18);          // big jaw/snout
+      for (let i = -1; i <= 1; i++) box(a.head, 0.05, 0.08, 0.04, 0xFFFFFF, i * 0.12, -0.22, 0.345);  // teeth
+      box(a.head, 0.09, 0.1, 0.06, 0x3d8b41, -0.14, 0.28, -0.02);      // brow bumps
+      box(a.head, 0.09, 0.1, 0.06, 0x3d8b41, 0.14, 0.28, -0.02);
+      for (let i = 0; i < 3; i++) box(a.group, 0.1, 0.12, 0.08, 0x2e7d32, 0, 1.04 - i * 0.14, -0.04);  // back ridges
+      const tail = box(a.group, 0.18, 0.18, 0.7, 0x4CAF50, 0, 0.7, -0.5);   // heavy tail
+      tail.rotation.x = -0.3;
+      box(a.group, 0.1, 0.1, 0.2, 0x4CAF50, 0, 0.6, -0.84);           // tail taper
+      return a;
+    }
   }
 ];
 
