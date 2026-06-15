@@ -1879,14 +1879,14 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
   selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0,
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
-  owned: { ladder: false, shoes: false, boots: false, hat: false },
+  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false },
   warned60: false, warned10: false,
   mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
 };
@@ -1990,6 +1990,12 @@ const SHOP_ITEMS = [
   { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
   { id: 'bush',   icon: '🌳', name: 'Leafy Bush', price: 4,    kind: 'many',  desc: 'A round green bush for the garden.' },
   { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
+  { id: 'petfood',  icon: '🥫', name: 'Pet Food', price: 4,   kind: 'many',  desc: 'Cat & dog food. Pour it into a food bowl, then a hungry pet will come eat!' },
+  { id: 'foodbowl', icon: '🥣', name: 'Food Bowl', price: 5,  kind: 'many',  desc: 'Set it on the floor, then fill it with 🥫 Pet Food. Pets eat from a full bowl.' },
+  { id: 'waterbowl',icon: '💧', name: 'Water Bowl', price: 5, kind: 'many',  desc: 'A bowl of fresh water to keep your pet happy.' },
+  { id: 'petbed',   icon: '🛏️', name: 'Pet Bed', price: 9,    kind: 'many',  desc: 'A snug bed. Set a cat or dog to 😴 Sleep and they\'ll curl up in it!' },
+  { id: 'litterbox',icon: '🧺', name: 'Litter Box', price: 6, kind: 'many',  desc: 'A tidy litter box for your kitty.' },
+  { id: 'leash',  icon: '🦮', name: 'Dog Leash', price: 7,    kind: 'own',   desc: 'Own a leash and your dog will follow you on a Walk!' },
   { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP by a trunk, press P for berries.' },
   { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
   { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, kind: 'own',   desc: 'Jump higher!' },
@@ -1997,7 +2003,7 @@ const SHOP_ITEMS = [
   { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.', hidden: true }
 ];
 /* Two stores: 🛒 Stack Mart (general) and 🏚️ Stack Barn (furniture & home), each with departments */
-const MART_CATS = [['food', '🍎 Food'], ['build', '🧱 Building'], ['gear', '⭐ Gear']];
+const MART_CATS = [['food', '🍎 Food'], ['pets', '🐾 Pets'], ['build', '🧱 Building'], ['gear', '⭐ Gear']];
 const BARN_CATS = [['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden']];
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
@@ -2005,6 +2011,7 @@ const ITEM_CAT = {
   blocks: 'build', powerBlocks: 'build', door: 'build', window: 'build', roof: 'build',
   ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
+  petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets',
   // 🏚️ Stack Barn — furniture & home
   chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
   rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living',
@@ -2476,14 +2483,14 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
-  G.owned = { ladder: false, shoes: false, boots: false, hat: false };
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false };
 }
 function goHome() {
   if (G.running && !G.over) saveGame();
@@ -3516,6 +3523,16 @@ function placeSelectedAt(x, z, blockY) {
     spawnFoodAt(x, z, true, 'plates'); G.furniture.plates -= 1; Sound.pop(); refreshHUD();
     toast('🍴 Table set — dinner time!', 1600); return true;
   }
+  if (slot === 'petfood') {              // pour kibble into a food bowl
+    if (G.furniture.petfood < 1) { toast('🥫 No pet food — buy some at 🛒 Stack Mart!', 2200); return false; }
+    const cell = blocks.get(key(x, 0, z));
+    if (!cell || cell.type !== 'foodbowl') { toast('🥫 Aim at a 🥣 food bowl on the floor to fill it!', 2600); return false; }
+    if (cell.mesh.userData.filled) { toast('🥣 That bowl is already full!', 1600); return false; }
+    cell.mesh.userData.filled = true;
+    if (cell.mesh.userData.kibble) cell.mesh.userData.kibble.visible = true;
+    G.furniture.petfood -= 1; Sound.pop(); refreshHUD();
+    toast('🥣 Bowl filled! Tap a pet and choose 🍽️ Eat — they\'ll come over!', 3000); return true;
+  }
   if (slot === 'cat' || slot === 'dog' || slot === 'fish') {     // pets sit on the floor or on furniture
     if (G.furniture[slot] < 1) { toast('🐾 None in your 🎒 — adopt one at 🏚️ Stack Barn!', 2200); return false; }
     const cell = blocks.get(key(x, 0, z));
@@ -4278,7 +4295,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -4348,6 +4365,7 @@ const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
 const COUCH_STYLES = ['modern', 'classic', 'loveseat', 'chesterfield'];
 const COUCH_COLORS = [0x4F7CB0, 0xC0504D, 0x6FA85B, 0x8E7CC3, 0xD9A441, 0xCF6F9B, 0x57606B, 0xE4E1D8];
 const RUG_COLORS = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0x55606B];
+const PETBED_COLORS = [0xE0707F, 0x6FA8DC, 0x8FC96B, 0xC79AE0, 0xF0B450, 0xF09BB5];
 const shade = (c, f) => {                 // scale a hex color's brightness by f (clamped)
   const cl = v => Math.max(0, Math.min(255, Math.round(v)));
   return (cl((c >> 16 & 255) * f) << 16) | (cl((c >> 8 & 255) * f) << 8) | cl((c & 255) * f);
@@ -4425,7 +4443,29 @@ function buildChair(g, variant) {
 const DTABLE_STYLES = ['round', 'rectangular', 'farmhouse', 'modern', 'glass'];
 function buildFurnitureMesh(type, variant) {
   const g = new THREE.Group();
-  if (type === 'chair') {
+  if (type === 'foodbowl' || type === 'waterbowl') {
+    const rim = type === 'waterbowl' ? 0x5aa7e8 : 0xE0533B;
+    box(g, 0.3, 0.04, 0.3, 0x9a8e80, 0, 0.02, 0);                       // mat under the bowl
+    box(g, 0.26, 0.1, 0.26, rim, 0, 0.09, 0);                          // bowl
+    box(g, 0.18, 0.06, 0.18, shade(rim, 0.7), 0, 0.11, 0);            // inner hollow
+    if (type === 'waterbowl') {
+      const w = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.18), new THREE.MeshLambertMaterial({ color: 0x8fd0f5, transparent: true, opacity: 0.8 }));
+      w.position.y = 0.13; g.add(w);
+    } else {
+      const kib = box(g, 0.17, 0.05, 0.17, 0x8a5a2b, 0, 0.13, 0);     // kibble — hidden until filled
+      kib.visible = false; g.userData.kibble = kib; g.userData.filled = false;
+    }
+  } else if (type === 'petbed') {
+    const c = PETBED_COLORS[(variant || 0) % PETBED_COLORS.length];
+    box(g, 0.62, 0.12, 0.62, shade(c, 0.85), 0, 0.06, 0);              // outer cushion ring
+    box(g, 0.44, 0.08, 0.44, shade(c, 1.12), 0, 0.1, 0);             // soft inner pad
+    [[-0.27, 0], [0.27, 0], [0, -0.27], [0, 0.27]].forEach(([x, z]) => box(g, 0.14, 0.16, 0.14, c, x, 0.1, z));  // bolster bumps
+  } else if (type === 'litterbox') {
+    box(g, 0.5, 0.04, 0.5, 0x9aa0a6, 0, 0.02, 0);                      // tray base
+    [[-0.23, 0, 0.5, 0.16, 0.05], [0.23, 0, 0.5, 0.16, 0.05], [0, -0.23, 0.05, 0.16, 0.5], [0, 0.23, 0.05, 0.16, 0.5]]
+      .forEach(([x, z, w, h, d]) => box(g, w, h, d, 0xC7CCD1, x, 0.1, z));   // four low walls
+    box(g, 0.42, 0.06, 0.42, 0xE6DFce, 0, 0.06, 0);                    // litter
+  } else if (type === 'chair') {
     buildChair(g, variant);
   } else if (type === 'dtable') {
     const st = DTABLE_STYLES[Math.floor((variant || 0)) % DTABLE_STYLES.length];
@@ -4616,6 +4656,7 @@ function placeFurnitureAt(type, x, z, variant, rotY) {
   if (blocks.has(key(x, 0, z))) return false;
   if (type === 'flower' && variant == null) variant = Math.floor(Math.random() * FLOWER_COLORS.length);
   if (type === 'rug' && variant == null) variant = Math.floor(Math.random() * RUG_COLORS.length);   // a fresh rug color each time
+  if (type === 'petbed' && variant == null) variant = Math.floor(Math.random() * PETBED_COLORS.length);
   const mesh = buildFurnitureMesh(type, variant);
   mesh.position.set(x + 0.5, 0, z + 0.5);
   mesh.rotation.y = rotY || 0;
@@ -4740,56 +4781,101 @@ function registerPet(f) {
   });
 }
 function petLabel(kind) { return kind === 'dog' ? '🐶 your dog' : '🐱 your cat'; }
+function petCellBlocked(x, z) { return blocks.has(key(Math.floor(x), 0, Math.floor(z))); }  // stove/wall/furniture = off-limits
+function nearestPetTarget(type, x, z, filledOnly) {
+  let best = null, bd = 1e9;
+  blocks.forEach((b, k) => {
+    if (b.type !== type) return;
+    if (filledOnly && !(b.mesh.userData && b.mesh.userData.filled)) return;
+    const a = k.split(',').map(Number), cx = a[0] + 0.5, cz = a[2] + 0.5, d = Math.hypot(cx - x, cz - z);
+    if (d < bd) { bd = d; best = { x: cx, z: cz, entry: b, dist: d }; }
+  });
+  return best;
+}
+function petWalkStep(p, m, tx, tz, dt) {
+  const dx = tx - m.position.x, dz = tz - m.position.z, dist = Math.hypot(dx, dz);
+  if (dist > 0.02) {
+    const s = Math.min(dist, (p.kind === 'dog' ? 1.5 : 1.05) * dt);
+    m.position.x += dx / dist * s; m.position.z += dz / dist * s;
+    p.facing += shortAngle(p.facing, Math.atan2(dx, dz)) * 0.22;
+    m.rotation.y = p.facing;
+    m.position.y = p.baseY + Math.abs(Math.sin(p.phase * 10)) * 0.045;       // bouncy steps
+    if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 8) * 0.32;            // happy wag
+    if (p.head) p.head.position.y = 0.4;
+  }
+  return dist;
+}
 function updatePets(dt, now) {
   if (!pets.length) return;
   for (const p of pets) {
     const m = p.f.mesh;
     p.phase += dt;
-    if (p.mode !== 'eat') m.rotation.x += (0 - m.rotation.x) * 0.2;          // un-tip the nose
-    if (p.mode !== 'sleep') { m.scale.x += (1 - m.scale.x) * 0.12; m.scale.y += (1 - m.scale.y) * 0.12; }
+    if (p.mode !== 'eat') { m.rotation.x += (0 - m.rotation.x) * 0.2; if (p.head) p.head.position.y += (0.4 - p.head.position.y) * 0.3; }
 
-    if (p.mode === 'sleep') {                                                // curl down & breathe
-      m.scale.x += (1.12 - m.scale.x) * 0.1; m.scale.y += (0.72 - m.scale.y) * 0.1;
+    if (p.mode === 'sleep') {
+      const bed = nearestPetTarget('petbed', m.position.x, m.position.z, false);
+      if (bed && bed.dist > 0.45) {                                          // pad over to the bed first
+        m.scale.x += (1 - m.scale.x) * 0.12; m.scale.y += (1 - m.scale.y) * 0.12;
+        petWalkStep(p, m, bed.x, bed.z, dt); continue;
+      }
+      m.scale.x += (1.12 - m.scale.x) * 0.1; m.scale.y += (0.72 - m.scale.y) * 0.1;   // curl up & breathe
       m.position.y = p.baseY - 0.03 + Math.sin(p.phase * 1.6) * 0.012;
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 1.6) * 0.06;
       continue;
     }
+    m.scale.x += (1 - m.scale.x) * 0.12; m.scale.y += (1 - m.scale.y) * 0.12;
+
     if (p.mode === 'purr') {                                                 // sit & gently rumble / wag
       m.position.y = p.baseY + Math.sin(p.phase * 9) * 0.008;
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 3) * 0.28;
       continue;
     }
-    if (p.mode === 'eat') {                                                  // head dips down to nibble
-      m.position.y = p.baseY;
-      const nod = (Math.sin(p.phase * 7) * 0.5 + 0.5);
+    if (p.mode === 'eat') {
+      const bowl = nearestPetTarget('foodbowl', m.position.x, m.position.z, true);
+      if (bowl && bowl.dist > 0.5) { p.eatT = 0; petWalkStep(p, m, bowl.x, bowl.z, dt); continue; }
+      m.position.y = p.baseY;                                                // nibble (at the bowl, or in place if none)
+      const nod = Math.sin(p.phase * 7) * 0.5 + 0.5;
       m.rotation.x = nod * 0.5;
       if (p.head) p.head.position.y = 0.4 - nod * 0.06;
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 4) * 0.12;
+      if (bowl) {                                                            // empty the bowl after a good meal
+        p.eatT = (p.eatT || 0) + dt;
+        if (p.eatT > 5) {
+          bowl.entry.mesh.userData.filled = false;
+          if (bowl.entry.mesh.userData.kibble) bowl.entry.mesh.userData.kibble.visible = false;
+          p.eatT = 0; p.mode = 'walk'; p.timer = 0;
+          toast((p.kind === 'dog' ? '🐶 Woof' : '🐱 Meow') + '! All gone — yum!', 1800);
+        }
+      }
       continue;
     }
-    // 'walk' — amble to random nearby spots, sit a beat, repeat
+    // 'walk'
+    if (p.kind === 'dog' && G.owned.leash) {                                 // on the leash → heel & follow you
+      const dist = Math.hypot(player.pos.x - m.position.x, player.pos.z - m.position.z);
+      if (dist > 1.4) petWalkStep(p, m, player.pos.x, player.pos.z, dt);
+      else { m.position.y = p.baseY; if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 6) * 0.3; }
+      continue;
+    }
     p.timer -= dt;
-    if (p.timer <= 0) {
-      p.tx = petClampX(p.home.x + (Math.random() * 2 - 1) * 3.2);
-      p.tz = petClampX(p.home.z + (Math.random() * 2 - 1) * 3.2);
-      p.timer = 2 + Math.random() * 3.5;
-      p.moving = true;
-      p.pause = Math.random() < 0.35;                                        // sometimes just sit & look around
+    if (p.timer <= 0) {                                                      // pick a fresh OPEN floor spot to amble to
+      let tx = m.position.x, tz = m.position.z;
+      for (let tries = 0; tries < 6; tries++) {
+        const cx = petClampX(p.home.x + (Math.random() * 2 - 1) * 3.2);
+        const cz = petClampX(p.home.z + (Math.random() * 2 - 1) * 3.2);
+        if (!petCellBlocked(cx, cz)) { tx = cx; tz = cz; break; }
+      }
+      p.tx = tx; p.tz = tz; p.timer = 2 + Math.random() * 3.5;
+      p.pause = Math.random() < 0.35;
     }
     const dx = p.tx - m.position.x, dz = p.tz - m.position.z, dist = Math.hypot(dx, dz);
-    if (p.pause || dist < 0.08) {                                           // resting: tail flick
+    const ahead = dist > 0.001 && petCellBlocked(m.position.x + dx / dist * 0.32, m.position.z + dz / dist * 0.32);
+    if (p.pause || dist < 0.08 || ahead) {                                   // resting (or refusing to step onto something)
       m.position.y = p.baseY;
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 2) * 0.12;
       if (p.head) p.head.position.y = 0.4;
-    } else {                                                                // stepping toward the target
-      const sp = (p.kind === 'dog' ? 1.5 : 1.05) * dt;
-      m.position.x += dx / dist * sp;
-      m.position.z += dz / dist * sp;
-      p.facing += shortAngle(p.facing, Math.atan2(dx, dz)) * 0.2;
-      m.rotation.y = p.facing;
-      m.position.y = p.baseY + Math.abs(Math.sin(p.phase * 10)) * 0.045;     // bouncy steps
-      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 8) * 0.32;          // happy wag
-      if (p.head) p.head.position.y = 0.4;
+      if (ahead) p.timer = Math.min(p.timer, 0.2);                           // blocked → choose a new spot soon
+    } else {
+      petWalkStep(p, m, p.tx, p.tz, dt);
     }
     p.f.x = Math.floor(m.position.x); p.f.z = Math.floor(m.position.z);      // keep save/pickup in sync
   }
@@ -5097,7 +5183,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -5142,6 +5228,11 @@ function renderInv() {
     ['🐱', 'Pet Cats', G.furniture.cat, 'cat'],
     ['🐶', 'Pet Dogs', G.furniture.dog, 'dog'],
     ['🐠', 'Fish Bowls', G.furniture.fish, 'fish'],
+    ['🥣', 'Food Bowls', G.furniture.foodbowl, 'foodbowl'],
+    ['💧', 'Water Bowls', G.furniture.waterbowl, 'waterbowl'],
+    ['🥫', 'Pet Food', G.furniture.petfood, 'petfood'],
+    ['🛏️', 'Pet Beds', G.furniture.petbed, 'petbed'],
+    ['🧺', 'Litter Boxes', G.furniture.litterbox, 'litterbox'],
     ['🪵', 'Coffee Tables', G.furniture.coffeetable, 'coffeetable'],
     ['🗄️', 'Dressers', G.furniture.dresser, 'dresser'],
     ['📺', 'Televisions', G.furniture.tv, 'tv'],
