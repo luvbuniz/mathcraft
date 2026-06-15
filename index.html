@@ -293,6 +293,9 @@
   .guBar .track { flex:1; height:14px; background:#e2e8f0; border-radius:7px; overflow:hidden; }
   .guBar .fill { height:100%; background:linear-gradient(90deg,#69d05c,#3f9d34); border-radius:7px; }
   .guBar .num { width:62px; font-weight:bold; text-align:right; font-variant-numeric:tabular-nums; }
+  .guScore { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(15px,2.6vw,19px); font-weight:bold; color:#7a5b00; background:#FFF6D8; border:1px solid #f0d98a; border-radius:10px; padding:7px 11px; margin:4px 0 8px; }
+  .guScore .today { font-size:0.8em; color:#2f8a52; }
+  .guSkillSub { margin:-1px 0 6px 38%; padding-left:8px; font-size:clamp(11px,1.85vw,13px); color:#6a7b90; }
   .guEffort { color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:2px 0 4px; }
   .guFocus { font-weight:bold; font-size:clamp(13px,2.2vw,15px); margin:0 0 6px; }
   .guReset { margin-top:8px; background:#ffd0c6; color:#7c2413; font-weight:bold; font-size:13px;
@@ -1977,7 +1980,7 @@ const BADGES = [
 ];
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0 };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {} };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -1985,15 +1988,48 @@ const PROFILE_PREFIX = 'stackadooProfile:';
 const profileKey = name => PROFILE_PREFIX + (name || 'Player');
 function loadProfileFor(name) {
   profile = freshProfile();
+  let saved = null;
   try {
-    const p = JSON.parse(localStorage.getItem(profileKey(name)));
-    if (p && p.badges) Object.assign(profile, p);   // merge so old saves gain new fields
+    saved = JSON.parse(localStorage.getItem(profileKey(name)));
+    if (saved && saved.badges) Object.assign(profile, saved);   // merge so old saves gain new fields
   } catch (e) {}
   profile.byOp = profile.byOp || {};
   profile.byOpWrong = profile.byOpWrong || {};
   profile.byGrade = profile.byGrade || {};
   profile.byDay = profile.byDay || {};
+  profile.starsByDay = profile.starsByDay || {};
+  // an existing save from before Stars existed → backfill a Math Score from what they've already solved
+  if (saved && saved.stars == null) profile.stars = estimateStars(profile);
   if (!profile.firstPlayed) profile.firstPlayed = Date.now();
+}
+/* Estimate a Math Score from a profile's solve history (for saves made before Stars were added) */
+function estimateStars(p) {
+  let est = 0;
+  const bg = p.byGrade || {};
+  for (const lv in bg) est += (bg[lv] || 0) * starsFor(Number(lv));
+  if (!Object.keys(bg).length) est = (p.totalSolved || 0) * starsFor(2);   // no grade history → assume Grade 2
+  return est;
+}
+/* Stars per correct answer — harder grades are worth more, so progress reflects the challenge */
+function starsFor(level) {
+  const lv = Math.max(1, Math.min(6, level || 1));
+  return 5 * lv;                                  // G1=5 ⭐, G2=10, G3=15, G4=20, G5=25, G6=30
+}
+const fmtNum = n => (n || 0).toLocaleString('en-US');
+/* Turn a count of correct answers into a friendly mastery stage with progress to the next */
+const MASTERY_STAGES = [
+  { min: 0, label: '🌱 Learning', col: '#7FB069' },
+  { min: 10, label: '✏️ Practicing', col: '#46A06B' },
+  { min: 25, label: '💪 Strong', col: '#2F8A52' },
+  { min: 50, label: '🌟 Mastered', col: '#E0A100' }
+];
+function masteryStage(correct) {
+  let i = 0;
+  for (let s = 0; s < MASTERY_STAGES.length; s++) if (correct >= MASTERY_STAGES[s].min) i = s;
+  const cur = MASTERY_STAGES[i], next = MASTERY_STAGES[i + 1];
+  const fill = next ? Math.round((correct - cur.min) / (next.min - cur.min) * 100) : 100;
+  const toNext = next ? next.min - correct : 0;
+  return { label: cur.label, col: cur.col, fill, toNext, nextLabel: next ? next.label : null, mastered: !next };
 }
 function saveProfile() {
   profile.lastPlayed = Date.now();
@@ -2016,10 +2052,15 @@ function recordSolve(eq) {
   profile.totalSolved++;
   const today = new Date().toISOString().slice(0, 10);        // effort over time
   profile.byDay[today] = (profile.byDay[today] || 0) + 1;
+  const level = (eq && eq.level) || G.grade;
+  const earned = starsFor(level);                              // award Stars toward the Math Score
+  profile.stars = (profile.stars || 0) + earned;
+  profile.starsByDay = profile.starsByDay || {};
+  profile.starsByDay[today] = (profile.starsByDay[today] || 0) + earned;
+  G.lastStars = earned;
   if (eq) {
     const op = eq.skill || 'other';
     profile.byOp[op] = (profile.byOp[op] || 0) + 1;
-    const level = eq.level || G.grade;
     profile.byGrade[level] = (profile.byGrade[level] || 0) + 1;
   }
   for (const b of BADGES) {
@@ -2166,6 +2207,11 @@ function renderGrownup() {
     const card = document.createElement('div');
     card.className = 'guCard';
     let html = '<h3>🙂 ' + p._name + '</h3>';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStars = (p.starsByDay || {})[todayStr] || 0;
+    const score = (p.stars != null) ? p.stars : estimateStars(p);   // backfill older saves shown on the dashboard
+    html += '<div class="guScore">⭐ Math Score: <b>' + fmtNum(score) + '</b>' +
+      (todayStars ? '<span class="today">+' + fmtNum(todayStars) + ' today</span>' : '') + '</div>';
     html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
       '<span>🏅 Badges: ' + ((p.badges && p.badges.length) || 0) + '</span><span>⏱️ ' + fmtPlayTime(p.secondsPlayed) + '</span></div>';
 
@@ -2194,16 +2240,28 @@ function renderGrownup() {
     if (gKeys.length) html += '<div style="font-weight:bold;color:#5b6b80;margin:6px 0 2px">By grade: ' +
       gKeys.map(g => 'G' + g + ' (' + grades[g] + ')').join(' · ') + '</div>';
 
-    // per-skill accuracy bars — strong (green) vs weak (red) so you can see what to practice
+    // per-skill mastery — each skill grows through stages as they get answers right
     const ops = p.byOp || {}, wrongs = p.byOpWrong || {};
     const opKeys = Object.keys(ops).sort((a, b) => ops[b] - ops[a]);
     opKeys.forEach(k => {
       const c = ops[k], w = wrongs[k] || 0;
-      const a = (c + w) ? Math.round(c / (c + w) * 100) : 100;
-      const col = a >= 75 ? '#3CA45C' : a >= 50 ? '#E6A100' : '#E0524D';
+      const ms = masteryStage(c);
       html += '<div class="guBar"><span class="lab">' + (SKILL_LABELS[k] || k) + '</span>' +
-        '<span class="track"><span class="fill" style="width:' + a + '%;background:' + col + '"></span></span>' +
-        '<span class="num">' + a + '% · ' + c + '</span></div>';
+        '<span class="track"><span class="fill" style="width:' + ms.fill + '%;background:' + ms.col + '"></span></span>' +
+        '<span class="num">' + c + ' ✓</span></div>';
+      // sub-line: stage, how far to the next stage, and a careful-vs-guessing read.
+      // Only show the read when we actually have mistake data for this skill (older imported
+      // saves didn't track per-skill misses, so we don't pretend to know the accuracy).
+      let tag = '';
+      const haveMissData = w > 0 || (p.totalWrong || 0) === 0;
+      if (haveMissData && c + w >= 4) {
+        const a = Math.round(c / (c + w) * 100);
+        tag = a >= 85 ? ' · <span style="color:#2f8a52">✅ careful</span>'
+          : a >= 60 ? ' · <span style="color:#b07d00">🟡 some guessing</span>'
+          : ' · <span style="color:#c0392b">🔴 lots of guessing</span>';
+      }
+      const prog = ms.mastered ? '🌟 mastered!' : ms.label + ' · ' + ms.toNext + ' more to ' + ms.nextLabel;
+      html += '<div class="guSkillSub">' + prog + tag + '</div>';
     });
     if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
     card.innerHTML = html;
@@ -3839,7 +3897,7 @@ function answerPicked(btn, opt) {
     // closeMath() quietly gives them the build blocks so a prize is never lost.
     pendingReward = reward;
     const balls = Math.max(2, Math.round(reward * 0.7));
-    $('mathFeedback').textContent = '🎉 Correct!' + levelNote + ' Pick your reward:';
+    $('mathFeedback').textContent = '🎉 Correct! +' + (G.lastStars || 0) + '⭐' + levelNote + ' Pick your reward:';
     const wrap = $('rewardChoice');
     wrap.innerHTML = '';
     wrap.style.display = 'flex';
@@ -4126,7 +4184,7 @@ function addRoof(x, y, z, rot, style) {
   return mesh;
 }
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
-const COUCH_STYLES = ['modern', 'classic', 'loveseat'];
+const COUCH_STYLES = ['modern', 'classic', 'loveseat', 'chesterfield'];
 const COUCH_COLORS = [0x4F7CB0, 0xC0504D, 0x6FA85B, 0x8E7CC3, 0xD9A441, 0xCF6F9B, 0x57606B, 0xE4E1D8];
 const RUG_COLORS = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0x55606B];
 const shade = (c, f) => {                 // scale a hex color's brightness by f (clamped)
@@ -4139,7 +4197,7 @@ function buildCouch(g, variant) {
   const col = COUCH_COLORS[ci], dark = shade(col, 0.8), light = shade(col, 1.2), legC = 0x4a3526;
   const style = COUCH_STYLES[si];
   const width = style === 'loveseat' ? 0.74 : 0.94, halfW = width / 2;
-  const backH = style === 'classic' ? 0.5 : style === 'loveseat' ? 0.42 : 0.34;
+  const backH = style === 'classic' || style === 'chesterfield' ? 0.5 : style === 'loveseat' ? 0.42 : 0.34;
   const seats = style === 'loveseat' ? 2 : 3, innerW = width - 0.22, seatW = innerW / seats;
   box(g, width, 0.26, 0.5, dark, 0, 0.25, 0);                          // plush base body
   box(g, width - 0.04, 0.05, 0.5, light, 0, 0.39, 0);                  // seat deck highlight
@@ -4167,10 +4225,15 @@ function buildCouch(g, variant) {
     box(g, 0.19, 0.19, 0.08, light, -innerW / 2 + 0.13, 0.56, -0.04);
     box(g, 0.19, 0.19, 0.08, shade(col, 0.62), innerW / 2 - 0.13, 0.56, -0.04);
   }
+  if (style === 'chesterfield') {                                     // deep button tufting on the back
+    const btn = shade(col, 0.6);
+    for (let r = 0; r < 2; r++) for (let cI = 0; cI < 4; cI++)
+      box(g, 0.025, 0.025, 0.04, btn, -0.3 + cI * 0.2, 0.52 + r * 0.16, -0.07);
+  }
 }
-const CHAIR_STYLES = ['wood', 'modern', 'cushioned'];
+const CHAIR_STYLES = ['wood', 'modern', 'cushioned', 'armchair'];
 const CHAIR_COLORS = [0xB07B4F, 0x4F7CB0, 0xC0504D, 0x6FA85B, 0x33373F, 0xD9A441, 0xE4E1D8, 0xCF6F9B];
-const BED_STYLES = ['cozy', 'striped', 'quilted'];
+const BED_STYLES = ['cozy', 'striped', 'quilted', 'plaid'];
 const BED_COLORS = [0x5aa7e8, 0xE05A6B, 0x6FA85B, 0xC79AE0, 0xF0B450, 0xF09BB5, 0x57606B, 0xEDE7D8];
 function buildChair(g, variant) {
   const si = Math.floor((variant || 0) / 100) % CHAIR_STYLES.length;
@@ -4185,6 +4248,12 @@ function buildChair(g, variant) {
     box(g, 0.54, 0.5, 0.12, col, 0, 0.74, -0.22);                   // padded back
     box(g, 0.46, 0.4, 0.05, shade(col, 1.2), 0, 0.74, -0.16);       // back highlight
     [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([x, z]) => box(g, 0.07, 0.42, 0.07, legC, x, 0.21, z));
+  } else if (style === 'armchair') {     // cozy upholstered armchair with armrests
+    box(g, 0.58, 0.16, 0.56, col, 0, 0.44, 0);                       // thick seat cushion
+    box(g, 0.58, 0.54, 0.14, col, 0, 0.76, -0.23);                  // padded back
+    box(g, 0.5, 0.44, 0.04, shade(col, 1.18), 0, 0.76, -0.16);      // back highlight
+    [-1, 1].forEach(s => box(g, 0.12, 0.32, 0.52, shade(col, 0.92), s * 0.27, 0.54, 0.02));  // armrests
+    [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]].forEach(([x, z]) => box(g, 0.07, 0.4, 0.07, legC, x, 0.2, z));
   } else {                               // classic wooden chair
     box(g, 0.55, 0.08, 0.55, col, 0, 0.42, 0);                       // seat
     box(g, 0.55, 0.6, 0.08, col, 0, 0.7, -0.24);                    // back
@@ -4250,6 +4319,10 @@ function buildFurnitureMesh(type, variant) {
     if (bst === 'quilted') {                                          // quilted seams (grid)
       [-0.35, 0, 0.35].forEach(x => box(g, 0.02, 0.03, 1.5, shade(bcol, 0.78), x, 0.45, 0.16));
       [-0.5, 0, 0.5].forEach(z => box(g, 1.04, 0.03, 0.02, shade(bcol, 0.78), 0, 0.45, 0.16 + z));
+    }
+    if (bst === 'plaid') {                                            // crossing plaid stripes
+      [-0.35, 0, 0.35].forEach(x => box(g, 0.07, 0.03, 1.5, shade(bcol, 1.3), x, 0.45, 0.16));
+      [-0.55, -0.05, 0.45].forEach(z => box(g, 1.06, 0.03, 0.07, shade(bcol, 0.66), 0, 0.45, 0.16 + z));
     }
     box(g, 0.94, 0.14, 0.34, 0xFFFFFF, 0, 0.42, -0.68);                // pillow
     [[-0.48, -0.86], [0.48, -0.86], [-0.48, 0.86], [0.48, 0.86]].forEach(([lx, lz]) =>
@@ -4877,9 +4950,9 @@ function renderInv() {
       });
     }
     const STYLED = {
-      couch: { label: '🛋️ Couch style', styles: ['Modern', 'Classic', 'Loveseat'], colors: COUCH_COLORS, vkey: 'couchVariant' },
-      chair: { label: '🪑 Chair style', styles: ['Wood', 'Modern', 'Cushioned'], colors: CHAIR_COLORS, vkey: 'chairVariant' },
-      bed: { label: '🛏️ Comforter style', styles: ['Cozy', 'Striped', 'Quilted'], colors: BED_COLORS, vkey: 'bedVariant' }
+      couch: { label: '🛋️ Couch style', styles: ['Modern', 'Classic', 'Loveseat', 'Chesterfield'], colors: COUCH_COLORS, vkey: 'couchVariant' },
+      chair: { label: '🪑 Chair style', styles: ['Wood', 'Modern', 'Cushioned', 'Armchair'], colors: CHAIR_COLORS, vkey: 'chairVariant' },
+      bed: { label: '🛏️ Comforter style', styles: ['Cozy', 'Striped', 'Quilted', 'Plaid'], colors: BED_COLORS, vkey: 'bedVariant' }
     };
     if (STYLED[slot]) {                       // style pictures + color (couch / chair / bed comforter)
       const cfg = STYLED[slot], cur = G[cfg.vkey] || 0;
@@ -4910,7 +4983,8 @@ function renderInv() {
       dbox.innerHTML = '<span class="invPaintLabel">🍽️ Table style</span><div class="styleThumbRow" id="dtRow"></div>';
       wrap.appendChild(dbox);
       const drow = dbox.querySelector('#dtRow');
-      ['Round', 'Rectangular', 'Farmhouse'].forEach((label, idx) => {
+      DTABLE_STYLES.forEach((st, idx) => {
+        const label = st.charAt(0).toUpperCase() + st.slice(1);
         const b = document.createElement('button');
         b.className = 'styleThumb' + ((G.dtableVariant || 0) === idx ? ' sel' : '');
         b.innerHTML = '<img src="' + getThumb('dtable', idx) + '" alt="">' + label;
