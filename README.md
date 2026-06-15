@@ -46,18 +46,18 @@ subject at the **❓ stations**, and its own saved build:
 | World | Subject |
 | --- | --- |
 | 🌳 **Math Meadow** | Math problems (the classic game) |
-| 🏙️ **Reading City** | English reading & grammar — rhymes, beginning sounds, opposites, synonyms, parts of speech, plurals, past tense, and writing a sentence correctly |
+| 🏘️ **Reading Town** | English reading & grammar — rhymes, beginning sounds, opposites, synonyms, parts of speech, plurals, past tense, and writing a sentence correctly |
 | 🏖️ **Spanish Beach** | Beginner Spanish words (colors, numbers, animals, basics) |
 
 Each world also looks the part: 🌳 Math Meadow has wildflowers and green grass,
-🏙️ Reading City has a lit skyline on the horizon, and 🏖️ Spanish Beach is a sandy
+🏘️ Reading Town has a lit skyline on the horizon, and 🏖️ Spanish Beach is a sandy
 island ringed by ocean with palm trees and beach umbrellas.
 
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
 to another world without going back to the home screen — your house in each world
 is saved separately, so you can build different houses in different places.
 
-🌳 **Math Meadow is free.** Reading City and Spanish Beach (and any worlds added
+🌳 **Math Meadow is free.** Reading Town and Spanish Beach (and any worlds added
 later) unlock together with a one-time purchase — no subscription. The unlock flag
 is stored on the device. For demos, a **Reset purchase (testing)** button lives in
 the 🧑‍🏫 For Grown-Ups panel.

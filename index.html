@@ -288,6 +288,10 @@
   /* ---------- Paint swatches (right under Build Blocks in the backpack) ---------- */
   .invPaint { background:#fff7e6; border:2px dashed #f0c668; border-radius:14px; padding:8px 12px 10px; margin:-4px 0 4px; }
   .invPaintLabel { display:block; font-weight:bold; color:#9a6a00; font-size:14px; margin-bottom:6px; }
+  .roofStyleRow { display:flex; gap:8px; }
+  .roofStyleBtn { flex:1; padding:8px; border:2px solid #e3c07a; border-radius:10px; background:#fff;
+    font-family:inherit; font-weight:800; color:#7a5c1e; cursor:pointer; }
+  .roofStyleBtn.sel { background:#FFE9A0; border-color:#c79a2e; }
   .paintRow { display:flex; flex-wrap:wrap; gap:8px; }
   .swatch { width:34px; height:34px; border-radius:8px; border:3px solid #fff; box-shadow:0 2px 0 rgba(0,0,0,.2); cursor:pointer; padding:0; }
   .swatch.sel { outline:4px solid #2f7d27; }
@@ -757,7 +761,7 @@
         <span class="fieldLabel">Choose your world</span>
         <div class="choiceGrid grades" id="worldRow">
           <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
-          <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏙️ Reading City</b><small>Reading &amp; grammar</small></button>
+          <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏘️ Reading Town</b><small>Reading &amp; grammar</small></button>
           <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
@@ -967,7 +971,7 @@
       and any new worlds we add later.
     </p>
     <div style="display:flex; flex-direction:column; gap:8px; margin:12px 0; text-align:left">
-      <div class="unlockPerk">🏙️ <b>Reading City</b> — reading &amp; grammar</div>
+      <div class="unlockPerk">🏘️ <b>Reading Town</b> — reading &amp; grammar</div>
       <div class="unlockPerk">🏖️ <b>Spanish Beach</b> — beginner Spanish</div>
       <div class="unlockPerk">✨ All future worlds &amp; updates</div>
     </div>
@@ -1151,7 +1155,7 @@ function makeReadingQuestion(level) {
     hint: 'Picture “' + target + '” — the opposite is its very different partner.' };
 }
 
-/* ---- Grammar (also asked in Reading City): parts of speech, plurals, past tense, sentences ---- */
+/* ---- Grammar (also asked in Reading Town): parts of speech, plurals, past tense, sentences ---- */
 const GRAM_NOUNS = ['dog', 'cat', 'ball', 'tree', 'house', 'car', 'book', 'apple', 'chair', 'table', 'cup', 'shoe', 'box', 'bed', 'door', 'star', 'cake', 'sock'];
 const GRAM_VERBS = ['run', 'jump', 'eat', 'sing', 'swim', 'read', 'sleep', 'hop', 'clap', 'throw', 'draw', 'dig', 'kick', 'laugh', 'sit', 'fly'];
 const GRAM_ADJS = ['happy', 'big', 'small', 'red', 'soft', 'fast', 'cold', 'funny', 'tall', 'shiny', 'loud', 'wet', 'sweet', 'silly', 'warm', 'clean'];
@@ -1699,7 +1703,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A,
+  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed',
   world: 'meadow',
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
@@ -1713,7 +1717,7 @@ const G = {
 const WORLDS = {
   meadow: { id: 'meadow', name: 'Math Meadow',    emoji: '🌳', subject: 'math',    chip: 'Math', free: true,
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
-  city:   { id: 'city',   name: 'Reading City',   emoji: '🏙️', subject: 'reading', chip: 'Reading', comingSoon: true,
+  city:   { id: 'city',   name: 'Reading Town',   emoji: '🏘️', subject: 'reading', chip: 'Reading', comingSoon: true,
             sky: 0xAFC4DC, fog: 0xC4D4E6, ground: [0x9aa3ad, 0x8d96a1, 0xa6afb9] },
   beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
@@ -1765,7 +1769,7 @@ function beginPurchase() {
     if (new URLSearchParams(location.search).get('unlocked') === '1') {
       localStorage.setItem(UNLOCK_KEY, '1');
       history.replaceState(null, '', location.pathname + location.hash);
-      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 Thank you! The full game is unlocked. Enjoy Reading City & Spanish Beach!', 4500); }, 700));
+      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 Thank you! The full game is unlocked. Enjoy Reading Town & Spanish Beach!', 4500); }, 700));
     }
   } catch (e) {}
 })();
@@ -1948,7 +1952,7 @@ function doUnlock() {
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
-  toast('🎉 Full game unlocked! Reading City and Spanish Beach are open — find a 🌀 portal to visit them!', 4500);
+  toast('🎉 Full game unlocked! Reading Town and Spanish Beach are open — find a 🌀 portal to visit them!', 4500);
   if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
 }
 /* reflect lock state on the homepage world picker */
@@ -2042,7 +2046,7 @@ function serializeWorld() {
     else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
     else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
-    else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0]);
+    else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0, b.roofStyle || 'pointed']);
     else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind)]);
     else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant]);
   });
@@ -2122,7 +2126,7 @@ function restoreGame(s) {
   if (s.timerMax) G.timerMax = s.timerMax;
   if (typeof s.timer === 'number') G.timer = Math.max(30, s.timer);
   loadProfileFor(G.playerName);
-  (s.placed || []).forEach(([x, y, z, type, detail]) => {
+  (s.placed || []).forEach(([x, y, z, type, detail, extra]) => {
     if (blocks.has(key(x, y, z))) return;
     if (type === 'door') placeDoor(x, y, z, detail);
     else if (type === 'power') {
@@ -2131,7 +2135,7 @@ function restoreGame(s) {
       addBlockMesh(x, y, z, null, 'power', true, mesh);
     }
     else if (type === 'window') addWindow(x, y, z, detail);
-    else if (type === 'roof') addRoof(x, y, z, detail);
+    else if (type === 'roof') addRoof(x, y, z, detail, extra);
     else if (type === 'stove') {
       placeFurnitureAt('stove', x, z);
       const st = blocks.get(key(x, 0, z));
@@ -2594,7 +2598,7 @@ function portalSwirlTexture() {
 }
 function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.pos.z - PORTAL_POS.z); }
 
-/* ---- per-world decor: a skyline for Reading City, palms + ocean for Spanish Beach ---- */
+/* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group() };
 function cityTexture(bodyN, litN) {
   const hx = n => '#' + n.toString(16).padStart(6, '0');
@@ -2669,6 +2673,20 @@ function buildBeachDecor(g) {
   const sun = new THREE.Mesh(new THREE.CircleGeometry(4, 24), new THREE.MeshBasicMaterial({ color: 0xFFE07A }));
   sun.position.set(-28, 16, -58); g.add(sun);
 }
+/* Math Meadow gets a countryside feel: rolling green hills on the horizon */
+function buildMeadowDecor(g) {
+  const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843];
+  for (let i = 0; i < 11; i++) {
+    const ang = (i / 11) * Math.PI * 2 + 0.35;
+    const r = 25 + (i % 4) * 3;                         // out past the play area = backdrop
+    const rad = 4 + (i % 5) * 1.7;
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 12), mat(greens[i % greens.length]));
+    hill.scale.y = 0.42;                                // flatten into a rolling dome
+    hill.position.set(Math.cos(ang) * r, -rad * 0.18, Math.sin(ang) * r);   // sink the base below the grass
+    g.add(hill);
+  }
+}
+buildMeadowDecor(worldDecor.meadow);
 buildCityDecor(worldDecor.city);
 buildBeachDecor(worldDecor.beach);
 for (const id in worldDecor) { worldDecor[id].visible = (id === G.world); scene.add(worldDecor[id]); }
@@ -3129,7 +3147,7 @@ function placeSelectedAt(x, z, blockY) {
     if (y > 8) { toast('⬆️ That roof is high enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
     if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    addRoof(x, y, z);
+    addRoof(x, y, z, null, G.roofStyle);
     G.furniture.roof -= 1; Sound.place(); refreshHUD(); return true;
   }
   // plain building block
@@ -3582,6 +3600,19 @@ function renderShop() {
     btn.disabled = item.kind === 'sell' ? G.berries === 0 : (!owned && G.coins < item.price);
     btn.onclick = () => owned ? sellItem(item.id) : buyItem(item.id);
     row.appendChild(btn);
+    // roof tiles can be refunded (full price per tile, for now)
+    if (item.id === 'roof' && G.furniture.roof > 0) {
+      const sb = document.createElement('button');
+      sb.className = 'buyBtn owned';
+      sb.textContent = 'Refund 1 (+2 🪙)';
+      sb.onclick = () => {
+        if (G.furniture.roof < 1) return;
+        G.furniture.roof -= 1; G.coins += 2; Sound.coin();
+        toast('🔺 Refunded a roof tile for 2 🪙!', 1800);
+        refreshHUD(); renderShop();
+      };
+      row.appendChild(sb);
+    }
     wrap.appendChild(row);
   });
 }
@@ -3661,31 +3692,40 @@ function addWindow(x, y, z, rot) {
   return mesh;
 }
 /* a peaked roof tile — two slopes meeting at a ridge, the classic little-house roof */
-function buildRoofMesh() {
+function buildRoofMesh(style) {
   const g = new THREE.Group();
-  const tile = 0xB5503C, ridgeCol = 0x8E3B2C;
+  const tile = 0xB5503C, trim = 0x8E3B2C;
+  if (style === 'flat') {
+    box(g, 0.98, 0.86, 0.98, tile, 0, -0.07, 0);        // body fills down to the block (no gap)
+    box(g, 1.08, 0.14, 1.08, trim, 0, 0.42, 0);         // overhanging flat top with eaves
+    [[0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]].forEach(([x, z]) =>
+      box(g, x ? 0.1 : 1.06, 0.14, z ? 0.1 : 1.06, trim, x * 0.99, 0.52, z * 0.99));  // low parapet edge
+    return g;
+  }
+  // pointed (peaked) — eaves sit right on the block below, peak on top (no floating gap)
   [1, -1].forEach(s => {
-    const slope = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.09, 0.78), mat(tile));
-    slope.position.set(0, 0.18, s * 0.25);
-    slope.rotation.x = s * 0.84;                      // tilt each side down toward the eave
+    const slope = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.1, 1.04), mat(tile));
+    slope.position.set(0, 0.02, s * 0.25);
+    slope.rotation.x = s * 1.05;                          // steep slope from eave (bottom) to ridge (top)
     g.add(slope);
   });
-  box(g, 1.08, 0.12, 0.18, ridgeCol, 0, 0.47, 0);     // ridge cap along the top
-  box(g, 1.06, 0.07, 0.09, ridgeCol, 0, -0.04, 0.49); // eave trim
-  box(g, 1.06, 0.07, 0.09, ridgeCol, 0, -0.04, -0.49);
+  box(g, 1.1, 0.13, 0.17, trim, 0, 0.46, 0);             // ridge cap
+  box(g, 1.08, 0.2, 0.12, trim, 0, -0.42, 0.49);         // eave fascia — hangs onto the block top
+  box(g, 1.08, 0.2, 0.12, trim, 0, -0.42, -0.49);
   return g;
 }
 /* roof tiles line up like windows: ridge runs along the wall you face when placing */
 function roofRotationAt(x, z) {
   return Math.abs(Math.cos(player.yaw)) >= Math.abs(Math.sin(player.yaw)) ? 0 : Math.PI / 2;
 }
-function addRoof(x, y, z, rot) {
+function addRoof(x, y, z, rot, style) {
   if (rot == null) rot = roofRotationAt(x, z);
-  const mesh = buildRoofMesh();
+  style = style || 'pointed';
+  const mesh = buildRoofMesh(style);
   mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
   mesh.rotation.y = rot;
   addBlockMesh(x, y, z, null, 'roof', true, mesh);
-  blocks.get(key(x, y, z)).rot = rot;
+  const b = blocks.get(key(x, y, z)); b.rot = rot; b.roofStyle = style;
   return mesh;
 }
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
@@ -3994,8 +4034,10 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   if (entry && entry.type === 'stove' && COOK_SLOTS[G.selectedSlot]) { cookOnStove(entry, G.selectedSlot); return; }
   // Kid-friendly stacking: tapping one of your solid blocks drops the new block
   // on TOP of that column — no need to hit the exact top face to build upward.
-  const STACK_ON = { placed: 1, power: 1, window: 1, roof: 1 };
-  const stackable = G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window' || G.selectedSlot === 'roof';
+  // (Roofs are NOT auto-stacked — they place on the surface you tap, so you can roof
+  //  the top of a house and extend roofs across a span.)
+  const STACK_ON = { placed: 1, power: 1, window: 1 };
+  const stackable = G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window';
   if (stackable && entry && entry.removable && entryKey && STACK_ON[entry.type]) {
     const [cx, , cz] = entryKey.split(',').map(Number);
     let cy = 0;
@@ -4118,7 +4160,7 @@ function renderInv() {
       '<div class="info"><b>' + name + '</b><small>You have ' + count +
       (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
        slot === 'window' ? ' • Drops into a wall gap at any height' :
-       slot === 'roof' ? ' • Stacks on top of walls to make a peaked roof' :
+       slot === 'roof' ? ' • Tap the top of a wall — choose a style below' :
        (slot === 'pot' || slot === 'pan' || slot === 'bacon') ? ' • Aim at a 🔥 stove and place it on a burner to cook' :
        slot === 'pie' ? ' • Aim at a 🔥 stove to bake it in the oven' : '') + '</small></div>';
     const place = document.createElement('button');
@@ -4155,6 +4197,26 @@ function renderInv() {
           toast('🎨 ' + pc.name + ' blocks selected! Press D or tap to build.', 2000);
         };
         prow.appendChild(sw);
+      });
+    }
+    if (slot === 'roof') {                  // choose pointed or flat roof
+      const styleBox = document.createElement('div');
+      styleBox.className = 'invPaint';
+      styleBox.innerHTML = '<span class="invPaintLabel">🏠 Roof style</span><div class="roofStyleRow"></div>';
+      wrap.appendChild(styleBox);
+      const srow = styleBox.querySelector('.roofStyleRow');
+      [['pointed', '🔺 Pointed'], ['flat', '▭ Flat']].forEach(([st, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'roofStyleBtn' + (G.roofStyle === st ? ' sel' : '');
+        btn.textContent = label;
+        btn.onclick = () => {
+          Sound.click();
+          G.roofStyle = st; selectSlot('roof', true);
+          srow.querySelectorAll('.roofStyleBtn').forEach(b => b.classList.remove('sel'));
+          btn.classList.add('sel');
+          toast('🏠 ' + (st === 'flat' ? 'Flat' : 'Pointed') + ' roof selected! Tap the top of a wall to place it.', 2400);
+        };
+        srow.appendChild(btn);
       });
     }
   });
