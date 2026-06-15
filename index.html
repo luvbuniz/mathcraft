@@ -293,6 +293,9 @@
   .guBar .track { flex:1; height:14px; background:#e2e8f0; border-radius:7px; overflow:hidden; }
   .guBar .fill { height:100%; background:linear-gradient(90deg,#69d05c,#3f9d34); border-radius:7px; }
   .guBar .num { width:62px; font-weight:bold; text-align:right; font-variant-numeric:tabular-nums; }
+  .guScore { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(15px,2.6vw,19px); font-weight:bold; color:#7a5b00; background:#FFF6D8; border:1px solid #f0d98a; border-radius:10px; padding:7px 11px; margin:4px 0 8px; }
+  .guScore .today { font-size:0.8em; color:#2f8a52; }
+  .guSkillSub { margin:-1px 0 6px 38%; padding-left:8px; font-size:clamp(11px,1.85vw,13px); color:#6a7b90; }
   .guEffort { color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:2px 0 4px; }
   .guFocus { font-weight:bold; font-size:clamp(13px,2.2vw,15px); margin:0 0 6px; }
   .guReset { margin-top:8px; background:#ffd0c6; color:#7c2413; font-weight:bold; font-size:13px;
@@ -1977,7 +1980,7 @@ const BADGES = [
 ];
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0 };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {} };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -1985,15 +1988,48 @@ const PROFILE_PREFIX = 'stackadooProfile:';
 const profileKey = name => PROFILE_PREFIX + (name || 'Player');
 function loadProfileFor(name) {
   profile = freshProfile();
+  let saved = null;
   try {
-    const p = JSON.parse(localStorage.getItem(profileKey(name)));
-    if (p && p.badges) Object.assign(profile, p);   // merge so old saves gain new fields
+    saved = JSON.parse(localStorage.getItem(profileKey(name)));
+    if (saved && saved.badges) Object.assign(profile, saved);   // merge so old saves gain new fields
   } catch (e) {}
   profile.byOp = profile.byOp || {};
   profile.byOpWrong = profile.byOpWrong || {};
   profile.byGrade = profile.byGrade || {};
   profile.byDay = profile.byDay || {};
+  profile.starsByDay = profile.starsByDay || {};
+  // an existing save from before Stars existed → backfill a Math Score from what they've already solved
+  if (saved && saved.stars == null) profile.stars = estimateStars(profile);
   if (!profile.firstPlayed) profile.firstPlayed = Date.now();
+}
+/* Estimate a Math Score from a profile's solve history (for saves made before Stars were added) */
+function estimateStars(p) {
+  let est = 0;
+  const bg = p.byGrade || {};
+  for (const lv in bg) est += (bg[lv] || 0) * starsFor(Number(lv));
+  if (!Object.keys(bg).length) est = (p.totalSolved || 0) * starsFor(2);   // no grade history → assume Grade 2
+  return est;
+}
+/* Stars per correct answer — harder grades are worth more, so progress reflects the challenge */
+function starsFor(level) {
+  const lv = Math.max(1, Math.min(6, level || 1));
+  return 5 * lv;                                  // G1=5 ⭐, G2=10, G3=15, G4=20, G5=25, G6=30
+}
+const fmtNum = n => (n || 0).toLocaleString('en-US');
+/* Turn a count of correct answers into a friendly mastery stage with progress to the next */
+const MASTERY_STAGES = [
+  { min: 0, label: '🌱 Learning', col: '#7FB069' },
+  { min: 10, label: '✏️ Practicing', col: '#46A06B' },
+  { min: 25, label: '💪 Strong', col: '#2F8A52' },
+  { min: 50, label: '🌟 Mastered', col: '#E0A100' }
+];
+function masteryStage(correct) {
+  let i = 0;
+  for (let s = 0; s < MASTERY_STAGES.length; s++) if (correct >= MASTERY_STAGES[s].min) i = s;
+  const cur = MASTERY_STAGES[i], next = MASTERY_STAGES[i + 1];
+  const fill = next ? Math.round((correct - cur.min) / (next.min - cur.min) * 100) : 100;
+  const toNext = next ? next.min - correct : 0;
+  return { label: cur.label, col: cur.col, fill, toNext, nextLabel: next ? next.label : null, mastered: !next };
 }
 function saveProfile() {
   profile.lastPlayed = Date.now();
@@ -2016,10 +2052,15 @@ function recordSolve(eq) {
   profile.totalSolved++;
   const today = new Date().toISOString().slice(0, 10);        // effort over time
   profile.byDay[today] = (profile.byDay[today] || 0) + 1;
+  const level = (eq && eq.level) || G.grade;
+  const earned = starsFor(level);                              // award Stars toward the Math Score
+  profile.stars = (profile.stars || 0) + earned;
+  profile.starsByDay = profile.starsByDay || {};
+  profile.starsByDay[today] = (profile.starsByDay[today] || 0) + earned;
+  G.lastStars = earned;
   if (eq) {
     const op = eq.skill || 'other';
     profile.byOp[op] = (profile.byOp[op] || 0) + 1;
-    const level = eq.level || G.grade;
     profile.byGrade[level] = (profile.byGrade[level] || 0) + 1;
   }
   for (const b of BADGES) {
@@ -2166,6 +2207,11 @@ function renderGrownup() {
     const card = document.createElement('div');
     card.className = 'guCard';
     let html = '<h3>🙂 ' + p._name + '</h3>';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStars = (p.starsByDay || {})[todayStr] || 0;
+    const score = (p.stars != null) ? p.stars : estimateStars(p);   // backfill older saves shown on the dashboard
+    html += '<div class="guScore">⭐ Math Score: <b>' + fmtNum(score) + '</b>' +
+      (todayStars ? '<span class="today">+' + fmtNum(todayStars) + ' today</span>' : '') + '</div>';
     html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
       '<span>🏅 Badges: ' + ((p.badges && p.badges.length) || 0) + '</span><span>⏱️ ' + fmtPlayTime(p.secondsPlayed) + '</span></div>';
 
@@ -2194,16 +2240,28 @@ function renderGrownup() {
     if (gKeys.length) html += '<div style="font-weight:bold;color:#5b6b80;margin:6px 0 2px">By grade: ' +
       gKeys.map(g => 'G' + g + ' (' + grades[g] + ')').join(' · ') + '</div>';
 
-    // per-skill accuracy bars — strong (green) vs weak (red) so you can see what to practice
+    // per-skill mastery — each skill grows through stages as they get answers right
     const ops = p.byOp || {}, wrongs = p.byOpWrong || {};
     const opKeys = Object.keys(ops).sort((a, b) => ops[b] - ops[a]);
     opKeys.forEach(k => {
       const c = ops[k], w = wrongs[k] || 0;
-      const a = (c + w) ? Math.round(c / (c + w) * 100) : 100;
-      const col = a >= 75 ? '#3CA45C' : a >= 50 ? '#E6A100' : '#E0524D';
+      const ms = masteryStage(c);
       html += '<div class="guBar"><span class="lab">' + (SKILL_LABELS[k] || k) + '</span>' +
-        '<span class="track"><span class="fill" style="width:' + a + '%;background:' + col + '"></span></span>' +
-        '<span class="num">' + a + '% · ' + c + '</span></div>';
+        '<span class="track"><span class="fill" style="width:' + ms.fill + '%;background:' + ms.col + '"></span></span>' +
+        '<span class="num">' + c + ' ✓</span></div>';
+      // sub-line: stage, how far to the next stage, and a careful-vs-guessing read.
+      // Only show the read when we actually have mistake data for this skill (older imported
+      // saves didn't track per-skill misses, so we don't pretend to know the accuracy).
+      let tag = '';
+      const haveMissData = w > 0 || (p.totalWrong || 0) === 0;
+      if (haveMissData && c + w >= 4) {
+        const a = Math.round(c / (c + w) * 100);
+        tag = a >= 85 ? ' · <span style="color:#2f8a52">✅ careful</span>'
+          : a >= 60 ? ' · <span style="color:#b07d00">🟡 some guessing</span>'
+          : ' · <span style="color:#c0392b">🔴 lots of guessing</span>';
+      }
+      const prog = ms.mastered ? '🌟 mastered!' : ms.label + ' · ' + ms.toNext + ' more to ' + ms.nextLabel;
+      html += '<div class="guSkillSub">' + prog + tag + '</div>';
     });
     if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
     card.innerHTML = html;
@@ -3839,7 +3897,7 @@ function answerPicked(btn, opt) {
     // closeMath() quietly gives them the build blocks so a prize is never lost.
     pendingReward = reward;
     const balls = Math.max(2, Math.round(reward * 0.7));
-    $('mathFeedback').textContent = '🎉 Correct!' + levelNote + ' Pick your reward:';
+    $('mathFeedback').textContent = '🎉 Correct! +' + (G.lastStars || 0) + '⭐' + levelNote + ' Pick your reward:';
     const wrap = $('rewardChoice');
     wrap.innerHTML = '';
     wrap.style.display = 'flex';
