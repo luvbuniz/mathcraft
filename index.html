@@ -1010,6 +1010,14 @@
       Working it out on paper builds real number sense (and makes the tricky ones much easier!).
     </div>
     <div id="grownupList"></div>
+    <div style="margin-top:12px; padding:10px 14px; background:#F0F6FF; border:1px solid #cfe0f5; border-radius:14px; text-align:left">
+      <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">🔒 Game deletes</div>
+      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Keep little ones from erasing a build by accident. When shown, deleting already needs a typed code; hide the buttons entirely for the youngest.</div>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:#33507a; font-size:clamp(13px,2.2vw,15px)">
+        <input type="checkbox" id="hideDeleteToggle" style="width:20px; height:20px; flex:none">
+        Hide the 🗑️ delete buttons on the home screen
+      </label>
+    </div>
     <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
       <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">💾 Backup &amp; move builds</div>
       <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Saves live on this device. <b>Export</b> them to a file to back up or move to another device or tablet, then <b>Import</b> there.</div>
@@ -2353,6 +2361,11 @@ function renderGrownup() {
 function openGrownup() {
   renderGrownup();
   $('purchaseStatus').textContent = isUnlocked() ? 'Unlocked ✓' : 'Free (Math Meadow only)';
+  const tog = $('hideDeleteToggle');
+  if (tog) {
+    tog.checked = deleteHidden();
+    tog.onchange = () => { setDeleteHidden(tog.checked); if (typeof refreshSavedList === 'function') refreshSavedList(); };
+  }
   $('grownupPopup').style.display = 'flex';
 }
 function closeGrownup() { $('grownupPopup').style.display = 'none'; }
@@ -2428,6 +2441,10 @@ function loadSaveFor(name, world) {
   try { return JSON.parse(localStorage.getItem(saveKey(name, world))); } catch (e) { return null; }
 }
 function clearSave(name, world) { try { localStorage.removeItem(saveKey(name || G.playerName, world)); } catch (e) {} }
+/* Parent setting: hide the home-screen delete buttons entirely (on top of the typed-code gate). */
+const HIDE_DELETE_KEY = 'stackadooHideDelete';
+function deleteHidden() { try { return localStorage.getItem(HIDE_DELETE_KEY) === '1'; } catch (e) { return false; } }
+function setDeleteHidden(v) { try { localStorage.setItem(HIDE_DELETE_KEY, v ? '1' : '0'); } catch (e) {} }
 function restoreGame(s) {
   resetWorld();
   resetGameState();
@@ -5738,12 +5755,15 @@ function refreshSavedList() {
       '<span class="slotMeta">' + w.name + ' • Grade ' + (s.grade || 2) +
       '<span class="slotChip' + (calm ? ' calm' : '') + '">' + (calm ? 'No Gloomies' : 'Gloomies') + '</span></span></span>';
     load.onclick = () => { Sound.click(); restoreGame(s); };
-    const del = document.createElement('button');
-    del.className = 'delBtn';
-    del.innerHTML = SVG_TRASH;
-    del.title = 'Delete this saved game';
-    del.onclick = (e) => { e.stopPropagation(); Sound.click(); askDelete(s.name, s.world); };
-    row.appendChild(load); row.appendChild(del);
+    row.appendChild(load);
+    if (!deleteHidden()) {                       // parents can hide these from the grown-up section
+      const del = document.createElement('button');
+      del.className = 'delBtn';
+      del.innerHTML = SVG_TRASH;
+      del.title = 'Delete this saved game';
+      del.onclick = (e) => { e.stopPropagation(); Sound.click(); askDelete(s.name, s.world); };
+      row.appendChild(del);
+    }
     list.appendChild(row);
   });
 }
