@@ -922,7 +922,7 @@
 <div class="popup" id="shopPopup">
   <div class="popupCard">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="shopClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🛒 Stack Mart</h2>
+    <h2 id="shopTitle" style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🛒 Stack Mart</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
     <div id="shopTabs"></div>
     <div id="shopItems"></div>
@@ -1946,24 +1946,27 @@ const SHOP_ITEMS = [
   { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    kind: 'own',   desc: 'A snazzy hat for your hero.' },
   { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.', hidden: true }
 ];
-/* Stack Mart departments — a tabbed catalog with preview pictures */
-const SHOP_CATS = [
-  ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'],
-  ['bath', '🛁 Bath'], ['outdoor', '🌳 Outdoor'], ['build', '🧱 Building'], ['gear', '⭐ Gear']
-];
+/* Two stores: 🛒 Stack Mart (general) and 🏚️ Stack Barn (furniture & home), each with departments */
+const MART_CATS = [['food', '🍎 Food'], ['build', '🧱 Building'], ['gear', '⭐ Gear']];
+const BARN_CATS = [['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden']];
+const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
+  // 🛒 Stack Mart — the general store
   blocks: 'build', powerBlocks: 'build', door: 'build', window: 'build', roof: 'build',
+  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',
+  groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
+  // 🏚️ Stack Barn — furniture & home
   chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
   rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living',
-  dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen', pot: 'kitchen',
-  pan: 'kitchen', bacon: 'kitchen', pie: 'kitchen', groceries: 'kitchen', food: 'kitchen',
+  dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
-  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor',
-  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear'
+  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
-let shopCat = 'living';
+const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
+let currentStore = 'mart';
+let shopCat = 'food';
 
 /* ============================ BADGES & SAVING ============================ */
 const BADGES = [
@@ -2722,6 +2725,61 @@ const SHOP_POS = { x: -8.5, z: -8.5 };
 for (let x = -10; x <= -8; x++) for (let z = -10; z <= -8; z++)       // building footprint is solid
   blocks.set(key(x, 0, z), { mesh: shopGroup, type: 'shop', removable: false });
 
+/* ---- THE STACK BARN: a fancy furniture store across the meadow (walk up & tap to shop) ---- */
+const barnGroup = new THREE.Group();
+{
+  const RED = 0xA8322B, DARKRED = 0x8a2922, WHITE = 0xF7F1E3, DOORW = 0xE6D2A8, RR = 0x6E4B2A, TIMBER = 0x5a3a20;
+  box(barnGroup, 3.5, 0.12, 3.1, 0x8a5c33, 0, 0.06, 0);              // wooden floor
+  box(barnGroup, 3.5, 2.4, 0.18, RED, 0, 1.3, -1.45);               // back wall
+  box(barnGroup, 0.18, 2.4, 3.1, RED, -1.66, 1.3, 0);              // left wall
+  box(barnGroup, 0.18, 2.4, 3.1, RED, 1.66, 1.3, 0);              // right wall
+  box(barnGroup, 0.95, 2.4, 0.18, RED, -1.18, 1.3, 1.45);          // front wall (left of doorway)
+  box(barnGroup, 0.95, 2.4, 0.18, RED, 1.18, 1.3, 1.45);          // front wall (right of doorway)
+  box(barnGroup, 3.5, 0.55, 0.18, RED, 0, 2.22, 1.45);            // header above the doorway
+  // white trim along the corners
+  [[-1.66, -1.45], [1.66, -1.45], [-1.66, 1.45], [1.66, 1.45]].forEach(([x, z]) =>
+    box(barnGroup, 0.22, 2.5, 0.22, WHITE, x, 1.3, z));
+  // the classic big white barn doors with an X-brace
+  box(barnGroup, 1.5, 1.9, 0.08, DOORW, 0, 1.0, 1.5);
+  box(barnGroup, 0.02, 0.02, 0.02, WHITE, 0, 0, 0);
+  [[-0.36, 0], [0.36, 0]].forEach(([x]) => box(barnGroup, 0.1, 1.9, 0.06, WHITE, x, 1.0, 1.55));   // vertical battens
+  const xb1 = box(barnGroup, 0.09, 2.2, 0.05, WHITE, 0, 1.0, 1.56); xb1.rotation.z = 0.72;          // X brace
+  const xb2 = box(barnGroup, 0.09, 2.2, 0.05, WHITE, 0, 1.0, 1.56); xb2.rotation.z = -0.72;
+  // gable roof — two pitched slopes meeting at a ridge
+  const sl = box(barnGroup, 0.18, 2.0, 3.7, RR, -0.85, 3.0, 0); sl.rotation.z = -1.039;
+  const sr = box(barnGroup, 0.18, 2.0, 3.7, RR, 0.85, 3.0, 0); sr.rotation.z = 1.039;
+  box(barnGroup, 0.22, 0.22, 3.8, TIMBER, 0, 3.52, 0);             // ridge beam
+  box(barnGroup, 3.2, 1.0, 0.14, DARKRED, 0, 2.95, -1.42);        // back gable fill
+  box(barnGroup, 3.2, 1.0, 0.14, DARKRED, 0, 2.95, 1.42);         // front gable fill
+  // hayloft door + pulley up in the front gable
+  box(barnGroup, 0.6, 0.7, 0.1, DOORW, 0, 3.0, 1.5);
+  box(barnGroup, 0.66, 0.05, 0.06, WHITE, 0, 3.36, 1.55);
+  box(barnGroup, 0.1, 0.22, 0.1, TIMBER, 0, 3.74, 1.5);          // pulley arm
+  // painted "STACK BARN" sign over the doorway
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 80;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#F7F1E3'; c.fillRect(0, 0, 256, 80);
+  c.strokeStyle = '#8a2922'; c.lineWidth = 7; c.strokeRect(4, 4, 248, 72);
+  c.fillStyle = '#8a2922'; c.font = 'bold 34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('🏚️ STACK BARN', 128, 44);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.7, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.25, 1.56); barnGroup.add(sign);
+  // a little display bench + stacked crates out front so it reads as a furniture store
+  box(barnGroup, 1.0, 0.18, 0.4, 0x8a5c33, -0.95, 0.55, 2.4);          // bench seat
+  box(barnGroup, 0.1, 0.5, 0.1, 0x6d4326, -1.35, 0.3, 2.4); box(barnGroup, 0.1, 0.5, 0.1, 0x6d4326, -0.55, 0.3, 2.4);
+  box(barnGroup, 1.0, 0.35, 0.4, 0xC98F5A, -0.95, 0.82, 2.55);         // cushion
+  box(barnGroup, 0.42, 0.42, 0.42, 0xCBA36B, 0.85, 0.33, 2.35);        // crate
+  box(barnGroup, 0.42, 0.42, 0.42, 0xB98C57, 1.0, 0.75, 2.4);          // crate stacked
+  box(barnGroup, 0.16, 0.55, 0.16, 0x5a3a20, 0.7, 0.4, 2.0);           // potted plant pot
+  box(barnGroup, 0.34, 0.4, 0.34, 0x3E9B3E, 0.7, 0.85, 2.0);           // plant leaves
+}
+barnGroup.position.set(-10, 0, 9);
+barnGroup.rotation.y = 2.30;                                          // face the storefront toward the meadow
+scene.add(barnGroup);
+const BARN_POS = { x: -10, z: 9 };
+for (let x = -11; x <= -9; x++) for (let z = 8; z <= 10; z++)         // solid footprint
+  blocks.set(key(x, 0, z), { mesh: barnGroup, type: 'barn', removable: false });
+
 /* ---- THE PORTAL: tap it (or press E nearby) to travel to another Stackadoo world ---- */
 const portals = [];
 const PORTAL_POS = { x: 8, z: 7 };
@@ -3342,14 +3400,14 @@ function placeSelectedAt(x, z, blockY) {
     // a pot with no stove nearby just sits on the ground (handled below)
   }
   if (slot === 'plates') {               // a place setting goes on a table
-    if (G.furniture.plates < 1) { toast('🍴 No place settings — buy one at 🛒 Stack Mart!', 2200); return false; }
+    if (G.furniture.plates < 1) { toast('🍴 No place settings — buy one at 🏚️ Stack Barn!', 2200); return false; }
     const cell = blocks.get(key(x, 0, z));
     if (!cell || (cell.type !== 'table' && cell.type !== 'dtable')) { toast('🍴 Put it on a 🍽️ table to set the table!', 2000); return false; }
     spawnFoodAt(x, z, true, 'plates'); G.furniture.plates -= 1; Sound.pop(); refreshHUD();
     toast('🍴 Table set — dinner time!', 1600); return true;
   }
   if (slot === 'cat' || slot === 'dog' || slot === 'fish') {     // pets sit on the floor or on furniture
-    if (G.furniture[slot] < 1) { toast('🐾 None in your 🎒 — adopt one at 🛒 Stack Mart!', 2200); return false; }
+    if (G.furniture[slot] < 1) { toast('🐾 None in your 🎒 — adopt one at 🏚️ Stack Barn!', 2200); return false; }
     const cell = blocks.get(key(x, 0, z));
     const SURF = { couch: 0.42, bed: 0.42, chair: 0.5, table: 0.78, dtable: 0.78, coffeetable: 0.36, dresser: 0.92 };
     let surfY = 0;
@@ -3361,7 +3419,7 @@ function placeSelectedAt(x, z, blockY) {
     toast(slot === 'cat' ? '🐱 Meow! Cozy kitty.' : slot === 'dog' ? '🐶 Woof! Good doggo.' : '🐠 Blub blub!', 1600); return true;
   }
   if (FURNITURE_TYPES.includes(slot)) {
-    if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
+    if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🏚️ Stack Barn!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     const fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'bed' ? G.bedVariant : slot === 'dtable' ? G.dtableVariant : null;
@@ -3855,8 +3913,11 @@ function closeMath() {
 $('mathClose').onclick = () => { Sound.click(); closeMath(); };
 
 /* ============================ SHOP POPUP ============================ */
-function openShop() {
+function openShop(store) {
   if (popupOpen || G.over) return;
+  currentStore = store === 'barn' ? 'barn' : 'mart';
+  const cats = STORE_CATS[currentStore];
+  if (!cats.some(c => c[0] === shopCat)) shopCat = cats[0][0];   // land on a valid department for this store
   popupOpen = true;
   document.exitPointerLock && document.exitPointerLock();
   renderShop();
@@ -3901,9 +3962,12 @@ function thumbIcon(type, variant, emoji) {
 }
 function renderShop() {
   refreshHUD();
-  // department tabs
+  const title = $('shopTitle');
+  if (currentStore === 'barn') { title.textContent = '🏚️ Stack Barn'; title.style.color = '#9b5b3a'; }
+  else { title.textContent = '🛒 Stack Mart'; title.style.color = '#b5832a'; }
+  // department tabs for the active store
   const tabs = $('shopTabs'); tabs.innerHTML = '';
-  SHOP_CATS.forEach(([id, label]) => {
+  STORE_CATS[currentStore].forEach(([id, label]) => {
     const t = document.createElement('button');
     t.className = 'shopTab' + (shopCat === id ? ' sel' : '');
     t.textContent = label;
@@ -4128,7 +4192,7 @@ function buildChair(g, variant) {
     [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([x, z]) => box(g, 0.07, 0.42, 0.07, shade(col, 0.7), x, 0.21, z));
   }
 }
-const DTABLE_STYLES = ['round', 'rectangular', 'farmhouse'];
+const DTABLE_STYLES = ['round', 'rectangular', 'farmhouse', 'modern', 'glass'];
 function buildFurnitureMesh(type, variant) {
   const g = new THREE.Group();
   if (type === 'chair') {
@@ -4146,6 +4210,17 @@ function buildFurnitureMesh(type, variant) {
       box(g, 0.1, 0.66, 0.5, leg, -0.4, 0.37, 0);                    // trestle legs
       box(g, 0.1, 0.66, 0.5, leg, 0.4, 0.37, 0);
       box(g, 0.74, 0.08, 0.08, leg, 0, 0.3, 0);                      // stretcher beam
+    } else if (st === 'modern') {
+      box(g, 1.0, 0.07, 0.6, 0x2f3338, 0, 0.74, 0);                  // sleek dark top
+      box(g, 0.86, 0.05, 0.48, 0x3c4147, 0, 0.69, 0);                // underframe
+      box(g, 0.06, 0.72, 0.46, 0xB8BCC2, -0.42, 0.36, 0);            // metal slab legs
+      box(g, 0.06, 0.72, 0.46, 0xB8BCC2, 0.42, 0.36, 0);
+    } else if (st === 'glass') {
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.05, 0.62), new THREE.MeshLambertMaterial({ color: 0xBFE3F2, transparent: true, opacity: 0.5 }));
+      glass.position.y = 0.74; g.add(glass);
+      [[-0.4, -0.24], [0.4, -0.24], [-0.4, 0.24], [0.4, 0.24]].forEach(([x, z]) => box(g, 0.06, 0.7, 0.06, 0xC9A24A, x, 0.36, z));  // gold legs
+      box(g, 0.8, 0.05, 0.05, 0xC9A24A, 0, 0.2, 0);                  // gold stretchers
+      box(g, 0.05, 0.05, 0.48, 0xC9A24A, 0, 0.2, 0);
     } else {                             // rectangular
       box(g, 0.95, 0.08, 0.62, wood, 0, 0.74, 0);                    // top
       [[-0.4, -0.24], [0.4, -0.24], [-0.4, 0.24], [0.4, 0.24]].forEach(([x, z]) => box(g, 0.08, 0.7, 0.08, leg, x, 0.36, z));
@@ -4399,7 +4474,7 @@ function attachCookware(stoveEntry, kind) {
 /* player action: cook the selected item on a stove, with feedback */
 function cookOnStove(stoveEntry, kind) {
   if (!stoveEntry || stoveEntry.type !== 'stove') { toast('🔥 Aim at a stove to cook!', 1800); return false; }
-  if (G.furniture[kind] < 1) { toast('No ' + kind + ' in your 🎒 — buy it at 🛒 Stack Mart!', 2200); return false; }
+  if (G.furniture[kind] < 1) { toast('No ' + kind + ' in your 🎒 — buy it at 🏚️ Stack Barn!', 2200); return false; }
   if (!attachCookware(stoveEntry, kind)) {
     toast(kind === 'pie' ? '🥧 The oven is busy — bake one at a time!' : '🍳 All four burners are busy!', 1900);
     return false;
@@ -4560,7 +4635,8 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   if (entry && entry.type === 'station') {
     openMath(); return;
   }
-  if (entry && entry.type === 'shop') { openShop(); return; }
+  if (entry && entry.type === 'shop') { openShop('mart'); return; }
+  if (entry && entry.type === 'barn') { openShop('barn'); return; }
 
   if (action === 'break') {
     if (!entry) return;
@@ -4626,6 +4702,7 @@ function nearestStation() {
   return { st, dist };
 }
 function shopDist() { return Math.hypot(player.pos.x - SHOP_POS.x, player.pos.z - SHOP_POS.z); }
+function barnDist() { return Math.hypot(player.pos.x - BARN_POS.x, player.pos.z - BARN_POS.z); }
 
 /* ============================ INPUT ============================ */
 const keys = {};
@@ -4639,7 +4716,8 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
     if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
-    else if (shopDist() < 3.5) { Sound.click(); openShop(); }
+    else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
+    else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (player.sittingChair || nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -4984,7 +5062,8 @@ if (isTouch) {
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
     if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
-    else if (shopDist() < 3.5) { Sound.click(); openShop(); }
+    else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
+    else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (player.sittingChair || nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
