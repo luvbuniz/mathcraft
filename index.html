@@ -1012,10 +1012,15 @@
     <div id="grownupList"></div>
     <div style="margin-top:12px; padding:10px 14px; background:#F0F6FF; border:1px solid #cfe0f5; border-radius:14px; text-align:left">
       <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">🔒 Game deletes</div>
-      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Keep little ones from erasing a build by accident. When shown, deleting already needs a typed code; hide the buttons entirely for the youngest.</div>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:#33507a; font-size:clamp(13px,2.2vw,15px)">
-        <input type="checkbox" id="hideDeleteToggle" style="width:20px; height:20px; flex:none">
-        Hide the 🗑️ delete buttons on the home screen
+      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">To stop little ones erasing a build by accident, the 🗑️ delete buttons are <b>hidden for Grades 1–3 by default</b>. When shown, deleting still needs a typed code. Your choice:</div>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:5px 0">
+        <input type="radio" name="delPolicy" value="auto" style="width:18px; height:18px; flex:none"> Hide for Grades 1–3 <span style="color:#6c84a6; font-weight:600">(recommended)</span>
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:5px 0">
+        <input type="radio" name="delPolicy" value="hide" style="width:18px; height:18px; flex:none"> Always hide (every player)
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:5px 0">
+        <input type="radio" name="delPolicy" value="show" style="width:18px; height:18px; flex:none"> Always show (code still required)
       </label>
     </div>
     <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
@@ -2361,11 +2366,11 @@ function renderGrownup() {
 function openGrownup() {
   renderGrownup();
   $('purchaseStatus').textContent = isUnlocked() ? 'Unlocked ✓' : 'Free (Math Meadow only)';
-  const tog = $('hideDeleteToggle');
-  if (tog) {
-    tog.checked = deleteHidden();
-    tog.onchange = () => { setDeleteHidden(tog.checked); if (typeof refreshSavedList === 'function') refreshSavedList(); };
-  }
+  const pol = deletePolicy();
+  document.querySelectorAll('input[name="delPolicy"]').forEach(r => {
+    r.checked = (r.value === pol);
+    r.onchange = () => { if (r.checked) { setDeletePolicy(r.value); if (typeof refreshSavedList === 'function') refreshSavedList(); } };
+  });
   $('grownupPopup').style.display = 'flex';
 }
 function closeGrownup() { $('grownupPopup').style.display = 'none'; }
@@ -2441,10 +2446,26 @@ function loadSaveFor(name, world) {
   try { return JSON.parse(localStorage.getItem(saveKey(name, world))); } catch (e) { return null; }
 }
 function clearSave(name, world) { try { localStorage.removeItem(saveKey(name || G.playerName, world)); } catch (e) {} }
-/* Parent setting: hide the home-screen delete buttons entirely (on top of the typed-code gate). */
-const HIDE_DELETE_KEY = 'stackadooHideDelete';
-function deleteHidden() { try { return localStorage.getItem(HIDE_DELETE_KEY) === '1'; } catch (e) { return false; } }
-function setDeleteHidden(v) { try { localStorage.setItem(HIDE_DELETE_KEY, v ? '1' : '0'); } catch (e) {} }
+/* Parent setting for the home-screen 🗑️ delete buttons (on top of the typed-code gate):
+   'auto'  → hidden for young grades (1–3), shown & code-gated for grade 4+   [default]
+   'hide'  → always hidden
+   'show'  → always shown (still code-gated) */
+const DELETE_POLICY_KEY = 'stackadooDeletePolicy';
+function deletePolicy() {
+  try {
+    const v = localStorage.getItem(DELETE_POLICY_KEY);
+    if (v === 'auto' || v === 'hide' || v === 'show') return v;
+    if (localStorage.getItem('stackadooHideDelete') === '1') return 'hide';   // carry over the older on/off toggle
+  } catch (e) {}
+  return 'auto';
+}
+function setDeletePolicy(v) { try { localStorage.setItem(DELETE_POLICY_KEY, v); } catch (e) {} }
+function deleteAllowedFor(grade) {
+  const pol = deletePolicy();
+  if (pol === 'hide') return false;
+  if (pol === 'show') return true;
+  return (grade || 2) >= 4;                                  // 'auto': only older kids see the button
+}
 function restoreGame(s) {
   resetWorld();
   resetGameState();
@@ -5756,7 +5777,7 @@ function refreshSavedList() {
       '<span class="slotChip' + (calm ? ' calm' : '') + '">' + (calm ? 'No Gloomies' : 'Gloomies') + '</span></span></span>';
     load.onclick = () => { Sound.click(); restoreGame(s); };
     row.appendChild(load);
-    if (!deleteHidden()) {                       // parents can hide these from the grown-up section
+    if (deleteAllowedFor(s.grade)) {             // hidden for young grades by default; parents choose in the grown-up page
       const del = document.createElement('button');
       del.className = 'delBtn';
       del.innerHTML = SVG_TRASH;
