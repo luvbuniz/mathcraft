@@ -5100,7 +5100,8 @@ function registerPet(f) {
     f: f, kind: f.kind, mode: 'walk', baseY: f.y || 0, home: home,
     tx: home.x, tz: home.z, timer: 1 + Math.random() * 2, moving: true, pause: false,
     phase: Math.random() * 6.28, facing: 0,
-    tail: m.userData.tail, head: m.userData.head
+    tail: m.userData.tail, head: m.userData.head, legs: m.userData.legs,
+    headY: m.userData.head ? m.userData.head.position.y : 0.4
   });
 }
 function petLabel(kind) { return kind === 'dog' ? '🐶 your dog' : '🐱 your cat'; }
@@ -5115,6 +5116,7 @@ function nearestPetTarget(type, x, z, filledOnly) {
   });
   return best;
 }
+function petLegsRest(p) { if (p.legs) for (const L of p.legs) L.rotation.x += (0 - L.rotation.x) * 0.2; }
 function petWalkStep(p, m, tx, tz, dt) {
   const dx = tx - m.position.x, dz = tz - m.position.z, dist = Math.hypot(dx, dz);
   if (dist > 0.02) {
@@ -5122,9 +5124,14 @@ function petWalkStep(p, m, tx, tz, dt) {
     m.position.x += dx / dist * s; m.position.z += dz / dist * s;
     p.facing += shortAngle(p.facing, Math.atan2(dx, dz)) * 0.22;
     m.rotation.y = p.facing;
-    m.position.y = p.baseY + Math.abs(Math.sin(p.phase * 10)) * 0.045;       // bouncy steps
+    m.position.y = p.baseY + Math.abs(Math.sin(p.phase * 12)) * 0.03;        // little step bounce
     if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 8) * 0.32;            // happy wag
-    if (p.head) p.head.position.y = 0.4;
+    if (p.head) p.head.position.y = p.headY;
+    if (p.legs) {                                                           // diagonal walking gait
+      const sw = Math.sin(p.phase * 12) * 0.6;
+      p.legs[0].rotation.x = sw; p.legs[3].rotation.x = sw;
+      p.legs[1].rotation.x = -sw; p.legs[2].rotation.x = -sw;
+    }
   }
   return dist;
 }
@@ -5133,7 +5140,8 @@ function updatePets(dt, now) {
   for (const p of pets) {
     const m = p.f.mesh;
     p.phase += dt;
-    if (p.mode !== 'eat') { m.rotation.x += (0 - m.rotation.x) * 0.2; if (p.head) p.head.position.y += (0.4 - p.head.position.y) * 0.3; }
+    petLegsRest(p);                                                          // legs settle unless a walk step moves them
+    if (p.mode !== 'eat') { m.rotation.x += (0 - m.rotation.x) * 0.2; if (p.head) p.head.position.y += (p.headY - p.head.position.y) * 0.3; }
 
     if (p.mode === 'sleep') {
       const bed = nearestPetTarget('petbed', m.position.x, m.position.z, false);
@@ -5159,7 +5167,7 @@ function updatePets(dt, now) {
       m.position.y = p.baseY;                                                // nibble (at the bowl, or in place if none)
       const nod = Math.sin(p.phase * 7) * 0.5 + 0.5;
       m.rotation.x = nod * 0.5;
-      if (p.head) p.head.position.y = 0.4 - nod * 0.06;
+      if (p.head) p.head.position.y = p.headY - nod * 0.06;
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 4) * 0.12;
       if (bowl) {                                                            // empty the bowl after a good meal
         p.eatT = (p.eatT || 0) + dt;
@@ -5195,7 +5203,7 @@ function updatePets(dt, now) {
     if (p.pause || dist < 0.08 || ahead) {                                   // resting (or refusing to step onto something)
       m.position.y = p.baseY;
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 2) * 0.12;
-      if (p.head) p.head.position.y = 0.4;
+      if (p.head) p.head.position.y = p.headY;
       if (ahead) p.timer = Math.min(p.timer, 0.2);                           // blocked → choose a new spot soon
     } else {
       petWalkStep(p, m, p.tx, p.tz, dt);
@@ -5279,7 +5287,7 @@ function buildFishbowl(variant) {          // a fish in a glass bowl
   box(g, 0.02, 0.02, 0.02, 0x222, 0.05, 0.24, 0.05);                   // eye
   return g;
 }
-function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a chosen breed
+function buildPetMesh(kind, variant) {     // a standing, walking cat or dog of a chosen breed
   if (kind === 'fish') return buildFishbowl(variant);
   const g = new THREE.Group();
   const cat = kind === 'cat';
@@ -5287,40 +5295,51 @@ function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a c
   const br = breeds[(variant || 0) % breeds.length], fur = br[1], feat = br[2];
   const points = 0x5a4632;                                            // siamese dark points
   const ear = feat === 'siamese' ? points : shade(fur, 0.72);
-  box(g, 0.26, 0.26, 0.34, fur, 0, 0.2, -0.02);                       // body (sitting)
-  box(g, 0.16, 0.12, 0.2, fur, 0, 0.12, 0.16);                        // chest/front
-  box(g, 0.22, 0.2, 0.2, fur, 0, 0.4, 0.1);                           // head
-  if (feat === 'fluffy') {                                            // pomeranian / persian fluff
-    box(g, 0.34, 0.3, 0.42, shade(fur, 1.06), 0, 0.22, -0.02);        // fluffy mane
-    box(g, 0.27, 0.25, 0.25, shade(fur, 1.04), 0, 0.42, 0.08);        // fluffy head
+  const dark = shade(fur, 0.66);
+  const legCol = feat === 'siamese' ? points : fur;
+  const legH = cat ? 0.18 : 0.21;
+  const bodyY = legH + 0.12;
+  function mkLeg(x, z) {                                              // pivot at the hip so it can swing
+    const L = new THREE.Group(); L.position.set(x, legH + 0.02, z);
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.08, legH, 0.09), mat(legCol));
+    seg.position.y = -legH / 2; L.add(seg);
+    box(L, 0.1, 0.05, 0.12, shade(legCol, 0.82), 0, -legH + 0.01, 0.02);   // paw
+    g.add(L); return L;
   }
-  if (feat === 'spotted') { box(g, 0.11, 0.02, 0.11, 0x33363b, 0.07, 0.33, -0.02); box(g, 0.08, 0.02, 0.08, 0x33363b, -0.08, 0.31, 0.12); }
-  if (feat === 'calico') { box(g, 0.1, 0.02, 0.1, 0xD98B3A, 0.06, 0.33, 0.0); box(g, 0.08, 0.02, 0.08, 0x6b4a30, -0.07, 0.42, 0.1); }
-  if (feat === 'tabby') {                                             // tabby stripes along the back & head
-    const st = shade(fur, 0.66);
-    box(g, 0.27, 0.02, 0.07, st, 0, 0.335, -0.06); box(g, 0.27, 0.02, 0.07, st, 0, 0.335, 0.07);
-    box(g, 0.2, 0.02, 0.05, st, 0, 0.5, 0.06);
+  const legs = [mkLeg(-0.1, 0.16), mkLeg(0.1, 0.16), mkLeg(-0.1, -0.16), mkLeg(0.1, -0.16)];
+  box(g, 0.26, 0.24, 0.5, fur, 0, bodyY, -0.02);                      // body (horizontal)
+  box(g, 0.24, 0.22, 0.16, fur, 0, bodyY - 0.01, 0.23);              // chest
+  if (feat === 'fluffy') box(g, 0.34, 0.32, 0.4, shade(fur, 1.05), 0, bodyY, -0.02);  // fluffy coat
+  if (feat === 'tabby') for (let i = 0; i < 4; i++) box(g, 0.27, 0.05, 0.05, dark, 0, bodyY + 0.12, 0.16 - i * 0.13);
+  if (feat === 'spotted') [[0.08, 0.1], [-0.09, -0.05], [0.05, -0.18], [-0.06, 0.2]].forEach(p => box(g, 0.1, 0.04, 0.1, 0x33363b, p[0], bodyY + 0.12, p[1]));
+  if (feat === 'calico') { box(g, 0.18, 0.05, 0.16, 0xD98B3A, 0.04, bodyY + 0.12, 0.05); box(g, 0.14, 0.05, 0.14, 0x6b4a30, -0.06, bodyY + 0.12, -0.16); }
+  const head = new THREE.Group(); head.position.set(0, bodyY + 0.14, 0.32); g.add(head);
+  box(head, 0.24, 0.22, 0.22, fur, 0, 0, 0);
+  if (feat === 'fluffy') box(head, 0.3, 0.27, 0.26, shade(fur, 1.04), 0, 0, -0.02);
+  box(head, 0.14, 0.1, 0.12, cat ? 0xF3EFE8 : fur, 0, -0.06, 0.12);   // muzzle
+  if (!cat) box(head, 0.12, 0.09, 0.11, shade(fur, 0.95), 0, -0.04, 0.16);   // dog snout
+  if (feat === 'siamese') box(head, 0.18, 0.13, 0.08, points, 0, -0.02, 0.16);
+  box(head, 0.05, 0.04, 0.04, cat ? 0xE8A0B0 : 0x2a2018, 0, -0.04, 0.2);     // nose
+  box(head, 0.045, 0.05, 0.03, 0x161616, -0.07, 0.03, 0.105);        // eyes
+  box(head, 0.045, 0.05, 0.03, 0x161616, 0.07, 0.03, 0.105);
+  box(head, 0.018, 0.018, 0.02, 0xFFFFFF, -0.055, 0.05, 0.115);      // glints
+  box(head, 0.018, 0.018, 0.02, 0xFFFFFF, 0.085, 0.05, 0.115);
+  if (cat) {                                                          // upright pointy ears
+    box(head, 0.07, 0.1, 0.04, ear, -0.09, 0.15, -0.01);
+    box(head, 0.07, 0.1, 0.04, ear, 0.09, 0.15, -0.01);
+    box(head, 0.035, 0.05, 0.03, 0xE8A0B0, -0.09, 0.13, 0.012);
+    box(head, 0.035, 0.05, 0.03, 0xE8A0B0, 0.09, 0.13, 0.012);
+  } else {                                                            // floppy ears
+    box(head, 0.07, 0.17, 0.05, ear, -0.12, 0.03, -0.02);
+    box(head, 0.07, 0.17, 0.05, ear, 0.12, 0.03, -0.02);
   }
-  if (feat === 'siamese') { box(g, 0.17, 0.11, 0.07, points, 0, 0.37, 0.2); }  // dark face mask
-  if (cat) {                                                          // pointy ears
-    box(g, 0.06, 0.09, 0.03, ear, -0.07, 0.53, 0.1);
-    box(g, 0.06, 0.09, 0.03, ear, 0.07, 0.53, 0.1);
-  } else {                                                            // floppy ears + snout
-    box(g, 0.06, 0.12, 0.04, ear, -0.1, 0.44, 0.1);
-    box(g, 0.06, 0.12, 0.04, ear, 0.1, 0.44, 0.1);
-    box(g, 0.1, 0.08, 0.08, fur, 0, 0.36, 0.22);                      // snout
-  }
-  box(g, 0.04, 0.04, 0.02, 0x222, -0.05, 0.43, 0.21);                 // eyes
-  box(g, 0.04, 0.04, 0.02, 0x222, 0.05, 0.43, 0.21);
-  box(g, 0.04, 0.04, 0.03, cat ? 0xE8A0B0 : 0x3a2a1a, 0, 0.37, 0.25); // nose
-  const pawC = feat === 'siamese' ? points : fur;
-  box(g, 0.06, 0.12, 0.06, pawC, -0.07, 0.06, 0.16);                  // front paws
-  box(g, 0.06, 0.12, 0.06, pawC, 0.07, 0.06, 0.16);
-  const tail = box(g, 0.05, 0.22, 0.05, feat === 'fluffy' ? shade(fur, 1.04) : fur, 0, 0.26, -0.2);
-  tail.rotation.x = 0.6;
-  if (feat === 'fluffy') tail.scale.set(1.7, 1, 1.7);                 // bushy tail
-  g.userData.tail = tail;                                             // so the pet can wag it
-  g.userData.head = g.children[2];                                    // head box — nods when eating
+  const tailCol = feat === 'fluffy' ? shade(fur, 1.04) : fur;
+  const tail = box(g, 0.07, 0.07, 0.3, tailCol, 0, bodyY + 0.05, -0.3);
+  tail.rotation.x = cat ? -0.7 : -0.25;                              // cats raise the tail, dogs hold it out
+  if (feat === 'fluffy') tail.scale.set(1.7, 1.7, 1);
+  g.userData.tail = tail;
+  g.userData.head = head;
+  g.userData.legs = legs;
   return g;
 }
 function buildTabletopMesh(kind, variant) {
