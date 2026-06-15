@@ -942,6 +942,16 @@
       Working it out on paper builds real number sense (and makes the tricky ones much easier!).
     </div>
     <div id="grownupList"></div>
+    <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
+      <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">💾 Backup &amp; move builds</div>
+      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Saves live on this device. <b>Export</b> them to a file to back up or move to another device or tablet, then <b>Import</b> there.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="exportSavesBtn" style="font-size:14px; background:#e7f6ec; color:#2f8a52; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">⬇️ Export all saves</button>
+        <button id="importSavesBtn" style="font-size:14px; background:#e6f0ff; color:#3b5d9e; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">⬆️ Import saves</button>
+        <input type="file" id="importSavesFile" accept="application/json,.json" style="display:none">
+      </div>
+      <div id="ioStatus" style="color:#6c84a6; font-size:12px; margin-top:6px; min-height:14px"></div>
+    </div>
     <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
       <span style="color:#6c84a6; font-size:13px">Full game: <b id="purchaseStatus">—</b></span>
       <button id="resetPurchaseBtn" style="font-size:12px; background:#eef1f5; color:#6c84a6; border:none; border-radius:8px; padding:5px 11px; cursor:pointer; font-family:inherit">Reset purchase (testing)</button>
@@ -5091,6 +5101,61 @@ $('startBtn').onclick = () => {
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 $('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
+
+/* ---- Export / Import all saves & progress (move builds between devices/addresses) ---- */
+function gatherSaveData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    if (k.indexOf(SAVE_PREFIX) === 0 || k.indexOf(PROFILE_PREFIX) === 0 || k === UNLOCK_KEY) {
+      data[k] = localStorage.getItem(k);
+    }
+  }
+  return data;
+}
+function exportSaves() {
+  const data = gatherSaveData();
+  const count = Object.keys(data).filter(k => k.indexOf(SAVE_PREFIX) === 0).length;
+  if (!Object.keys(data).length) { $('ioStatus').textContent = 'Nothing to export on this device yet.'; return; }
+  const payload = { app: 'stackadoo', version: 1, exportedAt: new Date().toISOString(), data };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url; a.download = 'stackadoo-saves-' + stamp + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  $('ioStatus').textContent = '✅ Exported ' + count + ' build' + (count === 1 ? '' : 's') + ' + progress. Keep the file safe!';
+}
+function importSaves(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const data = (parsed && parsed.data) ? parsed.data : parsed;
+      if (!data || typeof data !== 'object') throw new Error('bad file');
+      let saves = 0, profs = 0;
+      Object.keys(data).forEach(k => {
+        if (k.indexOf(SAVE_PREFIX) === 0 || k.indexOf(PROFILE_PREFIX) === 0 || k === UNLOCK_KEY) {
+          localStorage.setItem(k, data[k]);
+          if (k.indexOf(SAVE_PREFIX) === 0) saves++;
+          if (k.indexOf(PROFILE_PREFIX) === 0) profs++;
+        }
+      });
+      if (!saves && !profs) { $('ioStatus').textContent = '⚠️ That file had no Stackadoo saves in it.'; return; }
+      $('ioStatus').textContent = '✅ Imported ' + saves + ' build' + (saves === 1 ? '' : 's') + ' & ' + profs + ' player' + (profs === 1 ? '' : 's') + '. Reloading…';
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      $('ioStatus').textContent = '⚠️ Could not read that file — make sure it\'s a Stackadoo export.';
+    }
+  };
+  reader.readAsText(file);
+}
+$('exportSavesBtn').onclick = () => { Sound.click(); exportSaves(); };
+$('importSavesBtn').onclick = () => { Sound.click(); $('importSavesFile').click(); };
+$('importSavesFile').onchange = e => { const f = e.target.files && e.target.files[0]; if (f) importSaves(f); e.target.value = ''; };
+
 $('resetPurchaseBtn').onclick = () => {
   Sound.click();
   try { localStorage.removeItem(UNLOCK_KEY); } catch (e) {}
