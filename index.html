@@ -1674,11 +1674,14 @@ function buildBiped(bodyColor, headColor, legColor, armColor) {
     limb(g, 0.2, 0.55, 0.2, legColor, -0.13, 0.55, 0),
     limb(g, 0.2, 0.55, 0.2, legColor, 0.13, 0.55, 0)
   ];
-  box(g, 0.5, 0.6, 0.28, bodyColor, 0, 0.85, 0);
+  legs.forEach(L => box(L, 0.24, 0.12, 0.32, shade(legColor, 0.72), 0, -0.5, 0.07));   // feet
+  box(g, 0.5, 0.6, 0.28, bodyColor, 0, 0.85, 0);                                        // torso
+  box(g, 0.5, 0.12, 0.3, shade(bodyColor, 0.9), 0, 0.56, 0);                            // hips/belt line
   const arms = [
     limb(g, 0.15, 0.5, 0.15, armColor, -0.34, 1.1, 0),
     limb(g, 0.15, 0.5, 0.15, armColor, 0.34, 1.1, 0)
   ];
+  arms.forEach(A => box(A, 0.17, 0.16, 0.17, headColor, 0, -0.5, 0));                   // hands
   const head = new THREE.Group();
   head.position.set(0, 1.4, 0);
   box(head, 0.5, 0.5, 0.5, headColor, 0, 0, 0);
@@ -1968,51 +1971,45 @@ const AVATARS = [
   {
     id: 'penguin', name: 'Penguin 🐧',
     build() {
-      const a = buildBiped(0x20242a, 0x20242a, 0xF5A623, 0x20242a);
-      box(a.head, 0.34, 0.32, 0.06, 0xF4F4F4, 0, -0.06, 0.24);         // white face patch
+      const blk = 0x23272e, org = 0xF5A623;
+      const a = buildBiped(blk, blk, blk, blk);
+      box(a.group, 0.42, 0.56, 0.1, 0xF7F4EE, 0, 0.78, 0.12);          // white tummy
+      box(a.head, 0.4, 0.34, 0.08, 0xF7F4EE, 0, -0.05, 0.22);          // white face
       addEyes(a.head, 0x111111, 0.27);
-      box(a.head, 0.15, 0.09, 0.12, 0xF5A623, 0, -0.1, 0.29);          // beak
-      box(a.group, 0.34, 0.46, 0.08, 0xF4F4F4, 0, 0.82, 0.13);         // white tummy
-      box(a.group, 0.14, 0.08, 0.16, 0xF5A623, -0.13, 0.04, 0.05);     // orange feet
-      box(a.group, 0.14, 0.08, 0.16, 0xF5A623, 0.13, 0.04, 0.05);
+      box(a.head, 0.16, 0.11, 0.14, org, 0, -0.09, 0.3);               // beak (upper)
+      box(a.head, 0.12, 0.05, 0.1, 0xCB7E12, 0, -0.15, 0.31);          // beak (lower)
+      [0, 1].forEach(i => box(a.legs[i], 0.22, 0.07, 0.32, org, 0, -0.55, 0.14));   // orange webbed feet
       return a;
     }
   },
   {
     id: 'bunny', name: 'Bunny 🐰',
     build() {
-      const fur = 0xF2E8DE, furSh = 0xE3D6C8, pink = 0xE89BB0, deep = 0xD98099;
-      const a = buildBiped(fur, fur, furSh, fur);
-      box(a.group, 0.48, 0.42, 0.36, fur, 0, 0.7, 0.02);              // plump round tummy
-      box(a.group, 0.3, 0.24, 0.12, 0xFFFFFF, 0, 0.66, 0.21);         // cream chest fluff
-      // rounder face with cheek puffs
-      box(a.head, 0.5, 0.34, 0.44, fur, 0, -0.03, 0.02);
-      box(a.head, 0.14, 0.14, 0.12, fur, -0.21, -0.05, 0.14);
-      box(a.head, 0.14, 0.14, 0.12, fur, 0.21, -0.05, 0.14);
-      addEyes(a.head, 0x3a2a2a, 0.27);
-      box(a.head, 0.035, 0.035, 0.02, 0xFFFFFF, -0.13, 0.08, 0.275);  // eye sparkles
-      box(a.head, 0.035, 0.035, 0.02, 0xFFFFFF, 0.09, 0.08, 0.275);
-      box(a.head, 0.1, 0.07, 0.06, deep, 0, -0.05, 0.28);             // pink nose
-      box(a.head, 0.03, 0.05, 0.03, 0x9a6b6b, 0, -0.11, 0.29);        // mouth
-      box(a.head, 0.05, 0.07, 0.03, 0xFFFFFF, -0.035, -0.17, 0.285);  // buck teeth
-      box(a.head, 0.05, 0.07, 0.03, 0xFFFFFF, 0.035, -0.17, 0.285);
-      [-1, 1].forEach(s => {                                          // whiskers
-        const w1 = box(a.head, 0.22, 0.012, 0.012, 0xCDBBA8, s * 0.22, -0.04, 0.2); w1.rotation.z = s * 0.12;
-        const w2 = box(a.head, 0.2, 0.012, 0.012, 0xCDBBA8, s * 0.21, -0.09, 0.2); w2.rotation.z = -s * 0.05;
+      const fur = 0xF2E8DE, furSh = 0xE0D2C4, pink = 0xE89BB0;
+      const a = buildQuad(fur, fur, furSh);
+      box(a.group, 0.5, 0.46, 0.66, fur, 0, 0.7, -0.06);             // plump rounded body
+      box(a.group, 0.42, 0.32, 0.3, 0xFDF8F2, 0, 0.58, 0.34);        // soft chest
+      box(a.group, 0.18, 0.3, 0.34, fur, -0.2, 0.42, -0.26);         // big hind haunches
+      box(a.group, 0.18, 0.3, 0.34, fur, 0.2, 0.42, -0.26);
+      box(a.group, 0.22, 0.22, 0.2, 0xFFFFFF, 0, 0.72, -0.5);        // fluffy cottontail
+      // face
+      addEyes(a.head, 0x3a2a2a, 0.22);
+      box(a.head, 0.04, 0.04, 0.02, 0xFFFFFF, -0.12, 0.05, 0.225);   // eye sparkles
+      box(a.head, 0.04, 0.04, 0.02, 0xFFFFFF, 0.08, 0.05, 0.225);
+      box(a.head, 0.2, 0.16, 0.16, fur, 0, -0.1, 0.22);              // muzzle
+      box(a.head, 0.09, 0.06, 0.05, pink, 0, -0.06, 0.31);           // pink nose
+      box(a.head, 0.025, 0.06, 0.03, 0x9a6b6b, 0, -0.13, 0.31);      // mouth split
+      box(a.head, 0.05, 0.06, 0.03, 0xFFFFFF, -0.035, -0.18, 0.31);  // buck teeth
+      box(a.head, 0.05, 0.06, 0.03, 0xFFFFFF, 0.035, -0.18, 0.31);
+      [-1, 1].forEach(s => {                                         // whiskers
+        const w = box(a.head, 0.22, 0.012, 0.012, 0xCDBBA8, s * 0.2, -0.05, 0.24); w.rotation.z = s * 0.1;
       });
-      [-1, 1].forEach(s => {                                          // long ears, tilted out, pink inside
-        const ear = new THREE.Group(); ear.position.set(s * 0.12, 0.24, -0.03); ear.rotation.z = -s * 0.14; a.head.add(ear);
-        box(ear, 0.13, 0.46, 0.08, fur, 0, 0.23, 0);
-        box(ear, 0.07, 0.34, 0.05, pink, 0, 0.22, 0.03);
-        box(ear, 0.13, 0.06, 0.08, furSh, 0, 0.45, 0);               // rounded ear tip
+      [-1, 1].forEach(s => {                                         // tall upright ears, pink inside
+        const ear = new THREE.Group(); ear.position.set(s * 0.12, 0.2, -0.04); ear.rotation.z = -s * 0.1; a.head.add(ear);
+        box(ear, 0.13, 0.54, 0.08, fur, 0, 0.27, 0);
+        box(ear, 0.07, 0.42, 0.05, pink, 0, 0.26, 0.03);
+        box(ear, 0.13, 0.06, 0.08, furSh, 0, 0.53, 0);               // rounded tip
       });
-      [0, 1].forEach(i => {                                           // big hind feet (swing with the legs)
-        box(a.legs[i], 0.22, 0.11, 0.36, fur, 0, -0.5, 0.11);
-        box(a.legs[i], 0.15, 0.06, 0.12, pink, 0, -0.55, 0.26);      // pink paw pad
-      });
-      box(a.group, 0.22, 0.22, 0.2, 0xFFFFFF, 0, 0.66, -0.2);        // fluffy round cottontail
-      box(a.group, 0.12, 0.12, 0.1, 0xF3F0EC, -0.08, 0.75, -0.22);
-      box(a.group, 0.12, 0.12, 0.1, 0xF3F0EC, 0.09, 0.58, -0.23);
       return a;
     }
   },
