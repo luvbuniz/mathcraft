@@ -1863,45 +1863,55 @@ const AVATARS = [
   {
     id: 'piratecat', name: 'Pirate Cat 🐱🏴‍☠️',
     build() {
-      const a = buildQuad(0x6E7378, 0x6E7378, 0x595e63);
-      addEyes(a.head, 0x222222, 0.22);
-      box(a.head, 0.2, 0.14, 0.14, 0xF0F0F0, 0, -0.12, 0.24);           // muzzle
-      box(a.head, 0.07, 0.06, 0.05, 0xE8A0B0, 0, -0.09, 0.32);          // pink nose
-      box(a.head, 0.12, 0.14, 0.07, 0x595e63, -0.15, 0.26, -0.02);      // pointy ears
-      box(a.head, 0.12, 0.14, 0.07, 0x595e63, 0.15, 0.26, -0.02);
-      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, -0.15, 0.24, 0.02);       // inner ears
-      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, 0.15, 0.24, 0.02);
-      box(a.head, 0.46, 0.12, 0.46, 0xD8342C, 0, 0.18, 0);              // red pirate bandana
-      box(a.head, 0.48, 0.07, 0.13, 0x9e241d, 0, 0.15, 0.22);           // bandana band over forehead
-      box(a.head, 0.1, 0.1, 0.1, 0xD8342C, -0.25, 0.12, -0.04);         // side knot
-      const btail = box(a.head, 0.05, 0.18, 0.04, 0xD8342C, -0.3, 0.03, -0.06);  // bandana tail
-      btail.rotation.z = 0.4;
-      box(a.head, 0.13, 0.13, 0.04, 0x111111, 0.11, 0.05, 0.24);        // black eye patch
-      box(a.head, 0.46, 0.04, 0.04, 0x111111, 0, 0.12, 0.06);           // patch strap
-      box(a.head, 0.05, 0.05, 0.03, 0xFFD23E, -0.22, -0.04, 0.1);       // gold hoop earring
-      const tail = box(a.group, 0.12, 0.12, 0.55, 0x6E7378, 0, 0.78, -0.68);
+      const gin = 0xD98B3A, dk = 0xA5661B, cream = 0xF5E6C8;
+      const a = buildQuad(gin, gin, dk);
+      for (let i = 0; i < 4; i++) box(a.group, 0.5, 0.13, 0.08, dk, 0, 0.92, 0.33 - i * 0.22);  // tabby stripes
+      box(a.group, 0.5, 0.18, 0.5, cream, 0, 0.5, 0.08);               // cream belly
+      addEyes(a.head, 0x2e9e4f, 0.22);                                 // green cat eyes
+      box(a.head, 0.2, 0.14, 0.14, cream, 0, -0.12, 0.24);            // muzzle
+      box(a.head, 0.07, 0.06, 0.05, 0xE8A0B0, 0, -0.09, 0.32);        // pink nose
+      box(a.head, 0.12, 0.14, 0.07, gin, -0.15, 0.24, -0.02);         // pointy ears
+      box(a.head, 0.12, 0.14, 0.07, gin, 0.15, 0.24, -0.02);
+      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, -0.15, 0.22, 0.02);     // inner ears
+      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, 0.15, 0.22, 0.02);
+      box(a.head, 0.13, 0.13, 0.04, 0x111111, 0.12, 0.05, 0.235);     // black eye patch
+      box(a.head, 0.46, 0.04, 0.04, 0x111111, 0, 0.12, 0.05);         // patch strap
+      box(a.head, 0.05, 0.05, 0.03, 0xFFD23E, -0.23, -0.04, 0.1);     // gold hoop earring
+      box(a.head, 0.58, 0.07, 0.48, 0x161616, 0, 0.32, 0);            // tricorn brim
+      box(a.head, 0.32, 0.18, 0.32, 0x161616, 0, 0.43, 0);            // tricorn crown
+      box(a.head, 0.12, 0.13, 0.48, 0x161616, 0, 0.4, 0);             // up-turned front/back peaks
+      box(a.head, 0.58, 0.13, 0.1, 0x161616, 0, 0.4, 0);              // up-turned side peaks
+      box(a.head, 0.13, 0.11, 0.04, 0xF0F0F0, 0, 0.43, 0.17);         // white skull badge
+      box(a.head, 0.04, 0.04, 0.03, 0x161616, -0.03, 0.45, 0.19);     // skull eyes
+      box(a.head, 0.04, 0.04, 0.03, 0x161616, 0.03, 0.45, 0.19);
+      const tail = box(a.group, 0.12, 0.12, 0.55, gin, 0, 0.78, -0.68);
       tail.rotation.x = 0.35;
-      box(a.group, 0.13, 0.13, 0.13, 0x595e63, 0, 0.88, -0.94);         // tail tip
+      box(a.group, 0.13, 0.13, 0.13, cream, 0, 0.88, -0.94);          // cream tail tip
       return a;
     }
   },
   {
     id: 'ninjadog', name: 'Ninja Dog 🐶🥷',
     build() {
-      const a = buildQuad(0x3a3f45, 0x3a3f45, 0x2c3035);
-      box(a.head, 0.44, 0.2, 0.44, 0x14161a, 0, -0.13, 0);              // black ninja mask (lower face)
-      addEyes(a.head, 0xFFFFFF, 0.22);                                  // fierce white eyes
-      box(a.head, 0.04, 0.04, 0.03, 0x111111, -0.11, 0.04, 0.235);      // pupils
+      const a = buildQuad(0x2b2f35, 0x2b2f35, 0x202428);
+      box(a.head, 0.44, 0.2, 0.44, 0x121418, 0, -0.13, 0);             // black ninja mask
+      addEyes(a.head, 0xFFFFFF, 0.22);                                 // fierce white eyes
+      box(a.head, 0.04, 0.04, 0.03, 0x111111, -0.11, 0.04, 0.235);     // pupils
       box(a.head, 0.04, 0.04, 0.03, 0x111111, 0.11, 0.04, 0.235);
-      box(a.head, 0.1, 0.16, 0.06, 0x2c3035, -0.16, 0.2, 0);            // floppy ears
-      box(a.head, 0.1, 0.16, 0.06, 0x2c3035, 0.16, 0.2, 0);
+      box(a.head, 0.1, 0.16, 0.06, 0x202428, -0.16, 0.2, 0);           // floppy ears
+      box(a.head, 0.1, 0.16, 0.06, 0x202428, 0.16, 0.2, 0);
       box(a.head, 0.47, 0.1, 0.47, 0xD8342C, 0, 0.12, 0);              // red headband
-      box(a.head, 0.1, 0.1, 0.1, 0xB02a22, -0.26, 0.12, -0.05);         // headband knot
-      const t1 = box(a.head, 0.04, 0.2, 0.04, 0xD8342C, -0.3, 0.03, -0.08);  // band tails
-      t1.rotation.z = 0.5;
-      const t2 = box(a.head, 0.04, 0.15, 0.04, 0xB02a22, -0.24, 0.0, -0.1);
-      t2.rotation.z = 0.7;
-      const tail = box(a.group, 0.12, 0.12, 0.5, 0x3a3f45, 0, 0.78, -0.66);
+      box(a.head, 0.1, 0.1, 0.1, 0xB02a22, -0.26, 0.12, -0.05);        // headband knot
+      const t1 = box(a.head, 0.04, 0.2, 0.04, 0xD8342C, -0.3, 0.03, -0.08); t1.rotation.z = 0.5;
+      const t2 = box(a.head, 0.04, 0.15, 0.04, 0xB02a22, -0.24, 0.0, -0.1); t2.rotation.z = 0.7;
+      box(a.group, 0.5, 0.13, 0.5, 0xB02a22, 0, 0.72, 0.02);           // red ninja belt
+      box(a.group, 0.14, 0.16, 0.06, 0x8e211a, 0, 0.66, 0.27);         // belt knot
+      const kat = new THREE.Group();                                   // katana sheathed across the back
+      kat.position.set(0.04, 1.04, -0.18); kat.rotation.z = -0.7; kat.rotation.x = 0.25; a.group.add(kat);
+      box(kat, 0.045, 0.62, 0.045, 0x2a2f36, 0, 0.16, 0);             // sheath
+      box(kat, 0.05, 0.16, 0.05, 0x5a3a1e, 0, -0.18, 0);             // handle
+      box(kat, 0.12, 0.04, 0.06, 0xFFD23E, 0, -0.07, 0);            // gold guard
+      const tail = box(a.group, 0.12, 0.12, 0.5, 0x2b2f35, 0, 0.78, -0.66);
       tail.rotation.x = 0.4;
       return a;
     }
@@ -1971,14 +1981,20 @@ const AVATARS = [
   {
     id: 'penguin', name: 'Penguin 🐧',
     build() {
-      const blk = 0x23272e, org = 0xF5A623;
+      const blk = 0x23272e, org = 0xF5A623, white = 0xF7F4EE;
       const a = buildBiped(blk, blk, blk, blk);
-      box(a.group, 0.42, 0.56, 0.1, 0xF7F4EE, 0, 0.78, 0.12);          // white tummy
-      box(a.head, 0.4, 0.34, 0.08, 0xF7F4EE, 0, -0.05, 0.22);          // white face
+      box(a.group, 0.46, 0.6, 0.14, white, 0, 0.78, 0.11);            // big white belly
+      box(a.group, 0.34, 0.22, 0.16, blk, 0, 1.08, -0.03);           // black shoulders/back
+      a.arms.forEach(A => { const fl = box(A, 0.07, 0.52, 0.26, blk, 0, -0.44, -0.02); fl.rotation.x = 0.18; });  // flat flippers
+      const tl = box(a.group, 0.3, 0.1, 0.22, blk, 0, 0.52, -0.18); tl.rotation.x = 0.7;  // stubby tail
+      box(a.head, 0.42, 0.36, 0.08, white, 0, -0.03, 0.22);          // white face
+      box(a.head, 0.18, 0.16, 0.06, blk, 0, 0.16, 0.235);           // black cap over the brow
       addEyes(a.head, 0x111111, 0.27);
-      box(a.head, 0.16, 0.11, 0.14, org, 0, -0.09, 0.3);               // beak (upper)
-      box(a.head, 0.12, 0.05, 0.1, 0xCB7E12, 0, -0.15, 0.31);          // beak (lower)
-      [0, 1].forEach(i => box(a.legs[i], 0.22, 0.07, 0.32, org, 0, -0.55, 0.14));   // orange webbed feet
+      box(a.head, 0.05, 0.05, 0.02, 0xFFFFFF, -0.105, 0.06, 0.275);  // eye shine
+      box(a.head, 0.05, 0.05, 0.02, 0xFFFFFF, 0.115, 0.06, 0.275);
+      box(a.head, 0.16, 0.11, 0.15, org, 0, -0.09, 0.3);             // beak upper
+      box(a.head, 0.12, 0.06, 0.11, 0xCB7E12, 0, -0.15, 0.31);       // beak lower
+      [0, 1].forEach(i => box(a.legs[i], 0.24, 0.07, 0.36, org, 0, -0.55, 0.16));   // webbed feet
       return a;
     }
   },
@@ -2031,17 +2047,31 @@ const AVATARS = [
   {
     id: 'mermaid', name: 'Mermaid 🧜‍♀️',
     build() {
-      const a = buildBiped(0x2EC4B6, 0xFFD9B3, 0x1f9c91, 0xFFD9B3);    // teal tail, peach skin
-      addEyes(a.head, 0x35506e, 0.26);
-      box(a.head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.26);          // smile
-      box(a.head, 0.56, 0.2, 0.52, 0xE0533B, 0, 0.16, -0.02);          // red hair top
-      box(a.head, 0.16, 0.5, 0.14, 0xE0533B, -0.3, -0.1, -0.04);       // hair locks
-      box(a.head, 0.16, 0.5, 0.14, 0xE0533B, 0.3, -0.1, -0.04);
-      box(a.head, 0.07, 0.07, 0.05, 0xFFE680, 0.26, 0.12, 0.18);       // flower clip
-      box(a.group, 0.52, 0.16, 0.32, 0xC2185B, 0, 1.06, 0);            // shell bodice
-      const fluke = box(a.group, 0.5, 0.06, 0.34, 0x29b3a6, 0, 0.06, -0.16);  // tail fluke
-      fluke.rotation.x = 0.5;
-      return a;
+      const skin = 0xFFD9B3, tl = 0x2EC4B6, tlD = 0x179b8f, tlL = 0x5fe0d2, hair = 0xE0533B;
+      const g = new THREE.Group();
+      box(g, 0.44, 0.3, 0.32, tl, 0, 0.52, 0);                        // tail — top
+      box(g, 0.36, 0.26, 0.28, tl, 0, 0.28, -0.03);                  // tail — middle
+      box(g, 0.26, 0.22, 0.22, tlD, 0, 0.08, -0.06);                 // tail — narrow base
+      [0.5, 0.34, 0.18].forEach(yy => box(g, 0.45, 0.04, 0.02, tlL, 0, yy, 0.15));   // scale highlight rows
+      const fL = box(g, 0.36, 0.06, 0.32, tlL, -0.17, 0.02, -0.16); fL.rotation.z = 0.6;   // fan fluke
+      const fR = box(g, 0.36, 0.06, 0.32, tlL, 0.17, 0.02, -0.16); fR.rotation.z = -0.6;
+      box(g, 0.44, 0.42, 0.26, skin, 0, 0.86, 0);                    // torso
+      box(g, 0.16, 0.15, 0.1, 0xC2185B, -0.12, 0.93, 0.13);          // shell bra
+      box(g, 0.16, 0.15, 0.1, 0xC2185B, 0.12, 0.93, 0.13);
+      box(g, 0.05, 0.04, 0.04, 0xFFE680, -0.12, 0.93, 0.18);         // pearls
+      box(g, 0.05, 0.04, 0.04, 0xFFE680, 0.12, 0.93, 0.18);
+      const arms = [limb(g, 0.13, 0.46, 0.13, skin, -0.31, 1.06, 0), limb(g, 0.13, 0.46, 0.13, skin, 0.31, 1.06, 0)];
+      arms.forEach(A => box(A, 0.15, 0.14, 0.15, skin, 0, -0.46, 0));  // hands
+      const head = new THREE.Group(); head.position.set(0, 1.4, 0); g.add(head);
+      box(head, 0.48, 0.48, 0.48, skin, 0, 0, 0);
+      addEyes(head, 0x35506e, 0.25);
+      box(head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.25);          // smile
+      box(head, 0.54, 0.22, 0.54, hair, 0, 0.19, -0.02);            // hair crown
+      box(head, 0.18, 0.62, 0.16, hair, -0.3, -0.16, -0.03);        // long flowing locks
+      box(head, 0.18, 0.62, 0.16, hair, 0.3, -0.16, -0.03);
+      box(head, 0.5, 0.34, 0.14, hair, 0, -0.12, -0.26);           // back hair
+      box(head, 0.09, 0.09, 0.05, 0xFFB703, 0.25, 0.13, 0.16);     // starfish clip
+      return { group: g, legs: [], arms, head };
     }
   },
   {
@@ -2061,17 +2091,43 @@ const AVATARS = [
   {
     id: 'trex', name: 'T-Rex 🦖',
     build() {
-      const a = buildBiped(0x4CAF50, 0x4CAF50, 0x3d8b41, 0x57c05b);
-      addEyes(a.head, 0xFFC400, 0.26);
-      box(a.head, 0.42, 0.2, 0.32, 0x57c05b, 0, -0.14, 0.18);          // big jaw/snout
-      for (let i = -1; i <= 1; i++) box(a.head, 0.05, 0.08, 0.04, 0xFFFFFF, i * 0.12, -0.22, 0.345);  // teeth
-      box(a.head, 0.09, 0.1, 0.06, 0x3d8b41, -0.14, 0.28, -0.02);      // brow bumps
-      box(a.head, 0.09, 0.1, 0.06, 0x3d8b41, 0.14, 0.28, -0.02);
-      for (let i = 0; i < 3; i++) box(a.group, 0.1, 0.12, 0.08, 0x2e7d32, 0, 1.04 - i * 0.14, -0.04);  // back ridges
-      const tail = box(a.group, 0.18, 0.18, 0.7, 0x4CAF50, 0, 0.7, -0.5);   // heavy tail
-      tail.rotation.x = -0.3;
-      box(a.group, 0.1, 0.1, 0.2, 0x4CAF50, 0, 0.6, -0.84);           // tail taper
-      return a;
+      const g = new THREE.Group();
+      const grn = 0x5BA84F, grnD = 0x3d8b41, grnL = 0x76c06a, belly = 0xCBE0A0;
+      const legs = [                                                   // thick hind legs
+        limb(g, 0.26, 0.5, 0.3, grnD, -0.17, 0.5, 0.02),
+        limb(g, 0.26, 0.5, 0.3, grnD, 0.17, 0.5, 0.02)
+      ];
+      legs.forEach(L => {
+        box(L, 0.3, 0.12, 0.42, grnD, 0, -0.46, 0.12);                // big foot
+        [-0.09, 0, 0.09].forEach(cx => box(L, 0.05, 0.06, 0.09, 0xF0F0F0, cx, -0.5, 0.31));  // claws
+      });
+      box(g, 0.5, 0.5, 0.72, grn, 0, 0.78, 0.05);                     // bulky body leaning forward
+      box(g, 0.42, 0.32, 0.5, belly, 0, 0.66, 0.2);                  // pale belly
+      for (let i = 0; i < 4; i++) box(g, 0.1, 0.13, 0.1, grnD, 0, 1.02 - i * 0.015, 0.22 - i * 0.18);  // spine ridges
+      const arms = [                                                   // tiny T-Rex arms
+        limb(g, 0.08, 0.26, 0.08, grnL, -0.27, 0.92, 0.22),
+        limb(g, 0.08, 0.26, 0.08, grnL, 0.27, 0.92, 0.22)
+      ];
+      arms.forEach(A => box(A, 0.06, 0.06, 0.11, 0xF0F0F0, 0, -0.26, 0.06));   // little claws
+      const head = new THREE.Group(); head.position.set(0, 1.12, 0.5); g.add(head);   // big head, forward
+      box(head, 0.4, 0.4, 0.5, grn, 0, 0, 0);                         // skull
+      box(head, 0.38, 0.18, 0.32, grn, 0, -0.17, 0.26);              // lower snout/jaw
+      for (let i = -1; i <= 1; i++) {                                  // teeth, upper & lower
+        box(head, 0.05, 0.09, 0.04, 0xFFFFFF, i * 0.12, -0.05, 0.49);
+        box(head, 0.05, 0.07, 0.04, 0xFFFFFF, i * 0.12, -0.2, 0.41);
+      }
+      box(head, 0.1, 0.1, 0.08, 0xFFC400, -0.16, 0.13, 0.18);         // yellow eyes
+      box(head, 0.1, 0.1, 0.08, 0xFFC400, 0.16, 0.13, 0.18);
+      box(head, 0.05, 0.05, 0.04, 0x111111, -0.16, 0.13, 0.24);       // pupils
+      box(head, 0.05, 0.05, 0.04, 0x111111, 0.16, 0.13, 0.24);
+      box(head, 0.09, 0.08, 0.07, grnD, -0.15, 0.23, 0.02);           // brow bumps
+      box(head, 0.09, 0.08, 0.07, grnD, 0.15, 0.23, 0.02);
+      box(head, 0.06, 0.05, 0.05, grnD, -0.07, 0.07, 0.49);           // nostrils
+      box(head, 0.06, 0.05, 0.05, grnD, 0.07, 0.07, 0.49);
+      box(g, 0.32, 0.3, 0.4, grn, 0, 0.72, -0.42);                    // heavy tail base
+      box(g, 0.22, 0.22, 0.4, grn, 0, 0.62, -0.72);                  // tail mid
+      box(g, 0.12, 0.14, 0.4, grnD, 0, 0.52, -0.98);                 // tail tip
+      return { group: g, legs, arms, head };
     }
   }
 ];
