@@ -1995,8 +1995,8 @@ const SHOP_ITEMS = [
   { id: 'dtable', icon: '🍽️', name: 'Dining Table', price: 24, kind: 'many', desc: 'A fancy dining table — pick a style in your 🎒 backpack. Set plates on it!' },
   { id: 'plates', icon: '🍴', name: 'Plates & Cutlery', price: 8, kind: 'many', desc: 'A place setting — put it on a table to set it for dinner.' },
   { id: 'couch',  icon: '🛋️', name: 'Comfy Couch', price: 24, kind: 'many', desc: 'A plush couch — pick a style & color, and pets can curl up on it!' },
-  { id: 'cat',    icon: '🐱', name: 'Pet Cat', price: 16, kind: 'many', desc: 'Pick a breed: Tabby, Persian, Calico, Siamese & more. Sits on the floor, couch, bed, or chair.' },
-  { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'Pick a breed: Golden Retriever, Pomeranian, Dalmatian, Samoyed & more. Sits anywhere.' },
+  { id: 'cat',    icon: '🐱', name: 'Pet Cat', price: 16, kind: 'many', desc: 'Pick a breed: Tabby, Persian, Calico, Siamese & more. Build a room first — pets need a home to roam in (or perch one on a couch/bed/chair).' },
+  { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'Pick a breed: Golden Retriever, Pomeranian, Dalmatian, Samoyed & more. Build a room first — pets need a home to roam in!' },
   { id: 'fish',   icon: '🐠', name: 'Fish Bowl', price: 13, kind: 'many', desc: 'Pick a fish: Goldfish, Clownfish, Blue Tang, Betta & more. Put it on a table, dresser, or shelf.' },
   { id: 'coffeetable', icon: '🪵', name: 'Coffee Table', price: 16, kind: 'many', desc: 'A low table for in front of the couch.' },
   { id: 'dresser', icon: '🗄️', name: 'Dresser', price: 22, kind: 'many', desc: 'A wooden chest of drawers with knobs.' },
@@ -3598,6 +3598,12 @@ function placeSelectedAt(x, z, blockY) {
       if (SURF[cell.type] != null) surfY = SURF[cell.type];
       else { toast('🐾 Put it on the floor or on a couch, bed, chair, or table!', 2600); return false; }
     } else if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    // A roaming cat or dog needs a home — you must be standing inside a building to let one out.
+    if ((slot === 'cat' || slot === 'dog') && surfY === 0 &&
+        !isEnclosedCell(Math.floor(player.pos.x), Math.floor(player.pos.z))) {
+      toast('🏠 Pets need a home first! Build a room with walls (a 🚪 door is fine), stand inside, then let your pet out.', 4000);
+      return false;
+    }
     spawnFoodAt(x, z, false, slot, surfY, G[slot + 'Variant'] || 0); G.furniture[slot] -= 1; Sound.pop(); refreshHUD();
     toast(slot === 'cat' ? '🐱 Meow! Cozy kitty.' : slot === 'dog' ? '🐶 Woof! Good doggo.' : '🐠 Blub blub!', 1600); return true;
   }
@@ -3835,6 +3841,25 @@ function updateProjectiles(dt) {
 /* 2-D flood fill at ground level from the player's cell. If the fill stays
    small and bounded by blocks, the player is enclosed. A door on the wall
    makes it a real house = SAFE. */
+/* Is the cell (sx,sz) inside a sealed building (walls/door all around)? Works any time,
+   even in calm No-Gloomies mode where the shelter HUD check doesn't run. */
+function isEnclosedCell(sx, sz) {
+  if (solidAt(sx, 0, sz)) return false;
+  const seen = new Set([sx + ',' + sz]);
+  const q = [[sx, sz]];
+  while (q.length) {
+    const [x, z] = q.pop();
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, nz = z + dz;
+      if (Math.abs(nx - sx) > 14 || Math.abs(nz - sz) > 14 || seen.size > 250) return false;   // escaped to the open
+      const k = nx + ',' + nz;
+      if (seen.has(k)) continue;
+      if (blocks.get(key(nx, 0, nz))) continue;       // a wall or door is a boundary
+      seen.add(k); q.push([nx, nz]);
+    }
+  }
+  return true;
+}
 function checkShelter() {
   const sx = Math.floor(player.pos.x), sz = Math.floor(player.pos.z);
   if (solidAt(sx, 0, sz)) { G.enclosed = false; G.hasDoorOnShelter = false; return; }
