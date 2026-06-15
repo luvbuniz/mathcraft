@@ -5411,6 +5411,7 @@ document.querySelectorAll('#setupCard [data-go]').forEach(b => {
 });
 
 function startGame() {
+  Analytics.play();                            // they didn't just look — they're playing
   $('startScreen').style.display = 'none';
   $('hud').style.display = 'block';
   if (isTouch) $('touchUI').style.display = 'block';
@@ -5659,6 +5660,39 @@ addEventListener('resize', () => {
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+
+/* ===================== ANONYMOUS USAGE PINGS (for the Admin page) =====================
+   No names, emails, or personal data — just a random per-device tag so the private
+   Admin page can count visits, players and active games. This is COMPLETELY OFF until
+   you paste your own backend URL below. Setup is in analytics/SETUP.md. */
+const ANALYTICS_URL = '';   // ← paste your Google Apps Script Web App URL here to turn tracking on
+const Analytics = (function () {
+  let aid = '';
+  try {
+    aid = localStorage.getItem('sa_aid') || '';
+    if (!aid) { aid = 'a' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('sa_aid', aid); }
+  } catch (e) {}
+  function hasGame() {                          // a saved build or math profile = they actually played
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.indexOf('stackadooProfile:') === 0 || k.indexOf('stackadooSave:') === 0)) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function send(ev) {
+    if (!ANALYTICS_URL) return;                 // tracking stays off until a URL is configured
+    try {
+      const u = ANALYTICS_URL + '?id=' + encodeURIComponent(aid) + '&e=' + ev +
+        '&g=' + (hasGame() ? 1 : 0) + '&t=' + Date.now();
+      if (navigator.sendBeacon) navigator.sendBeacon(u); else new Image().src = u;
+    } catch (e) {}
+  }
+  return { send: send, play: function () { send('play'); }, id: aid };
+})();
+Analytics.send('visit');                                   // someone opened the site
+setInterval(function () { if (!document.hidden) Analytics.send('beat'); }, 60000);  // still here = active
 </script>
 </body>
 </html>

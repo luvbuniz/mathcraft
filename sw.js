@@ -2,7 +2,7 @@
    Strategy: NETWORK-FIRST (try the network, fall back to cache offline). This means a
    normal reload always picks up the latest version while you're online, and the game
    still works with no Wi-Fi. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v2';
+const CACHE = 'stackadoo-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
@@ -13,6 +13,7 @@ self.addEventListener('activate', e => e.waitUntil(
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  if (new URL(req.url).origin !== self.location.origin) return;   // let cross-origin (analytics) pass straight through
   e.respondWith(
     fetch(req).then(resp => {
       if (resp && (resp.ok || resp.type === 'opaque')) {
