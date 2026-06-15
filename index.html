@@ -1755,6 +1755,72 @@ const AVATARS = [
       box(a.group, 0.13, 0.18, 0.12, 0xFFF4E0, 0, 0.8, -0.52);          // white stubby tail
       return a;
     }
+  },
+  {
+    id: 'kinglion', name: 'King Lion 🦁👑',
+    build() {
+      const a = buildQuad(0xE3A93C, 0xE9B84A, 0xC98E2E);
+      const mane = 0x9C5A22;
+      box(a.head, 0.62, 0.62, 0.22, mane, 0, 0.02, -0.14);              // full mane behind the face
+      [[-0.3, 0.04], [0.3, 0.04], [-0.24, 0.3], [0.24, 0.3], [0, 0.34], [-0.3, -0.2], [0.3, -0.2], [0, -0.3]]
+        .forEach(p => box(a.head, 0.17, 0.17, 0.17, mane, p[0], p[1], -0.05));  // ring of mane tufts
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.2, 0.15, 0.16, 0xF3E0B0, 0, -0.11, 0.24);           // muzzle
+      box(a.head, 0.09, 0.07, 0.05, 0x3a2a1a, 0, -0.09, 0.33);          // nose
+      box(a.head, 0.1, 0.1, 0.07, 0xE9B84A, -0.15, 0.24, -0.02);        // round ears
+      box(a.head, 0.1, 0.1, 0.07, 0xE9B84A, 0.15, 0.24, -0.02);
+      addCrown(a.head, 0.3, 0xFFD23E);
+      const tail = box(a.group, 0.1, 0.1, 0.5, 0xE3A93C, 0, 0.8, -0.66);
+      tail.rotation.x = 0.4;
+      box(a.group, 0.17, 0.17, 0.17, mane, 0, 0.92, -0.92);             // tufted tail tip
+      return a;
+    }
+  },
+  {
+    id: 'piratecat', name: 'Pirate Cat 🐱🏴‍☠️',
+    build() {
+      const a = buildQuad(0x6E7378, 0x6E7378, 0x595e63);
+      addEyes(a.head, 0x222222, 0.22);
+      box(a.head, 0.2, 0.14, 0.14, 0xF0F0F0, 0, -0.12, 0.24);           // muzzle
+      box(a.head, 0.07, 0.06, 0.05, 0xE8A0B0, 0, -0.09, 0.32);          // pink nose
+      box(a.head, 0.12, 0.14, 0.07, 0x595e63, -0.15, 0.26, -0.02);      // pointy ears
+      box(a.head, 0.12, 0.14, 0.07, 0x595e63, 0.15, 0.26, -0.02);
+      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, -0.15, 0.24, 0.02);       // inner ears
+      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, 0.15, 0.24, 0.02);
+      box(a.head, 0.46, 0.12, 0.46, 0xD8342C, 0, 0.18, 0);              // red pirate bandana
+      box(a.head, 0.48, 0.07, 0.13, 0x9e241d, 0, 0.15, 0.22);           // bandana band over forehead
+      box(a.head, 0.1, 0.1, 0.1, 0xD8342C, -0.25, 0.12, -0.04);         // side knot
+      const btail = box(a.head, 0.05, 0.18, 0.04, 0xD8342C, -0.3, 0.03, -0.06);  // bandana tail
+      btail.rotation.z = 0.4;
+      box(a.head, 0.13, 0.13, 0.04, 0x111111, 0.11, 0.05, 0.24);        // black eye patch
+      box(a.head, 0.46, 0.04, 0.04, 0x111111, 0, 0.12, 0.06);           // patch strap
+      box(a.head, 0.05, 0.05, 0.03, 0xFFD23E, -0.22, -0.04, 0.1);       // gold hoop earring
+      const tail = box(a.group, 0.12, 0.12, 0.55, 0x6E7378, 0, 0.78, -0.68);
+      tail.rotation.x = 0.35;
+      box(a.group, 0.13, 0.13, 0.13, 0x595e63, 0, 0.88, -0.94);         // tail tip
+      return a;
+    }
+  },
+  {
+    id: 'ninjadog', name: 'Ninja Dog 🐶🥷',
+    build() {
+      const a = buildQuad(0x3a3f45, 0x3a3f45, 0x2c3035);
+      box(a.head, 0.44, 0.2, 0.44, 0x14161a, 0, -0.13, 0);              // black ninja mask (lower face)
+      addEyes(a.head, 0xFFFFFF, 0.22);                                  // fierce white eyes
+      box(a.head, 0.04, 0.04, 0.03, 0x111111, -0.11, 0.04, 0.235);      // pupils
+      box(a.head, 0.04, 0.04, 0.03, 0x111111, 0.11, 0.04, 0.235);
+      box(a.head, 0.1, 0.16, 0.06, 0x2c3035, -0.16, 0.2, 0);            // floppy ears
+      box(a.head, 0.1, 0.16, 0.06, 0x2c3035, 0.16, 0.2, 0);
+      box(a.head, 0.47, 0.1, 0.47, 0xD8342C, 0, 0.12, 0);              // red headband
+      box(a.head, 0.1, 0.1, 0.1, 0xB02a22, -0.26, 0.12, -0.05);         // headband knot
+      const t1 = box(a.head, 0.04, 0.2, 0.04, 0xD8342C, -0.3, 0.03, -0.08);  // band tails
+      t1.rotation.z = 0.5;
+      const t2 = box(a.head, 0.04, 0.15, 0.04, 0xB02a22, -0.24, 0.0, -0.1);
+      t2.rotation.z = 0.7;
+      const tail = box(a.group, 0.12, 0.12, 0.5, 0x3a3f45, 0, 0.78, -0.66);
+      tail.rotation.x = 0.4;
+      return a;
+    }
   }
 ];
 
@@ -5009,19 +5075,22 @@ function buildMenu() {
   // avatar cards with live 3D previews
   const grid = $('avatarGrid');
   const PV = 320;                                    // higher-res preview for crisp avatars
-  const pvScene = new THREE.Scene();
-  pvScene.background = new THREE.Color(0xEEF4FB);
-  pvScene.add(new THREE.AmbientLight(0xffffff, 0.82));
-  const pvLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  const pvScene = new THREE.Scene();                 // transparent so we can paint our own backdrop
+  pvScene.add(new THREE.AmbientLight(0xffffff, 0.86));
+  const pvLight = new THREE.DirectionalLight(0xffffff, 0.95);
   pvLight.position.set(2.6, 5, 3.2);
   pvScene.add(pvLight);
-  const pvFill = new THREE.DirectionalLight(0xc4d8ff, 0.42);   // soft fill from the other side
+  const pvFill = new THREE.DirectionalLight(0xc4d8ff, 0.45);   // soft fill from the other side
   pvFill.position.set(-3, 2.2, -2);
   pvScene.add(pvFill);
   const pvCam = new THREE.PerspectiveCamera(37, 1, 0.1, 20);
-  pvCam.position.set(0, 1.22, 3.3);
-  pvCam.lookAt(0, 0.82, 0);
-  renderer.setSize(PV, PV);
+  pvCam.position.set(0, 1.18, 3.0);                  // a touch closer → heroes read larger
+  pvCam.lookAt(0, 0.84, 0);
+  // dedicated transparent renderer so each card gets a gradient backdrop + a grounding shadow,
+  // which makes both pale (unicorn) and dark (dragon) heroes pop instead of washing out.
+  const pvRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  pvRenderer.setClearColor(0x000000, 0);
+  pvRenderer.setSize(PV, PV);
 
   AVATARS.forEach((av, i) => {
     const card = document.createElement('button');
@@ -5036,9 +5105,20 @@ function buildMenu() {
     const data = av.build();
     data.group.rotation.y = data.quad ? 0.85 : 0.5;   // angle quadrupeds to show all four legs
     pvScene.add(data.group);
-    renderer.render(pvScene, pvCam);
-    cv.getContext('2d').drawImage(renderer.domElement, 0, 0, PV, PV);
+    pvRenderer.render(pvScene, pvCam);
     pvScene.remove(data.group);
+
+    const ctx = cv.getContext('2d');
+    const bg = ctx.createLinearGradient(0, 0, 0, PV);   // medium periwinkle so every hero stands out
+    bg.addColorStop(0, '#dbe7f6'); bg.addColorStop(1, '#b7cde8');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, PV, PV);
+    ctx.save();                                          // soft ground shadow under the feet
+    ctx.translate(PV * 0.5, PV * 0.84); ctx.scale(1, 0.3);
+    const sh = ctx.createRadialGradient(0, 0, 2, 0, 0, PV * 0.28);
+    sh.addColorStop(0, 'rgba(33,52,82,0.34)'); sh.addColorStop(1, 'rgba(33,52,82,0)');
+    ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(0, 0, PV * 0.28, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.drawImage(pvRenderer.domElement, 0, 0, PV, PV);  // hero on top of the backdrop
 
     card.onclick = () => {
       Sound.click();
@@ -5047,7 +5127,7 @@ function buildMenu() {
       G.avatarIndex = i;
     };
   });
-  renderer.setSize(innerWidth, innerHeight);
+  pvRenderer.dispose();
 }
 buildMenu();
 
