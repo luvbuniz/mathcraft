@@ -292,7 +292,9 @@
   .guBar .lab { width:38%; text-align:right; }
   .guBar .track { flex:1; height:14px; background:#e2e8f0; border-radius:7px; overflow:hidden; }
   .guBar .fill { height:100%; background:linear-gradient(90deg,#69d05c,#3f9d34); border-radius:7px; }
-  .guBar .num { width:28px; font-weight:bold; }
+  .guBar .num { width:62px; font-weight:bold; text-align:right; font-variant-numeric:tabular-nums; }
+  .guEffort { color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:2px 0 4px; }
+  .guFocus { font-weight:bold; font-size:clamp(13px,2.2vw,15px); margin:0 0 6px; }
   .guReset { margin-top:8px; background:#ffd0c6; color:#7c2413; font-weight:bold; font-size:13px;
     padding:7px 12px; border-radius:10px; box-shadow:0 2px 0 #d99; }
   .guEmpty { color:#6c84a6; font-style:italic; padding:10px 0; }
@@ -1109,8 +1111,18 @@ function pick(arr) { return arr[ri(0, arr.length - 1)]; }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = ri(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 function makeEquation(grade) {
+  const skillLevel = (typeof G !== 'undefined' && G.skillLevel) || null;
   for (let attempt = 0; attempt < 60; attempt++) {
     const eq = generateOnce(grade);
+    // honor this skill's own difficulty: if the kid has earned a harder (or gentler) level
+    // for this kind of problem, re-roll a few times to serve it at that level instead.
+    const sl = skillLevel && skillLevel[eq.skill];
+    if (sl && sl !== grade) {
+      for (let k = 0; k < 5; k++) {
+        const e2 = generateOnce(Math.max(1, Math.min(5, sl)));
+        if (e2.skill === eq.skill && !usedEquations.has(e2.text)) { usedEquations.add(e2.text); return e2; }
+      }
+    }
     if (!usedEquations.has(eq.text)) { usedEquations.add(eq.text); return eq; }
   }
   return generateOnce(grade);             // session has seen a LOT of math — allow anything
@@ -1750,7 +1762,7 @@ const G = {
   firstPerson: false, snackUntil: 0,
   owned: { ladder: false, shoes: false, boots: false, hat: false },
   warned60: false, warned10: false,
-  mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0
+  mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
 };
 
 /* ===== Stackadoo Worlds: each is its own themed place + question subject =====
@@ -1826,9 +1838,9 @@ const SHOP_ITEMS = [
   { id: 'dtable', icon: '🍽️', name: 'Dining Table', price: 24, kind: 'many', desc: 'A fancy dining table — pick a style in your 🎒 backpack. Set plates on it!' },
   { id: 'plates', icon: '🍴', name: 'Plates & Cutlery', price: 8, kind: 'many', desc: 'A place setting — put it on a table to set it for dinner.' },
   { id: 'couch',  icon: '🛋️', name: 'Comfy Couch', price: 24, kind: 'many', desc: 'A plush couch — pick a style & color, and pets can curl up on it!' },
-  { id: 'cat',    icon: '🐱', name: 'Pet Cat', price: 16, kind: 'many', desc: 'A cuddly cat. Put it on the floor, a couch, a bed, or a chair.' },
-  { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'A friendly dog. Put it on the floor, a couch, a bed, or a chair.' },
-  { id: 'fish',   icon: '🐠', name: 'Fish Bowl', price: 13, kind: 'many', desc: 'A goldfish in a bowl. Put it on a table, dresser, or shelf.' },
+  { id: 'cat',    icon: '🐱', name: 'Pet Cat', price: 16, kind: 'many', desc: 'Pick a breed: Tabby, Persian, Calico, Siamese & more. Sits on the floor, couch, bed, or chair.' },
+  { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'Pick a breed: Golden Retriever, Pomeranian, Dalmatian, Samoyed & more. Sits anywhere.' },
+  { id: 'fish',   icon: '🐠', name: 'Fish Bowl', price: 13, kind: 'many', desc: 'Pick a fish: Goldfish, Clownfish, Blue Tang, Betta & more. Put it on a table, dresser, or shelf.' },
   { id: 'coffeetable', icon: '🪵', name: 'Coffee Table', price: 16, kind: 'many', desc: 'A low table for in front of the couch.' },
   { id: 'dresser', icon: '🗄️', name: 'Dresser', price: 22, kind: 'many', desc: 'A wooden chest of drawers with knobs.' },
   { id: 'tv',     icon: '📺', name: 'Television', price: 20, kind: 'many', desc: 'A flat-screen TV on a stand for the living room.' },
@@ -1886,7 +1898,7 @@ const BADGES = [
 ];
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byGrade: {}, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0 };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0 };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -1899,7 +1911,9 @@ function loadProfileFor(name) {
     if (p && p.badges) Object.assign(profile, p);   // merge so old saves gain new fields
   } catch (e) {}
   profile.byOp = profile.byOp || {};
+  profile.byOpWrong = profile.byOpWrong || {};
   profile.byGrade = profile.byGrade || {};
+  profile.byDay = profile.byDay || {};
   if (!profile.firstPlayed) profile.firstPlayed = Date.now();
 }
 function saveProfile() {
@@ -1913,12 +1927,16 @@ const SKILL_LABELS = {
   multi: 'Multi-step', order: 'Order of ops', geo: 'Area & shapes', word: 'Word problems',
   reading: 'Reading', spanish: 'Spanish', other: 'Other'
 };
-function recordWrong(eq) {
+function recordWrong(eq, fast) {
   profile.totalWrong = (profile.totalWrong || 0) + 1;
+  if (eq) { const op = eq.skill || 'other'; profile.byOpWrong[op] = (profile.byOpWrong[op] || 0) + 1; }
+  if (fast) profile.fastWrong = (profile.fastWrong || 0) + 1;   // a quick wrong tap = a likely guess
   profileDirty = true;
 }
 function recordSolve(eq) {
   profile.totalSolved++;
+  const today = new Date().toISOString().slice(0, 10);        // effort over time
+  profile.byDay[today] = (profile.byDay[today] || 0) + 1;
   if (eq) {
     const op = eq.skill || 'other';
     profile.byOp[op] = (profile.byOp[op] || 0) + 1;
@@ -2071,20 +2089,42 @@ function renderGrownup() {
     let html = '<h3>🙂 ' + p._name + '</h3>';
     html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
       '<span>🏅 Badges: ' + ((p.badges && p.badges.length) || 0) + '</span><span>⏱️ ' + fmtPlayTime(p.secondsPlayed) + '</span></div>';
+
+    // effort over time — today & this week
+    const byDay = p.byDay || {};
+    const dayKey = d => { const t = new Date(); t.setDate(t.getDate() - d); return t.toISOString().slice(0, 10); };
+    const todayN = byDay[dayKey(0)] || 0;
+    let weekN = 0; for (let d = 0; d < 7; d++) weekN += byDay[dayKey(d)] || 0;
+    let activeDays = 0; for (let d = 0; d < 7; d++) if (byDay[dayKey(d)]) activeDays++;
+    html += '<div class="guEffort">💪 <b>Effort</b> — Today: <b>' + todayN + '</b> · This week: <b>' + weekN +
+      '</b> across <b>' + activeDays + '</b> day' + (activeDays === 1 ? '' : 's') + '</div>';
+
+    // focus / guessing read (helps spot button-mashing)
+    const attempts = solved + wrong, fastWrong = p.fastWrong || 0;
+    let focus, fcol;
+    if (attempts < 8) { focus = '🌱 Just getting started — not enough data yet'; fcol = '#6c84a6'; }
+    else if (acc >= 75) { focus = '✅ Working carefully'; fcol = '#2f8a52'; }
+    else if (acc >= 50) { focus = '🟡 Some guessing — worth checking in'; fcol = '#b07d00'; }
+    else { focus = '🔴 Lots of guessing — sit with them a bit'; fcol = '#c0392b'; }
+    if (attempts >= 8 && fastWrong / attempts > 0.3) focus += ' · ⚡ answering very fast';
+    html += '<div class="guFocus" style="color:' + fcol + '">' + focus + '</div>';
+
     // grade breakdown
     const grades = p.byGrade || {};
     const gKeys = Object.keys(grades).sort();
-    if (gKeys.length) html += '<div style="font-weight:bold;color:#5b6b80;margin:4px 0 2px">By grade: ' +
+    if (gKeys.length) html += '<div style="font-weight:bold;color:#5b6b80;margin:6px 0 2px">By grade: ' +
       gKeys.map(g => 'G' + g + ' (' + grades[g] + ')').join(' · ') + '</div>';
-    // skill bars
-    const ops = p.byOp || {};
+
+    // per-skill accuracy bars — strong (green) vs weak (red) so you can see what to practice
+    const ops = p.byOp || {}, wrongs = p.byOpWrong || {};
     const opKeys = Object.keys(ops).sort((a, b) => ops[b] - ops[a]);
-    const max = opKeys.reduce((m, k) => Math.max(m, ops[k]), 1);
     opKeys.forEach(k => {
-      const pct = Math.round(ops[k] / max * 100);
+      const c = ops[k], w = wrongs[k] || 0;
+      const a = (c + w) ? Math.round(c / (c + w) * 100) : 100;
+      const col = a >= 75 ? '#3CA45C' : a >= 50 ? '#E6A100' : '#E0524D';
       html += '<div class="guBar"><span class="lab">' + (SKILL_LABELS[k] || k) + '</span>' +
-        '<span class="track"><span class="fill" style="width:' + pct + '%"></span></span>' +
-        '<span class="num">' + ops[k] + '</span></div>';
+        '<span class="track"><span class="fill" style="width:' + a + '%;background:' + col + '"></span></span>' +
+        '<span class="num">' + a + '% · ' + c + '</span></div>';
     });
     if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
     card.innerHTML = html;
@@ -2256,6 +2296,7 @@ function resetGameState() {
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
+  G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false };
 }
@@ -3533,9 +3574,27 @@ function fmtTime(s) {
 }
 
 /* ============================ MATH POPUP ============================ */
-let currentEq = null, popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0, answerUnlockTimer = null, nextQuestionTimer = null, pendingReward = 0;
+let currentEq = null, popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0, answerUnlockTimer = null, nextQuestionTimer = null, pendingReward = 0, questionShownAt = 0, answerUnlockedAt = 0;
 function adaptiveMathLevel() {
   return Math.max(1, Math.min(5, G.mathLevel || G.grade || 2));
+}
+/* Per-skill difficulty: each kind of problem (add, mul, frac…) climbs or eases on
+   its own. Strong at multiplication? Those get a touch harder. Shaky on fractions?
+   Those get a touch easier — so a kid is stretched where they're ready and supported
+   where they're not. */
+function bumpSkill(skill, correct) {
+  if (!skill) return;
+  const base = G.mathLevel || G.grade || 2;
+  const ceiling = Math.min(5, (G.grade || 2) + 1);
+  G.skillLevel = G.skillLevel || {}; G.skillStreak = G.skillStreak || {}; G.skillMiss = G.skillMiss || {};
+  const cur = G.skillLevel[skill] || base;
+  if (correct) {
+    G.skillStreak[skill] = (G.skillStreak[skill] || 0) + 1; G.skillMiss[skill] = 0;
+    if (G.skillStreak[skill] >= 4) { G.skillLevel[skill] = Math.min(ceiling, cur + 1); G.skillStreak[skill] = 0; }
+  } else {
+    G.skillMiss[skill] = (G.skillMiss[skill] || 0) + 1; G.skillStreak[skill] = 0;
+    if (G.skillMiss[skill] >= 2) { G.skillLevel[skill] = Math.max(1, cur - 1); G.skillMiss[skill] = 0; }
+  }
 }
 function renderMathQuestion() {
   if (answerUnlockTimer) clearTimeout(answerUnlockTimer);
@@ -3544,6 +3603,8 @@ function renderMathQuestion() {
   currentEq = makeQuestion(level);
   currentEq.level = level;
   mathLocked = false;
+  questionShownAt = performance.now();
+  answerUnlockedAt = 0;
   $('hintBox').style.display = 'none';
   const eqBox = $('mathEquation');
   // Math: append " = ?" only for plain equations — not when the prompt already has an "=" ("16 + ? = 43") or ends with "?" (word problems)
@@ -3570,6 +3631,7 @@ function renderMathQuestion() {
   answerUnlockTimer = setTimeout(() => {
     if (currentEq !== question || mathLocked) return;
     wrap.querySelectorAll('.answerBlock').forEach(b => b.disabled = false);
+    answerUnlockedAt = performance.now();
     $('mathPrompt').textContent = 'Choose the answer, then pick your reward!';
   }, 900);
 }
@@ -3612,6 +3674,7 @@ function answerPicked(btn, opt) {
     G.solved++;
     G.mathMisses = 0;
     G.mathCorrectStreak++;
+    bumpSkill(currentEq.skill, true);
     const ceiling = Math.min(5, (G.grade || 2) + 1);
     let levelNote = '';
     if (G.mathCorrectStreak >= 3 && G.mathLevel < ceiling) {
@@ -3658,7 +3721,9 @@ function answerPicked(btn, opt) {
     return;                               // wait for the player's choice (auto-collected on close)
   } else {
     Sound.wrong();
-    recordWrong(currentEq);
+    const fast = answerUnlockedAt && (performance.now() - answerUnlockedAt) < 1500;  // quick tap = likely guess
+    recordWrong(currentEq, fast);
+    bumpSkill(currentEq.skill, false);
     btn.classList.add('shake');
     mathLocked = true;                 // no button mashing!
     document.querySelectorAll('.answerBlock').forEach(b => b.disabled = true);
@@ -3687,9 +3752,11 @@ function answerPicked(btn, opt) {
         }
       }, 1000);
     } else {
-      // a fresh question every time — no guessing by elimination!
-      $('mathFeedback').textContent = pick(['💪 Good try! Here\'s a brand-new one!', '🌱 Almost! Try this new one!', '🙂 Not quite — here\'s another!']) + easierNote;
-      nextQuestionTimer = setTimeout(renderMathQuestion, 700);
+      // kids rarely tap the hint — so teach the method automatically on every miss,
+      // then give a fresh question (no guessing by elimination) once they've had a beat to read it.
+      showHint();
+      $('mathFeedback').textContent = pick(['💪 Good try!', '🌱 Almost!', '🙂 Not quite!']) + ' 👇 Read the hint — then try the new one!' + easierNote;
+      nextQuestionTimer = setTimeout(renderMathQuestion, 2400);
     }
   }
 }
@@ -4287,14 +4354,15 @@ function buildPlatesMesh() {            // a place setting: plate, fork, knife, 
   return g;
 }
 /* pet breeds: [label, color, feature] */
-const CAT_BREEDS = [['Gray', 0x8d8d92, 'plain'], ['White Persian', 0xEDE9E0, 'fluffy'], ['Black', 0x2f3136, 'plain'],
-  ['Orange', 0xD98B3A, 'plain'], ['Brown', 0x6b4a30, 'plain'], ['Calico', 0xEDE9E0, 'calico']];
-const DOG_BREEDS = [['Brown', 0xB07D4A, 'plain'], ['Golden', 0xE0B062, 'plain'], ['Black', 0x3a3a3a, 'plain'],
-  ['Pomeranian', 0xDDA24F, 'fluffy'], ['White', 0xEDE7D8, 'fluffy'], ['Spotted', 0xEDE7D8, 'spotted']];
-const FISH_BREEDS = [['Goldfish', 0xFF8A3D], ['Yellow', 0xFFD23E], ['Red', 0xE5534B], ['Blue', 0x4FA3E0], ['Pink', 0xF09BB5]];
+const CAT_BREEDS = [['Gray Tabby', 0x8d8d92, 'tabby'], ['White Persian', 0xEDE9E0, 'fluffy'], ['Black', 0x2f3136, 'plain'],
+  ['Orange Tabby', 0xD98B3A, 'tabby'], ['Brown Tabby', 0x6b4a30, 'tabby'], ['Calico', 0xEDE9E0, 'calico'], ['Siamese', 0xE7DCC4, 'siamese']];
+const DOG_BREEDS = [['Chocolate Lab', 0x6E4A2E, 'plain'], ['Golden Retriever', 0xE0B062, 'plain'], ['Black Lab', 0x33333a, 'plain'],
+  ['Pomeranian', 0xDDA24F, 'fluffy'], ['Samoyed', 0xF1ECE0, 'fluffy'], ['Dalmatian', 0xF2F0EC, 'spotted']];
+const FISH_BREEDS = [['Goldfish', 0xFF8A3D, 'plain'], ['Clownfish', 0xFF7A1A, 'stripe'], ['Blue Tang', 0x2E78D0, 'plain'],
+  ['Guppy', 0xF09BB5, 'fin'], ['Betta', 0xE5534B, 'fin']];
 function buildFishbowl(variant) {          // a fish in a glass bowl
   const g = new THREE.Group();
-  const fc = FISH_BREEDS[(variant || 0) % FISH_BREEDS.length][1];
+  const br = FISH_BREEDS[(variant || 0) % FISH_BREEDS.length], fc = br[1], feat = br[2];
   box(g, 0.18, 0.04, 0.18, 0x6d4326, 0, 0.02, 0);                      // wooden base
   const water = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 12), new THREE.MeshLambertMaterial({ color: 0x5aa7e8, transparent: true, opacity: 0.55 }));
   water.position.y = 0.2; water.scale.y = 0.8; g.add(water);
@@ -4302,8 +4370,10 @@ function buildFishbowl(variant) {          // a fish in a glass bowl
   bowl.position.y = 0.22; bowl.scale.y = 0.92; g.add(bowl);
   box(g, 0.04, 0.04, 0.04, 0x3E9B3E, -0.08, 0.1, 0.04);                // pebble plant
   box(g, 0.1, 0.06, 0.05, fc, 0.01, 0.22, 0.02);                      // fish body
+  if (feat === 'stripe') { box(g, 0.02, 0.061, 0.051, 0xFFFFFF, 0.03, 0.22, 0.021); box(g, 0.02, 0.061, 0.051, 0xFFFFFF, -0.02, 0.22, 0.021); }  // clownfish bands
   const tail = box(g, 0.05, 0.07, 0.03, shade(fc, 1.15), -0.07, 0.22, 0.02);
   tail.rotation.z = 0.3;
+  if (feat === 'fin') { tail.scale.set(1, 1.7, 1); box(g, 0.05, 0.03, 0.03, shade(fc, 1.1), 0.06, 0.27, 0.02); }  // flowy betta/guppy fins
   box(g, 0.02, 0.02, 0.02, 0x222, 0.05, 0.24, 0.05);                   // eye
   return g;
 }
@@ -4312,7 +4382,9 @@ function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a c
   const g = new THREE.Group();
   const cat = kind === 'cat';
   const breeds = cat ? CAT_BREEDS : DOG_BREEDS;
-  const br = breeds[(variant || 0) % breeds.length], fur = br[1], feat = br[2], ear = shade(fur, 0.72);
+  const br = breeds[(variant || 0) % breeds.length], fur = br[1], feat = br[2];
+  const points = 0x5a4632;                                            // siamese dark points
+  const ear = feat === 'siamese' ? points : shade(fur, 0.72);
   box(g, 0.26, 0.26, 0.34, fur, 0, 0.2, -0.02);                       // body (sitting)
   box(g, 0.16, 0.12, 0.2, fur, 0, 0.12, 0.16);                        // chest/front
   box(g, 0.22, 0.2, 0.2, fur, 0, 0.4, 0.1);                           // head
@@ -4322,6 +4394,12 @@ function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a c
   }
   if (feat === 'spotted') { box(g, 0.11, 0.02, 0.11, 0x33363b, 0.07, 0.33, -0.02); box(g, 0.08, 0.02, 0.08, 0x33363b, -0.08, 0.31, 0.12); }
   if (feat === 'calico') { box(g, 0.1, 0.02, 0.1, 0xD98B3A, 0.06, 0.33, 0.0); box(g, 0.08, 0.02, 0.08, 0x6b4a30, -0.07, 0.42, 0.1); }
+  if (feat === 'tabby') {                                             // tabby stripes along the back & head
+    const st = shade(fur, 0.66);
+    box(g, 0.27, 0.02, 0.07, st, 0, 0.335, -0.06); box(g, 0.27, 0.02, 0.07, st, 0, 0.335, 0.07);
+    box(g, 0.2, 0.02, 0.05, st, 0, 0.5, 0.06);
+  }
+  if (feat === 'siamese') { box(g, 0.17, 0.11, 0.07, points, 0, 0.37, 0.2); }  // dark face mask
   if (cat) {                                                          // pointy ears
     box(g, 0.06, 0.09, 0.03, ear, -0.07, 0.53, 0.1);
     box(g, 0.06, 0.09, 0.03, ear, 0.07, 0.53, 0.1);
@@ -4333,8 +4411,9 @@ function buildPetMesh(kind, variant) {     // a little sitting cat or dog of a c
   box(g, 0.04, 0.04, 0.02, 0x222, -0.05, 0.43, 0.21);                 // eyes
   box(g, 0.04, 0.04, 0.02, 0x222, 0.05, 0.43, 0.21);
   box(g, 0.04, 0.04, 0.03, cat ? 0xE8A0B0 : 0x3a2a1a, 0, 0.37, 0.25); // nose
-  box(g, 0.06, 0.12, 0.06, fur, -0.07, 0.06, 0.16);                   // front paws
-  box(g, 0.06, 0.12, 0.06, fur, 0.07, 0.06, 0.16);
+  const pawC = feat === 'siamese' ? points : fur;
+  box(g, 0.06, 0.12, 0.06, pawC, -0.07, 0.06, 0.16);                  // front paws
+  box(g, 0.06, 0.12, 0.06, pawC, 0.07, 0.06, 0.16);
   const tail = box(g, 0.05, 0.22, 0.05, feat === 'fluffy' ? shade(fur, 1.04) : fur, 0, 0.26, -0.2);
   tail.rotation.x = 0.6;
   if (feat === 'fluffy') tail.scale.set(1.7, 1, 1.7);                 // bushy tail
@@ -4901,6 +4980,7 @@ function buildMenu() {
     G.mathLevel = G.grade;
     G.mathCorrectStreak = 0;
     G.mathMisses = 0;
+    G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   });
   $('gloomyRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
