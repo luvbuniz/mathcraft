@@ -3264,6 +3264,11 @@ function applyWorldTheme(worldId) {
   if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = (worldId === 'meadow');   // the bakery is a Math Meadow shop
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
   G.furnFinish = worldId === 'city' ? 1 : worldId === 'beach' ? 2 : 0;   // default to this town's furniture style (kids can change it in the 🎒)
+  updateStoreSigns(worldId);                                            // shop signs go bilingual (Español • English) in Spanish Beach
+}
+function updateStoreSigns(worldId) {
+  const beach = worldId === 'beach';
+  [shopGroup, barnGroup, motorsGroup].forEach(g => { if (g && g.userData && g.userData.signDraw) g.userData.signDraw(beach); });
 }
 
 /* ---- voxel block storage ---- */
@@ -3514,14 +3519,19 @@ const shopGroup = new THREE.Group();
   stand(1.0, [0xE0522B, 0x6FA85B, 0xF2C14E]);                         // tomatoes, greens, peppers (no berries)
   // centered storefront sign (text only so it stays centered), out front above the awning
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 100;
-  const c = cv.getContext('2d');
-  c.fillStyle = '#FFD23E'; c.fillRect(0, 0, 256, 100);
-  c.strokeStyle = '#2E8B57'; c.lineWidth = 8; c.strokeRect(4, 4, 248, 92);
-  c.fillStyle = '#1f6b3a'; c.font = 'bold 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('STACK MART', 128, 42);
-  c.font = 'bold 20px sans-serif'; c.fillStyle = '#3CA85C'; c.fillText('FRESH MARKET', 128, 76);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 0.12), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv);
+  function drawMartSign(sub) {
+    c.fillStyle = '#FFD23E'; c.fillRect(0, 0, 256, 100);
+    c.strokeStyle = '#2E8B57'; c.lineWidth = 8; c.strokeRect(4, 4, 248, 92);
+    c.fillStyle = '#1f6b3a'; c.font = 'bold 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('STACK MART', 128, 42);
+    c.font = 'bold ' + (sub.length > 14 ? 15 : 20) + 'px sans-serif'; c.fillStyle = '#3CA85C'; c.fillText(sub, 128, 76);
+    tex.needsUpdate = true;
+  }
+  drawMartSign('FRESH MARKET');
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 0.12), new THREE.MeshLambertMaterial({ map: tex }));
   sign.position.set(0, 2.96, 1.15); shopGroup.add(sign);             // front-facing, centered
+  shopGroup.userData.signDraw = beach => drawMartSign(beach ? 'MERCADO • FRESH MARKET' : 'FRESH MARKET');
   box(shopGroup, 0.12, 0.5, 0.12, 0x8B5A2B, -0.85, 2.62, 1.18); box(shopGroup, 0.12, 0.5, 0.12, 0x8B5A2B, 0.85, 2.62, 1.18);
   box(shopGroup, 0.3, 0.3, 0.3, 0x6fcf63, -0.9, 1.28, 1.35);          // goods on the counter
   box(shopGroup, 0.3, 0.3, 0.3, 0x5aa7e8, -0.5, 1.28, 1.35);
@@ -3581,14 +3591,19 @@ const barnGroup = new THREE.Group();
   box(barnGroup, 0.1, 0.22, 0.1, TIMBER, 0, 3.74, 1.5);          // pulley arm
   // painted "STACK BARN" sign over the doorway
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96;
-  const c = cv.getContext('2d');
-  c.fillStyle = '#F7F1E3'; c.fillRect(0, 0, 256, 96);
-  c.strokeStyle = '#8a2922'; c.lineWidth = 7; c.strokeRect(4, 4, 248, 88);
-  c.fillStyle = '#8a2922'; c.font = 'bold 38px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('STACK BARN', 128, 40);
-  c.font = 'bold 18px sans-serif'; c.fillStyle = '#B23A2E'; c.fillText('FURNITURE & HOME', 128, 72);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.78, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv);
+  function drawBarnSign(sub) {
+    c.fillStyle = '#F7F1E3'; c.fillRect(0, 0, 256, 96);
+    c.strokeStyle = '#8a2922'; c.lineWidth = 7; c.strokeRect(4, 4, 248, 88);
+    c.fillStyle = '#8a2922'; c.font = 'bold 38px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('STACK BARN', 128, 40);
+    c.font = 'bold ' + (sub.length > 16 ? 15 : 18) + 'px sans-serif'; c.fillStyle = '#B23A2E'; c.fillText(sub, 128, 72);
+    tex.needsUpdate = true;
+  }
+  drawBarnSign('FURNITURE & HOME');
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.78, 0.1), new THREE.MeshLambertMaterial({ map: tex }));
   sign.position.set(0, 2.2, 1.57); barnGroup.add(sign);
+  barnGroup.userData.signDraw = beach => drawBarnSign(beach ? 'MUEBLES • FURNITURE' : 'FURNITURE & HOME');
   // ---- fancy touches: stone base, gable star, cupola + weathervane, flower baskets, lanterns ----
   const STONE = 0x9a948a;
   box(barnGroup, 3.7, 0.26, 3.3, STONE, 0, 0.13, 0);                  // stone foundation
@@ -3696,13 +3711,18 @@ const motorsGroup = new THREE.Group();
   box(motorsGroup, 3.7, 0.3, 3.5, ROOF, 0, 2.45, 0);               // flat showroom roof
   box(motorsGroup, 3.9, 0.5, 0.14, ACCENT, 0, 2.78, 1.45);         // sign band
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
-  const c = cv.getContext('2d');
-  c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, 256, 64);
-  c.fillStyle = '#Cf5b4a'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('STACK MOTORS', 128, 23);
-  c.fillStyle = '#4a6fa5'; c.font = 'bold 15px sans-serif'; c.fillText('AUTO SHOWROOM', 128, 48);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  const c = cv.getContext('2d'); const tex = new THREE.CanvasTexture(cv);
+  function drawMotorsSign(sub) {
+    c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, 256, 64);
+    c.fillStyle = '#Cf5b4a'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('STACK MOTORS', 128, 23);
+    c.fillStyle = '#4a6fa5'; c.font = 'bold 15px sans-serif'; c.fillText(sub, 128, 48);
+    tex.needsUpdate = true;
+  }
+  drawMotorsSign('AUTO SHOWROOM');
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: tex }));
   sign.position.set(0, 2.78, 1.54); motorsGroup.add(sign);
+  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'AUTOS • CARS' : 'AUTO SHOWROOM');
   motorsGroup.position.set(MOTORS_POS.x, 0, MOTORS_POS.z);
   scene.add(motorsGroup);
 }
@@ -6375,7 +6395,7 @@ function renderShop() {
     const finishVar = (PET_KINDS[item.id] ? 0 : (G.furnFinish || 0) * FURN_FINISH_MUL);   // show the catalog in the current town's finish
     const iconHTML = previewable ? thumbIcon(item.id, finishVar, item.icon) : item.icon;
     row.innerHTML = '<div class="icon">' + iconHTML + '</div>' +
-      '<div class="info"><b>' + item.name + ' — ' + priceTxt + '</b><small>' + item.desc + '</small></div>';
+      '<div class="info"><b>' + biName(item.name, item.id) + ' — ' + priceTxt + '</b><small>' + item.desc + '</small></div>';
     const btn = document.createElement('button');
     btn.className = 'buyBtn' + (owned ? ' owned' : '');
     btn.textContent = owned ? 'Sell back +' + item.price + ' 🪙' : (item.kind === 'sell' ? 'Sell!' : 'Buy');
@@ -6621,6 +6641,23 @@ function applyFurnFinish(g, finish) {
     if (FURN_WOOD.has(hex)) m.material = new THREE.MeshLambertMaterial({ color: shade(f.wood, clamp(_flum(hex) / _REF_WOOD, 0.45, 1.7)) });
     else if (FURN_METAL.has(hex)) m.material = new THREE.MeshLambertMaterial({ color: shade(f.metal, clamp(_flum(hex) / _REF_METAL, 0.5, 1.6)) });
   });
+}
+/* Spanish names for furniture & goods. When the Spanish finish/town is in play we show
+   "Español / English" so younger kids always have the English to lean on. */
+const SPANISH_NAMES = {
+  block: 'Bloque', power: 'Bloque de poder', door: 'Puerta', chair: 'Silla', table: 'Mesa', dtable: 'Mesa de comedor',
+  plates: 'Vajilla', bed: 'Cama', couch: 'Sofá', cat: 'Gato', dog: 'Perro', fish: 'Pez', coffeetable: 'Mesa de centro',
+  dresser: 'Cómoda', tv: 'Televisión', bookshelf: 'Estantería', plant: 'Planta', rug: 'Alfombra', lamp: 'Lámpara',
+  fence: 'Cerca', flower: 'Flor', window: 'Ventana', roof: 'Tejado', stove: 'Estufa', sink: 'Fregadero', pot: 'Olla',
+  pan: 'Sartén', bacon: 'Tocino', pie: 'Pastel', groceries: 'Compras', bathtub: 'Bañera', shower: 'Ducha',
+  garden: 'Jardín', bush: 'Arbusto', food: 'Manzana', petbed: 'Cama de mascota', foodbowl: 'Plato de comida',
+  waterbowl: 'Plato de agua', litterbox: 'Arenero', petfood: 'Comida de mascota', flag: 'Bandera', bunting: 'Banderines',
+  bbq: 'Parrilla', hotdog: 'Perrito caliente', sausage: 'Salchichas', ribs: 'Costillas', corn: 'Maíz',
+  sparkler: 'Bengala', fireworks: 'Fuegos artificiales', gem: 'Trofeo'
+};
+function biName(label, key) {                 // bilingual when the Spanish finish is selected
+  const es = SPANISH_NAMES[key];
+  return (G.furnFinish === 2 && es) ? es + ' / ' + label : label;
 }
 function buildFurnitureMesh(type, variant) {
   variant = variant || 0;
@@ -7805,7 +7842,7 @@ function renderInv() {
     const row = document.createElement('div');
     row.className = 'invItem';
     row.innerHTML = '<div class="icon">' + icon + '</div>' +
-      '<div class="info"><b>' + name + '</b><small>You have ' + count +
+      '<div class="info"><b>' + biName(name, slot) + '</b><small>You have ' + count +
       (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
        slot === 'window' ? ' • Drops into a wall gap at any height' :
        slot === 'roof' ? ' • Tap the top of a wall — choose a style below' :
