@@ -1217,8 +1217,8 @@
 <div class="popup" id="martPopup">
   <div class="popupCard" style="width:min(540px,95vw); text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="martClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 style="color:#C8602E; margin:2px 0 2px; font-size:clamp(22px,4vw,30px)">🏪 El Mercadito</h2>
-    <div style="color:#7a6a55; font-weight:700; font-size:13px; margin-bottom:4px">The Little Market — order in Spanish!</div>
+    <h2 id="martHeading" style="color:#C8602E; margin:2px 0 2px; font-size:clamp(22px,4vw,30px)">🏪 El Mercadito</h2>
+    <div id="martSub" style="color:#7a6a55; font-weight:700; font-size:13px; margin-bottom:4px">The Little Market — order in Spanish!</div>
     <div style="font-size:42px" id="martKeeper">🧑‍🌾</div>
     <div id="martLine" style="font-size:clamp(16px,3vw,20px); color:#4a3b2c; min-height:46px; margin:4px 0"></div>
     <div id="martGoal" style="font-weight:700; color:#2E6E9E; margin:4px 0; min-height:20px"></div>
@@ -3805,7 +3805,7 @@ const motorsGroup = new THREE.Group();
   drawMotorsSign('AUTO SHOWROOM');
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: tex }));
   sign.position.set(0, 2.78, 1.54); motorsGroup.add(sign);
-  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'AUTOS • CARS' : 'AUTO SHOWROOM');
+  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'BICI Y BARCOS' : 'AUTO SHOWROOM');
   motorsGroup.position.set(MOTORS_POS.x, 0, MOTORS_POS.z);
   scene.add(motorsGroup);
 }
@@ -3989,9 +3989,9 @@ const VEHICLES = [
   { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'], open: true, seat: [0, 0.62, -0.1] },
   { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape,    worlds: ['city'] },
   { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape,       worlds: ['city'] },
-  { id: 'bike',     name: 'Beach Cruiser',  emoji: '🚲', price: 40, color: 0x2b9fb0, speed: 9, shape: buildBikeShape,         worlds: ['beach'], bike: true, open: true, seat: [0, 0.78, -0.45] },
-  { id: 'speedboat', name: 'Speedboat',     emoji: '🚤', price: 135, color: 0xF2F2F2, speed: 17, shape: buildSpeedboatShape,  worlds: ['beach'], water: true, open: true, seat: [0, 0.66, -0.45] },
-  { id: 'sailboat', name: 'Sailboat',       emoji: '⛵', price: 150, color: 0xEDE3CF, speed: 12, shape: buildSailboatShape,   worlds: ['beach'], water: true, open: true, seat: [0, 0.7, -0.7] }
+  { id: 'bike',     name: 'Beach Cruiser',  emoji: '🚲', price: 40, color: 0x2b9fb0, speed: 9, shape: buildBikeShape,         worlds: [], shop: 'boats', bike: true, open: true, seat: [0, 0.78, -0.45] },
+  { id: 'speedboat', name: 'Speedboat',     emoji: '🚤', price: 135, color: 0xF2F2F2, speed: 17, shape: buildSpeedboatShape,  worlds: [], shop: 'boats', water: true, open: true, seat: [0, 0.66, -0.45] },
+  { id: 'sailboat', name: 'Sailboat',       emoji: '⛵', price: 150, color: 0xEDE3CF, speed: 12, shape: buildSailboatShape,   worlds: [], shop: 'boats', water: true, open: true, seat: [0, 0.7, -0.7] }
 ];
 const cars = {};   // id -> { def, group, bodyMat, bodyMat2, yaw, spawned }
 VEHICLES.forEach(def => {
@@ -4024,7 +4024,8 @@ function activeCarObj() { return G.activeCar ? cars[G.activeCar] : null; }
 function parkActiveCar() {
   for (const id in cars) { cars[id].group.visible = false; cars[id].spawned = false; }
   const a = activeCarObj(); if (!a || !G.owned[G.activeCar]) return;
-  a.group.position.set(MOTORS_POS.x - 1.0, 0, MOTORS_POS.z + 3.4);   // parked out front
+  if (a.def.water && G.world === 'beach') { a.group.position.set(DOCK_POS.x, 0, DOCK_POS.z); }   // boats wait at the dock
+  else { a.group.position.set(MOTORS_POS.x - 1.0, 0, MOTORS_POS.z + 3.4); }                       // cars park out front
   a.yaw = Math.PI; a.group.rotation.y = a.yaw + Math.PI;
   a.group.visible = true; a.spawned = true;
 }
@@ -4038,22 +4039,20 @@ function buyCar(id) {
   setActiveCar(id); Sound.honk();
   toast('🎉 You got the ' + def.name + '! It\'s parked out front — tap ⭐ USE to drive!', 4200);
 }
-function openMotors() {                    // the showroom: buy a car, switch which you drive, or repaint it
-  if (popupOpen || G.over || !G.running) return;
-  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
-  $('motorsTitle').textContent = '🚗 Stack Motors';
-  $('motorsDesc').innerHTML = 'You have <b>' + G.coins + ' 🪙</b>. This lot stocks <b>' + curWorld().name + '</b> vehicles — buy one (it parks out front), or switch which you drive.';
+// shared vehicle showroom (used by Stack Motors and the Spanish boat shop)
+function renderVehicleMenu(opts) {
+  $('motorsTitle').textContent = opts.title;
+  $('motorsDesc').innerHTML = opts.desc;
   const list = $('motorsList'); list.innerHTML = '';
-  // show this town's lineup, plus any car you already own (so you can drive/repaint it anywhere)
-  VEHICLES.filter(def => (def.worlds || []).includes(G.world) || G.owned[def.id]).forEach(def => {
+  opts.defs.forEach(def => {
     const owned = !!G.owned[def.id], active = G.activeCar === def.id;
     const row = document.createElement('div'); row.className = 'carRow' + (active ? ' active' : '');
     row.innerHTML = '<span class="carEmoji">' + def.emoji + '</span><span class="carInfo"><b>' + def.name + '</b><small>' +
       (owned ? (active ? '🟢 Driving now' : 'Owned') : (def.price + ' 🪙')) + '</small></span>';
     const btn = document.createElement('button'); btn.className = 'carGo';
     if (active) { btn.textContent = '✓'; btn.disabled = true; }
-    else if (owned) { btn.textContent = 'Drive'; btn.onclick = () => { Sound.click(); setActiveCar(def.id); openMotors(); }; }
-    else { const can = G.coins >= def.price; btn.disabled = !can; btn.textContent = can ? 'Buy' : '🔒'; btn.onclick = () => { buyCar(def.id); openMotors(); }; }
+    else if (owned) { btn.textContent = 'Drive'; btn.onclick = () => { Sound.click(); setActiveCar(def.id); opts.reopen(); }; }
+    else { const can = G.coins >= def.price; btn.disabled = !can; btn.textContent = can ? 'Buy' : '🔒'; btn.onclick = () => { if (opts.spanish) { closeMotors(); openVehicleOrder(def); } else { buyCar(def.id); opts.reopen(); } }; }
     row.appendChild(btn); list.appendChild(row);
   });
   const sw = $('motorsColors'); sw.innerHTML = '';
@@ -4063,12 +4062,38 @@ function openMotors() {                    // the showroom: buy a car, switch wh
       const b = document.createElement('button');
       b.className = 'swatch' + (c === cur ? ' sel' : '');
       b.style.background = '#' + c.toString(16).padStart(6, '0');
-      b.onclick = () => { Sound.click(); G.carColors[G.activeCar] = c; recolorCar(G.activeCar, c); openMotors(); };
+      b.onclick = () => { Sound.click(); G.carColors[G.activeCar] = c; recolorCar(G.activeCar, c); opts.reopen(); };
       sw.appendChild(b);
     });
   }
   $('motorsBuy').style.display = 'none';
   $('motorsPopup').style.display = 'flex';
+}
+function renderMotors() {
+  renderVehicleMenu({
+    title: '🚗 Stack Motors',
+    desc: 'You have <b>' + G.coins + ' 🪙</b>. This lot stocks <b>' + curWorld().name + '</b> vehicles — buy one (it parks out front), or switch which you drive.',
+    defs: VEHICLES.filter(def => !def.shop && ((def.worlds || []).includes(G.world) || G.owned[def.id])),
+    spanish: false, reopen: renderMotors
+  });
+}
+function openMotors() {                    // the car showroom
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  renderMotors();
+}
+function renderBoatShop() {
+  renderVehicleMenu({
+    title: '🚤 Stack Barcos',
+    desc: 'Tienes <b>' + G.coins + ' 🪙</b>. Boats &amp; bikes — <b>order in Spanish</b>, and they wait for you at the dock!',
+    defs: VEHICLES.filter(def => def.shop === 'boats'),
+    spanish: true, reopen: renderBoatShop
+  });
+}
+function openBoatShop() {                   // Stack Barcos — bikes & boats, ordered in Spanish
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  renderBoatShop();
 }
 function closeMotors() { $('motorsPopup').style.display = 'none'; popupOpen = false; }
 function toggleDrive() {
@@ -4359,6 +4384,9 @@ const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 const MART_POS = { x: -7, z: 4 };
 function martDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - MART_POS.x, player.pos.z - MART_POS.z) : 999; }
+const BOAT_SHOP_POS = { x: 14, z: 10 };          // Stack Barcos, on the sand by the dock
+const DOCK_POS = { x: 30, z: 12 };               // where your boat floats, beside the dock's end
+function boatShopDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - BOAT_SHOP_POS.x, player.pos.z - BOAT_SHOP_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
   { e: '🐉', t: "Arty's High-Flying Heist",
@@ -5027,6 +5055,7 @@ function openMart() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   mart = { served: 0 };
+  $('martHeading').textContent = '🏪 El Mercadito'; $('martSub').textContent = 'The Little Market — order in Spanish!';
   $('martPopup').style.display = 'flex';
   newCustomer();
 }
@@ -5126,6 +5155,71 @@ function finishMart() {
   const wrap = $('martChoices'); wrap.innerHTML = '';
   martChoiceBtn(wrap, '🛒 Otro cliente (shop again)', () => newCustomer()).style.background = '#3f9d34';
   martChoiceBtn(wrap, 'Adiós (Done)', () => closeMart());
+}
+
+/* ---- At Spanish Beach, you order your vehicle in Spanish before you buy it ---- */
+let vorder = null;
+const VEHICLE_ES = { pickup: 'la camioneta', jeep: 'el jeep', convertible: 'el convertible', bike: 'la bicicleta', speedboat: 'la lancha', sailboat: 'el velero', tesla: 'el coche', police: 'la patrulla', monster: 'el camión monstruo', corvette: 'el deportivo', race: 'el coche de carreras', minivan: 'la furgoneta' };
+function openVehicleOrder(def) {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  vorder = { def, phase: 'order', typed: G.grade >= 4, attempted: false };
+  $('martHeading').textContent = '🚤 Bici y Barcos'; $('martSub').textContent = 'Bikes & Boats — order in Spanish!';
+  $('martKeeper').textContent = '🧑‍✈️';
+  $('martPopup').style.display = 'flex';
+  renderVehicleOrder();
+}
+function closeVehicleOrder() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('martPopup').style.display = 'none'; popupOpen = false; vorder = null; $('martKeeper').textContent = '🧑‍🌾'; }
+function vorderSay(es, en) { vorder.lastEs = es; $('martLine').innerHTML = '<b>' + es + '</b><br><span style="font-size:0.82em;color:#7a6a55">' + en + '</span>'; speakWord(es, { es: true }); }
+function vorderAnswer(correct, next) {
+  if (!vorder.attempted) {
+    profile.spanFirstTotal = (profile.spanFirstTotal || 0) + 1;
+    profile.spanFirstByGrade = profile.spanFirstByGrade || {}; const bg = profile.spanFirstByGrade; bg[G.grade] = bg[G.grade] || { right: 0, total: 0 }; bg[G.grade].total++;
+    if (correct) { profile.spanFirstRight = (profile.spanFirstRight || 0) + 1; bg[G.grade].right++; } else recordWrong({ skill: 'spanish', level: G.grade });
+    profileDirty = true; saveProfile();
+  }
+  vorder.attempted = true;
+  if (correct) {
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
+    vorder.phase = next; vorder.attempted = false;
+    if (next === 'done') finishVehicleOrder(); else renderVehicleOrder();
+  } else {
+    Sound.wrong(); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 ¡Inténtalo otra vez! (Try again)';
+    if (vorder.lastEs) speakWord(vorder.lastEs, { es: true });
+  }
+}
+function renderVehicleOrder() {
+  if (!vorder) return;
+  const wrap = $('martChoices'); wrap.innerHTML = ''; $('martMsg').textContent = ''; $('martGoal').innerHTML = '';
+  const def = vorder.def, es = VEHICLE_ES[def.id] || 'el vehículo';
+  $('martSay').onclick = () => { Sound.click(); if (vorder.lastEs) speakWord(vorder.lastEs, { es: true }); };
+  if (vorder.phase === 'order') {
+    vorderSay('¡Hola! ¿Qué quieres comprar?', 'Hello! What would you like to buy?');
+    $('martGoal').innerHTML = '🛒 Order: ' + def.emoji + ' <b>' + def.name + '</b>';
+    $('martPrompt').textContent = vorder.typed ? 'Type its Spanish name:' : 'Tap its Spanish name:';
+    if (vorder.typed) martTypeInput(wrap, es, val => vorderAnswer(norm(val) === norm(es), 'polite'));
+    else {
+      const others = VEHICLES.filter(x => x.id !== def.id).map(x => VEHICLE_ES[x.id]).filter(Boolean); shuffle(others);
+      shuffle([es, others[0], others[1], others[2]]).forEach(o => martChoiceBtn(wrap, o, () => { speakWord(o, { es: true }); vorderAnswer(o === es, 'polite'); }));
+    }
+  } else if (vorder.phase === 'polite') {
+    vorderSay('Quiero ' + es + '…', 'I want the ' + def.name + '…');
+    $('martPrompt').textContent = 'Finish it politely:';
+    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'por favor', 'pay'); }));
+  } else if (vorder.phase === 'pay') {
+    vorderSay('Son ' + def.price + ' monedas. ¿Pagas?', 'That is ' + def.price + ' coins. Will you pay?');
+    $('martPrompt').textContent = 'Pay politely:';
+    shuffle(['Sí, gracias', 'No, gracias', 'Hola', 'Adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'Sí, gracias', 'done'); }));
+  }
+}
+function finishVehicleOrder() {
+  const def = vorder.def, es = VEHICLE_ES[def.id] || 'el vehículo';
+  buyCar(def.id);                                   // deduct coins, own it, park it out front
+  vorderSay('¡Aquí tienes tu ' + es + '! ¡Adiós!', "Here's your " + def.name + '!');
+  $('martGoal').innerHTML = '🎉 ' + def.emoji + ' <b>' + def.name + '</b>';
+  $('martPrompt').innerHTML = '¡Buen trabajo! You ordered it in Spanish.';
+  const wrap = $('martChoices'); wrap.innerHTML = '';
+  martChoiceBtn(wrap, '🚗 Conducir (drive it!)', () => closeVehicleOrder()).style.background = '#3f9d34';
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
@@ -5377,8 +5471,45 @@ function buildSpanishMart(g) {                 // El Mercadito — a colorful Me
   M.position.set(MART_POS.x, 0, MART_POS.z); M.rotation.y = -0.4;
   g.add(M);
 }
+function buildDock(g) {                        // a wooden pier reaching out over the ocean (boats moor here)
+  const D = new THREE.Group();
+  const PLANK = 0x8a5c33, POST = 0x6d4326;
+  for (let i = 0; i < 9; i++) box(D, 1.5, 0.1, 2.0, i % 2 ? PLANK : shade(PLANK, 1.08), i * 1.5, 0.06, 0);   // walkway planks (+x out to sea)
+  for (let i = 0; i <= 9; i++) { box(D, 0.14, 1.3, 0.14, POST, i * 1.5 - 0.7, -0.55, 0.8); box(D, 0.14, 1.3, 0.14, POST, i * 1.5 - 0.7, -0.55, -0.8); }  // pilings
+  box(D, 1.7, 0.1, 4.4, PLANK, 9 * 1.5, 0.06, 0);                  // T-platform at the end
+  [[9 * 1.5, 2.0], [9 * 1.5, -2.0]].forEach(([x, z]) => { box(D, 0.2, 0.7, 0.2, 0x4a2c18, x, 0.35, z); box(D, 0.24, 0.1, 0.24, 0x2a2a2a, x, 0.72, z); });  // mooring bollards
+  box(D, 0.1, 0.7, 0.1, 0x6d4326, 0, 0.4, 1.0); box(D, 0.34, 0.22, 0.04, 0xE5534B, 0.18, 0.6, 1.0);   // a little flag at the landward end
+  D.position.set(BOAT_SHOP_POS.x + 4, 0, BOAT_SHOP_POS.z + 2); g.add(D);
+}
+function buildBoatShop(g) {                    // Stack Barcos — beach shack selling bikes & boats
+  const S = new THREE.Group();
+  const WOOD = 0x9a6b3a, WOOD2 = 0x7a5230, ROOF = 0x2E6E9E, WHITE = 0xF5EFE2;
+  box(S, 3.4, 0.16, 2.6, 0xCBB89A, 0, 0.08, 0);                    // deck
+  box(S, 3.0, 2.0, 0.16, WOOD, 0, 1.1, -1.2);                      // back wall
+  box(S, 0.16, 2.0, 2.4, WOOD, -1.5, 1.1, 0); box(S, 0.16, 2.0, 2.4, WOOD, 1.5, 1.1, 0);   // sides
+  box(S, 3.0, 0.8, 0.5, WOOD2, 0, 0.5, 1.0);                       // counter
+  box(S, 3.2, 0.14, 0.62, WHITE, 0, 0.92, 1.02);                   // counter top
+  box(S, 3.7, 0.3, 2.9, ROOF, 0, 2.3, 0);                          // roof
+  for (let i = 0; i < 8; i++) box(S, 0.42, 0.12, 0.6, i % 2 ? 0xE5534B : WHITE, -1.5 + i * 0.43, 1.7, 1.45);   // striped awning
+  // life ring + oars decor
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.1, 8, 16), mat(0xE5534B)); ring.position.set(-1.1, 1.5, -1.1); ring.rotation.x = Math.PI / 2; S.add(ring);
+  box(S, 0.08, 1.4, 0.08, WOOD2, 1.35, 1.1, 0.6); box(S, 0.2, 0.05, 0.4, WOOD2, 1.35, 1.78, 0.6);   // an oar leaning
+  // bilingual sign
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 96;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#2E6E9E'; c.fillRect(0, 0, 320, 96); c.strokeStyle = '#F5EFE2'; c.lineWidth = 6; c.strokeRect(5, 5, 310, 86);
+  c.fillStyle = '#FFFFFF'; c.textAlign = 'center'; c.font = 'bold 32px Georgia, serif'; c.textBaseline = 'middle';
+  c.fillText('🚤 STACK BARCOS', 160, 34);
+  c.fillStyle = '#CFE3F2'; c.font = 'bold 19px Georgia, serif'; c.fillText('Boats & Bikes', 160, 66);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.84, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.2, 1.5); S.add(sign);
+  S.position.set(BOAT_SHOP_POS.x, 0, BOAT_SHOP_POS.z); S.rotation.y = 0.5;
+  g.add(S);
+}
 function buildBeachDecor(g) {
   buildSpanishMart(g);
+  buildBoatShop(g);
+  buildDock(g);
   const ocean = new THREE.Mesh(new THREE.CircleGeometry(80, 48), new THREE.MeshLambertMaterial({ color: 0x2FA8D8 }));
   ocean.rotation.x = -Math.PI / 2; ocean.position.y = -0.12; g.add(ocean);                          // sea around the sandy island
   for (let i = 0; i < 12; i++) {
@@ -8083,6 +8214,7 @@ addEventListener('keydown', e => {
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
+    else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -8373,7 +8505,7 @@ $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
-$('martClose').onclick = () => { Sound.click(); closeMart(); };
+$('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else closeMart(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
@@ -8519,6 +8651,7 @@ if (isTouch) {
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
+    else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -9050,6 +9183,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (martDist() < 3.8) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 Press E — order in Spanish at El Mercadito!';
+      hint.style.display = 'block';
+    } else if (boatShopDist() < 3.8) {
+      hint.textContent = isTouch ? '🚤 Tap ⭐ USE — bikes & boats at Stack Barcos!' : '🚤 Press E — bikes & boats at Stack Barcos!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
