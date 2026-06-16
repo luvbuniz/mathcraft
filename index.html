@@ -2420,7 +2420,7 @@ const WORLDS = {
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
   city:   { id: 'city',   name: 'Reading Town',   emoji: '🏘️', subject: 'reading', chip: 'Reading',
             sky: 0x9FC6E8, fog: 0xC2DCF0, ground: [0x86C05A, 0x79B24E, 0x93C970] },
-  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español',
+  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
 };
 const WORLD_ORDER = ['meadow', 'city', 'beach'];
@@ -2823,7 +2823,7 @@ function doUnlock() {
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
-  toast('🎉 Full game unlocked! 🏘️ Reading Town and 🏖️ Spanish Beach are open — find a 🌀 portal to visit!', 4500);
+  toast('🎉 Full game unlocked! 🏘️ Reading Town is open — find a 🌀 portal to visit. 🏖️ Spanish Beach is coming soon!', 4500);
   if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
 }
 /* reflect lock state on the homepage world picker */
