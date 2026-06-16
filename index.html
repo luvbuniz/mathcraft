@@ -4028,6 +4028,14 @@ const STORIES = [
     ] }
 ];
 let lib = null;
+// A story's text can be a single string, OR grade-leveled variants: an array of
+// [minGrade, text] pairs. We serve the richest variant the player's grade reaches.
+function storyText(s) {
+  if (typeof s.text === 'string') return s.text;
+  let chosen = s.text[0][1];
+  for (const v of s.text) { if (G.grade >= v[0]) chosen = v[1]; }
+  return chosen;
+}
 function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
@@ -4051,7 +4059,7 @@ function renderLib() {
   }
   if (lib.phase === 'read') {
     $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
-    $('libStory').innerHTML = '<p class="libText">' + lib.story.text + '</p>';
+    $('libStory').innerHTML = '<p class="libText">' + storyText(lib.story) + '</p>';
     $('libPrompt').textContent = 'Read the story carefully…';
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.background = '#3f9d34'; b.style.color = '#fff'; b.textContent = "📖 I've read it — start the questions!";
     b.onclick = () => {
@@ -4066,7 +4074,7 @@ function renderLib() {
   // quiz
   const q = lib.qs[lib.qi];
   $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
-  $('libStory').innerHTML = '<p class="libText small">' + lib.story.text + '</p>';
+  $('libStory').innerHTML = '<p class="libText small">' + storyText(lib.story) + '</p>';
   $('libPrompt').textContent = '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q;
   shuffle(q.o.slice()).forEach(opt => {
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '15px'; b.textContent = opt;
