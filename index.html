@@ -13,6 +13,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stackadoo">
+<meta name="description" content="A 3D world where kids build houses and drive cars by solving math, reading & Spanish — sneaky learning that feels like play. Free to start!">
+<!-- Social link previews (Open Graph + Twitter). Add an og.png (1200×630) at the site root for a banner image. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Stackadoo">
+<meta property="og:title" content="Stackadoo — Build & drive by doing math!">
+<meta property="og:description" content="Kids build houses and drive cars by solving math, reading & Spanish. Sneaky learning that feels like play — free to start!">
+<meta property="og:url" content="https://stackadoo.com/">
+<meta property="og:image" content="https://stackadoo.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stackadoo — Build & drive by doing math!">
+<meta name="twitter:description" content="Kids build & drive by solving math, reading & Spanish. Free to start!">
+<meta name="twitter:image" content="https://stackadoo.com/og.png">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -817,6 +829,10 @@
         <svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
         For Grown-Ups — math progress
       </button>
+      <button id="shareBtn" class="btn btn-ghost btn-block" style="margin-top:8px">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M18 8a3 3 0 1 0-2.83-4M18 8a3 3 0 0 1-2.83-2M6 12a3 3 0 1 0 0 .01M18 16a3 3 0 1 0-2.83 2M8.6 13.5l6.8 3M15.4 7.5l-6.8 3"/></svg>
+        📣 Tell a friend about Stackadoo
+      </button>
     </section>
 
     <!-- ========== SCREEN 1 · GAME SETTINGS ========== -->
@@ -1146,6 +1162,15 @@
     </div>
     <button id="unlockBuyBtn">Unlock everything — $4.99 once</button>
     <div style="color:#9a86b8; font-size:12px; margin-top:8px">One-time purchase • no subscription • saved on this device</div>
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid #ece4f5">
+      <div style="color:#7a6a35; font-weight:700; font-size:13px; margin-bottom:6px">🎁 Have a gift code?</div>
+      <div style="display:flex; gap:8px; justify-content:center">
+        <input id="promoInput" placeholder="Enter code" autocomplete="off" autocapitalize="characters"
+          style="flex:1; max-width:180px; padding:10px 12px; border:2px solid #d8cdf0; border-radius:12px; font-family:inherit; font-size:15px; text-transform:uppercase">
+        <button id="promoBtn" style="border:none; border-radius:12px; padding:10px 16px; background:#7a4ea0; color:#fff; font-weight:bold; font-family:inherit; cursor:pointer">Redeem</button>
+      </div>
+      <div id="promoMsg" style="font-size:12px; margin-top:6px; min-height:14px"></div>
+    </div>
   </div>
 </div>
 
@@ -2310,13 +2335,25 @@ function beginPurchase() {
   if (typeof toast === 'function') toast('🧪 Demo: no payment connected yet — unlocking for testing.', 3000);
   doUnlock();
 }
-/* If a provider sent the player back with ?unlocked=1, complete the unlock and tidy the URL. */
+/* ===== Gift / promo codes — unlock the full game for free (e.g. party favors).
+   Edit this list to add or retire codes. Share a code, or a link like
+   stackadoo.com/?code=STACKPARTY (the kids just open it). ===== */
+const PROMO_CODES = ['STACKPARTY', 'BIRTHDAY2026', 'STACKADOO'];
+function redeemCode(raw) {
+  const code = (raw || '').trim().toUpperCase();
+  if (code && PROMO_CODES.includes(code)) { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} return true; }
+  return false;
+}
+/* If a provider sent the player back with ?unlocked=1 — or a gift link with ?code=XXX —
+   complete the unlock and tidy the URL. */
 (function handlePurchaseReturn() {
   try {
-    if (new URLSearchParams(location.search).get('unlocked') === '1') {
+    const p = new URLSearchParams(location.search);
+    const codeOk = p.get('code') && redeemCode(p.get('code'));
+    if (p.get('unlocked') === '1' || codeOk) {
       localStorage.setItem(UNLOCK_KEY, '1');
       history.replaceState(null, '', location.pathname + location.hash);
-      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 Thank you! The full game is unlocked. Explore 🏘️ Reading Town now — 🏖️ Spanish Beach is coming soon!', 4500); }, 700));
+      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 ' + (codeOk ? 'Gift code accepted!' : 'Thank you!') + ' The full game is unlocked — explore 🏘️ Reading Town now!', 4500); }, 700));
     }
   } catch (e) {}
 })();
@@ -6552,6 +6589,18 @@ $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
+$('promoBtn').onclick = () => {
+  Sound.click();
+  const msg = $('promoMsg');
+  if (redeemCode($('promoInput').value)) {
+    msg.style.color = '#2f8a52'; msg.textContent = '🎉 Code accepted! Unlocking…';
+    Sound.fanfare && Sound.fanfare();
+    setTimeout(doUnlock, 500);
+  } else {
+    msg.style.color = '#c0392b'; msg.textContent = 'Hmm, that code didn\'t work. Check the spelling?';
+  }
+};
+$('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('promoBtn').click(); });
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
@@ -6576,7 +6625,7 @@ function takePhoto() {
         const file = new File([blob], name, { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
           try {
-            await navigator.share({ files: [file], title: 'My Stackadoo build!', text: 'I built this in Stackadoo! 🧱⛏️' });
+            await navigator.share({ files: [file], title: 'My Stackadoo build!', text: 'I built this in Stackadoo! 🧱🚗 Play free at stackadoo.com #Stackadoo', url: 'https://stackadoo.com/' });
             toast('📸 Shared your build!', 2200);
             return;
           } catch (e) { if (e && e.name === 'AbortError') return; }   // user cancelled the share sheet
@@ -6882,6 +6931,14 @@ $('startBtn').onclick = () => {
   startGame();
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
+function shareGame() {
+  const data = { title: 'Stackadoo', text: 'My kids learn math, reading & Spanish by building & driving in Stackadoo — and they think it\'s just a game! 🧱🚗 Free to start:', url: 'https://stackadoo.com/' };
+  if (navigator.share) { navigator.share(data).catch(() => {}); return; }
+  const link = 'https://stackadoo.com/';
+  if (navigator.clipboard) { navigator.clipboard.writeText(link).then(() => toast('🔗 Link copied! Paste it anywhere to share Stackadoo.', 3000), () => toast('Share: ' + link, 4000)); }
+  else toast('Share this link: ' + link, 4000);
+}
+$('shareBtn').onclick = () => { Sound.click(); shareGame(); };
 $('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
 
 /* ---- Export / Import all saves & progress (move builds between devices/addresses) ---- */
