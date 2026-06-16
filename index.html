@@ -2477,7 +2477,7 @@ const SHOP_ITEMS = [
   { id: 'sparkler',icon: '🎇', name: 'Sparkler', price: 5,    kind: 'many',  desc: 'A fizzing, sparkling stick of light. Set a few around the yard!' },
   { id: 'fireworks',icon: '🎆', name: 'Fireworks Launcher', price: 35, kind: 'many', desc: '⭐ Premium! Earn the coins, then dazzle the sky with bursting fireworks.' },
   { id: 'treasuremap', icon: '🗺️', name: 'Treasure Map', price: 6, kind: 'own', desc: 'Start a quest! Hunt the gemstone 💎 Archimedes\' Pom-pom and bring it home.' },
-  { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP by a trunk, press P for berries.' },
+  { id: 'ladder', icon: '🪜', name: 'Tree Ladder', price: 8,  kind: 'own',   desc: 'Climb trees! Hold JUMP next to a tree trunk to climb up high.' },
   { id: 'shoes',  icon: '👟', name: 'Speedy Shoes', price: 6, kind: 'own',   desc: 'Run faster around the world.' },
   { id: 'boots',  icon: '🦘', name: 'Bouncy Boots', price: 6, kind: 'own',   desc: 'Jump higher!' },
   { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    kind: 'own',   desc: 'A snazzy hat for your hero.' },
@@ -4819,7 +4819,7 @@ function refundFor(type) {
   else if (FURNITURE_TYPES.includes(type)) { G.furniture[type] += 1; toast('📦 Packed up your ' + type + ' — back in your 🎒!', 1600); }
   else G.blocks += 1;
 }
-/* P — pick up the nearest thing: loot blocks, then berries, then your builds */
+/* P — pick up the nearest thing: loot blocks, then your builds */
 function pickupBlock() {
   let best = null, bestD = 2.8;
   for (const l of lootBlocks) {
@@ -4828,18 +4828,8 @@ function pickupBlock() {
     if (d < bestD) { best = l; bestD = d; }
   }
   if (best) { collectLoot(best); return; }
-  if (berries.length) {
-    let bb = null, bd = 999;
-    const head = new THREE.Vector3(player.pos.x, player.pos.y + 1.55, player.pos.z);
-    for (const b of berries) {
-      if (!b.alive || !canReachBerry(b)) continue;
-      const d = head.distanceTo(b.mesh.position);
-      if (d < bd) { bb = b; bd = d; }
-    }
-    if (bb) { collectBerry(bb); return; }
-  }
   if (removePlacedBlock()) return;
-  toast('🤲 Nothing close enough — walk up to a block or berry and try P again!', 1800);
+  toast('🤲 Nothing close enough — walk up to one of your blocks and try again!', 1800);
 }
 /* Place whatever slot is selected at grid cell (x,z). blockY is the height
    for a plain block (stacking); doors/furniture/food sit on the ground. */
@@ -5674,7 +5664,7 @@ function buyItem(id) {
     G.owned[id] = true;
     Sound.coin();
     if (id === 'hat' || id === 'usahat') applyHeadwear();
-    if (id === 'ladder') toast('🪜 Ladder! Hold JUMP by a tree trunk to climb — then press P to pick berries!', 4000);
+    if (id === 'ladder') toast('🪜 Ladder! Hold JUMP next to a tree trunk to climb up high — great for building tall!', 4000);
     else toast(item.icon + ' You bought ' + item.name + '!');
   }
   refreshHUD();
@@ -6725,7 +6715,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
     if (hitB) {
       const berry = berries.find(b => b.mesh === hitB.object);
       if (!canReachBerry(berry)) {
-        toast(G.owned.ladder ? '🪜 Climb up the trunk (hold JUMP), then press P!' : '🍓 Too high! A ladder from 🛒 Stack Mart would help…', 1900);
+        toast(G.owned.ladder ? '🪜 Climb up the trunk — hold JUMP!' : '🌳 Too high to climb! A 🪜 Tree Ladder from 🛒 Stack Mart helps.', 1900);
         return;
       }
       collectBerry(berry);
