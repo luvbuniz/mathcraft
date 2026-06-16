@@ -7296,6 +7296,18 @@ function buildFurnitureMesh(type, variant) {
       box(g, 0.95, 0.08, 0.62, wood, 0, 0.74, 0);                    // top
       [[-0.4, -0.24], [0.4, -0.24], [-0.4, 0.24], [0.4, 0.24]].forEach(([x, z]) => box(g, 0.08, 0.7, 0.08, leg, x, 0.36, z));
     }
+    // a town-specific centerpiece makes each dining set its own (sits centered on any table shape)
+    if (finish === 1) {                                              // Deluxe: gold candelabra
+      box(g, 0.1, 0.04, 0.1, 0xC9A24A, 0, 0.82, 0);
+      [-0.12, 0, 0.12].forEach(cx => { box(g, 0.04, 0.18, 0.04, 0xC9A24A, cx, 0.91, 0); box(g, 0.05, 0.06, 0.05, 0xFFB02E, cx, 1.02, 0); });
+    } else if (finish === 2) {                                       // Spanish: talavera fruit bowl
+      box(g, 0.28, 0.1, 0.28, 0x2E6E9E, 0, 0.85, 0); box(g, 0.2, 0.06, 0.2, 0xE0B23A, 0, 0.9, 0);
+      [[-0.07, 0xE5534B], [0.07, 0xF2C14E], [0, 0x6FA85B]].forEach(([fx, fc]) => box(g, 0.09, 0.09, 0.09, fc, fx, 0.94, 0));
+    } else {                                                         // Country: rustic vase of flowers
+      box(g, 0.13, 0.16, 0.13, 0x9a6b3a, 0, 0.86, 0); box(g, 0.15, 0.04, 0.15, 0xC77B4A, 0, 0.94, 0);
+      [[-0.06, 0xE5534B], [0.06, 0xF2C14E], [0, 0xEE7DB1]].forEach(([fx, fc]) => box(g, 0.08, 0.12, 0.08, fc, fx, 1.0, 0));
+      box(g, 0.2, 0.1, 0.2, 0x4CAF50, 0, 0.99, 0);
+    }
   } else if (type === 'coffeetable') {
     box(g, 0.86, 0.08, 0.5, 0x8a5c33, 0, 0.32, 0);                    // low top
     if (finish === 1) box(g, 0.88, 0.02, 0.52, 0xC9A24A, 0, 0.37, 0);  // gold edge (deluxe)
