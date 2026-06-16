@@ -2366,7 +2366,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0,
+  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
   world: 'meadow',
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
@@ -3146,7 +3146,7 @@ function resetGameState() {
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
-  G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
+  G.selectedSlot = 'block'; G.blockColor = 0xC9B79A; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, corvette: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
@@ -3263,6 +3263,7 @@ function applyWorldTheme(worldId) {
   MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z); motorsGroup.rotation.y = L.motors.r || 0;
   if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = (worldId === 'meadow');   // the bakery is a Math Meadow shop
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
+  G.furnFinish = worldId === 'city' ? 1 : worldId === 'beach' ? 2 : 0;   // default to this town's furniture style (kids can change it in the 🎒)
 }
 
 /* ---- voxel block storage ---- */
@@ -5647,7 +5648,14 @@ function placeSelectedAt(x, z, blockY) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🏚️ Stack Barn!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    const fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'bed' ? G.bedVariant : slot === 'dtable' ? G.dtableVariant : null;
+    let fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'bed' ? G.bedVariant : slot === 'dtable' ? G.dtableVariant : null;
+    if (fv == null) {                                  // random-color items pick their color now
+      if (slot === 'flower') fv = Math.floor(Math.random() * FLOWER_COLORS.length);
+      else if (slot === 'rug') fv = Math.floor(Math.random() * RUG_COLORS.length);
+      else if (slot === 'petbed') fv = Math.floor(Math.random() * PETBED_COLORS.length);
+      else fv = 0;
+    }
+    fv = (fv % FURN_FINISH_MUL) + (G.furnFinish || 0) * FURN_FINISH_MUL;   // stamp the chosen town finish
     placeFurnitureAt(slot, x, z, fv, facePlayerRotation(x, z)); G.furniture[slot] -= 1; Sound.place(); refreshHUD();
     toast('✅ Placed! Tap it to turn it 🔄', 1800); return true;
   }
@@ -6364,7 +6372,8 @@ function renderShop() {
     const owned = item.kind === 'own' && G.owned[item.id];
     const priceTxt = item.kind === 'sell' ? (G.berries + ' 🍓 → ' + G.berries + ' 🪙') : item.price + ' 🪙';
     const previewable = FURNITURE_TYPES.includes(item.id) || PET_KINDS[item.id];
-    const iconHTML = previewable ? thumbIcon(item.id, 0, item.icon) : item.icon;
+    const finishVar = (PET_KINDS[item.id] ? 0 : (G.furnFinish || 0) * FURN_FINISH_MUL);   // show the catalog in the current town's finish
+    const iconHTML = previewable ? thumbIcon(item.id, finishVar, item.icon) : item.icon;
     row.innerHTML = '<div class="icon">' + iconHTML + '</div>' +
       '<div class="info"><b>' + item.name + ' — ' + priceTxt + '</b><small>' + item.desc + '</small></div>';
     const btn = document.createElement('button');
@@ -6588,8 +6597,37 @@ function buildChair(g, variant) {
   }
 }
 const DTABLE_STYLES = ['round', 'rectangular', 'farmhouse', 'modern', 'glass'];
+/* ---- per-TOWN furniture finishes ----
+   Each town has its own look, but kids can pick ANY town's finish in the backpack and
+   mix pieces from different towns. The finish is folded into the variant (× FURN_FINISH_MUL)
+   so it saves & loads with each placed item. We retint only the structural wood & metal of
+   a piece — never the fabric/cushion colors the kid chose, nor the USA flag. */
+const FURN_FINISH = [
+  { id: 'country', name: '🌳 Country',  wood: 0xA9763F, metal: 0xE7DCC4, accent: 0x6FA85B },   // warm oak + cream enamel (Math Meadow)
+  { id: 'deluxe',  name: '🏙️ Deluxe',   wood: 0x4A382C, metal: 0x44474C, accent: 0xC9A24A },   // dark walnut + graphite + gold (Reading Town)
+  { id: 'spanish', name: '🏖️ Spanish',  wood: 0x9E5B38, metal: 0xF0EBE0, accent: 0xC8602E }    // chestnut + white + terracotta (Spanish Beach)
+];
+const FURN_FINISH_MUL = 6000;                 // divisible by every style/color count, so it never disturbs style/color math
+const _flum = c => 0.299 * ((c >> 16) & 255) + 0.587 * ((c >> 8) & 255) + 0.114 * (c & 255);
+const FURN_WOOD = new Set([0x4a3526, 0x6d4326, 0x4a2c18, 0x6B4A2B, 0x8a5c33, 0x7a5230, 0x5a3a1e, 0xC49A6C, 0xC9A06A, 0xA9763F, 0x9C6B3F, 0x8d6238, 0x6d4d2b]);
+const FURN_METAL = new Set([0x9aa0a8, 0xB8BCC2, 0x6d6d6d, 0xC9CDD4, 0x8d9298, 0xBBBFC6, 0xE8E8EC, 0xDDE0E6, 0xC7CCD1, 0x9aa0a6, 0x5a5a5a]);
+const _REF_WOOD = _flum(0x8a5c33), _REF_METAL = _flum(0x9aa0a8);
+function applyFurnFinish(g, finish) {
+  const f = FURN_FINISH[finish] || FURN_FINISH[0];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  g.traverse(m => {
+    if (!m.isMesh || !m.material || !m.material.color) return;
+    const hex = m.material.color.getHex();
+    if (FURN_WOOD.has(hex)) m.material = new THREE.MeshLambertMaterial({ color: shade(f.wood, clamp(_flum(hex) / _REF_WOOD, 0.45, 1.7)) });
+    else if (FURN_METAL.has(hex)) m.material = new THREE.MeshLambertMaterial({ color: shade(f.metal, clamp(_flum(hex) / _REF_METAL, 0.5, 1.6)) });
+  });
+}
 function buildFurnitureMesh(type, variant) {
+  variant = variant || 0;
+  const finish = Math.floor(variant / FURN_FINISH_MUL);   // the chosen town style
+  variant = variant % FURN_FINISH_MUL;                    // the style+color the existing code expects
   const g = new THREE.Group();
+  g.userData.finish = finish;
   if (type === 'foodbowl' || type === 'waterbowl') {
     const rim = type === 'waterbowl' ? 0x5aa7e8 : 0xE0533B;
     box(g, 0.3, 0.04, 0.3, 0x9a8e80, 0, 0.02, 0);                       // mat under the bowl
@@ -6871,6 +6909,7 @@ function buildFurnitureMesh(type, variant) {
     [[-0.2, 0.2], [0.22, -0.15], [0.05, 0.05]].forEach(([x, z]) =>
       box(g, 0.1, 0.1, 0.1, 0xE53935, x, 0.66, z));                   // berries
   }
+  applyFurnFinish(g, finish);          // give the whole piece its town's wood & metal finish
   return g;
 }
 function placeFurnitureAt(type, x, z, variant, rotY) {
@@ -7675,6 +7714,18 @@ function renderInv() {
     row.appendChild(eat);
     wrap.appendChild(row);
   });
+  // 🏘️ Furniture style — pick ANY town's finish (country / deluxe / Spanish) and mix pieces from every town
+  const fRow = document.createElement('div');
+  fRow.className = 'invItem'; fRow.style.flexDirection = 'column'; fRow.style.alignItems = 'stretch';
+  let fhtml = '<div class="info" style="margin-bottom:6px"><b>🏘️ Furniture style</b><small>Pick any town\'s look — mix &amp; match in any world!</small></div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  FURN_FINISH.forEach((f, i) => {
+    fhtml += '<button class="finishBtn" data-fi="' + i + '" style="flex:1;min-width:92px;padding:9px 6px;border-radius:10px;font-weight:bold;cursor:pointer;border:3px solid ' +
+      ((G.furnFinish || 0) === i ? '#3b5d9e' : '#d7dee8') + ';background:' + ((G.furnFinish || 0) === i ? '#dbe7f7' : '#f3f6fa') + '">' + f.name + '</button>';
+  });
+  fhtml += '</div>';
+  fRow.innerHTML = fhtml;
+  wrap.appendChild(fRow);
+  fRow.querySelectorAll('.finishBtn').forEach(b => b.onclick = () => { Sound.click(); G.furnFinish = parseInt(b.dataset.fi); renderInv(); });
   const placeables = [
     ['🧱', 'Building Blocks', G.blocks, 'block'],
     ['⚡', 'Power Blocks', G.powerBlocks, 'power'],
@@ -7810,7 +7861,7 @@ function renderInv() {
       cfg.styles.forEach((label, idx) => {
         const b = document.createElement('button');
         b.className = 'styleThumb' + (si === idx ? ' sel' : '');
-        b.innerHTML = '<img src="' + getThumb(slot, idx * 100 + ci) + '" alt="">' + label;
+        b.innerHTML = '<img src="' + getThumb(slot, idx * 100 + ci + (G.furnFinish || 0) * FURN_FINISH_MUL) + '" alt="">' + label;
         b.onclick = () => { Sound.click(); G[cfg.vkey] = idx * 100 + ci; selectSlot(slot, true); renderInv(); };
         srow.appendChild(b);
       });
