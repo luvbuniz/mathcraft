@@ -891,7 +891,9 @@
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
           <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
           <p><b>Mouse:</b> drag to look around, click to build, right-click to remove. Arrow keys turn too.</p>
-          <p>Solve math to earn build blocks, Power Blocks, coins, or ammo — and a 🛡️ Shield from the Gloomies! On a tablet, use the joystick and the ⭐ Use button.</p>
+          <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb), tap the world to build, and tap ⭐ Use for math, JUMP to jump, Place to switch build/break.</p>
+          <p>Solve math to earn build blocks, Power Blocks, coins, or ammo — and a 🛡️ Shield from the Gloomies!</p>
+          <p>✅ <b>Works best in Chrome</b> (on a phone or tablet). Other browsers can be janky and some block features.</p>
         </div>
       </details>
 
@@ -3666,7 +3668,7 @@ function updatePlayer(dt) {
   if (keys['ArrowRight']) player.yaw -= 2.4 * dt;
   let moving = false;
   const jmag = Math.hypot(touch.joyX, touch.joyY);
-  if (jmag > 0.18) {
+  if (jmag > 0.22) {                                                  // a little deadzone so tiny taps don't turn you
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
     const cfx = -Math.sin(player.yaw), cfz = -Math.cos(player.yaw);   // "forward" (away from camera)
@@ -3674,7 +3676,10 @@ function updatePlayer(dt) {
     let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
     let dz = crz * touch.joyX + cfz * (-touch.joyY);
     const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
-    player.yaw += shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 9);  // smoothly turn to face it
+    // turn GENTLY toward the push, and never spin faster than a calm cap (kid-friendly)
+    let turn = shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
+    const maxStep = 2.2 * dt;
+    player.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
     const sp = speed * Math.min(1, jmag);
     player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
@@ -3758,15 +3763,15 @@ function updatePlayer(dt) {
     const cx = player.pos.x + Math.sin(player.yaw) * dist * Math.cos(player.pitch);
     const cz = player.pos.z + Math.cos(player.yaw) * dist * Math.cos(player.pitch);
     const cy = headY + dist * Math.sin(-player.pitch) * 0.8 + 0.9;
-    // Pull the camera in if a wall or roof sits between the player and the camera,
-    // so you can still see your avatar (and the room) when you're inside a house.
+    // Only pull the camera in a little if a wall/roof sits behind you, so it stays
+    // mostly zoomed OUT inside a house instead of snapping right up to your face.
     const head = new THREE.Vector3(player.pos.x, headY, player.pos.z);
     const dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
     const far = dir.length(); dir.normalize();
     let allowed = far;
     for (let d = 0.5; d < far; d += 0.3) {
       if (solidAt(Math.floor(head.x + dir.x * d), Math.floor(head.y + dir.y * d), Math.floor(head.z + dir.z * d))) {
-        allowed = Math.max(0.7, d - 0.3); break;
+        allowed = Math.max(3.0, d - 0.3); break;
       }
     }
     camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
