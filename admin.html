@@ -144,11 +144,14 @@ function loadCodes() {
   giftFetch('action=codes').then(d => {
     if (!d || !d.ok) { $('codeList').innerHTML = '<p class="err">Couldn\'t load codes (check GIFT_URL / key).</p>'; return; }
     $('cAvail').textContent = d.available; $('cUsed').textContent = d.used;
-    $('codeList').innerHTML = (d.codes || []).map(c =>
-      '<div class="barRow"><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
-      '<span style="flex:1"></span><span class="v" style="width:auto;color:' + (c.used ? '#c0392b' : '#3f9d34') + '">' +
-      (c.used ? 'used' : 'free') + '</span></div>'
-    ).join('') || '<p class="note">No codes yet — generate some above.</p>';
+    const rate = d.total ? Math.round(d.used / d.total * 100) : 0;
+    $('cUsed').nextElementSibling.textContent = 'Redeemed' + (d.total ? ' · ' + rate + '% of ' + d.total : '');
+    $('codeList').innerHTML = (d.codes || []).map(c => {
+      const when = c.used && c.redeemedAt ? new Date(c.redeemedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+      return '<div class="barRow"><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
+        '<span style="flex:1;text-align:right;color:#6a7b6c;font-size:12px;padding-right:8px">' + when + '</span>' +
+        '<span class="v" style="width:auto;color:' + (c.used ? '#c0392b' : '#3f9d34') + '">' + (c.used ? 'used' : 'free') + '</span></div>';
+    }).join('') || '<p class="note">No codes yet — generate some above.</p>';
   }).catch(() => { $('codeList').innerHTML = '<p class="err">Network error reaching gift backend.</p>'; });
 }
 function genCodes() {
