@@ -2279,8 +2279,8 @@ function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnl
 const PAY = {
   // (1) Simplest, no server: a Stripe **Payment Link** (Stripe Dashboard → Payment Links).
   //     Set its "after payment" redirect to your site URL + "?unlocked=1", then paste the link here.
-  stripePaymentLink: 'https://buy.stripe.com/test_cNi7sLaD02jfaqi2pw24000',   // TEST link (card 4242 4242 4242 4242)
-  // LIVE link (swap in once Stripe account review clears): https://buy.stripe.com/cNi7sLaD02jfaqi2pw24000
+  stripePaymentLink: 'https://buy.stripe.com/cNi7sLaD02jfaqi2pw24000',   // LIVE Stripe Payment Link
+  // (after payment, the link must redirect to your site + "?unlocked=1" to flip the unlock)
   // (2) Stronger, needs a tiny backend: your own **Stripe Checkout** endpoint that creates a
   //     session server-side and verifies it with a webhook before returning "?unlocked=1".
   checkoutEndpoint: '',           // e.g. 'https://api.stackadoo.com/checkout'
