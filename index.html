@@ -6035,6 +6035,8 @@ function updatePlayer(dt) {
       player.pos.z = Math.max(-wlim, Math.min(wlim, player.pos.z));
       player.pos.y = 0; player.vel.y = 0; player.onGround = false;
     } else {                                             // 🛻 land vehicles: gravity + wall collision
+      const nx = player.pos.x + player.vel.x * dt, nz = player.pos.z + player.vel.z * dt;
+      if (carBlockedByPet(nx, nz)) { player.vel.x = 0; player.vel.z = 0; }   // brake for the puppy — never drive through a pet
       player.vel.y -= 22 * dt; player.onGround = false;
       collideAxis('x', player.vel.x * dt);
       collideAxis('z', player.vel.z * dt);
@@ -7944,6 +7946,14 @@ const placedFood = [];
    cozy decoration.) */
 const pets = [];
 function petClampX(v) { return Math.max(-WORLD_R + 1.5, Math.min(WORLD_R - 1.5, v)); }
+function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in its path (unless that pet is riding along)
+  for (const p of pets) {
+    if (p.mode === 'ride' || !p.f || !p.f.mesh) continue;
+    const m = p.f.mesh;
+    if (Math.hypot(nx - m.position.x, nz - m.position.z) < 1.1) return true;
+  }
+  return false;
+}
 function shortAngle(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 function registerPet(f) {
   const m = f.mesh;
