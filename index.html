@@ -3801,9 +3801,17 @@ function measureStep(ing, baseAmt) {               // measure one ingredient cor
     : (SCALE_WORD[scale] || scale + '×') + ' the recipe! ' + baseAmt + ' ' + (unit ? unit + ' of ' : '') + ing + ' × ' + scale + ' = ?';
   return { emoji: INGS[ing][0], name: ing, base: baseAmt, answer: answer, options: bakeOptions(answer), text: text };
 }
-function churnStep() { return { emoji: '🍦', name: 'churn', base: null, answer: 20, options: bakeOptions(20, 5), text: '🍦 Crank the ice cream maker 20 times — turn the dial to the right number!' }; }
+function mixStep(ice) { return { emoji: '🥄', name: 'mix', base: null, answer: 10, options: bakeOptions(10, 2), text: '🥄 ' + (ice ? 'Whisk the cream, milk & sugar' : 'Mix the batter') + ' — give it 10 big stirs!' }; }
+function churnStep() { return { emoji: '🍦', name: 'churn', base: null, answer: 20, options: bakeOptions(20, 5), text: '🍦 Pour it into the ice cream maker and crank it 20 times!' }; }
 function freezeStep() { return { emoji: '❄️', name: 'freezer', base: null, answer: 30, options: bakeOptions(30, 10), text: '❄️ Freeze it for 30 minutes — set the timer!' }; }
-function ovenStep() { return { emoji: '🔥', name: 'oven', base: null, answer: 350, options: shuffle([350, 325, 375]), text: '🔥 Bake at 350° — set the oven dial!' }; }
+function ovenStep() { return { emoji: '🔥', name: 'oven', base: null, answer: 350, options: shuffle([350, 325, 375]), text: '🔥 Pour into the pan and bake at 350° — set the oven dial!' }; }
+function assembleStep(ing, baseAmt) {            // the final assembly — in the correct order, after freezing
+  const scale = bakeScale(), unit = INGS[ing][1], answer = baseAmt * scale;
+  const verbs = { cookies: '🍪 Put the ice cream between the cookies', sauce: '🍯 Drizzle the sauce on top', sprinkles: '🌈 Shake sprinkles on top', cherries: '🍒 Pop cherries on top' };
+  const verb = verbs[ing] || ('Add the ' + ing);
+  const text = scale === 1 ? verb + (unit ? ' — how many ' + unit + '?' : ' — how many?') : verb + '! ' + baseAmt + ' × ' + scale + ' = ?';
+  return { emoji: INGS[ing][0], name: ing, base: baseAmt, answer: answer, options: bakeOptions(answer), text: text };
+}
 let bake = null;
 function openBakery() {
   if (popupOpen || G.over || !G.running) return;
@@ -3813,9 +3821,20 @@ function openBakery() {
   $('bakePopup').style.display = 'flex';
 }
 function startMaking() {
-  const recipe = recipeFor(bake.treat, bake.flavor);
-  const steps = recipe.map(([ing, amt]) => measureStep(ing, amt));
-  if (bake.treat.ice) { steps.push(churnStep()); steps.push(freezeStep()); } else steps.push(ovenStep());
+  const t = bake.treat;
+  let base, toppings;
+  if (t.ice) {
+    base = ICE_BASE.slice(); if (bake.flavor && bake.flavor[2]) base.push(bake.flavor[2]);
+    base = mergeRecipe(base).slice(0, G.grade <= 2 ? 3 : 4);
+    toppings = (t.extra || []).slice(0, G.grade <= 2 ? 1 : 2);
+  } else { base = t.recipe.slice(0, G.grade <= 2 ? 3 : 4); toppings = []; }
+  // correct method order: measure the base → mix → (churn → freeze → assemble) or (bake)
+  const steps = base.map(([ing, amt]) => measureStep(ing, amt));
+  steps.push(mixStep(t.ice));
+  if (t.ice) {
+    steps.push(churnStep()); steps.push(freezeStep());
+    toppings.forEach(([ing, amt]) => steps.push(assembleStep(ing, amt)));
+  } else steps.push(ovenStep());
   bake.steps = steps; bake.step = 0; bake.phase = 'make';
   renderBake();
 }
@@ -3849,8 +3868,9 @@ function renderBake() {
   const scale = bakeScale();
   $('bakeTray').innerHTML = '<div class="recipeCard">' +
     (scale > 1 ? '<div class="recipeScale">✖️ ' + (SCALE_WORD[scale] || scale + '×') + ' the recipe!</div>' : '') +
-    bake.steps.filter(s => s.base != null).map((s, i) => {
-      const done = i < bake.step, now = i === bake.step;
+    bake.steps.map((s, gi) => {
+      if (s.base == null) return '';                          // skip process steps (mix/churn/freeze/bake) on the card
+      const done = gi < bake.step, now = gi === bake.step;
       return '<div class="recipeRow' + (done ? ' done' : (now ? ' now' : '')) + '">' + s.emoji + ' ' + s.base + ' ' +
         (unitOf(s.name, s.base) ? unitOf(s.name, s.base) + ' ' : '') + s.name + (done ? ' ✓' : (now ? ' ⟵' : '')) + '</div>';
     }).join('') + '</div>';
