@@ -1217,8 +1217,8 @@
 <div class="popup" id="martPopup">
   <div class="popupCard" style="width:min(540px,95vw); text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="martClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 style="color:#C8602E; margin:2px 0 2px; font-size:clamp(22px,4vw,30px)">🏪 El Mercadito</h2>
-    <div style="color:#7a6a55; font-weight:700; font-size:13px; margin-bottom:4px">The Little Market — order in Spanish!</div>
+    <h2 id="martHeading" style="color:#C8602E; margin:2px 0 2px; font-size:clamp(22px,4vw,30px)">🏪 El Mercadito</h2>
+    <div id="martSub" style="color:#7a6a55; font-weight:700; font-size:13px; margin-bottom:4px">The Little Market — order in Spanish!</div>
     <div style="font-size:42px" id="martKeeper">🧑‍🌾</div>
     <div id="martLine" style="font-size:clamp(16px,3vw,20px); color:#4a3b2c; min-height:46px; margin:4px 0"></div>
     <div id="martGoal" style="font-weight:700; color:#2E6E9E; margin:4px 0; min-height:20px"></div>
@@ -3805,7 +3805,7 @@ const motorsGroup = new THREE.Group();
   drawMotorsSign('AUTO SHOWROOM');
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: tex }));
   sign.position.set(0, 2.78, 1.54); motorsGroup.add(sign);
-  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'AUTOS • CARS' : 'AUTO SHOWROOM');
+  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'BICI Y BARCOS' : 'AUTO SHOWROOM');
   motorsGroup.position.set(MOTORS_POS.x, 0, MOTORS_POS.z);
   scene.add(motorsGroup);
 }
@@ -4053,7 +4053,7 @@ function openMotors() {                    // the showroom: buy a car, switch wh
     const btn = document.createElement('button'); btn.className = 'carGo';
     if (active) { btn.textContent = '✓'; btn.disabled = true; }
     else if (owned) { btn.textContent = 'Drive'; btn.onclick = () => { Sound.click(); setActiveCar(def.id); openMotors(); }; }
-    else { const can = G.coins >= def.price; btn.disabled = !can; btn.textContent = can ? 'Buy' : '🔒'; btn.onclick = () => { buyCar(def.id); openMotors(); }; }
+    else { const can = G.coins >= def.price; btn.disabled = !can; btn.textContent = can ? 'Buy' : '🔒'; btn.onclick = () => { if (G.world === 'beach') { closeMotors(); openVehicleOrder(def); } else { buyCar(def.id); openMotors(); } }; }
     row.appendChild(btn); list.appendChild(row);
   });
   const sw = $('motorsColors'); sw.innerHTML = '';
@@ -5027,6 +5027,7 @@ function openMart() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   mart = { served: 0 };
+  $('martHeading').textContent = '🏪 El Mercadito'; $('martSub').textContent = 'The Little Market — order in Spanish!';
   $('martPopup').style.display = 'flex';
   newCustomer();
 }
@@ -5126,6 +5127,71 @@ function finishMart() {
   const wrap = $('martChoices'); wrap.innerHTML = '';
   martChoiceBtn(wrap, '🛒 Otro cliente (shop again)', () => newCustomer()).style.background = '#3f9d34';
   martChoiceBtn(wrap, 'Adiós (Done)', () => closeMart());
+}
+
+/* ---- At Spanish Beach, you order your vehicle in Spanish before you buy it ---- */
+let vorder = null;
+const VEHICLE_ES = { pickup: 'la camioneta', jeep: 'el jeep', convertible: 'el convertible', bike: 'la bicicleta', speedboat: 'la lancha', sailboat: 'el velero', tesla: 'el coche', police: 'la patrulla', monster: 'el camión monstruo', corvette: 'el deportivo', race: 'el coche de carreras', minivan: 'la furgoneta' };
+function openVehicleOrder(def) {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  vorder = { def, phase: 'order', typed: G.grade >= 4, attempted: false };
+  $('martHeading').textContent = '🚤 Bici y Barcos'; $('martSub').textContent = 'Bikes & Boats — order in Spanish!';
+  $('martKeeper').textContent = '🧑‍✈️';
+  $('martPopup').style.display = 'flex';
+  renderVehicleOrder();
+}
+function closeVehicleOrder() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('martPopup').style.display = 'none'; popupOpen = false; vorder = null; $('martKeeper').textContent = '🧑‍🌾'; }
+function vorderSay(es, en) { vorder.lastEs = es; $('martLine').innerHTML = '<b>' + es + '</b><br><span style="font-size:0.82em;color:#7a6a55">' + en + '</span>'; speakWord(es, { es: true }); }
+function vorderAnswer(correct, next) {
+  if (!vorder.attempted) {
+    profile.spanFirstTotal = (profile.spanFirstTotal || 0) + 1;
+    profile.spanFirstByGrade = profile.spanFirstByGrade || {}; const bg = profile.spanFirstByGrade; bg[G.grade] = bg[G.grade] || { right: 0, total: 0 }; bg[G.grade].total++;
+    if (correct) { profile.spanFirstRight = (profile.spanFirstRight || 0) + 1; bg[G.grade].right++; } else recordWrong({ skill: 'spanish', level: G.grade });
+    profileDirty = true; saveProfile();
+  }
+  vorder.attempted = true;
+  if (correct) {
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
+    vorder.phase = next; vorder.attempted = false;
+    if (next === 'done') finishVehicleOrder(); else renderVehicleOrder();
+  } else {
+    Sound.wrong(); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 ¡Inténtalo otra vez! (Try again)';
+    if (vorder.lastEs) speakWord(vorder.lastEs, { es: true });
+  }
+}
+function renderVehicleOrder() {
+  if (!vorder) return;
+  const wrap = $('martChoices'); wrap.innerHTML = ''; $('martMsg').textContent = ''; $('martGoal').innerHTML = '';
+  const def = vorder.def, es = VEHICLE_ES[def.id] || 'el vehículo';
+  $('martSay').onclick = () => { Sound.click(); if (vorder.lastEs) speakWord(vorder.lastEs, { es: true }); };
+  if (vorder.phase === 'order') {
+    vorderSay('¡Hola! ¿Qué quieres comprar?', 'Hello! What would you like to buy?');
+    $('martGoal').innerHTML = '🛒 Order: ' + def.emoji + ' <b>' + def.name + '</b>';
+    $('martPrompt').textContent = vorder.typed ? 'Type its Spanish name:' : 'Tap its Spanish name:';
+    if (vorder.typed) martTypeInput(wrap, es, val => vorderAnswer(norm(val) === norm(es), 'polite'));
+    else {
+      const others = VEHICLES.filter(x => x.id !== def.id).map(x => VEHICLE_ES[x.id]).filter(Boolean); shuffle(others);
+      shuffle([es, others[0], others[1], others[2]]).forEach(o => martChoiceBtn(wrap, o, () => { speakWord(o, { es: true }); vorderAnswer(o === es, 'polite'); }));
+    }
+  } else if (vorder.phase === 'polite') {
+    vorderSay('Quiero ' + es + '…', 'I want the ' + def.name + '…');
+    $('martPrompt').textContent = 'Finish it politely:';
+    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'por favor', 'pay'); }));
+  } else if (vorder.phase === 'pay') {
+    vorderSay('Son ' + def.price + ' monedas. ¿Pagas?', 'That is ' + def.price + ' coins. Will you pay?');
+    $('martPrompt').textContent = 'Pay politely:';
+    shuffle(['Sí, gracias', 'No, gracias', 'Hola', 'Adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'Sí, gracias', 'done'); }));
+  }
+}
+function finishVehicleOrder() {
+  const def = vorder.def, es = VEHICLE_ES[def.id] || 'el vehículo';
+  buyCar(def.id);                                   // deduct coins, own it, park it out front
+  vorderSay('¡Aquí tienes tu ' + es + '! ¡Adiós!', "Here's your " + def.name + '!');
+  $('martGoal').innerHTML = '🎉 ' + def.emoji + ' <b>' + def.name + '</b>';
+  $('martPrompt').innerHTML = '¡Buen trabajo! You ordered it in Spanish.';
+  const wrap = $('martChoices'); wrap.innerHTML = '';
+  martChoiceBtn(wrap, '🚗 Conducir (drive it!)', () => closeVehicleOrder()).style.background = '#3f9d34';
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
@@ -8373,7 +8439,7 @@ $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
-$('martClose').onclick = () => { Sound.click(); closeMart(); };
+$('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else closeMart(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
