@@ -2522,7 +2522,7 @@ const BADGES = [
 ];
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {} };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -3017,6 +3017,7 @@ function resetGameState() {
   G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
+  G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
@@ -3673,7 +3674,7 @@ VEHICLES.forEach(def => {
   cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false };
 });
 // display cars on the lot: a sedan tucked on the pad, plus a gleaming full-size
-// Corvette shown off out front — every Stack Motors (incl. Reading Town) has one.
+// sports car shown off out front — every Stack Motors (incl. Reading Town) has one.
 [['tesla', -0.95, 0.2, 0.3, 0.62], ['corvette', 0.55, 1.95, 0.45, 0.92]].forEach(([id, dx, dz, rot, sc]) => {
   const def = VEHICLES.find(v => v.id === id), disp = new THREE.Group();
   def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
@@ -4395,10 +4396,12 @@ const STORIES = [
 let lib = null;
 // A story's text can be a single string, OR grade-leveled variants: an array of
 // [minGrade, text] pairs. We serve the richest variant the player's grade reaches.
+function readLevelNow() { return (G.readLevel != null) ? G.readLevel : G.grade; }
 function storyText(s) {
   if (typeof s.text === 'string') return s.text;
+  const lvl = readLevelNow();
   let chosen = s.text[0][1];
-  for (const v of s.text) { if (G.grade >= v[0]) chosen = v[1]; }
+  for (const v of s.text) { if (lvl >= v[0]) chosen = v[1]; }
   return chosen;
 }
 function libStoryHTML(small) {                    // screenplays render in monospace, keeping their script layout
@@ -4408,8 +4411,10 @@ function libStoryHTML(small) {                    // screenplays render in monos
 }
 function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
+  // each reader has their own reading level that gently adapts (Fiona may run ahead of Leo)
+  if (G.readLevel == null) G.readLevel = Math.max(1, Math.min(5, profile.readLevel || G.grade));
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
-  lib = { phase: 'pick', story: null, qs: [], qi: 0, right: 0 };
+  lib = { phase: 'pick', story: null, qs: [], qi: 0, right: 0, wrong: 0 };
   renderLib();
   $('libraryPopup').style.display = 'flex';
 }
@@ -4419,7 +4424,7 @@ function renderLib() {
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   if (lib.phase === 'pick') {
     $('libTitle').innerHTML = '📚 Library'; $('libStory').innerHTML = '';
-    $('libPrompt').textContent = 'Pick a story to read:';
+    $('libPrompt').textContent = 'Pick a story to read:  •  📖 Reading Level ' + readLevelNow();
     shuffle(STORIES.slice()).slice(0, 3).forEach(s => {
       const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.innerHTML = s.e + ' ' + s.t;
       b.onclick = () => { Sound.click(); lib.story = s; lib.phase = 'read'; renderLib(); };
@@ -4434,18 +4439,29 @@ function renderLib() {
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.background = '#3f9d34'; b.style.color = '#fff'; b.textContent = "📖 I've read it — start the questions!";
     b.onclick = () => {
       Sound.click();
-      const pool = lib.story.qs.filter(q => q.g <= G.grade);
-      lib.qs = shuffle(pool.length >= 2 ? pool : lib.story.qs.filter(q => q.g <= G.grade + 1)).slice(0, 4);
-      lib.qi = 0; lib.right = 0; lib.phase = 'quiz'; renderLib();
+      const rl = readLevelNow();
+      // the story text the reader just saw supports facts up to this tier max, so a
+      // "challenge" question can stretch UP to it (and pay bonus coins) without asking
+      // about something that wasn't in the text they read.
+      const tmax = rl <= 2 ? 2 : rl <= 4 ? 4 : 5;
+      const core = shuffle(lib.story.qs.filter(q => q.g <= rl));
+      let qs = core.slice(0, 3);
+      const stretch = shuffle(lib.story.qs.filter(q => q.g > rl && q.g <= tmax));
+      if (stretch.length) qs.push(stretch[0]);          // one harder bonus question
+      else if (core.length > 3) qs.push(core[3]);
+      if (qs.length < 2) qs = lib.story.qs.filter(q => q.g <= rl + 1).slice(0, 4);
+      lib.level = rl; lib.qs = shuffle(qs);
+      lib.qi = 0; lib.right = 0; lib.wrong = 0; lib.phase = 'quiz'; renderLib();
     };
     wrap.appendChild(b);
     return;
   }
   // quiz
   const q = lib.qs[lib.qi];
+  const isCh = q.g > (lib.level != null ? lib.level : readLevelNow());
   $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
   $('libStory').innerHTML = libStoryHTML(true);
-  $('libPrompt').textContent = '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q;
+  $('libPrompt').textContent = (isCh ? '🌟 Challenge (bonus 🪙)! ' : '') + '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q;
   shuffle(q.o.slice()).forEach(opt => {
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '15px'; b.textContent = opt;
     b.onclick = () => libAnswer(opt, q, b);
@@ -4455,21 +4471,37 @@ function renderLib() {
 function libAnswer(opt, q, btn) {
   if (!lib) return;
   if (opt === q.a) {
-    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: G.grade }); refreshHUD(); bumpHud('solvedCount'); lib.right++;
+    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++;
     lib.qi++;
     if (lib.qi >= lib.qs.length) { finishLib(); return; }
     $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
     setTimeout(renderLib, 400);
   } else {
-    Sound.wrong(); btn.classList.add('flop');
+    Sound.wrong(); btn.classList.add('flop'); lib.wrong = (lib.wrong || 0) + 1;
     $('libMsg').style.color = '#c0392b'; $('libMsg').textContent = '🤔 Look back at the story and try again!';
   }
 }
 function finishLib() {
-  const reward = 6 + G.grade * 2 + lib.qs.length;
+  const lvl = (lib.level != null) ? lib.level : readLevelNow();
+  // harder questions pay more, and a stretch "challenge" question pays double —
+  // so even an easier reader is rewarded for tackling the tougher ones.
+  let reward = 3, hadChallenge = false;
+  for (const q of lib.qs) { let w = 1 + q.g; if (q.g > lvl) { w *= 2; hadChallenge = true; } reward += w; }
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  // gently adapt the reading level: clean runs move up, repeated struggles ease back down
+  let levelMsg = '';
+  if (lib.wrong === 0) {
+    G.readSlip = 0; G.readStreak = (G.readStreak || 0) + 1;
+    if (G.readStreak >= 2 && G.readLevel < 5) { G.readLevel++; G.readStreak = 0; levelMsg = '📈 Reading Level up — now Level ' + G.readLevel + '! 🎉'; }
+  } else if (lib.wrong >= 4) {
+    G.readStreak = 0; G.readSlip = (G.readSlip || 0) + 1;
+    if (G.readSlip >= 2 && G.readLevel > 1) { G.readLevel--; G.readSlip = 0; levelMsg = '📖 Now at Reading Level ' + G.readLevel + ' — you\'ve got this!'; }
+  } else { G.readStreak = 0; }
+  profile.readLevel = G.readLevel; profileDirty = true; saveProfile();
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
-  $('libPrompt').innerHTML = '🎉 You read <b>' + lib.story.t + '</b> and answered every question — wonderful reading!';
+  $('libPrompt').innerHTML = '🎉 You read <b>' + lib.story.t + '</b> and answered every question — wonderful reading!' +
+    (hadChallenge ? '<br><span style="color:#E0A100;font-weight:800">🌟 Challenge bonus included!</span>' : '') +
+    (levelMsg ? '<br><span style="color:#2f8a52;font-weight:800">' + levelMsg + '</span>' : '');
   $('libChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
     '<button class="libBtn" id="libDoneBtn">Done</button>';
   $('libMsg').textContent = '';
