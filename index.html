@@ -1157,7 +1157,7 @@
   <div class="popupCard" style="text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="bakeClose" title="Close" aria-label="Close">✕</button></div>
     <h2 id="bakeTitle" style="color:#B23A6B; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🧁 Stack Bakery</h2>
-    <div style="color:#7a6a35; font-weight:700; font-size:13px; margin-bottom:6px">Measure each thing just right, then set the oven!</div>
+    <div style="color:#7a6a35; font-weight:700; font-size:13px; margin-bottom:6px">Measure each thing just right, then set the oven or freezer!</div>
     <div id="bakeTray" style="min-height:40px; margin:6px 0 10px"></div>
     <div id="bakePrompt" style="font-size:clamp(17px,3vw,22px); color:#34495e; font-weight:bold; background:#FFF6E3; border:3px solid #F0CBA0; border-radius:14px; padding:12px 14px; margin-bottom:10px; line-height:1.3"></div>
     <div id="bakeChoices" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center"></div>
@@ -3731,20 +3731,36 @@ const bakeryGroup = new THREE.Group();
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 72;
   const c = cv.getContext('2d');
   c.fillStyle = '#FFF6E3'; c.fillRect(0, 0, 256, 72); c.strokeStyle = '#E9637A'; c.lineWidth = 6; c.strokeRect(5, 5, 246, 62);
-  c.fillStyle = '#B23A6B'; c.font = 'bold 30px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('🧁 STACK BAKERY', 128, 38);
+  c.fillStyle = '#B23A6B'; c.textAlign = 'center';
+  c.font = 'bold 27px Georgia, serif'; c.textBaseline = 'middle'; c.fillText('🧁 STACK SWEETS 🍦', 128, 28);
+  c.fillStyle = '#7a6a35'; c.font = 'bold 15px Georgia, serif'; c.fillText('Bakery & Ice Cream', 128, 52);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.62, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 2.78, 1.5); bakeryGroup.add(sign);
-  // a giant cupcake on the roof
-  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.46, 0.5, 12), mat(0xE9A66A)); cup.position.set(1.0, 2.95, 0); bakeryGroup.add(cup);
-  const frost = new THREE.Mesh(new THREE.SphereGeometry(0.46, 12, 10), mat(0xFBD0E2)); frost.scale.y = 0.8; frost.position.set(1.0, 3.4, 0); bakeryGroup.add(frost);
-  box(bakeryGroup, 0.12, 0.18, 0.12, 0xC0392B, 1.0, 3.78, 0);         // cherry on top
+  // a giant cupcake on the roof…
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.46, 0.5, 12), mat(0xE9A66A)); cup.position.set(-1.0, 2.95, 0); bakeryGroup.add(cup);
+  const frost = new THREE.Mesh(new THREE.SphereGeometry(0.46, 12, 10), mat(0xFBD0E2)); frost.scale.y = 0.8; frost.position.set(-1.0, 3.4, 0); bakeryGroup.add(frost);
+  box(bakeryGroup, 0.12, 0.18, 0.12, 0xC0392B, -1.0, 3.78, 0);        // cherry on top
+  // …and a giant ice cream cone on the roof
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.7, 14), mat(0xE0A86A)); cone.rotation.x = Math.PI; cone.position.set(1.0, 2.95, 0); bakeryGroup.add(cone);
+  const scoop1 = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10), mat(0xF7C8D8)); scoop1.position.set(1.0, 3.4, 0); bakeryGroup.add(scoop1);
+  const scoop2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), mat(0xBFE8D2)); scoop2.position.set(1.0, 3.78, 0); bakeryGroup.add(scoop2);
   bakeryGroup.position.set(BAKERY_POS.x, 0, BAKERY_POS.z);
   scene.add(bakeryGroup);
 }
-// ---- recipe + measurement questions (scaled to grade) ----
-const CAKES = [['🍫🎂', 'Chocolate Cake'], ['🍓🎂', 'Strawberry Cake'], ['🧁', 'Vanilla Cupcakes'], ['🎂', 'Birthday Cake'], ['🥕🎂', 'Carrot Cake']];
-const INGREDIENTS = [['🌾', 'flour'], ['🥛', 'milk'], ['🍬', 'sugar'], ['🥚', 'eggs'], ['🧈', 'butter'], ['🍫', 'cocoa'], ['🫐', 'berries']];
+// ---- treats + measurement questions (scaled to grade) ----
+const INGS = {                                   // name -> [emoji, unit]
+  flour: ['🌾', 'cups'], milk: ['🥛', 'cups'], sugar: ['🍬', 'cups'], butter: ['🧈', 'sticks'],
+  cocoa: ['🍫', 'spoonfuls'], berries: ['🫐', ''], 'ice cream': ['🍨', 'scoops'], cookies: ['🍪', ''],
+  sprinkles: ['🌈', 'spoonfuls'], cherries: ['🍒', ''], sauce: ['🍯', 'spoonfuls']
+};
+const TREATS = [                                 // ice cream sandwich first (Leo's favorite!)
+  { e: '🍨', n: 'Ice Cream Sandwich', cold: true, ings: ['cookies', 'ice cream', 'sprinkles'] },
+  { e: '🍦', n: 'Ice Cream Cone', cold: true, ings: ['ice cream', 'sprinkles', 'cherries'] },
+  { e: '🍨', n: 'Sundae', cold: true, ings: ['ice cream', 'sauce', 'sprinkles', 'cherries'] },
+  { e: '🍫🎂', n: 'Chocolate Cake', cold: false, ings: ['flour', 'milk', 'sugar', 'cocoa'] },
+  { e: '🧁', n: 'Cupcakes', cold: false, ings: ['flour', 'sugar', 'butter', 'sprinkles'] },
+  { e: '🍓🎂', n: 'Strawberry Cake', cold: false, ings: ['flour', 'milk', 'sugar', 'berries'] }
+];
 function bakeOptions(answer) {
   const opts = new Set([answer]);
   let guard = 0;
@@ -3754,22 +3770,29 @@ function bakeOptions(answer) {
   }
   return shuffle([...opts]);
 }
-function bakeStep(grade, ing) {                  // one ingredient → a measurement question
-  const r = Math.random(); let text, answer;
+function ingUnit(name) { const u = INGS[name][1]; return u ? u + ' of ' + name : name; }       // "scoops of ice cream" / "cookies"
+function ingAmt(a, name) { const u = INGS[name][1]; return a + ' ' + (u ? u + ' of ' : '') + name; }   // "2 scoops of ice cream" / "2 cookies"
+function bakeStep(grade, name) {                 // one ingredient → a measurement question
+  let text, answer;
   if (grade <= 2) {
     const a = 1 + (Math.random() * 3 | 0), b = 1 + (Math.random() * 3 | 0);
-    text = 'Pour ' + a + ' cups, then ' + b + ' more. How many cups of ' + ing[1] + '?'; answer = a + b;
+    text = 'Add ' + a + ', then ' + b + ' more — how many ' + ingUnit(name) + '?'; answer = a + b;
   } else if (grade === 3) {
     const a = 1 + (Math.random() * 4 | 0);
-    text = 'Double the recipe! ' + a + ' cups of ' + ing[1] + ' × 2 = ?'; answer = a * 2;
+    text = 'Double it! ' + ingAmt(a, name) + ' × 2 = ?'; answer = a * 2;
   } else {
-    if (r < 0.5) { text = '½ cup + ½ cup of ' + ing[1] + ' = ? cup'; answer = 1; }
-    else { const a = 1 + (Math.random() * 4 | 0); text = 'Recipe makes 6, you want 12: ' + a + ' cups of ' + ing[1] + ' becomes ?'; answer = a * 2; }
+    if (Math.random() < 0.5) { text = '½ + ½ ' + ingUnit(name) + ' = ?'; answer = 1; }
+    else { const a = 1 + (Math.random() * 4 | 0); text = 'Make twice as much: ' + ingAmt(a, name) + ' becomes ?'; answer = a * 2; }
   }
-  return { emoji: ing[0], name: ing[1], text: text, answer: answer, options: bakeOptions(answer) };
+  return { emoji: INGS[name][0], name: name, text: text, answer: answer, options: bakeOptions(answer) };
 }
-function ovenStep(grade) {
+function finalStep(grade, cold) {                // oven for baked treats, freezer for frozen ones
   let text, answer;
+  if (cold) {
+    if (grade <= 2) { const a = 2 + (Math.random() * 3 | 0), b = 1 + (Math.random() * 3 | 0); text = '❄️ Freeze ' + a + ' min, then ' + b + ' more — how long?'; answer = a + b; }
+    else { const a = 3 + (Math.random() * 5 | 0); text = '❄️ Freeze it twice as long: ' + a + ' min × 2 = ?'; answer = a * 2; }
+    return { emoji: '❄️', name: 'freezer', text: text, answer: answer, options: bakeOptions(answer) };
+  }
   if (grade <= 2) { answer = 300 + 25 * (Math.random() * 4 | 0); text = '🔥 Set the oven dial to ' + answer + '°. Which number?'; }
   else { const base = 300 + 25 * (Math.random() * 3 | 0), d = 25 + 25 * (Math.random() * 2 | 0); text = '🔥 The recipe says ' + base + '°, bake ' + d + '° hotter. Set the oven to ?'; answer = base + d; }
   const opts = new Set([answer]); let guard = 0;
@@ -3780,10 +3803,10 @@ let bake = null;
 function openBakery() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
-  const cake = CAKES[Math.random() * CAKES.length | 0];
-  const ings = shuffle(INGREDIENTS.slice()).slice(0, G.grade >= 3 ? 4 : 3);
-  const steps = ings.map(i => bakeStep(G.grade, i)); steps.push(ovenStep(G.grade));
-  bake = { cake: cake, steps: steps, step: 0, made: [] };
+  const t = TREATS[Math.random() * TREATS.length | 0];
+  const ings = shuffle(t.ings.slice()).slice(0, G.grade >= 3 ? Math.min(4, t.ings.length) : 3);
+  const steps = ings.map(i => bakeStep(G.grade, i)); steps.push(finalStep(G.grade, t.cold));
+  bake = { cake: [t.e, t.n], cold: t.cold, steps: steps, step: 0, made: [] };
   renderBake();
   $('bakePopup').style.display = 'flex';
 }
@@ -3824,8 +3847,8 @@ function finishBake() {
   const reward = 8 + G.grade * 2 + bake.steps.length;
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   $('bakeTray').innerHTML = '<div style="font-size:54px">' + bake.cake[0] + '</div>';
-  $('bakePrompt').innerHTML = '🎉 The Baker pulls your <b>' + bake.cake[1] + '</b> out of the oven — perfect!';
-  $('bakeChoices').innerHTML = '<button class="bakeBtn" style="background:#3f9d34;color:#fff" id="bakeAgainBtn">🪙 +' + reward + ' — Bake another!</button>' +
+  $('bakePrompt').innerHTML = '🎉 Your <b>' + bake.cake[1] + '</b> is ' + (bake.cold ? 'frozen just right' : 'baked perfectly') + ' — yum!';
+  $('bakeChoices').innerHTML = '<button class="bakeBtn" style="background:#3f9d34;color:#fff" id="bakeAgainBtn">🪙 +' + reward + ' — Make another!</button>' +
     '<button class="bakeBtn" id="bakeDoneBtn">Done</button>';
   $('bakeMsg').textContent = '';
   $('bakeAgainBtn').onclick = () => { closeBakery(); openBakery(); };
@@ -7462,7 +7485,7 @@ function loop(now) {
       hint.textContent = isTouch ? '🚗 Tap ⭐ USE — Stack Motors car showroom!' : '🚗 Press E — Stack Motors car showroom!';
       hint.style.display = 'block';
     } else if (bakeryDist() < 3.6) {
-      hint.textContent = isTouch ? '🧁 Tap ⭐ USE — bake a cake at Stack Bakery!' : '🧁 Press E — bake a cake at Stack Bakery!';
+      hint.textContent = isTouch ? '🧁 Tap ⭐ USE — make a treat at Stack Sweets!' : '🧁 Press E — make a treat at Stack Sweets!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
