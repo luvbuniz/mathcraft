@@ -2957,11 +2957,23 @@ skirt.position.y = -0.08;
 scene.add(skirt);
 
 /* recolor the ground + sky + fog to match the current world's theme */
-function applyGroundColors(cols) {
+function applyGroundColors(cols, worldId) {
   const c = [new THREE.Color(cols[0]), new THREE.Color(cols[1]), new THREE.Color(cols[2])];
+  const road = new THREE.Color(0x6e7378), line = new THREE.Color(0xd9cf86), curb = new THREE.Color(0xc2c5c9);
   let idx = 0;
   for (let x = -WORLD_R; x < WORLD_R; x++) for (let z = -WORLD_R; z < WORLD_R; z++) {
-    ground.setColorAt(idx, (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1])); idx++;
+    let col;
+    if (worldId === 'city') {
+      // Reading Town is a suburban grid: 2-wide streets every 8 tiles, with curbs, leaving grass plots to build on
+      const rx = (x + 1000) % 8, rz = (z + 1000) % 8;
+      const onRoad = rx <= 1 || rz <= 1;
+      const onCurb = !onRoad && (rx === 2 || rz === 2);
+      const centerLine = (rx === 0 && rz <= 1) || (rz === 0 && rx <= 1);   // faint dashes down the middle
+      col = onRoad ? (centerLine && ((x + z) & 1) ? line : road) : (onCurb ? curb : ((x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1])));
+    } else {
+      col = (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1]);
+    }
+    ground.setColorAt(idx, col); idx++;
   }
   if (ground.instanceColor) ground.instanceColor.needsUpdate = true;
 }
@@ -2970,7 +2982,7 @@ function applyWorldTheme(worldId) {
   scene.background = new THREE.Color(w.sky);
   if (scene.fog) scene.fog.color.setHex(w.fog);
   if (typeof skirtMat !== 'undefined') skirtMat.color.setHex(w.ground[1]);   // skirt matches the world's ground
-  applyGroundColors(w.ground);
+  applyGroundColors(w.ground, worldId);
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
 }
 
@@ -3571,7 +3583,36 @@ function suburbHouse(g, x, z, faceAng) {
   if (Math.random() < 0.5) box(h, 0.34, 0.95, 0.34, 0xB23A2E, w * 0.3, wallH + 0.7 * k, -d * 0.22);   // chimney
   h.position.set(x, 0, z); h.rotation.y = faceAng; g.add(h);
 }
-function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring
+function buildLibrary(g) {                    // Reading Town's grand civic library (a landmark you can drive up to)
+  const STONE = 0xE3D9C2, STONE2 = 0xCFC3A6, ROOF = 0x6E4636, COL = 0xF1EAD8, DOOR = 0x7B4A2C, GOLD = 0xC9A24A, STEP = 0xC8BFA8;
+  const L = new THREE.Group();
+  for (let s = 0; s < 3; s++) box(L, 6.2, 0.18, 1.1 - s * 0.3, STEP, 0, 0.09 + s * 0.18, 2.15 - s * 0.32);   // wide steps
+  box(L, 6.0, 2.6, 4.0, STONE, 0, 1.5, 0);                            // main block
+  box(L, 6.3, 0.42, 4.3, STONE2, 0, 2.92, 0);                         // entablature
+  for (let i = -2; i <= 2; i++) {                                     // columns across the front
+    const cx = i * 1.18;
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 2.4, 12), mat(COL));
+    col.position.set(cx, 1.4, 2.05); L.add(col);
+    box(L, 0.6, 0.18, 0.6, STONE2, cx, 2.66, 2.05);                   // capital
+    box(L, 0.6, 0.18, 0.6, STONE2, cx, 0.26, 2.05);                   // base
+  }
+  const pl = box(L, 0.3, 3.5, 4.4, ROOF, -0.98, 3.5, 0); pl.rotation.z = -0.9;   // pediment slopes
+  const pr = box(L, 0.3, 3.5, 4.4, ROOF, 0.98, 3.5, 0); pr.rotation.z = 0.9;
+  box(L, 3.9, 1.15, 0.2, STONE, 0, 3.28, 2.0);                        // tympanum face
+  box(L, 0.5, 0.5, 0.12, GOLD, 0, 3.42, 2.12);                        // little gold medallion
+  box(L, 1.5, 1.85, 0.1, DOOR, 0, 1.02, 2.03);                        // big doors
+  box(L, 0.07, 1.85, 0.13, GOLD, 0, 1.02, 2.09);                      // door split
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#3a2c1a'; c.fillRect(0, 0, 256, 64);
+  c.fillStyle = '#F1EAD8'; c.font = 'bold 32px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('📚 LIBRARY', 128, 34);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.66, 2.14); L.add(sign);
+  L.position.set(0, 0, -18); g.add(L);                                // a main street (x=0) leads up to it
+}
+function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
+  buildLibrary(g);
   const N = 18;
   for (let i = 0; i < N; i++) {
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.05;
