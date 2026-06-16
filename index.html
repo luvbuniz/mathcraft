@@ -3772,6 +3772,20 @@ const TREATS = [
   { e: '🍓🎂', n: 'Strawberry Cake', ice: false, recipe: [['flour', 2], ['sugar', 1], ['milk', 1], ['berries', 1]] }
 ];
 const SCALE_WORD = { 2: 'Double', 3: 'Triple', 4: 'Quadruple' };
+// European (metric) recipe — grade 4–5 option, real grams/millilitres + a conversion, for bonus coins
+const METRIC_UNIT = { flour: 'g', milk: 'ml', cream: 'ml', sugar: 'g', butter: 'g', vanilla: 'ml', cocoa: 'g', berries: 'g', cookies: '', sprinkles: 'g', cherries: '', sauce: 'ml', mint: 'ml' };
+const METRIC_AMT = { flour: 200, milk: 200, cream: 250, sugar: 100, butter: 100, vanilla: 5, cocoa: 30, berries: 100, cookies: 2, sprinkles: 20, cherries: 2, sauce: 50, mint: 5 };
+function convStep() {                              // a metric conversion challenge (European mode)
+  const types = [
+    ['🇪🇺 Convert: 1 litre = ? millilitres', 1000, [1000, 100, 500]],
+    ['🇪🇺 Convert: ½ litre = ? millilitres', 500, [500, 50, 250]],
+    ['🇪🇺 Convert: 1 kilogram = ? grams', 1000, [1000, 100, 500]],
+    ['🇪🇺 250 ml + 250 ml = ? ml', 500, [500, 250, 750]],
+    ['🇪🇺 Convert: 2 litres = ? millilitres', 2000, [2000, 200, 1000]]
+  ];
+  const t = types[Math.random() * types.length | 0];
+  return { emoji: '🇪🇺', name: 'convert', base: null, answer: t[1], options: shuffle(t[2].slice()), text: t[0] };
+}
 function bakeScale() { return G.grade <= 2 ? 1 : Math.min(4, G.grade - 1); }   // g≤2 read the recipe; g3 ×2, g4 ×3, g5 ×4
 function bakeOptions(answer, step) {
   step = step || 1;
@@ -3794,23 +3808,29 @@ function recipeFor(treat, flavor) {
   return r.slice(0, G.grade <= 2 ? 3 : 5);          // shorter recipe for little kids
 }
 function unitOf(ing, amt) { const u = INGS[ing][1]; return u ? (amt === 1 ? u.replace(/s$/, '') : u) : ''; }
-function measureStep(ing, baseAmt) {               // measure one ingredient correctly (scaled for older kids)
-  const unit = INGS[ing][1], scale = bakeScale(), answer = baseAmt * scale;
+function measureStep(ing, baseAmt, metric) {       // measure one ingredient correctly (scaled / metric for older kids)
+  const rawUnit = metric ? METRIC_UNIT[ing] : INGS[ing][1];
+  const amt = metric ? METRIC_AMT[ing] : baseAmt;
+  const scale = bakeScale(), answer = amt * scale;
+  const unit = (rawUnit && !metric && amt === 1) ? rawUnit.replace(/s$/, '') : rawUnit;
   const text = scale === 1
-    ? 'Measure the ' + ing + (unit ? ' — how many ' + unit + '?' : ' — how many?')
-    : (SCALE_WORD[scale] || scale + '×') + ' the recipe! ' + baseAmt + ' ' + (unit ? unit + ' of ' : '') + ing + ' × ' + scale + ' = ?';
-  return { emoji: INGS[ing][0], name: ing, base: baseAmt, answer: answer, options: bakeOptions(answer), text: text };
+    ? 'Measure the ' + ing + (rawUnit ? ' — how many ' + rawUnit + '?' : ' — how many?')
+    : (SCALE_WORD[scale] || scale + '×') + ' the recipe! ' + amt + ' ' + (unit ? unit + ' of ' : '') + ing + ' × ' + scale + ' = ?';
+  return { emoji: INGS[ing][0], name: ing, base: amt, unit: unit, answer: answer, options: bakeOptions(answer, metric ? 25 : 1), text: text };
 }
 function mixStep(ice) { return { emoji: '🥄', name: 'mix', base: null, answer: 10, options: bakeOptions(10, 2), text: '🥄 ' + (ice ? 'Whisk the cream, milk & sugar' : 'Mix the batter') + ' — give it 10 big stirs!' }; }
 function churnStep() { return { emoji: '🍦', name: 'churn', base: null, answer: 20, options: bakeOptions(20, 5), text: '🍦 Pour it into the ice cream maker and crank it 20 times!' }; }
 function freezeStep() { return { emoji: '❄️', name: 'freezer', base: null, answer: 30, options: bakeOptions(30, 10), text: '❄️ Freeze it for 30 minutes — set the timer!' }; }
 function ovenStep() { return { emoji: '🔥', name: 'oven', base: null, answer: 350, options: shuffle([350, 325, 375]), text: '🔥 Pour into the pan and bake at 350° — set the oven dial!' }; }
-function assembleStep(ing, baseAmt) {            // the final assembly — in the correct order, after freezing
-  const scale = bakeScale(), unit = INGS[ing][1], answer = baseAmt * scale;
+function assembleStep(ing, baseAmt, metric) {    // the final assembly — in the correct order, after freezing
+  const rawUnit = metric ? METRIC_UNIT[ing] : INGS[ing][1];
+  const amt = metric ? METRIC_AMT[ing] : baseAmt;
+  const scale = bakeScale(), answer = amt * scale;
+  const unit = (rawUnit && !metric && amt === 1) ? rawUnit.replace(/s$/, '') : rawUnit;
   const verbs = { cookies: '🍪 Put the ice cream between the cookies', sauce: '🍯 Drizzle the sauce on top', sprinkles: '🌈 Shake sprinkles on top', cherries: '🍒 Pop cherries on top' };
   const verb = verbs[ing] || ('Add the ' + ing);
-  const text = scale === 1 ? verb + (unit ? ' — how many ' + unit + '?' : ' — how many?') : verb + '! ' + baseAmt + ' × ' + scale + ' = ?';
-  return { emoji: INGS[ing][0], name: ing, base: baseAmt, answer: answer, options: bakeOptions(answer), text: text };
+  const text = scale === 1 ? verb + (rawUnit ? ' — how many ' + rawUnit + '?' : ' — how many?') : verb + '! ' + amt + ' × ' + scale + ' = ?';
+  return { emoji: INGS[ing][0], name: ing, base: amt, unit: unit, answer: answer, options: bakeOptions(answer, metric ? 25 : 1), text: text };
 }
 let bake = null;
 function openBakery() {
@@ -3820,8 +3840,12 @@ function openBakery() {
   renderBake();
   $('bakePopup').style.display = 'flex';
 }
+function afterChoice() {                            // grade 4–5 get to pick American vs European (metric, bonus coins)
+  if (G.grade >= 4) { bake.phase = 'style'; renderBake(); }
+  else { bake.metric = false; startMaking(); }
+}
 function startMaking() {
-  const t = bake.treat;
+  const t = bake.treat, metric = !!bake.metric;
   let base, toppings;
   if (t.ice) {
     base = ICE_BASE.slice(); if (bake.flavor && bake.flavor[2]) base.push(bake.flavor[2]);
@@ -3829,12 +3853,13 @@ function startMaking() {
     toppings = (t.extra || []).slice(0, G.grade <= 2 ? 1 : 2);
   } else { base = t.recipe.slice(0, G.grade <= 2 ? 3 : 4); toppings = []; }
   // correct method order: measure the base → mix → (churn → freeze → assemble) or (bake)
-  const steps = base.map(([ing, amt]) => measureStep(ing, amt));
+  const steps = base.map(([ing, amt]) => measureStep(ing, amt, metric));
   steps.push(mixStep(t.ice));
   if (t.ice) {
     steps.push(churnStep()); steps.push(freezeStep());
-    toppings.forEach(([ing, amt]) => steps.push(assembleStep(ing, amt)));
+    toppings.forEach(([ing, amt]) => steps.push(assembleStep(ing, amt, metric)));
   } else steps.push(ovenStep());
+  if (metric) steps.push(convStep());              // a bonus metric-conversion challenge
   bake.steps = steps; bake.step = 0; bake.phase = 'make';
   renderBake();
 }
@@ -3848,7 +3873,7 @@ function renderBake() {
     $('bakePrompt').textContent = 'What would you like to make?';
     TREATS.forEach(t => {
       const b = document.createElement('button'); b.className = 'bakeBtn'; b.style.fontSize = '16px'; b.innerHTML = t.e + '<br>' + t.n;
-      b.onclick = () => { Sound.click(); bake.treat = t; if (t.ice) { bake.phase = 'flavor'; renderBake(); } else startMaking(); };
+      b.onclick = () => { Sound.click(); bake.treat = t; if (t.ice) { bake.phase = 'flavor'; renderBake(); } else afterChoice(); };
       wrap.appendChild(b);
     });
     return;
@@ -3858,7 +3883,17 @@ function renderBake() {
     $('bakePrompt').textContent = '🍦 Pick your flavor!';
     FLAVORS.forEach(f => {
       const b = document.createElement('button'); b.className = 'bakeBtn'; b.style.fontSize = '15px'; b.innerHTML = f[0] + '<br>' + f[1];
-      b.onclick = () => { Sound.click(); bake.flavor = f; startMaking(); };
+      b.onclick = () => { Sound.click(); bake.flavor = f; afterChoice(); };
+      wrap.appendChild(b);
+    });
+    return;
+  }
+  if (bake.phase === 'style') {
+    $('bakeTitle').innerHTML = (bake.flavor ? bake.flavor[0] : bake.treat.e) + ' ' + treatName(); $('bakeTray').innerHTML = '';
+    $('bakePrompt').textContent = 'Pick your recipe style!';
+    [['🇺🇸', 'American<br><small>(cups)</small>', false], ['🇪🇺', 'European<br><small>(metric • bonus 🪙)</small>', true]].forEach(([flag, label, metric]) => {
+      const b = document.createElement('button'); b.className = 'bakeBtn'; b.style.fontSize = '15px'; b.innerHTML = flag + '<br>' + label;
+      b.onclick = () => { Sound.click(); bake.metric = metric; startMaking(); };
       wrap.appendChild(b);
     });
     return;
@@ -3867,12 +3902,13 @@ function renderBake() {
   $('bakeTitle').innerHTML = (bake.flavor ? bake.flavor[0] : bake.treat.e) + ' ' + treatName();
   const scale = bakeScale();
   $('bakeTray').innerHTML = '<div class="recipeCard">' +
+    (bake.metric ? '<div class="recipeScale">🇪🇺 European recipe</div>' : '') +
     (scale > 1 ? '<div class="recipeScale">✖️ ' + (SCALE_WORD[scale] || scale + '×') + ' the recipe!</div>' : '') +
     bake.steps.map((s, gi) => {
       if (s.base == null) return '';                          // skip process steps (mix/churn/freeze/bake) on the card
       const done = gi < bake.step, now = gi === bake.step;
       return '<div class="recipeRow' + (done ? ' done' : (now ? ' now' : '')) + '">' + s.emoji + ' ' + s.base + ' ' +
-        (unitOf(s.name, s.base) ? unitOf(s.name, s.base) + ' ' : '') + s.name + (done ? ' ✓' : (now ? ' ⟵' : '')) + '</div>';
+        (s.unit ? s.unit + ' ' : '') + s.name + (done ? ' ✓' : (now ? ' ⟵' : '')) + '</div>';
     }).join('') + '</div>';
   const s = bake.steps[bake.step];
   $('bakePrompt').textContent = s.text;
@@ -3898,10 +3934,12 @@ function bakeAnswer(opt, btn) {
   }
 }
 function finishBake() {
-  const reward = 8 + G.grade * 2 + bake.steps.length;
+  const bonus = bake.metric ? 10 + G.grade : 0;       // extra coins for the harder European (metric) recipe
+  const reward = 8 + G.grade * 2 + bake.steps.length + bonus;
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   $('bakeTray').innerHTML = '<div style="font-size:54px">' + (bake.flavor ? bake.flavor[0] : '') + bake.treat.e + '</div>';
-  $('bakePrompt').innerHTML = '🎉 Your <b>' + treatName() + '</b> is ' + (bake.treat.ice ? 'frozen just right' : 'baked perfectly') + ' — yum!';
+  $('bakePrompt').innerHTML = '🎉 Your <b>' + treatName() + '</b> is ' + (bake.treat.ice ? 'frozen just right' : 'baked perfectly') + ' — yum!' +
+    (bonus ? '<br><span style="color:#2f8a52;font-weight:800">🇪🇺 European bonus: +' + bonus + ' 🪙!</span>' : '');
   $('bakeChoices').innerHTML = '<button class="bakeBtn" style="background:#3f9d34;color:#fff" id="bakeAgainBtn">🪙 +' + reward + ' — Make another!</button>' +
     '<button class="bakeBtn" id="bakeDoneBtn">Done</button>';
   $('bakeMsg').textContent = '';
