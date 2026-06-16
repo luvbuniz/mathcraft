@@ -851,7 +851,7 @@
 
       <button id="grownupBtn" class="btn btn-ghost btn-block">
         <svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-        For Grown-Ups — math progress
+        For Grown-Ups — learning progress
       </button>
       <button id="shareBtn" class="btn btn-ghost btn-block" style="margin-top:8px">
         <svg class="ic" viewBox="0 0 24 24"><path d="M18 8a3 3 0 1 0-2.83-4M18 8a3 3 0 0 1-2.83-2M6 12a3 3 0 1 0 0 .01M18 16a3 3 0 1 0-2.83 2M8.6 13.5l6.8 3M15.4 7.5l-6.8 3"/></svg>
@@ -1083,7 +1083,7 @@
 <div class="popup" id="grownupPopup">
   <div class="popupCard" style="width:min(620px,95vw)">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="grownupClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🧑‍🏫 Math Progress</h2>
+    <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🧑‍🏫 Learning Progress</h2>
     <div style="color:#6c84a6; font-size:clamp(13px,2.2vw,16px); margin-bottom:6px">For parents & teachers — saved on this device, one card per player.</div>
     <div style="background:#FFF7DE; border:1px solid #ECD89A; border-radius:14px; padding:10px 14px; margin:4px 0 12px; color:#7a5c1e; font-size:clamp(13px,2.2vw,16px); line-height:1.4; text-align:left">
       ✏️ <b>Parent tip:</b> keep a <b>pencil and paper</b> next to the tablet. For the bigger
@@ -1197,6 +1197,19 @@
     <div id="libPrompt" style="font-size:clamp(16px,2.8vw,20px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35"></div>
     <div id="libChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
     <div id="libMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ================= POST OFFICE (Spelling Bee) POPUP ================= -->
+<div class="popup" id="postPopup">
+  <div class="popupCard" style="width:min(540px,95vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="postClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="spellTitle" style="color:#2E5E8C; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🏤 Spelling Bee</h2>
+    <div style="color:#5a7a9a; font-weight:700; font-size:13px; margin-bottom:8px">Listen carefully, then spell the word!</div>
+    <div id="spellMain" style="margin:6px 0 10px"></div>
+    <div id="spellPrompt" style="font-size:clamp(16px,2.8vw,20px); color:#34495e; font-weight:bold; background:#EAF2FB; border:3px solid #B8D2EC; border-radius:14px; padding:12px 14px; margin-bottom:10px; line-height:1.35"></div>
+    <div id="spellChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
+    <div id="spellMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
   </div>
 </div>
 
@@ -2571,17 +2584,17 @@ const BADGE_SETS = {
 };
 const BADGE_SUBJECTS = [['math', '🌳 Math Meadow'], ['reading', '🏘️ Reading Town'], ['spanish', '🏖️ Spanish Beach']];
 const BADGES = BADGE_SETS.math;               // back-compat: HUD next-goal + math wearables
-const subjectOf = op => (op === 'reading' ? 'reading' : op === 'spanish' ? 'spanish' : 'math');
+const subjectOf = op => (op === 'reading' || op === 'spelling' ? 'reading' : op === 'spanish' ? 'spanish' : 'math');
 function subjectSolved(subj, p) {             // how many problems solved in a given town
   p = p || profile; const byOp = p.byOp || {};
-  const readN = byOp.reading || 0, spanN = byOp.spanish || 0;
+  const readN = (byOp.reading || 0) + (byOp.spelling || 0), spanN = byOp.spanish || 0;   // Reading Town = stories + spelling bee
   if (subj === 'reading') return readN;
   if (subj === 'spanish') return spanN;
   return Math.max(0, (p.totalSolved || 0) - readN - spanN);
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {} };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {} };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -2641,7 +2654,7 @@ const SKILL_LABELS = {
   add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division',
   frac: 'Fractions', dec: 'Decimals', money: 'Money', round: 'Rounding',
   multi: 'Multi-step', order: 'Order of ops', geo: 'Area & shapes', word: 'Word problems',
-  reading: 'Reading', spanish: 'Spanish', other: 'Other'
+  reading: 'Reading', spelling: 'Spelling', spanish: 'Spanish', other: 'Other'
 };
 function recordWrong(eq, fast) {
   if (typeof player !== 'undefined' && player) player.sadUntil = performance.now() + 1400;   // a quick frown
@@ -2823,7 +2836,7 @@ function renderGrownup() {
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayStars = (p.starsByDay || {})[todayStr] || 0;
     const score = (p.stars != null) ? p.stars : estimateStars(p);   // backfill older saves shown on the dashboard
-    html += '<div class="guScore">⭐ Math Score: <b>' + fmtNum(score) + '</b>' +
+    html += '<div class="guScore">⭐ Learning Score: <b>' + fmtNum(score) + '</b>' +
       (todayStars ? '<span class="today">+' + fmtNum(todayStars) + ' today</span>' : '') + '</div>';
     html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
       '<span>🏅 Badges: ' + ((p.badges && p.badges.length) || 0) + '</span><span>⏱️ ' + fmtPlayTime(p.secondsPlayed) + '</span></div>';
@@ -2897,6 +2910,21 @@ function renderGrownup() {
         rk.map(g => 'L' + g + ' (' + (rbg[g].right || 0) + '/' + (rbg[g].total || 0) + ')').join(' · ') + '</div>';
     } else {
       html += '<div class="guSkillSub">No reading yet — visit the 📚 Library in Reading Town.</div>';
+    }
+    // 🐝 Spelling Bee — also rated on the first answer (Post Office, Reading Town)
+    const sTotal = p.spellFirstTotal || 0, sRight = p.spellFirstRight || 0;
+    if (sTotal > 0) {
+      const sp = Math.round(sRight / sTotal * 100);
+      let srate, scol;
+      if (sTotal < 6) { srate = '🌱 Just getting started'; scol = '#6c84a6'; }
+      else if (sp >= 80) { srate = '✅ Strong speller'; scol = '#2f8a52'; }
+      else if (sp >= 55) { srate = '🟡 Developing — practise the trickier words'; scol = '#b07d00'; }
+      else { srate = '🔴 Needs support — spell together'; scol = '#c0392b'; }
+      html += '<div class="guStats"><span>✍️ Spelling Level: ' + (p.spellLevel || '—') + '</span>' +
+        '<span>🐝 Spelling: ' + sp + '% (first try)</span><span>📮 ' + sRight + '/' + sTotal + '</span></div>';
+      html += '<div class="guFocus" style="color:' + scol + '">' + srate + '</div>';
+    } else {
+      html += '<div class="guSkillSub">No spelling yet — try the 🏤 Post Office Spelling Bee.</div>';
     }
     // 🇪🇸 Spanish — content coming soon; grammar & vocabulary will be rated here
     html += sectionHead('🇪🇸 Spanish');
@@ -3114,6 +3142,7 @@ function resetGameState() {
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
+  G.spellLevel = null; G.spellStreak = 0; G.spellSlip = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
@@ -4112,6 +4141,8 @@ function finishBake() {
    separate from the ❓ reading stations. Questions are tagged by grade so they're age-appropriate. */
 const LIBRARY_POS = { x: -8, z: -15 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
+const POST_POS = { x: 9, z: -15 };
+function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
   { e: '🐉', t: "Arty's High-Flying Heist",
@@ -4620,6 +4651,143 @@ function finishLib() {
   $('libDoneBtn').onclick = closeLibrary;
 }
 
+/* ============================ 🏤 STACK POST OFFICE: a spelling bee with a real voice ============================
+   The word is spoken aloud (Web Speech API). Younger spellers TAP the right spelling from
+   close decoys; older spellers TYPE it. Rated on the first answer, like reading comprehension. */
+let spell = null;
+const SPELL_WORDS = {
+  1: [['cat', 'The cat sat on the soft mat.'], ['dog', 'My dog likes to run and play.'], ['sun', 'The sun is bright and warm.'], ['red', 'She has a red hat.'], ['box', 'Put the toys in the box.'], ['fish', 'A little fish swam in the pond.'], ['jump', 'I can jump very high.'], ['milk', 'He drank a glass of milk.'], ['hand', 'Raise your hand to answer.'], ['nest', 'The bird built a nest.'], ['frog', 'The frog hopped away.'], ['star', 'One star shone in the sky.']],
+  2: [['rain', 'The rain fell all day.'], ['tree', 'A bird sat in the tall tree.'], ['clock', 'The clock says it is three.'], ['green', 'The grass is green.'], ['happy', 'The puppy felt happy.'], ['sheep', 'The sheep ate the grass.'], ['bread', 'We baked fresh bread.'], ['chair', 'Please sit on the chair.'], ['snake', 'The snake slid through the grass.'], ['train', 'The train is very fast.'], ['cloud', 'One fluffy cloud floated by.'], ['smile', 'She gave me a big smile.']],
+  3: [['friend', 'My best friend came to play.'], ['school', 'We learn a lot at school.'], ['garden', 'Flowers grow in the garden.'], ['dragon', 'The dragon flew over the hill.'], ['pencil', 'Write with your pencil.'], ['orange', 'I ate a juicy orange.'], ['winter', 'It snows in the winter.'], ['market', 'We bought fruit at the market.'], ['brave', 'The brave knight helped the king.'], ['bridge', 'We walked across the bridge.'], ['summer', 'We swim in the summer.'], ['planet', 'Earth is our planet.']],
+  4: [['question', 'I asked my teacher a question.'], ['library', 'We borrow books from the library.'], ['measure', 'We measure the flour to bake.'], ['journey', 'They went on a long journey.'], ['special', 'Today is a special day.'], ['beautiful', 'The sunset was beautiful.'], ['mystery', 'They solved the mystery together.'], ['picture', 'She drew a lovely picture.'], ['station', 'The train stopped at the station.'], ['between', 'Sit between your two friends.'], ['machine', 'The machine makes a loud noise.'], ['weather', 'The weather is sunny today.']],
+  5: [['adventure', 'They had a great adventure.'], ['knowledge', 'Reading gives you knowledge.'], ['necessary', 'Sleep is necessary to stay healthy.'], ['separate', 'Keep the colors separate.'], ['different', 'Every snowflake is different.'], ['sentence', 'Write a complete sentence.'], ['important', 'It is important to be kind.'], ['character', 'My favorite story character is brave.'], ['surprise', 'The party was a surprise.'], ['neighbor', 'Our neighbor has a friendly dog.'], ['calendar', 'Mark the date on the calendar.'], ['language', 'Spanish is a beautiful language.']]
+};
+let spellVoice = null;
+function pickSpellVoice() {
+  try {
+    const vs = speechSynthesis.getVoices() || [];
+    spellVoice = vs.find(v => /en[-_]US/i.test(v.lang) && /female|samantha|zira|google us/i.test(v.name)) ||
+                 vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
+  } catch (e) {}
+}
+if (typeof speechSynthesis !== 'undefined') { pickSpellVoice(); try { speechSynthesis.onvoiceschanged = pickSpellVoice; } catch (e) {} }
+function speakWord(text, opts) {
+  try {
+    if (typeof speechSynthesis === 'undefined') return false;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = (opts && opts.rate) || 0.8; u.pitch = 1.05; u.lang = 'en-US';
+    if (spellVoice) u.voice = spellVoice;
+    speechSynthesis.speak(u);
+    return true;
+  } catch (e) { return false; }
+}
+function makeMisspellings(word) {
+  const out = new Set(), w = word, vowels = 'aeiou';
+  for (let i = 0; i < w.length; i++) if (!vowels.includes(w[i])) out.add(w.slice(0, i + 1) + w[i] + w.slice(i + 1));   // double a consonant
+  for (let i = 1; i < w.length; i++) out.add(w.slice(0, i) + w.slice(i + 1));                                          // drop a letter
+  for (let i = 0; i < w.length - 1; i++) out.add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));                    // swap two letters
+  [['ai', 'ia'], ['ee', 'ea'], ['ea', 'ee'], ['ou', 'uo'], ['ie', 'ei']].forEach(([a, b]) => { if (w.includes(a)) out.add(w.replace(a, b)); });
+  out.delete(word);
+  const arr = [...out].filter(x => x && x !== word && x.length > 1);
+  shuffle(arr);
+  return arr.slice(0, 3);
+}
+function openPost() {
+  if (popupOpen || G.over || !G.running) return;
+  if (G.spellLevel == null) G.spellLevel = Math.max(1, Math.min(5, profile.spellLevel || G.grade));
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  const lvl = G.spellLevel;
+  const pool = (SPELL_WORDS[lvl] || SPELL_WORDS[2]).slice(); shuffle(pool);
+  spell = { words: pool.slice(0, 5), qi: 0, right: 0, firstRight: 0, attempted: false, level: lvl, typed: lvl >= 3 };
+  $('postPopup').style.display = 'flex';
+  renderSpell();
+}
+function closePost() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('postPopup').style.display = 'none'; popupOpen = false; spell = null; }
+function renderSpell() {
+  if (!spell) return;
+  const choices = $('spellChoices'); choices.innerHTML = ''; $('spellMsg').textContent = '';
+  if (spell.qi >= spell.words.length) { finishSpell(); return; }
+  spell.attempted = false;
+  const w = spell.words[spell.qi][0], sentence = spell.words[spell.qi][1];
+  const blanked = sentence.replace(new RegExp('\\b' + w + '\\b', 'i'), '_____');
+  const sayBoth = () => { speakWord(w); setTimeout(() => speakWord(sentence, { rate: 0.9 }), 850); };
+  $('spellTitle').innerHTML = '🏤 Spelling Bee — Word ' + (spell.qi + 1) + '/' + spell.words.length;
+  $('spellMain').innerHTML = '<button id="spellSay" class="libBtn" style="background:#2E5E8C;color:#fff;font-size:18px">🔊 Hear the word again</button>' +
+    '<div style="margin-top:8px;color:#5a7a9a;font-style:italic">' + blanked + '</div>';
+  $('spellPrompt').textContent = spell.typed ? '✍️ Listen, then type the word:' : '👂 Listen, then tap the correct spelling:';
+  sayBoth();
+  $('spellSay').onclick = () => { Sound.click(); sayBoth(); };
+  if (spell.typed) {
+    const input = document.createElement('input');
+    input.type = 'text'; input.autocomplete = 'off'; input.autocapitalize = 'off'; input.spellcheck = false;
+    input.style.cssText = 'font-size:22px;padding:10px;border:3px solid #B8D2EC;border-radius:12px;text-align:center;width:90%;align-self:center';
+    input.placeholder = 'spell it…';
+    const submit = document.createElement('button');
+    submit.className = 'libBtn'; submit.style.background = '#3f9d34'; submit.style.color = '#fff'; submit.textContent = '✓ Check';
+    submit.onclick = () => spellAnswer(input.value, w, submit);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') spellAnswer(input.value, w, submit); });
+    choices.appendChild(input); choices.appendChild(submit);
+    setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
+  } else {
+    const opts = [w].concat(makeMisspellings(w)); shuffle(opts);
+    opts.forEach(opt => {
+      const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '18px'; b.textContent = opt;
+      b.onclick = () => spellAnswer(opt, w, b);
+      choices.appendChild(b);
+    });
+  }
+}
+function spellAnswer(ans, w, btn) {
+  if (!spell) return;
+  const norm = s => (s || '').trim().toLowerCase();
+  const correct = norm(ans) === norm(w);
+  const firstAttempt = !spell.attempted; spell.attempted = true;
+  if (firstAttempt) {
+    profile.spellFirstTotal = (profile.spellFirstTotal || 0) + 1;
+    profile.spellFirstByGrade = profile.spellFirstByGrade || {};
+    const bg = profile.spellFirstByGrade; bg[spell.level] = bg[spell.level] || { right: 0, total: 0 }; bg[spell.level].total++;
+    if (correct) { profile.spellFirstRight = (profile.spellFirstRight || 0) + 1; bg[spell.level].right++; spell.firstRight++; }
+    else recordWrong({ skill: 'spelling', level: spell.level });
+    profileDirty = true; saveProfile();
+  }
+  if (correct) {
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spelling', level: spell.level }); refreshHUD(); bumpHud('solvedCount'); spell.right++;
+    spell.qi++;
+    if (spell.qi >= spell.words.length) { finishSpell(); return; }
+    $('spellMsg').style.color = '#2f8a52'; $('spellMsg').textContent = firstAttempt ? '✓ Spelled it!' : '✓ Got it!';
+    setTimeout(renderSpell, 550);
+  } else {
+    Sound.wrong(); if (btn && btn.classList) btn.classList.add('flop');
+    $('spellMsg').style.color = '#c0392b'; $('spellMsg').textContent = '🤔 Not quite — listen again and try!';
+    speakWord(w);
+  }
+}
+function finishSpell() {
+  const lvl = spell.level;
+  let reward = 4; for (let i = 0; i < spell.words.length; i++) reward += 3 + lvl;   // harder levels pay more
+  G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  let levelMsg = ''; const total = spell.words.length, fr = spell.firstRight || 0;
+  if (fr === total) {
+    G.spellSlip = 0; G.spellStreak = (G.spellStreak || 0) + 1;
+    if (G.spellStreak >= 2 && G.spellLevel < 5) { G.spellLevel++; G.spellStreak = 0; levelMsg = '📈 Spelling Level up — now Level ' + G.spellLevel + '! 🎉'; }
+  } else if (fr <= total / 2) {
+    G.spellStreak = 0; G.spellSlip = (G.spellSlip || 0) + 1;
+    if (G.spellSlip >= 2 && G.spellLevel > 1) { G.spellLevel--; G.spellSlip = 0; levelMsg = '✍️ Now at Spelling Level ' + G.spellLevel + ' — keep practicing!'; }
+  } else { G.spellStreak = 0; }
+  profile.spellLevel = G.spellLevel; profileDirty = true; saveProfile();
+  $('spellTitle').innerHTML = '🏤 Spelling Bee';
+  $('spellMain').innerHTML = '<div style="font-size:50px">📮⭐</div>';
+  $('spellPrompt').innerHTML = '🎉 Great spelling!' +
+    '<br><span style="color:#3b5d9e;font-weight:800">✍️ First-try score: ' + (spell.firstRight || 0) + '/' + spell.words.length + '</span>' +
+    (levelMsg ? '<br><span style="color:#2f8a52;font-weight:800">' + levelMsg + '</span>' : '');
+  $('spellChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="spellAgain">🪙 +' + reward + ' — Spell more!</button>' +
+    '<button class="libBtn" id="spellDone">Done</button>';
+  $('spellMsg').textContent = '';
+  $('spellAgain').onclick = () => { closePost(); openPost(); };
+  $('spellDone').onclick = closePost;
+}
+
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group() };
 function cityTexture(bodyN, litN) {
@@ -4775,8 +4943,41 @@ function buildHighStreetArch(g) {             // a welcome arch over Main Street
   sign.position.set(0, 3.25, 0.1); A.add(sign);
   A.position.set(0.5, 0, -7); g.add(A);       // over Main Street (x≈0.5), just south of the shops
 }
+function buildPostOffice(g) {                 // Reading Town's Spelling-Bee post office (east end of the high street)
+  const WALL = 0xE9EEF4, BRICK = 0xB55B4A, ROOF = 0x2E5E8C, TRIM = 0xFFFFFF, GLASS = 0xCFE6F2, DOOR = 0x6E4630, GOLD = 0xC9A24A, BLUE = 0x274E72;
+  const P = new THREE.Group();
+  box(P, 4.0, 0.16, 3.0, 0x9a948a, 0, 0.08, 0);             // base pad
+  box(P, 3.6, 2.4, 0.16, WALL, 0, 1.3, -1.4);               // back wall
+  box(P, 0.16, 2.4, 2.9, WALL, -1.78, 1.3, 0);              // left wall
+  box(P, 0.16, 2.4, 2.9, WALL, 1.78, 1.3, 0);               // right wall
+  box(P, 3.6, 0.45, 0.16, BRICK, 0, 0.32, 1.4);             // front brick kick-plate
+  box(P, 1.0, 1.9, 0.1, DOOR, 0.95, 1.05, 1.42);            // door
+  box(P, 0.1, 0.1, 0.06, GOLD, 0.6, 1.05, 1.48);            // door knob
+  box(P, 1.9, 1.2, 0.06, GLASS, -0.6, 1.35, 1.42);          // service window
+  box(P, 2.0, 0.1, 0.08, TRIM, -0.6, 0.72, 1.45); box(P, 2.0, 0.1, 0.08, TRIM, -0.6, 1.98, 1.45);   // window frame
+  box(P, 4.3, 0.34, 3.3, ROOF, 0, 2.66, 0);                 // roof
+  // a blue mailbox out front
+  box(P, 0.14, 0.5, 0.14, 0x6e6e6e, -1.95, 0.3, 1.7);       // post
+  box(P, 0.5, 0.55, 0.42, BLUE, -1.95, 0.78, 1.7);          // mailbox body
+  box(P, 0.5, 0.16, 0.42, 0x335f86, -1.95, 1.06, 1.7);      // rounded top
+  box(P, 0.18, 0.05, 0.06, 0xC0392B, -1.74, 0.86, 1.86);    // little red flag
+  // flag pole on the roof
+  box(P, 0.06, 1.0, 0.06, 0x8a8f96, 1.4, 3.1, 0);
+  box(P, 0.5, 0.32, 0.04, 0xC0392B, 1.66, 3.4, 0);          // flag
+  // projecting sign over the entrance, clear of the roof
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 84;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#2E5E8C'; c.fillRect(0, 0, 320, 84); c.strokeStyle = '#FFFFFF'; c.lineWidth = 6; c.strokeRect(5, 5, 310, 74);
+  c.fillStyle = '#FFFFFF'; c.textAlign = 'center'; c.font = 'bold 32px Georgia, serif'; c.textBaseline = 'middle';
+  c.fillText('📮 STACK POST', 160, 31);
+  c.fillStyle = '#CFE3F2'; c.font = 'bold 19px Georgia, serif'; c.fillText('Spelling Bee', 160, 62);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.82, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.42, 1.78); P.add(sign);
+  P.position.set(9, 0, -15); g.add(P);                       // east end of the high-street row, facing the street
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
+  buildPostOffice(g);
   buildHighStreetArch(g);
   const N = 26;
   for (let i = 0; i < N; i++) {
@@ -7398,6 +7599,7 @@ addEventListener('keydown', e => {
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
+    else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -7675,6 +7877,7 @@ $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
+$('postClose').onclick = () => { Sound.click(); closePost(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
@@ -7818,6 +8021,7 @@ if (isTouch) {
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
+    else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -7858,7 +8062,7 @@ function syncGloomyMenu() {
 const GRADE_DESCS = {
   meadow: { 2: 'Add & subtract to 100', 3: 'To 1,000 & times tables', 4: 'Multi-digit × and ÷', 5: 'Fractions & decimals' },
   city:   { 2: 'Short stories • who & what', 3: 'Longer stories • the main idea', 4: 'Similes & describing words', 5: 'Metaphors & author\'s craft' },
-  beach:  { 2: 'First words & greetings', 3: 'Colours, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' }
+  beach:  { 2: 'First words & greetings', 3: 'Colors, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' }
 };
 function updateGradeDescs(world) {
   const map = GRADE_DESCS[world] || GRADE_DESCS.meadow;
@@ -8342,6 +8546,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (libraryDist() < 4.2) {
       hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 Press E — read a story at the Library!';
+      hint.style.display = 'block';
+    } else if (postDist() < 3.8) {
+      hint.textContent = isTouch ? '🏤 Tap ⭐ USE — Spelling Bee at the Post Office!' : '🏤 Press E — Spelling Bee at the Post Office!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
