@@ -3034,20 +3034,29 @@ scene.add(skirt);
 /* recolor the ground + sky + fog to match the current world's theme */
 function applyGroundColors(cols, worldId) {
   const c = [new THREE.Color(cols[0]), new THREE.Color(cols[1]), new THREE.Color(cols[2])];
-  const road = new THREE.Color(0x6e7378), line = new THREE.Color(0xd9cf86), curb = new THREE.Color(0xc2c5c9);
-  // Reading Town's streets: a wide Main Avenue (x≈0) + Main Cross (z≈0) and a couple of
-  // outer streets, leaving BIG lots between them so kids can build any size of house.
-  const V = [-15, -14, -1, 0, 1, 14, 15], H = [-13, -12, -1, 0, 1, 12, 13];
+  const road = new THREE.Color(0x6e7378), line = new THREE.Color(0xd9cf86), pave = new THREE.Color(0xc6c2b8);
   let idx = 0;
   for (let x = -WORLD_R; x < WORLD_R; x++) for (let z = -WORLD_R; z < WORLD_R; z++) {
     let col;
+    const grass = (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1]);
     if (worldId === 'city') {
-      const onRoad = V.includes(x) || H.includes(z);
-      const onCurb = !onRoad && (V.includes(x - 1) || V.includes(x + 1) || H.includes(z - 1) || H.includes(z + 1));
-      const dash = (x === 0 && !(z & 1)) || (z === 0 && !(x & 1));        // dashed centre lines on the two avenues
-      col = onRoad ? (dash ? line : road) : (onCurb ? curb : ((x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1])));
+      // Reading Town: open green neighborhood with just a Main Street + Main Cross to drive on
+      // (plenty of room to build), and a paved DOWNTOWN to the north where the shops & library sit.
+      const onMain = (x === 0 || x === 1);                 // Main Street, full length
+      if (z <= -8) {                                       // ---- downtown: paved, with side streets ----
+        const hR = (z === -9 || z === -10 || z === -16 || z === -17);
+        const vR = (x === -9 || x === -8 || x === 8 || x === 9);
+        const onRoad = onMain || hR || vR;
+        col = onRoad ? ((x === 0 && !(z & 1)) ? line : road) : pave;   // rest of downtown is pavement
+      } else {                                             // ---- neighborhood: mostly open grass ----
+        const onCross = (z === 0 || z === 1);              // one cross street to drive east–west
+        const onRoad = onMain || onCross;
+        const dash = (x === 0 && !(z & 1)) || (z === 0 && !(x & 1));
+        const sidewalk = !onRoad && (x === -1 || x === 2 || z === -1 || z === 2);
+        col = onRoad ? (dash ? line : road) : (sidewalk ? pave : grass);
+      }
     } else {
-      col = (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1]);
+      col = grass;
     }
     ground.setColorAt(idx, col); idx++;
   }
