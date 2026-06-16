@@ -3777,32 +3777,57 @@ function suburbHouse(g, x, z, faceAng) {
   h.position.set(x, 0, z); h.rotation.y = faceAng; g.add(h);
 }
 function buildLibrary(g) {                    // Reading Town's grand civic library (a landmark you can drive up to)
-  const STONE = 0xE3D9C2, STONE2 = 0xCFC3A6, ROOF = 0x6E4636, COL = 0xF1EAD8, DOOR = 0x7B4A2C, GOLD = 0xC9A24A, STEP = 0xC8BFA8;
+  const STONE = 0xE7DCC4, STONE2 = 0xD8CCB0, ROOF = 0x6E4636, COL = 0xF3EEDF, DOOR = 0x7B4A2C, GOLD = 0xC9A24A, STEP = 0xCFC6AE, FRIEZE = 0x33241a;
   const L = new THREE.Group();
-  for (let s = 0; s < 3; s++) box(L, 6.2, 0.18, 1.1 - s * 0.3, STEP, 0, 0.09 + s * 0.18, 2.15 - s * 0.32);   // wide steps
-  box(L, 6.0, 2.6, 4.0, STONE, 0, 1.5, 0);                            // main block
-  box(L, 6.3, 0.42, 4.3, STONE2, 0, 2.92, 0);                         // entablature
-  for (let i = -2; i <= 2; i++) {                                     // columns across the front
-    const cx = i * 1.18;
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 2.4, 12), mat(COL));
-    col.position.set(cx, 1.4, 2.05); L.add(col);
-    box(L, 0.6, 0.18, 0.6, STONE2, cx, 2.66, 2.05);                   // capital
-    box(L, 0.6, 0.18, 0.6, STONE2, cx, 0.26, 2.05);                   // base
+  const W = 6.4, D = 4.4, k = W / 3.5;
+  for (let s = 0; s < 3; s++) box(L, W - 0.2, 0.2, 1.3 - s * 0.34, STEP, 0, 0.1 + s * 0.2, D / 2 + 0.6 - s * 0.34);  // wide front steps
+  box(L, W, 0.3, D, STONE2, 0, 0.15, 0);                              // stylobate platform
+  box(L, W - 1.4, 3.0, D - 1.2, STONE, 0, 1.65, -0.5);               // cella (inner building) behind the portico
+  box(L, 1.5, 1.95, 0.12, DOOR, 0, 1.12, 1.16);                       // tall doors
+  box(L, 0.08, 1.95, 0.14, GOLD, 0, 1.12, 1.22);                      // door split
+  box(L, 0.7, 0.7, 0.06, 0xBFE3F2, -1.7, 1.7, 1.16); box(L, 0.7, 0.7, 0.06, 0xBFE3F2, 1.7, 1.7, 1.16);   // flanking windows
+  // ---- portico columns (shorter so the sign stays clear), 7 across ----
+  const colH = 2.0, colY = 0.3 + colH / 2, zc = D / 2 - 0.35;
+  for (let i = -3; i <= 3; i++) {
+    const cx = i * (W * 0.5 - 0.45) / 3;
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, colH, 14), mat(COL));
+    c.position.set(cx, colY, zc); L.add(c);
+    box(L, 0.58, 0.16, 0.58, STONE2, cx, 0.3 + colH + 0.08, zc);      // capital
+    box(L, 0.62, 0.18, 0.62, STONE2, cx, 0.3 + 0.09, zc);             // base
   }
-  const pl = box(L, 0.3, 3.5, 4.4, ROOF, -0.98, 3.5, 0); pl.rotation.z = -0.9;   // pediment slopes
-  const pr = box(L, 0.3, 3.5, 4.4, ROOF, 0.98, 3.5, 0); pr.rotation.z = 0.9;
-  box(L, 3.9, 1.15, 0.2, STONE, 0, 3.28, 2.0);                        // tympanum face
-  box(L, 0.5, 0.5, 0.12, GOLD, 0, 3.42, 2.12);                        // little gold medallion
-  box(L, 1.5, 1.85, 0.1, DOOR, 0, 1.02, 2.03);                        // big doors
-  box(L, 0.07, 1.85, 0.13, GOLD, 0, 1.02, 2.09);                      // door split
-  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+  // ---- entablature: architrave + frieze (sign band) + cornice ----
+  const entY = 0.3 + colH + 0.16;
+  box(L, W + 0.3, 0.22, D + 0.3, STONE2, 0, entY + 0.11, 0);          // architrave
+  box(L, W + 0.36, 0.5, 0.18, FRIEZE, 0, entY + 0.5, zc + 0.2);        // dark frieze band (sign goes here, above the columns)
+  box(L, W + 0.55, 0.18, D + 0.55, STONE, 0, entY + 0.84, 0);         // cornice overhang
+  // ---- pediment (closed triangle + ridge), clean ----
+  const pedBase = entY + 0.93;
+  const sl = box(L, 0.2, 2.0 * k, D + 0.7, ROOF, -0.85 * k, pedBase + 0.5 * k, 0); sl.rotation.z = -1.0;
+  const sr = box(L, 0.2, 2.0 * k, D + 0.7, ROOF, 0.85 * k, pedBase + 0.5 * k, 0); sr.rotation.z = 1.0;
+  box(L, 0.26, 0.26, D + 0.75, 0x4a3a2a, 0, pedBase + 0.98 * k, 0);   // ridge
+  gableTri(L, W + 0.5, pedBase, pedBase + 0.95 * k, zc + 0.22, STONE); // tympanum (front) — no open peak
+  gableTri(L, W + 0.5, pedBase, pedBase + 0.95 * k, -D / 2 - 0.1, STONE);
+  // clock in the tympanum
+  const clkY = pedBase + 0.55 * k;
+  const clk = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.1, 18), mat(GOLD)); clk.rotation.x = Math.PI / 2; clk.position.set(0, clkY, zc + 0.3); L.add(clk);
+  const clf = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.06, 18), mat(0xFFF8E6)); clf.rotation.x = Math.PI / 2; clf.position.set(0, clkY, zc + 0.34); L.add(clf);
+  box(L, 0.04, 0.24, 0.05, 0x3a2c1a, 0, clkY + 0.09, zc + 0.37); box(L, 0.18, 0.04, 0.05, 0x3a2c1a, 0.07, clkY, zc + 0.37);  // hands
+  // ---- LIBRARY sign on the frieze (clearly above the columns) ----
+  const cv = document.createElement('canvas'); cv.width = 384; cv.height = 64;
   const c = cv.getContext('2d');
-  c.fillStyle = '#3a2c1a'; c.fillRect(0, 0, 256, 64);
-  c.fillStyle = '#F1EAD8'; c.font = 'bold 32px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('📚 LIBRARY', 128, 34);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
-  sign.position.set(0, 2.66, 2.14); L.add(sign);
-  L.position.set(0, 0, -18); g.add(L);                                // a main street (x=0) leads up to it
+  c.fillStyle = '#33241a'; c.fillRect(0, 0, 384, 64);
+  c.fillStyle = '#F3EEDF'; c.font = 'bold 38px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('📚 LIBRARY', 192, 34);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(W * 0.78, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, entY + 0.5, zc + 0.31); L.add(sign);
+  // ---- lamp posts + planters flanking the steps ----
+  [-W * 0.42, W * 0.42].forEach(px => {
+    box(L, 0.1, 1.6, 0.1, 0x33373d, px, 0.8, D / 2 + 0.45);           // lamp post
+    box(L, 0.26, 0.3, 0.26, 0xFFF1B0, px, 1.7, D / 2 + 0.45);         // lamp
+    box(L, 0.5, 0.4, 0.5, 0x8a6b4a, px * 0.78, 0.2, D / 2 + 0.95);    // planter
+    box(L, 0.46, 0.34, 0.46, 0x4f9a37, px * 0.78, 0.52, D / 2 + 0.95);// shrub
+  });
+  L.position.set(0, 0, -18); g.add(L);                                // Main Street (x=0) leads up to it
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
