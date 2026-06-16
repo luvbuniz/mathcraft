@@ -3035,16 +3035,17 @@ scene.add(skirt);
 function applyGroundColors(cols, worldId) {
   const c = [new THREE.Color(cols[0]), new THREE.Color(cols[1]), new THREE.Color(cols[2])];
   const road = new THREE.Color(0x6e7378), line = new THREE.Color(0xd9cf86), curb = new THREE.Color(0xc2c5c9);
+  // Reading Town's streets: a wide Main Avenue (x≈0) + Main Cross (z≈0) and a couple of
+  // outer streets, leaving BIG lots between them so kids can build any size of house.
+  const V = [-15, -14, -1, 0, 1, 14, 15], H = [-13, -12, -1, 0, 1, 12, 13];
   let idx = 0;
   for (let x = -WORLD_R; x < WORLD_R; x++) for (let z = -WORLD_R; z < WORLD_R; z++) {
     let col;
     if (worldId === 'city') {
-      // Reading Town is a suburban grid: 2-wide streets every 8 tiles, with curbs, leaving grass plots to build on
-      const rx = (x + 1000) % 8, rz = (z + 1000) % 8;
-      const onRoad = rx <= 1 || rz <= 1;
-      const onCurb = !onRoad && (rx === 2 || rz === 2);
-      const centerLine = (rx === 0 && rz <= 1) || (rz === 0 && rx <= 1);   // faint dashes down the middle
-      col = onRoad ? (centerLine && ((x + z) & 1) ? line : road) : (onCurb ? curb : ((x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1])));
+      const onRoad = V.includes(x) || H.includes(z);
+      const onCurb = !onRoad && (V.includes(x - 1) || V.includes(x + 1) || H.includes(z - 1) || H.includes(z + 1));
+      const dash = (x === 0 && !(z & 1)) || (z === 0 && !(x & 1));        // dashed centre lines on the two avenues
+      col = onRoad ? (dash ? line : road) : (onCurb ? curb : ((x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1])));
     } else {
       col = (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1]);
     }
@@ -3706,22 +3707,64 @@ function decoTree(g, x, z, s) {
   box(g, 1.9 * s, 1.4 * s, 1.9 * s, cg, x, 2.4 * s, z);                         // round canopy
   box(g, 1.35 * s, 1.2 * s, 1.35 * s, cg, x, 3.25 * s, z);
 }
+const PICKR = a => a[(Math.random() * a.length) | 0];
+function mailbox(h, x, z) {                       // little curbside mailbox
+  box(h, 0.07, 0.7, 0.07, 0x6b4a2c, x, 0.35, z);
+  box(h, 0.18, 0.18, 0.3, PICKR([0xC0392B, 0x2b5fa8, 0x2E8B57, 0x2b2e34]), x, 0.78, z);
+}
+function gableTri(h, w, baseY, apexY, zPos, color) {   // fills the triangular gable end so the roof isn't open
+  const s = new THREE.Shape();
+  s.moveTo(-w / 2, baseY); s.lineTo(w / 2, baseY); s.lineTo(0, apexY); s.closePath();
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(s), new THREE.MeshLambertMaterial({ color: color, side: THREE.DoubleSide }));
+  m.position.z = zPos; h.add(m);
+}
 function suburbHouse(g, x, z, faceAng) {
-  const walls = [0xF3E2C7, 0xF0D7D0, 0xD9E6F2, 0xE7EFD8, 0xF7E9CF, 0xEAD9EC, 0xFBEAC8];
-  const roofs = [0x9E5B4A, 0x6E7F9A, 0x7E6A52, 0x5E8A6A, 0xA86B5A, 0x88566F];
-  const wall = walls[(Math.random() * walls.length) | 0], roof = roofs[(Math.random() * roofs.length) | 0];
+  const walls = [0xF3E2C7, 0xF0D7D0, 0xD9E6F2, 0xE7EFD8, 0xF7E9CF, 0xEAD9EC, 0xFBEAC8, 0xCFE3DA, 0xF2D8C2, 0xDCE7F0];
+  const roofs = [0x9E5B4A, 0x6E7F9A, 0x7E6A52, 0x5E8A6A, 0xA86B5A, 0x88566F, 0x4F6B86, 0x8A7B3F, 0x6E5043];
+  const wall = PICKR(walls), roof = PICKR(roofs), trim = 0xFFFFFF, DOOR = PICKR([0x8a5c33, 0x2b5fa8, 0x7B3F52, 0x2E5E45, 0x9E3B2C]);
   const h = new THREE.Group();
-  const w = 3.4 + Math.random() * 1.4, d = 3.0 + Math.random() * 1.0, wallH = 2.2 + Math.random() * 0.9, k = w / 3.5;
-  box(h, w, wallH, d, wall, 0, wallH / 2, 0);                                   // house body
-  const sl = box(h, 0.18, 2.0 * k, d + 0.4, roof, -0.85 * k, wallH + 0.5 * k, 0); sl.rotation.z = -1.039;  // peaked roof
-  const sr = box(h, 0.18, 2.0 * k, d + 0.4, roof, 0.85 * k, wallH + 0.5 * k, 0); sr.rotation.z = 1.039;
-  box(h, 0.24, 0.24, d + 0.5, 0x4a3a2a, 0, wallH + 1.02 * k, 0);                // ridge beam
-  box(h, 0.66, 1.15, 0.08, 0x8a5c33, 0, 0.58, d / 2 + 0.03);                    // front door
-  box(h, 0.7, 0.7, 0.06, 0xBFE3F2, -w * 0.27, wallH * 0.62, d / 2 + 0.03);      // window L
-  box(h, 0.7, 0.7, 0.06, 0xBFE3F2, w * 0.27, wallH * 0.62, d / 2 + 0.03);       // window R
-  box(h, 0.78, 0.06, 0.1, 0xFFFFFF, -w * 0.27, wallH * 0.62 - 0.4, d / 2 + 0.05); // window boxes
-  box(h, 0.78, 0.06, 0.1, 0xFFFFFF, w * 0.27, wallH * 0.62 - 0.4, d / 2 + 0.05);
-  if (Math.random() < 0.5) box(h, 0.34, 0.95, 0.34, 0xB23A2E, w * 0.3, wallH + 0.7 * k, -d * 0.22);   // chimney
+  const w = 3.2 + Math.random() * 2.2, d = 3.0 + Math.random() * 1.4, k = w / 3.5;
+  const twoStory = Math.random() < 0.42, wallH = (twoStory ? 3.5 : 2.2) + Math.random() * 0.5;
+  box(h, w + 0.12, 0.24, d + 0.12, 0xBDB4A6, 0, 0.12, 0);                       // foundation
+  box(h, w, wallH, d, wall, 0, wallH / 2 + 0.12, 0);                            // house body
+  const yb = 0.12;                                                              // body sits on the foundation
+  if (Math.random() < 0.55) {                                                   // gable roof
+    const apex = yb + wallH + 0.95 * k;
+    gableTri(h, w, yb + wallH, apex, d / 2 + 0.02, wall);                       // front + back gable walls (no open peak!)
+    gableTri(h, w, yb + wallH, apex, -d / 2 - 0.02, wall);
+    const sl = box(h, 0.2, 2.0 * k, d + 0.6, roof, -0.85 * k, yb + wallH + 0.5 * k, 0); sl.rotation.z = -1.0;
+    const sr = box(h, 0.2, 2.0 * k, d + 0.6, roof, 0.85 * k, yb + wallH + 0.5 * k, 0); sr.rotation.z = 1.0;
+    box(h, 0.26, 0.26, d + 0.66, 0x4a3a2a, 0, yb + wallH + 0.98 * k, 0);        // ridge
+    if (twoStory && Math.random() < 0.6) { box(h, 0.7, 0.5, 0.4, wall, -w * 0.2, yb + wallH + 0.35, d * 0.18); box(h, 0.55, 0.4, 0.06, 0xBFE3F2, -w * 0.2, yb + wallH + 0.38, d * 0.18 + 0.2); }  // dormer
+  } else {                                                                      // hip roof (pyramid cap)
+    box(h, w + 0.34, 0.5, d + 0.34, roof, 0, yb + wallH + 0.25, 0);
+    box(h, w * 0.62, 0.5, d * 0.62, roof, 0, yb + wallH + 0.72, 0);
+  }
+  const dw = 0.6 + Math.random() * 0.3, dh = 1.05 + Math.random() * 0.5, dx = -w * 0.2;   // varied door
+  box(h, dw, dh, 0.08, DOOR, dx, yb + dh / 2, d / 2 + 0.03);
+  box(h, 0.12, 0.12, 0.1, 0xE0C24A, dx + dw * 0.32, yb + dh * 0.5, d / 2 + 0.06);          // knob
+  const ww = 0.5 + Math.random() * 0.34, wh = 0.5 + Math.random() * 0.38;                  // varied windows
+  const winYs = twoStory ? [yb + 0.95, yb + 2.55] : [yb + wallH * 0.6];
+  const winXs = w > 4.3 ? [w * 0.28, w * 0.03, -w * 0.32] : [w * 0.26, -w * 0.04];
+  winYs.forEach(wy => winXs.forEach(wx => {
+    if (Math.abs(wx - dx) < (dw / 2 + ww / 2 + 0.1) && wy < yb + dh) return;                // don't sit on the door
+    box(h, ww, wh, 0.06, 0xBFE3F2, wx, wy, d / 2 + 0.03);                                   // window
+    box(h, ww + 0.1, 0.06, 0.1, trim, wx, wy - wh / 2 - 0.02, d / 2 + 0.05);                // sill
+    box(h, 0.04, wh, 0.06, trim, wx, wy, d / 2 + 0.045);                                    // mullion
+  }));
+  if (Math.random() < 0.55) {                                                   // covered porch over the door
+    box(h, 1.5, 0.12, 0.8, roof, -w * 0.18, yb + 1.35, d / 2 + 0.4);
+    box(h, 0.08, 1.25, 0.08, trim, -w * 0.18 - 0.6, yb + 0.6, d / 2 + 0.72);
+    box(h, 0.08, 1.25, 0.08, trim, -w * 0.18 + 0.6, yb + 0.6, d / 2 + 0.72);
+  }
+  if (Math.random() < 0.5) {                                                    // attached garage
+    const gw = 1.9, gx = (w / 2 + gw / 2 - 0.1) * (Math.random() < 0.5 ? 1 : -1);
+    box(h, gw, 1.85, 2.2, wall, gx, yb + 0.92, d * 0.1);
+    box(h, gw * 0.82, 1.35, 0.08, 0xC9C2B6, gx, yb + 0.78, d * 0.1 + 1.12);     // garage door
+    box(h, gw + 0.24, 0.46, 2.3, roof, gx, yb + 2.05, d * 0.1);                 // garage roof
+  }
+  if (Math.random() < 0.5) box(h, 0.34, 0.95, 0.34, 0xB23A2E, w * 0.3, yb + wallH + 0.7 * k, -d * 0.22);  // chimney
+  if (Math.random() < 0.6) mailbox(h, -w * 0.5 - 0.6, d / 2 + 1.0);             // curbside mailbox
   h.position.set(x, 0, z); h.rotation.y = faceAng; g.add(h);
 }
 function buildLibrary(g) {                    // Reading Town's grand civic library (a landmark you can drive up to)
@@ -3754,16 +3797,16 @@ function buildLibrary(g) {                    // Reading Town's grand civic libr
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
-  const N = 18;
+  const N = 26;
   for (let i = 0; i < N; i++) {
-    const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.05;
-    const r = 27 + Math.random() * 5;
-    suburbHouse(g, Math.cos(ang) * r, Math.sin(ang) * r, Math.atan2(-Math.cos(ang), -Math.sin(ang)));   // face the town center
-    if (Math.random() < 0.7) decoTree(g, Math.cos(ang + 0.05) * (r - 3.5), Math.sin(ang + 0.05) * (r - 3.5));
+    const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.14;
+    const r = 27 + Math.random() * 8;                                       // varied depth → a layered neighborhood
+    suburbHouse(g, Math.cos(ang) * r, Math.sin(ang) * r, Math.atan2(-Math.cos(ang), -Math.sin(ang)) + (Math.random() - 0.5) * 0.3);
+    if (Math.random() < 0.7) decoTree(g, Math.cos(ang + 0.06) * (r - 3.5), Math.sin(ang + 0.06) * (r - 3.5), 0.8 + Math.random() * 0.5);
   }
-  for (let i = 0; i < 12; i++) {              // trees dotted on the lawn just past the build area
-    const ang = Math.random() * Math.PI * 2, r = 25.5 + Math.random() * 1.5;
-    decoTree(g, Math.cos(ang) * r, Math.sin(ang) * r, 0.85 + Math.random() * 0.3);
+  for (let i = 0; i < 16; i++) {              // trees dotted on the lawn just past the build area
+    const ang = Math.random() * Math.PI * 2, r = 25.5 + Math.random() * 1.8;
+    decoTree(g, Math.cos(ang) * r, Math.sin(ang) * r, 0.8 + Math.random() * 0.4);
   }
 }
 function buildPalm(g, x, z, lean) {
