@@ -6838,29 +6838,51 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.08, 1.04, 0.16, 0xFFFFFF, 0, 0.72, 0);
     box(g, 0.76, 0.08, 0.16, 0xFFFFFF, 0, 0.72, 0);
   } else if (type === 'stove') {
-    box(g, 0.82, 0.06, 0.72, 0x9aa0a8, 0, 0.03, 0);                  // kick plate / base
-    box(g, 0.8, 0.62, 0.7, 0xE8E8EC, 0, 0.35, 0);                    // steel body
-    box(g, 0.82, 0.1, 0.72, 0xC9CDD4, 0, 0.7, 0);                    // cooktop
+    g.userData.customFinish = true;                                  // each town gets a fully styled range
+    const deluxe = finish === 1, span = finish === 2;
+    const bodyCol   = deluxe ? 0x33363B : span ? 0xF1ECE0 : 0xEDE3CF;   // graphite / white / cream enamel
+    const topCol    = deluxe ? 0x26282C : span ? 0xE3DCCB : 0xD9CDB4;
+    const panelCol  = deluxe ? 0x2A2C30 : span ? 0xEBE5D6 : 0xE6DBC4;
+    const doorCol   = deluxe ? 0x2A2C30 : span ? 0xE3DCCB : 0xDED2BA;
+    const knobCol   = deluxe ? 0xC0392B : span ? 0x2E6E9E : 0xB5503F;   // RED Viking knobs / talavera-blue / barn-red
+    const handleCol = deluxe ? 0xCBA24A : span ? 0xC8602E : 0x8a5c33;   // brass / terracotta / wood
+    const trimCol   = deluxe ? 0xCBA24A : span ? 0xC8602E : 0x6FA85B;
+    const footCol   = deluxe ? 0xCBA24A : span ? 0xB07B4A : 0x8a5c33;
+    box(g, 0.82, 0.06, 0.72, deluxe ? 0x202226 : 0xBFB6A2, 0, 0.03, 0);   // kick plate
+    box(g, 0.8, 0.62, 0.7, bodyCol, 0, 0.35, 0);                          // body
+    box(g, 0.82, 0.1, 0.72, topCol, 0, 0.7, 0);                          // cast cooktop
+    if (deluxe) box(g, 0.84, 0.025, 0.74, trimCol, 0, 0.765, 0);         // brass cooktop edge
     [[-0.18, -0.16], [0.18, -0.16], [-0.18, 0.16], [0.18, 0.16]].forEach(([x, z]) => {
-      box(g, 0.22, 0.02, 0.22, 0x22252b, x, 0.745, z);              // burner ring/drip pan
-      box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.77, z);               // burner
-      box(g, 0.2, 0.015, 0.04, 0x4a4f59, x, 0.8, z);                // grate bars
+      box(g, 0.22, 0.02, 0.22, 0x22252b, x, 0.745, z);                   // cast-iron drip pan
+      box(g, 0.18, 0.05, 0.18, 0x333740, x, 0.77, z);                    // burner
+      box(g, 0.2, 0.015, 0.04, 0x4a4f59, x, 0.8, z);                     // grate bars
       box(g, 0.04, 0.015, 0.2, 0x4a4f59, x, 0.8, z);
     });
-    // a back control panel / backsplash with little dials and a readout
-    box(g, 0.82, 0.3, 0.07, 0xDDE0E6, 0, 0.88, -0.32);              // backsplash
-    box(g, 0.2, 0.08, 0.03, 0x2b6cb0, -0.22, 0.93, -0.28);          // blue digital readout
-    [0.06, 0.2].forEach(x => box(g, 0.07, 0.07, 0.03, 0x3b3f47, x, 0.9, -0.28)); // dials
-    // the oven, set into the front of the body
-    box(g, 0.66, 0.42, 0.05, 0x3b3f47, 0, 0.3, 0.355);              // oven door
-    const ovenGlass = box(g, 0.44, 0.26, 0.03, 0x141414, 0, 0.3, 0.37); // dark oven window
-    box(g, 0.5, 0.03, 0.04, 0x2b2e34, 0, 0.43, 0.385);             // oven rack line through the window
-    const ovenGlow = box(g, 0.42, 0.24, 0.02, 0xFF8A3D, 0, 0.3, 0.40);  // warm light in front of the glass
+    // backguard: a tall pro backguard (Viking), or a backsplash (others)
+    const bgH = deluxe ? 0.5 : 0.3, bgY = 0.75 + bgH / 2;
+    box(g, 0.82, bgH, 0.07, panelCol, 0, bgY, -0.32);
+    if (deluxe) { box(g, 0.84, 0.04, 0.08, trimCol, 0, bgY + bgH / 2 - 0.02, -0.32); box(g, 0.84, 0.035, 0.08, trimCol, 0, 0.78, -0.32); }  // brass rails
+    if (span) {                                                          // talavera tile backsplash
+      const tcols = [0x2E6E9E, 0xE0B23A, 0xC8602E, 0x3F8F6E]; let ti = 0;
+      for (let r = 0; r < 2; r++) for (let cI = 0; cI < 5; cI++) box(g, 0.12, 0.1, 0.02, tcols[(ti++) % 4], -0.32 + cI * 0.16, 0.82 + r * 0.13, -0.285);
+    } else {
+      box(g, 0.22, 0.08, 0.03, deluxe ? 0x39C0C0 : 0x2b6cb0, 0, bgY + (deluxe ? 0.12 : 0), -0.285);   // digital readout
+    }
+    // control knobs along the front panel (signature colored knobs)
+    [-0.3, -0.1, 0.1, 0.3].forEach(x => {
+      box(g, 0.05, 0.05, 0.04, 0x202226, x, 0.62, 0.36);                 // knob base
+      box(g, 0.07, 0.07, 0.05, knobCol, x, 0.62, 0.385);                 // colored knob
+    });
+    // oven door + window + warm glow + chunky handle
+    box(g, 0.66, 0.42, 0.05, doorCol, 0, 0.3, 0.355);                    // oven door
+    const ovenGlass = box(g, 0.44, 0.26, 0.03, 0x141414, 0, 0.3, 0.37);  // window
+    box(g, 0.5, 0.03, 0.04, 0x2b2e34, 0, 0.43, 0.385);                   // oven rack line
+    const ovenGlow = box(g, 0.42, 0.24, 0.02, 0xFF8A3D, 0, 0.3, 0.40);   // warm light
     ovenGlow.material = new THREE.MeshBasicMaterial({ color: 0xFF8A3D, transparent: true, opacity: 0 });
-    box(g, 0.54, 0.06, 0.06, 0xBBBFC6, 0, 0.55, 0.41);             // chunky oven handle bar
-    box(g, 0.05, 0.05, 0.05, 0x8d9298, -0.25, 0.55, 0.41);         // handle end caps
-    box(g, 0.05, 0.05, 0.05, 0x8d9298, 0.25, 0.55, 0.41);
-    [-0.3, -0.1, 0.1, 0.3].forEach(x => box(g, 0.07, 0.07, 0.04, 0x222, x, 0.62, 0.37)); // control knobs
+    box(g, 0.54, 0.06, 0.06, handleCol, 0, 0.55, 0.41);                  // handle bar
+    box(g, 0.05, 0.07, 0.06, handleCol, -0.25, 0.55, 0.405); box(g, 0.05, 0.07, 0.06, handleCol, 0.25, 0.55, 0.405);  // handle posts
+    if (deluxe) { box(g, 0.7, 0.04, 0.05, trimCol, 0, 0.18, 0.39); box(g, 0.04, 0.09, 0.05, trimCol, -0.34, 0.18, 0.39); box(g, 0.04, 0.09, 0.05, trimCol, 0.34, 0.18, 0.39); }  // brass towel rail (pro range)
+    if (deluxe || span) [[-0.34, -0.3], [0.34, -0.3], [-0.34, 0.3], [0.34, 0.3]].forEach(([x, z]) => box(g, 0.06, 0.1, 0.06, footCol, x, 0.05, z));   // pro legs
     // mount points for cooking (local coords): 4 burner tops + the oven slot inside
     g.userData.burners = [[-0.18, 0.81, -0.16], [0.18, 0.81, -0.16], [-0.18, 0.81, 0.16], [0.18, 0.81, 0.16]];
     g.userData.ovenSlot = [0, 0.3, 0.18];
@@ -6909,7 +6931,7 @@ function buildFurnitureMesh(type, variant) {
     [[-0.2, 0.2], [0.22, -0.15], [0.05, 0.05]].forEach(([x, z]) =>
       box(g, 0.1, 0.1, 0.1, 0xE53935, x, 0.66, z));                   // berries
   }
-  applyFurnFinish(g, finish);          // give the whole piece its town's wood & metal finish
+  if (!g.userData.customFinish) applyFurnFinish(g, finish);   // pieces with a bespoke town design (e.g. stoves) skip the generic retint
   return g;
 }
 function placeFurnitureAt(type, x, z, variant, rotY) {
