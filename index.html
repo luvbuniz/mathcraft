@@ -2396,7 +2396,7 @@ const AVATARS = [
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
-  blocks: 0, powerBlocks: 0, doors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
+  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
@@ -2513,6 +2513,7 @@ const SHOP_ITEMS = [
   { id: 'blocks', icon: '🧱', name: 'Block Bundle (×10)', price: 5, kind: 'many', desc: '10 building blocks straight to your backpack.' },
   { id: 'powerBlocks', icon: '⚡', name: 'Power Blocks (×3)', price: 18, kind: 'many', desc: 'Rare cyan defense blocks that zap nearby Gloomies.' },
   { id: 'door',   icon: '🚪', name: 'House Door', price: 5,   kind: 'many',  desc: 'A door for your house — goes in your backpack.' },
+  { id: 'garagedoor', icon: '🚙', name: 'Garage Door', price: 14, kind: 'many', desc: 'A wide roll-up garage door (fits a 2-block opening) — rolls up when you drive close, down behind you!' },
   { id: 'chair',  icon: '🪑', name: 'Cozy Chair', price: 12,  kind: 'many',  desc: 'Pick a style & color in your 🎒 backpack — sit in it with USE!' },
   { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'Goes in your backpack. Put food on top!' },
   { id: 'bed',    icon: '🛏️', name: 'Big Comfy Bed', price: 14, kind: 'many', desc: 'Avatar-sized bed. Place it, walk close, then press L to lie down.' },
@@ -2575,7 +2576,7 @@ const BARN_CATS = [['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🛒 Stack Mart — the general store
-  blocks: 'build', powerBlocks: 'build', door: 'build', window: 'build', roof: 'build',
+  blocks: 'build', powerBlocks: 'build', door: 'build', garagedoor: 'build', window: 'build', roof: 'build',
   ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',   // treasuremap removed: gemstone quests are paused for now
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
   petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets',
@@ -3063,6 +3064,7 @@ function serializeWorld() {
     seen.add(b.mesh.id);
     const [x, y, z] = k.split(',').map(Number);
     if (b.type === 'door' && b.partner) placed.push([x, Math.min(y, Number(b.partner.split(',')[1])), z, 'door', b.rot || 0]);
+    else if (b.type === 'garage') { if (b.garageAnchor) placed.push([x, y, z, 'garage', b.rot || 0]); else seen.delete(b.mesh.id); }
     else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
     else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
@@ -3176,6 +3178,7 @@ function restoreGame(s) {
   (s.placed || []).forEach(([x, y, z, type, detail, extra]) => {
     if (blocks.has(key(x, y, z))) return;
     if (type === 'door') placeDoor(x, y, z, detail);
+    else if (type === 'garage') placeGarageDoor(x, y, z, detail);
     else if (type === 'power') {
       const mesh = new THREE.Mesh(blockGeo, powerMat);
       mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
@@ -3232,7 +3235,7 @@ function resetWorld() {
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
-  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
+  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
   G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
@@ -3377,6 +3380,7 @@ function solidAt(x, y, z) {
   const b = blocks.get(key(x, y, z));
   if (!b) return false;
   if (b.type === 'door' && b.state && b.state.swing > 1.0) return false;   // an open door lets you through
+  if (b.type === 'garage' && b.state && b.state.lift > 0.9) return false;  // a rolled-up garage door lets the car through
   return true;
 }
 /* height of the walkable surface at a column — top of the highest solid block (0 = grass) */
@@ -3411,12 +3415,9 @@ function addBlockMesh(x, y, z, material, type, removable, customMesh) {
 function removeBlockAt(x, y, z) {
   const b = blocks.get(key(x, y, z));
   if (!b) return null;
-  blocks.delete(key(x, y, z));
-  if (b.partner) {                     // doors occupy two cells sharing one mesh
-    const p = blocks.get(b.partner);
-    if (p && p.mesh === b.mesh) blocks.delete(b.partner);
-  }
   scene.remove(b.mesh);
+  // remove EVERY cell that shares this mesh (a door spans 2 cells, a garage door 4)
+  for (const [k, bb] of blocks) if (bb.mesh === b.mesh) blocks.delete(k);
   return b;
 }
 
@@ -3497,6 +3498,46 @@ function updateDoors(dt) {
       d.didOpen = false;
       if (prev > 0.12 && d.swing <= 0.12 && !d.didClose) { Sound.doorClose(); d.didClose = true; }
     }
+  }
+}
+
+/* ---- garage door (2 wide x 2 tall): rolls UP automatically as you drive/walk up, rolls back down behind you ---- */
+const garageList = [];
+function buildGarageMesh() {
+  const grp = new THREE.Group();
+  const lift = new THREE.Group();                    // the panel that rolls up
+  const W = 1.96, H = 1.92;
+  box(lift, W, H, 0.12, 0xC2C7CE);                   // light metal door panel
+  for (let i = 1; i < 4; i++) box(lift, W, 0.05, 0.14, 0x8d9298, 0, -H / 2 + i * H / 4, 0);   // slat lines
+  box(lift, W - 0.1, 0.05, 0.14, 0x8d9298, 0, -H / 2 + 0.16, 0);
+  box(lift, 0.55, 0.1, 0.16, 0xeceff3, 0, -H / 2 + 0.32, 0.02);   // handle bar
+  box(grp, W + 0.16, 0.16, 0.22, 0x6d6d6d, 0, H / 2 + 0.08, 0);   // header track above the opening
+  grp.add(lift);
+  grp.userData.lift = lift; grp.userData.H = H;
+  return grp;
+}
+function placeGarageDoor(x, y, z, rot) {
+  if (rot == null) rot = fixtureRotationAt(x, z);
+  const dx = Math.round(Math.cos(rot)), dz = Math.round(-Math.sin(rot));   // 2nd cell runs along the wall
+  const grp = buildGarageMesh();
+  const cx = x + 0.5 + dx / 2, cz = z + 0.5 + dz / 2;
+  grp.position.set(cx, y + 1, cz); grp.rotation.y = rot; scene.add(grp);
+  const state = { lift: 0, cx, cz, mesh: grp, didOpen: false, didClose: false };
+  [[x, y, z, true], [x, y + 1, z, false], [x + dx, y, z + dz, false], [x + dx, y + 1, z + dz, false]].forEach(([cX, cY, cZ, anchor]) =>
+    blocks.set(key(cX, cY, cZ), { mesh: grp, type: 'garage', removable: true, state, rot, garageAnchor: anchor }));
+  garageList.push(state);
+}
+function updateGarages(dt) {
+  for (let i = garageList.length - 1; i >= 0; i--) {
+    const d = garageList[i];
+    if (!d.mesh.parent) { garageList.splice(i, 1); continue; }
+    const near = Math.hypot(player.pos.x - d.cx, player.pos.z - d.cz) < 2.6;   // opens for you on foot OR in a car
+    const prev = d.lift;
+    d.lift += ((near ? 1.78 : 0) - d.lift) * Math.min(1, dt * 6);
+    d.mesh.userData.lift.position.y = d.lift;
+    d.mesh.userData.lift.visible = d.lift < d.mesh.userData.H - 0.05;          // fully rolled up = tucked away
+    if (near && !d.didOpen) { if (Sound.doorOpen) Sound.doorOpen(); d.didOpen = true; d.didClose = false; }
+    if (!near && prev > 0.2 && d.lift <= 0.2 && !d.didClose) { if (Sound.doorClose) Sound.doorClose(); d.didClose = true; d.didOpen = false; }
   }
 }
 
@@ -6355,6 +6396,17 @@ function placeSelectedAt(x, z, blockY) {
     if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
   }
+  if (slot === 'garagedoor') {
+    if (G.garageDoors < 1) { toast('🚙 No garage doors in your 🎒! Buy one at 🛒 Stack Mart!', 2400); return false; }
+    const rot = fixtureRotationAt(x, z);
+    const dx = Math.round(Math.cos(rot)), dz = Math.round(-Math.sin(rot));
+    const cells = [[x, 0, z], [x, 1, z], [x + dx, 0, z + dz], [x + dx, 1, z + dz]];
+    if (cells.some(([cx, cy, cz]) => Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R)) { toast('🌍 Too close to the edge for a garage door!', 1800); return false; }
+    if (cells.some(([cx, cy, cz]) => blocks.has(key(cx, cy, cz)))) { toast('🚙 A garage door needs a clear 2-wide, 2-tall opening!', 2600); return false; }
+    if (cells.some(([cx, cy, cz]) => cellOverlapsPlayer(cx, cy, cz))) { toast('🙂 Step back a little first!', 1400); return false; }
+    placeGarageDoor(x, 0, z, rot); G.garageDoors -= 1; Sound.place(); refreshHUD();
+    toast('🚙 Garage door up! Drive (or walk) close and it rolls open.', 2800); return true;
+  }
   if (COOK_SLOTS[slot]) {                 // pots/pans/bacon/pie cook when set on a stove
     const cell0 = blocks.get(key(x, 0, z));
     if (cell0 && cell0.type === 'stove') return cookOnStove(cell0, slot);
@@ -7179,6 +7231,7 @@ function buyItem(id) {
     if (id === 'blocks') { G.blocks += 10; toast('🧱 +10 blocks in your backpack!', 2500); }
     else if (id === 'powerBlocks') { G.powerBlocks += 3; toast('⚡ +3 rare Power Blocks — place them carefully!', 2800); }
     else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
+    else if (id === 'garagedoor') { G.garageDoors++; toast('🚙 Garage door in your 🎒! Place it across a 2-wide gap in a wall.', 3400); }
     else if (id === 'roof') { G.furniture.roof += 4; toast('🔺 +4 roof tiles in your 🎒! Stack them on top of your walls.', 3200); }
     else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
@@ -8571,6 +8624,7 @@ function renderInv() {
     ['🧱', 'Building Blocks', G.blocks, 'block'],
     ['⚡', 'Power Blocks', G.powerBlocks, 'power'],
     ['🚪', 'Doors', G.doors, 'door'],
+    ['🚙', 'Garage Doors', G.garageDoors, 'garagedoor'],
     ['🪑', 'Chairs', G.furniture.chair, 'chair'],
     ['🍽️', 'Picnic Tables', G.furniture.table, 'table'],
     ['🍽️', 'Dining Tables', G.furniture.dtable, 'dtable'],
@@ -9335,7 +9389,7 @@ function loop(now) {
   if (!G.running) { renderer.render(scene, camera); return; }
 
   if (!popupOpen && !G.over) updatePlayer(dt);
-  if (!G.over) updateDoors(dt);
+  if (!G.over) { updateDoors(dt); updateGarages(dt); }
   if (!popupOpen && !G.over) updatePets(dt, now);
   if (!G.over) updateQuest(dt, now);
 
