@@ -2343,7 +2343,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach'];
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
   meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } },
-  city:   { shop: { x: -6, z: -14 },    barn: { x: 3, z: -14 },    motors: { x: 9, z: -14 } },   // one side-by-side high-street row (with the Library) facing the street
+  city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
@@ -3099,11 +3099,12 @@ function applyGroundColors(cols, worldId) {
       // Reading Town: open green neighborhood with just a Main Street + Main Cross to drive on
       // (plenty of room to build), and a paved DOWNTOWN to the north where the shops & library sit.
       const onMain = (x === 0 || x === 1);                 // Main Street, full length
-      if (z <= -8) {                                       // ---- downtown: paved, with side streets ----
-        const hR = (z === -9 || z === -10 || z === -16 || z === -17);
-        const vR = (x === -9 || x === -8 || x === 8 || x === 9);
-        const onRoad = onMain || hR || vR;
-        col = onRoad ? ((x === 0 && !(z & 1)) ? line : road) : pave;   // rest of downtown is pavement
+      if (z <= -8) {                                       // ---- downtown: a paved high street ----
+        const hRoad = (z === -11 || z === -12);            // the high street you drive along (shops face it from z=-15)
+        const onMainDown = onMain && z >= -12;             // Main St comes up to the high street, then stops
+        const onRoad = hRoad || onMainDown;
+        const dash = (z === -11 && !(x & 1));
+        col = onRoad ? (dash ? line : road) : pave;        // the shop row + sidewalks are pavement, not road
       } else {                                             // ---- neighborhood: mostly open grass ----
         const onCross = (z === 0 || z === 1);              // one cross street to drive east–west
         const onRoad = onMain || onCross;
@@ -3126,9 +3127,9 @@ function applyWorldTheme(worldId) {
   applyGroundColors(w.ground, worldId);
   // place the shared shops where this world wants them (Reading Town clusters them downtown)
   const L = WORLD_LAYOUT[worldId] || WORLD_LAYOUT.meadow;
-  SHOP_POS.x = L.shop.x; SHOP_POS.z = L.shop.z; shopGroup.position.set(L.shop.x, 0, L.shop.z);
-  BARN_POS.x = L.barn.x; BARN_POS.z = L.barn.z; barnGroup.position.set(L.barn.x, 0, L.barn.z);
-  MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z);
+  SHOP_POS.x = L.shop.x; SHOP_POS.z = L.shop.z; shopGroup.position.set(L.shop.x, 0, L.shop.z); shopGroup.rotation.y = L.shop.r || 0;
+  BARN_POS.x = L.barn.x; BARN_POS.z = L.barn.z; barnGroup.position.set(L.barn.x, 0, L.barn.z); barnGroup.rotation.y = L.barn.r || 0;
+  MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z); motorsGroup.rotation.y = L.motors.r || 0;
   if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = (worldId === 'meadow');   // the bakery is a Math Meadow shop
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
 }
@@ -3982,14 +3983,14 @@ function finishBake() {
 /* ============================ 📚 THE LIBRARY (Reading Town): pick a story, then answer about it ============================
    Tied to the Library — its own read-a-story comprehension/theme/literary-device game,
    separate from the ❓ reading stations. Questions are tagged by grade so they're age-appropriate. */
-const LIBRARY_POS = { x: -13, z: -14 };
+const LIBRARY_POS = { x: -8, z: -15 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
   { e: '🐉', t: "Arty's High-Flying Heist",
     text: [
-      [1, 'Arty was a young dragon who could fly faster than anyone. He went to the Dragon Games to race, and there he made friends with a kind little dragon named Bronco. But a mean dragon called Dracomax took Arty\'s family away! He made Arty race wearing a black disguise. Arty won the race, but as he flew he dropped secret notes asking for help. A boy named Leo found a note, and his family rescued Arty\'s family. Arty was so happy!'],
-      [3, 'High in the misty mountains lived Arty, a young dragon and the fastest flyer anyone had ever seen — a blue and silver streak across the sky. At the Grand Dragon Games he befriended Bronco, a servant dragon. But the wicked Dracomax was jealous of Arty\'s speed. He kidnapped Arty\'s family and forced Arty to race in disguise, his scales painted black. Arty won, but as he flew he secretly dropped notes telling everyone about Dracomax\'s evil plan. A boy named Leo found a note, and with his clever family and their inventions they rescued the trapped dragons. From then on, Arty used his speed to help others.'],
+      [1, 'Arty was a young dragon who could fly faster than anyone. He went to the Dragon Games to race, and there he made friends with a kind little dragon named Bronco. But a mean dragon called Dracomax was jealous of how fast Arty could fly. Dracomax took Arty\'s family away! Arty felt very sad and worried. Dracomax made him race wearing a black disguise. Arty won the race, but as he flew he dropped secret notes asking for help. A boy named Leo found a note, and his family rescued Arty\'s family. Arty was so happy!'],
+      [3, 'High in the misty mountains lived Arty, a young dragon and the fastest flyer anyone had ever seen — a blue and silver streak across the sky. At the Grand Dragon Games he befriended Bronco, a servant dragon. But the wicked Dracomax was jealous of Arty\'s speed. He kidnapped Arty\'s family, leaving Arty sad and worried, and forced him to race in disguise, his scales painted black. Arty won, but as he flew he secretly dropped notes telling everyone about Dracomax\'s evil plan. A boy named Leo found a note, and with his clever family and their inventions they rescued the trapped dragons. From then on, Arty used his speed to help others.'],
       [5, 'High in the misty mountains, where clouds brushed the rocky peaks, lived Arty Swiftscale — the fastest flyer anyone had ever seen, a blue and silver streak across the sky. At the Grand Dragon Games he befriended Bronco, a humble castle servant, despite their different backgrounds. But the cunning Dracomax coveted Arty\'s speed. The night before the race he kidnapped Arty\'s family and forced the heartbroken dragon to compete disguised in black scales. Arty won easily — yet as he raced, he scattered tiny notes across the kingdom, exposing the villain\'s scheme. One note reached Leo, who, with his inventive family and their magical dog Popcorn, tracked the captured dragons to a hidden dungeon and set them free. Arty had learned to use his gift not for glory, but to help others.']
     ],
     qs: [
@@ -4004,9 +4005,9 @@ const STORIES = [
     ] },
   { e: '🌸', t: "Bonnie's Magical Meadow",
     text: [
-      [1, 'Bonnie was a magical plant horse with flowers in her mane. At school she learned plant magic. One day she found a secret meadow and met a human girl named Fiona. They became best friends! When the garden in Fiona\'s town was dying, Bonnie used her magic to make all the plants healthy and green again. Bonnie learned that her magic grew stronger when she helped others.'],
-      [3, 'Bonnie was a young plant horse whose coat shimmered like spring leaves and whose mane bloomed with flowers. At Greenwood Academy she studied plant magic. While practicing portal-jumping, she found a hidden meadow between the magical and human worlds — and met Fiona, a curious human girl. Instead of being scared, Fiona was delighted, and the two became close friends. When Fiona\'s community garden began to die, Bonnie touched her glowing horn to the soil and filled the garden with green magic until the plants grew healthy again. Bonnie discovered that her magic grew strongest when she used it to help others.'],
-      [5, 'In a realm where rainbows bridge worlds and flowers whisper secrets lived Bonnie, a young plant horse whose coat shimmered like spring leaves and whose mane changed with her mood. At Greenwood Academy she studied potion-making and plant magic, but her true passion was the boundary between the magical and human worlds. While practicing portal-jumping, she discovered a hidden meadow and met Fiona, a curious human girl who greeted her with wonder instead of fear. Their friendship blossomed, and so did the meadow. When Fiona\'s community garden withered, Bonnie sensed the soil was out of balance and healed it with waves of green magic. She learned a lesson she would carry forever: magic — and friendship — grow strongest when shared to help others.']
+      [1, 'Bonnie was a magical plant horse with flowers in her mane. At a school called Greenwood Academy she learned plant magic. One day she found a secret meadow and met a human girl named Fiona. They became best friends! When the community garden in Fiona\'s town was dying, Bonnie used her magic to make all the plants healthy and green again. Bonnie learned that her magic grew stronger when she helped others.'],
+      [3, 'In a magical land where flowers whisper secrets lived Bonnie, a young plant horse whose coat shimmered like spring leaves and whose mane bloomed with flowers. At Greenwood Academy she studied plant magic. While practicing portal-jumping, she found a hidden meadow between the magical and human worlds — and met Fiona, a curious human girl. Instead of being scared, Fiona was delighted, and the two became close friends. When Fiona\'s community garden began to die, Bonnie touched her glowing horn to the soil and filled the garden with green magic until the plants grew healthy again. Bonnie discovered that her magic grew strongest when she used it to help others.'],
+      [5, 'In a realm where rainbows bridge worlds and flowers whisper secrets lived Bonnie, a young plant horse whose coat shimmered like spring leaves and whose mane changed with her mood. At Greenwood Academy she studied potion-making and plant magic, but her true passion was the boundary between the magical and human worlds. While practicing portal-jumping, she discovered a hidden meadow and met Fiona, a curious human girl who greeted her with wonder instead of fear. Their friendship blossomed, and so did the meadow. When Fiona\'s community garden withered, Bonnie sensed the soil was out of balance and healed it with waves of green magic. To keep Bonnie\'s magic a secret, Fiona told the neighbors they had simply used a special fertilizer. Bonnie learned a lesson she would carry forever: magic — and friendship — grow strongest when shared to help others.']
     ],
     qs: [
       { q: 'What kind of creature is Bonnie?', a: 'A plant horse', o: ['A plant horse', 'A dragon', 'A puppy', 'A robot'], g: 1 },
@@ -4295,7 +4296,7 @@ function buildLibrary(g) {                    // Reading Town's grand civic libr
     box(L, 0.5, 0.4, 0.5, 0x8a6b4a, px * 0.78, 0.2, D / 2 + 0.95);    // planter
     box(L, 0.46, 0.34, 0.46, 0x4f9a37, px * 0.78, 0.52, D / 2 + 0.95);// shrub
   });
-  L.position.set(-13, 0, -14); g.add(L);                              // west end of the high-street row
+  L.position.set(-8, 0, -15); g.add(L);                               // west end of the high-street row, facing the street
 }
 function buildHighStreetArch(g) {             // a welcome arch over Main Street at the entrance to downtown
   const A = new THREE.Group();
