@@ -4355,6 +4355,7 @@ function renderBake() {
     b.onclick = () => bakeAnswer(opt, b);
     wrap.appendChild(b);
   });
+  lockChoices(wrap, 800);            // read the measuring step first — no mashing
 }
 function bakeAnswer(opt, btn) {
   if (!bake) return;
@@ -4366,7 +4367,7 @@ function bakeAnswer(opt, btn) {
     $('bakeMsg').style.color = '#2f8a52'; $('bakeMsg').textContent = '✓ Perfect!';
     setTimeout(renderBake, 350);
   } else {
-    Sound.wrong(); btn.classList.add('flop');
+    Sound.wrong(); btn.classList.add('flop'); lockChoices($('bakeChoices'), 800);
     $('bakeMsg').style.color = '#c0392b'; $('bakeMsg').textContent = '😅 Not quite — measure it again!';
     setTimeout(() => { s.options = shuffle(s.options.slice()); renderBake(); }, 700);
   }
