@@ -8293,24 +8293,34 @@ function countPlaced(type) {                 // how many of a placed block-type 
 }
 const mathSolved = () => subjectSolved('math');           // math questions answered right (across all worlds)
 const byOpN = op => (profile.byOp || {})[op] || 0;
-// Quests are math-FIRST — the whole point is to practise. The few "build/buy" goals still need
-// coins & blocks, which you only earn by doing math, so they reward math too.
+// Quests are split by town: Math Meadow pushes MATH, Reading Town pushes READING & spelling.
+// 'any' quests (build / buy) need coins & blocks you can only earn by learning, so they show everywhere.
 const QUESTS = [
-  { id: 'm5',     icon: '🧮', title: 'Answer 5 math questions', reward: 8,  check: () => mathSolved() >= 5 },
-  { id: 'add10',  icon: '➕', title: 'Solve 10 addition questions', reward: 10, check: () => byOpN('add') >= 10 },
-  { id: 'sub10',  icon: '➖', title: 'Solve 10 subtraction questions', reward: 10, check: () => byOpN('sub') >= 10 },
-  { id: 'm20',    icon: '🧠', title: 'Answer 20 math questions', reward: 16, check: () => mathSolved() >= 20 },
-  { id: 'streak', icon: '🔥', title: 'Get 6 math questions right in a row', reward: 14, check: () => (profile.bestStreak || 0) >= 6 },
-  { id: 'score75',icon: '⭐', title: 'Reach a Learning Score of 75', reward: 12, check: () => ((profile.stars != null ? profile.stars : 0)) >= 75 },
-  { id: 'coins',  icon: '🪙', title: 'Earn 60 coins by doing math', reward: 12, check: () => G.coins >= 60 },
-  { id: 'house',  icon: '🏠', title: 'Earn blocks with math & build a house', reward: 12, check: () => !!G.shelterRewarded },
-  { id: 'buyveh', icon: '🚗', title: 'Earn coins with math & buy a vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) },
-  { id: 'read',   icon: '📚', title: 'Read a story at the Library', reward: 10, check: () => (profile.readFirstTotal || 0) >= 1 },
-  { id: 'spell',  icon: '🐝', title: 'Try the Spelling Bee', reward: 10, check: () => (profile.spellFirstTotal || 0) >= 1 },
-  { id: 'mul5',   icon: '✖️', title: 'Solve 5 times-table questions', reward: 16, check: () => byOpN('mul') >= 5 },
-  { id: 'm40',    icon: '🏆', title: 'Answer 40 math questions', reward: 24, check: () => mathSolved() >= 40 },
-  { id: 'm75',    icon: '🌟', title: 'Answer 75 math questions', reward: 35, check: () => mathSolved() >= 75 }
+  // 🌳 Math Meadow — math practice
+  { id: 'm5',     world: 'meadow', icon: '🧮', title: 'Answer 5 math questions', reward: 8,  check: () => mathSolved() >= 5 },
+  { id: 'add10',  world: 'meadow', icon: '➕', title: 'Solve 10 addition questions', reward: 10, check: () => byOpN('add') >= 10 },
+  { id: 'sub10',  world: 'meadow', icon: '➖', title: 'Solve 10 subtraction questions', reward: 10, check: () => byOpN('sub') >= 10 },
+  { id: 'm20',    world: 'meadow', icon: '🧠', title: 'Answer 20 math questions', reward: 16, check: () => mathSolved() >= 20 },
+  { id: 'streak', world: 'meadow', icon: '🔥', title: 'Get 6 math questions right in a row', reward: 14, check: () => (profile.bestStreak || 0) >= 6 },
+  { id: 'mul5',   world: 'meadow', icon: '✖️', title: 'Solve 5 times-table questions', reward: 16, check: () => byOpN('mul') >= 5 },
+  { id: 'm40',    world: 'meadow', icon: '🏆', title: 'Answer 40 math questions', reward: 24, check: () => mathSolved() >= 40 },
+  { id: 'm75',    world: 'meadow', icon: '🌟', title: 'Answer 75 math questions', reward: 35, check: () => mathSolved() >= 75 },
+  // 🏘️ Reading Town — reading & spelling
+  { id: 'r_read1', world: 'city', icon: '📚', title: 'Read a story at the Library', reward: 10, check: () => (profile.readFirstTotal || 0) >= 1 },
+  { id: 'r_q10',   world: 'city', icon: '📖', title: 'Answer 10 reading questions', reward: 12, check: () => (profile.readFirstTotal || 0) >= 10 },
+  { id: 'r_comp',  world: 'city', icon: '🎯', title: 'Read with 80% on first try', reward: 16, check: () => (profile.readFirstTotal || 0) >= 8 && (profile.readFirstRight || 0) / (profile.readFirstTotal || 1) >= 0.8 },
+  { id: 'r_level3',world: 'city', icon: '📈', title: 'Reach Reading Level 3', reward: 14, check: () => (profile.readLevel || 0) >= 3 },
+  { id: 'r_spell5',world: 'city', icon: '🐝', title: 'Spell 5 words at the Post Office', reward: 12, check: () => (profile.spellFirstTotal || 0) >= 5 },
+  { id: 'r_spell15',world:'city', icon: '✏️', title: 'Spell 15 words right', reward: 18, check: () => (profile.spellFirstRight || 0) >= 15 },
+  { id: 'r_slevel3',world:'city', icon: '🔤', title: 'Reach Spelling Level 3', reward: 14, check: () => (profile.spellLevel || 0) >= 3 },
+  { id: 'r_q40',   world: 'city', icon: '🏆', title: 'Answer 40 reading questions', reward: 28, check: () => (profile.readFirstTotal || 0) >= 40 },
+  // 🌟 Anywhere — these need coins/blocks you earn by learning
+  { id: 'score75',world: 'any', icon: '⭐', title: 'Reach a Learning Score of 75', reward: 12, check: () => (profile.stars != null ? profile.stars : 0) >= 75 },
+  { id: 'coins',  world: 'any', icon: '🪙', title: 'Earn 60 coins by learning', reward: 12, check: () => G.coins >= 60 },
+  { id: 'house',  world: 'any', icon: '🏠', title: 'Earn blocks & build a house', reward: 12, check: () => !!G.shelterRewarded },
+  { id: 'buyveh', world: 'any', icon: '🚗', title: 'Earn coins & buy a vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) }
 ];
+function worldQuests() { return QUESTS.filter(q => q.world === 'any' || q.world === G.world); }
 let questTimer = 0;
 function checkQuests() {
   if (!G.running) return;
@@ -8329,16 +8339,16 @@ function checkQuests() {
 }
 function updateQuestBtn() {
   const btn = $('questBtn'); if (!btn) return;
-  const done = QUESTS.filter(q => (profile.questsDone || {})[q.id]).length;
-  btn.textContent = '🗺️ ' + done + '/' + QUESTS.length;
+  const list = worldQuests(), done = list.filter(q => (profile.questsDone || {})[q.id]).length;
+  btn.textContent = '🗺️ ' + done + '/' + list.length;
 }
 function renderQuestBoard() {
   const body = $('questBoardBody'); if (!body) return;
   profile.questsDone = profile.questsDone || {};
-  const done = QUESTS.filter(q => profile.questsDone[q.id]).length;
-  let html = '<p style="color:#8a7a5a;margin:0 0 8px">Do quests to earn coins! (' + done + '/' + QUESTS.length + ' done)</p>' +
+  const list = worldQuests(), done = list.filter(q => profile.questsDone[q.id]).length;
+  let html = '<p style="color:#8a7a5a;margin:0 0 8px">' + curWorld().emoji + ' <b>' + curWorld().name + '</b> quests — do them to earn coins! (' + done + '/' + list.length + ' done)</p>' +
     '<div style="display:flex;flex-direction:column;gap:7px;max-height:52vh;overflow:auto;text-align:left">';
-  QUESTS.forEach(q => {
+  list.forEach(q => {
     const d = !!profile.questsDone[q.id];
     html += '<div style="display:flex;align-items:center;gap:9px;background:' + (d ? '#e7f3e7' : '#f4f7fb') + ';border-radius:10px;padding:8px 10px' + (d ? ';opacity:0.75' : '') + '">' +
       '<span style="font-size:22px">' + q.icon + '</span><b style="flex:1;color:#34495e">' + q.title + '</b>' +
