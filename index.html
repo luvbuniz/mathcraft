@@ -2672,7 +2672,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, bestStreak: 0 };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0 };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -6316,8 +6316,10 @@ function updatePlayer(dt) {
   // selfie pose: wave a raised hand (bipeds) or bob the head (quads) when standing still
   if (G.selfie && !moving) {
     if (d.arms && d.arms.length >= 2) {
-      d.arms[1].rotation.x = -2.5;                                     // right arm up
-      d.arms[1].rotation.z = -0.5 + Math.sin(t * 7) * 0.4;             // wave hello!
+      // raise the right arm UP and OUT to the side (z roll) so the hand waves
+      // beside the head — never swinging forward through the face/beak.
+      d.arms[1].rotation.x = -0.12;
+      d.arms[1].rotation.z = 2.0 + Math.sin(t * 7) * 0.35;             // wave hello, out to the side!
       d.arms[0].rotation.x = Math.sin(t * 1.6) * 0.06;
     }
     if (d.head) d.head.rotation.z = Math.sin(t * 3) * 0.07;            // cheeky head tilt
@@ -8352,16 +8354,23 @@ let questTimer = 0;
 function checkQuests() {
   if (!G.running) return;
   profile.questsDone = profile.questsDone || {};
+  // First run for this profile: grandfather any quest already satisfied by progress
+  // earned BEFORE quests existed — mark them done silently, with NO coins/fanfare.
+  // (Otherwise a returning player auto-wins a pile of coins the moment they load.)
+  const baseline = !profile.questsBaselined;
   let any = false;
   for (const q of QUESTS) {
     if (profile.questsDone[q.id]) continue;
     let ok = false; try { ok = q.check(); } catch (e) {}
     if (ok) {
-      profile.questsDone[q.id] = true; G.coins += q.reward; any = true;
+      profile.questsDone[q.id] = true;
+      if (baseline) continue;                         // silent grandfather — no payout
+      G.coins += q.reward; any = true;
       if (Sound.fanfare) Sound.fanfare();
       toast('🗺️ Quest complete: ' + q.title + '!  +' + q.reward + ' 🪙', 4200);
     }
   }
+  if (baseline) { profile.questsBaselined = true; profileDirty = true; saveProfile(); updateQuestBtn(); }
   if (any) { profileDirty = true; saveProfile(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); updateQuestBtn(); }
 }
 function updateQuestBtn() {
@@ -8696,6 +8705,7 @@ function toggleSelfie() {
   G.selfie = !G.selfie;
   if (G.selfie && G.firstPerson) { G.firstPerson = false; $('camBtn').textContent = '🧍'; }   // selfie needs to see the character
   $('selfieBtn').classList.toggle('on', G.selfie);
+  $('crosshair').style.display = G.selfie ? 'none' : '';   // hide the aiming + in selfie mode (clean photos)
   toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸!' : '🧍 Back to normal view', 1400);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
