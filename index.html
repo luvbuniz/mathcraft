@@ -1213,6 +1213,22 @@
   </div>
 </div>
 
+<!-- ================= SPANISH MART (El Mercadito) POPUP ================= -->
+<div class="popup" id="martPopup">
+  <div class="popupCard" style="width:min(540px,95vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="martClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 style="color:#C8602E; margin:2px 0 2px; font-size:clamp(22px,4vw,30px)">🏪 El Mercadito</h2>
+    <div style="color:#7a6a55; font-weight:700; font-size:13px; margin-bottom:4px">The Little Market — order in Spanish!</div>
+    <div style="font-size:42px" id="martKeeper">🧑‍🌾</div>
+    <div id="martLine" style="font-size:clamp(16px,3vw,20px); color:#4a3b2c; min-height:46px; margin:4px 0"></div>
+    <div id="martGoal" style="font-weight:700; color:#2E6E9E; margin:4px 0; min-height:20px"></div>
+    <button id="martSay" class="libBtn" style="background:#C8602E;color:#fff;max-width:220px;margin:0 auto 8px">🔊 Repetir (say again)</button>
+    <div id="martPrompt" style="font-weight:bold; color:#34495e; margin-bottom:8px"></div>
+    <div id="martChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
+    <div id="martMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
 <!-- ================= UNLOCK (FULL GAME) POPUP ================= -->
 <div class="popup" id="unlockPopup">
   <div class="popupCard" style="text-align:center">
@@ -2385,7 +2401,7 @@ const WORLDS = {
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
   city:   { id: 'city',   name: 'Reading Town',   emoji: '🏘️', subject: 'reading', chip: 'Reading',
             sky: 0x9FC6E8, fog: 0xC2DCF0, ground: [0x86C05A, 0x79B24E, 0x93C970] },
-  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
+  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español',
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
 };
 const WORLD_ORDER = ['meadow', 'city', 'beach'];
@@ -2594,7 +2610,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {} };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {} };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -2788,7 +2804,7 @@ function doUnlock() {
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
-  toast('🎉 Full game unlocked! 🏘️ Reading Town is open — find a 🌀 portal to visit. 🏖️ Spanish Beach is coming soon!', 4500);
+  toast('🎉 Full game unlocked! 🏘️ Reading Town and 🏖️ Spanish Beach are open — find a 🌀 portal to visit!', 4500);
   if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
 }
 /* reflect lock state on the homepage world picker */
@@ -2926,9 +2942,21 @@ function renderGrownup() {
     } else {
       html += '<div class="guSkillSub">No spelling yet — try the 🏤 Post Office Spelling Bee.</div>';
     }
-    // 🇪🇸 Spanish — content coming soon; grammar & vocabulary will be rated here
+    // 🇪🇸 Spanish — rated on the first answer at El Mercadito (Spanish Beach)
     html += sectionHead('🇪🇸 Spanish');
-    html += '<div class="guSkillSub">Coming soon — grammar &amp; vocabulary progress will appear here.</div>';
+    const spTotal = p.spanFirstTotal || 0, spRight = p.spanFirstRight || 0;
+    if (spTotal > 0) {
+      const sv = Math.round(spRight / spTotal * 100);
+      let vrate, vcol;
+      if (spTotal < 6) { vrate = '🌱 Just getting started'; vcol = '#6c84a6'; }
+      else if (sv >= 80) { vrate = '✅ ¡Muy bien! Strong Spanish'; vcol = '#2f8a52'; }
+      else if (sv >= 55) { vrate = '🟡 Developing — keep practicing'; vcol = '#b07d00'; }
+      else { vrate = '🔴 Needs support — practice together'; vcol = '#c0392b'; }
+      html += '<div class="guStats"><span>🗣️ Spanish: ' + sv + '% (first try)</span><span>🏪 ' + spRight + '/' + spTotal + '</span></div>';
+      html += '<div class="guFocus" style="color:' + vcol + '">' + vrate + '</div>';
+    } else {
+      html += '<div class="guSkillSub">No Spanish yet — visit 🏪 El Mercadito in Spanish Beach.</div>';
+    }
 
     card.innerHTML = html;
     list.appendChild(card);
@@ -4164,6 +4192,8 @@ const LIBRARY_POS = { x: -8, z: -15 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
 const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
+const MART_POS = { x: -7, z: 4 };
+function martDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - MART_POS.x, player.pos.z - MART_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
   { e: '🐉', t: "Arty's High-Flying Heist",
@@ -4683,12 +4713,14 @@ const SPELL_WORDS = {
   4: [['question', 'I asked my teacher a question.'], ['library', 'We borrow books from the library.'], ['measure', 'We measure the flour to bake.'], ['journey', 'They went on a long journey.'], ['special', 'Today is a special day.'], ['beautiful', 'The sunset was beautiful.'], ['mystery', 'They solved the mystery together.'], ['picture', 'She drew a lovely picture.'], ['station', 'The train stopped at the station.'], ['between', 'Sit between your two friends.'], ['machine', 'The machine makes a loud noise.'], ['weather', 'The weather is sunny today.']],
   5: [['adventure', 'They had a great adventure.'], ['knowledge', 'Reading gives you knowledge.'], ['necessary', 'Sleep is necessary to stay healthy.'], ['separate', 'Keep the colors separate.'], ['different', 'Every snowflake is different.'], ['sentence', 'Write a complete sentence.'], ['important', 'It is important to be kind.'], ['character', 'My favorite story character is brave.'], ['surprise', 'The party was a surprise.'], ['neighbor', 'Our neighbor has a friendly dog.'], ['calendar', 'Mark the date on the calendar.'], ['language', 'Spanish is a beautiful language.']]
 };
-let spellVoice = null;
+let spellVoice = null, spanVoice = null;
 function pickSpellVoice() {
   try {
     const vs = speechSynthesis.getVoices() || [];
     spellVoice = vs.find(v => /en[-_]US/i.test(v.lang) && /female|samantha|zira|google us/i.test(v.name)) ||
                  vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
+    spanVoice = vs.find(v => /es[-_]MX/i.test(v.lang)) || vs.find(v => /es[-_]US/i.test(v.lang)) ||
+                vs.find(v => /^es/i.test(v.lang)) || null;   // Spanish voice for the Mercadito (free, built-in)
   } catch (e) {}
 }
 if (typeof speechSynthesis !== 'undefined') { pickSpellVoice(); try { speechSynthesis.onvoiceschanged = pickSpellVoice; } catch (e) {} }
@@ -4697,8 +4729,9 @@ function speakWord(text, opts) {
     if (typeof speechSynthesis === 'undefined') return false;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = (opts && opts.rate) || 0.8; u.pitch = 1.05; u.lang = 'en-US';
-    if (spellVoice) u.voice = spellVoice;
+    u.rate = (opts && opts.rate) || 0.8; u.pitch = 1.05;
+    if (opts && opts.es) { u.lang = 'es-MX'; if (spanVoice) u.voice = spanVoice; }   // Spanish
+    else { u.lang = 'en-US'; if (spellVoice) u.voice = spellVoice; }
     speechSynthesis.speak(u);
     return true;
   } catch (e) { return false; }
@@ -4807,6 +4840,123 @@ function finishSpell() {
   $('spellMsg').textContent = '';
   $('spellAgain').onclick = () => { closePost(); openPost(); };
   $('spellDone').onclick = closePost;
+}
+
+/* ============================ 🏪 EL MERCADITO: a Spanish grocery role-play with a real voice ============================
+   The shopkeeper greets you in Spanish; you order an item, ask politely (por favor), hear the
+   price (a Spanish number), and say thank you (gracias). Younger kids tap choices; older kids type.
+   Spoken with the free built-in Spanish voice. Rated as the 'spanish' skill. */
+let mart = null;
+const MART_ITEMS = [
+  { es: 'manzana', en: 'apple', e: '🍎', price: 3 }, { es: 'pan', en: 'bread', e: '🍞', price: 2 },
+  { es: 'leche', en: 'milk', e: '🥛', price: 2 }, { es: 'queso', en: 'cheese', e: '🧀', price: 4 },
+  { es: 'huevos', en: 'eggs', e: '🥚', price: 3 }, { es: 'plátano', en: 'banana', e: '🍌', price: 2 },
+  { es: 'naranja', en: 'orange', e: '🍊', price: 3 }, { es: 'tomate', en: 'tomato', e: '🍅', price: 2 },
+  { es: 'agua', en: 'water', e: '💧', price: 1 }, { es: 'pollo', en: 'chicken', e: '🍗', price: 5 }
+];
+const ES_NUM = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
+function openMart() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  mart = { served: 0 };
+  $('martPopup').style.display = 'flex';
+  newCustomer();
+}
+function closeMart() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('martPopup').style.display = 'none'; popupOpen = false; mart = null; }
+function newCustomer() {
+  mart.item = MART_ITEMS[Math.floor(Math.random() * MART_ITEMS.length)];
+  mart.phase = 'order'; mart.typed = G.grade >= 4; mart.attempted = false;
+  renderMart();
+}
+function martSay(es, en, opts) {
+  mart.lastEs = es; mart.lastOpts = opts;
+  $('martLine').innerHTML = '<b>' + es + '</b><br><span style="font-size:0.82em;color:#7a6a55">' + en + '</span>';
+  speakWord(es, Object.assign({ es: true }, opts || {}));
+}
+function martChoiceBtn(wrap, label, onClick) {
+  const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '18px'; b.textContent = label;
+  b.onclick = onClick; wrap.appendChild(b); return b;
+}
+function martTypeInput(wrap, answer, onSubmit) {
+  const input = document.createElement('input');
+  input.type = 'text'; input.autocomplete = 'off'; input.autocapitalize = 'off'; input.spellcheck = false;
+  input.style.cssText = 'font-size:22px;padding:10px;border:3px solid #E2B58C;border-radius:12px;text-align:center;width:90%;align-self:center';
+  input.placeholder = 'escríbelo…';
+  const submit = document.createElement('button');
+  submit.className = 'libBtn'; submit.style.background = '#3f9d34'; submit.style.color = '#fff'; submit.textContent = '✓ Listo';
+  const go = () => onSubmit(input.value);
+  submit.onclick = go; input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  wrap.appendChild(input); wrap.appendChild(submit);
+  setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
+}
+function martRecord(correct) {     // rate the FIRST answer to each step as 'spanish'
+  if (!mart.attempted) {
+    profile.spanFirstTotal = (profile.spanFirstTotal || 0) + 1;
+    profile.spanFirstByGrade = profile.spanFirstByGrade || {};
+    const bg = profile.spanFirstByGrade; bg[G.grade] = bg[G.grade] || { right: 0, total: 0 }; bg[G.grade].total++;
+    if (correct) { profile.spanFirstRight = (profile.spanFirstRight || 0) + 1; bg[G.grade].right++; }
+    else recordWrong({ skill: 'spanish', level: G.grade });
+    profileDirty = true; saveProfile();
+  }
+  mart.attempted = true;
+}
+function martAnswer(correct, nextPhase) {
+  martRecord(correct);
+  if (correct) {
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
+    mart.phase = nextPhase; mart.attempted = false;
+    if (nextPhase === 'done') finishMart(); else renderMart();
+  } else {
+    Sound.wrong();
+    $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 ¡Inténtalo otra vez! (Try again)';
+    if (mart.lastEs) speakWord(mart.lastEs, Object.assign({ es: true }, mart.lastOpts || {}));
+  }
+}
+const norm = s => (s || '').trim().toLowerCase().replace(/[.,!¡¿?]/g, '');
+function renderMart() {
+  if (!mart) return;
+  const wrap = $('martChoices'); wrap.innerHTML = ''; $('martMsg').textContent = '';
+  $('martGoal').innerHTML = '';
+  const it = mart.item;
+  $('martSay').onclick = () => { Sound.click(); if (mart.lastEs) speakWord(mart.lastEs, Object.assign({ es: true }, mart.lastOpts || {})); };
+  if (mart.phase === 'order') {
+    martSay('¡Hola! ¿Qué te gustaría?', 'Hello! What would you like?');
+    $('martGoal').innerHTML = '🛒 Order: ' + it.e + ' <b>' + it.en + '</b>';
+    $('martPrompt').textContent = mart.typed ? 'Type it in Spanish (just the word):' : 'Tap the Spanish word for it:';
+    if (mart.typed) martTypeInput(wrap, it.es, v => martAnswer(norm(v) === norm(it.es), 'polite'));
+    else {
+      const pool = MART_ITEMS.filter(m => m !== it); shuffle(pool);
+      const opts = shuffle([it, pool[0], pool[1], pool[2]]);
+      opts.forEach(o => martChoiceBtn(wrap, o.e + '  ' + o.es, () => { speakWord(o.es, { es: true }); martAnswer(o === it, 'polite'); }));
+    }
+  } else if (mart.phase === 'polite') {
+    martSay('Quiero ' + it.es + '…', 'I want ' + it.en + '…');
+    $('martPrompt').textContent = 'Finish it politely — pick the polite words:';
+    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'por favor', 'pay'); }));
+  } else if (mart.phase === 'pay') {
+    martSay('Son ' + ES_NUM[it.price] + ' monedas.', 'That is ' + it.price + ' coins.');
+    $('martPrompt').textContent = mart.typed ? 'Type the number you heard (in Spanish):' : 'Tap the number the shopkeeper said:';
+    if (mart.typed) martTypeInput(wrap, ES_NUM[it.price], v => martAnswer(norm(v) === norm(ES_NUM[it.price]), 'thanks'));
+    else {
+      const nums = new Set([it.price]); while (nums.size < 4) nums.add(1 + Math.floor(Math.random() * 6));
+      shuffle([...nums]).forEach(n => martChoiceBtn(wrap, ES_NUM[n], () => { speakWord(ES_NUM[n], { es: true }); martAnswer(n === it.price, 'thanks'); }));
+    }
+  } else if (mart.phase === 'thanks') {
+    martSay('¡Aquí tienes!', 'Here you go!');
+    $('martPrompt').textContent = 'Say thank you:';
+    shuffle(['gracias', 'por favor', 'hola', 'adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'gracias', 'done'); }));
+  }
+}
+function finishMart() {
+  mart.served = (mart.served || 0) + 1;
+  const reward = 6 + G.grade * 2;
+  G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  martSay('¡De nada! ¡Adiós!', "You're welcome! Goodbye!");
+  $('martGoal').innerHTML = '🎉 ' + mart.item.e + ' <b>' + mart.item.es + '</b> — ¡muy bien!';
+  $('martPrompt').innerHTML = '🪙 +' + reward + ' • You shopped in Spanish!';
+  const wrap = $('martChoices'); wrap.innerHTML = '';
+  martChoiceBtn(wrap, '🛒 Otro cliente (shop again)', () => newCustomer()).style.background = '#3f9d34';
+  martChoiceBtn(wrap, 'Adiós (Done)', () => closeMart());
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
@@ -5029,7 +5179,37 @@ function buildUmbrella(g, x, z, col) {
     c.rotation.y = a; c.rotation.x = 0.42;                                                          // tilted canopy panels
   }
 }
+function buildSpanishMart(g) {                 // El Mercadito — a colorful Mexican-style market stall (Spanish Beach)
+  const M = new THREE.Group();
+  const ADOBE = 0xD9A06A, ADOBE2 = 0xC2864A, WHITE = 0xF5EFE2, ROOF = 0xA8472E, WOOD = 0x8a5c33;
+  box(M, 4.0, 0.16, 3.0, 0xCBB89A, 0, 0.08, 0);            // tiled patio base
+  box(M, 3.6, 2.3, 0.16, ADOBE, 0, 1.25, -1.4);            // back wall
+  box(M, 0.16, 2.3, 2.9, ADOBE, -1.78, 1.25, 0); box(M, 0.16, 2.3, 2.9, ADOBE, 1.78, 1.25, 0);   // side walls
+  box(M, 3.6, 0.2, 0.18, WHITE, 0, 2.32, -1.4);            // white wall cap
+  box(M, 3.4, 0.9, 0.5, ADOBE2, 0, 0.5, 1.2);              // front counter
+  box(M, 3.5, 0.14, 0.6, WOOD, 0, 0.98, 1.22);             // counter top
+  const tcols = [0x2E6E9E, 0xE0B23A, 0xC8602E, 0x3F8F6E];
+  for (let i = 0; i < 9; i++) box(M, 0.3, 0.3, 0.02, tcols[i % 4], -1.4 + i * 0.35, 0.5, 1.46);  // talavera tiles
+  box(M, 4.2, 0.3, 3.3, ROOF, 0, 2.55, 0);                 // flat roof
+  for (let i = 0; i < 9; i++) box(M, 0.4, 0.12, 0.7, [0xE5534B, 0xF5EFE2, 0x3F8F6E][i % 3], -1.6 + i * 0.4, 1.96, 1.7);   // festive awning stripes
+  for (let i = 0; i < 8; i++) box(M, 0.16, 0.2, 0.02, [0xE5534B, 0xF2C14E, 0x4FA3E0, 0xEE7DB1][i % 4], -1.5 + i * 0.42, 1.72, 1.78);  // papel picado bunting
+  [[-1.2, 0xE0522B], [-0.4, 0x6FA85B], [0.4, 0xF2C14E], [1.2, 0xC8602E]].forEach(([x, col]) => {
+    box(M, 0.7, 0.36, 0.5, 0x9a6b3a, x, 0.3, 2.5);          // produce crate
+    for (let j = 0; j < 6; j++) box(M, 0.16, 0.16, 0.16, col, x - 0.2 + (j % 3) * 0.2, 0.6, 2.55 - Math.floor(j / 3) * 0.16);
+  });
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 96;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#C8602E'; c.fillRect(0, 0, 320, 96); c.strokeStyle = '#F5EFE2'; c.lineWidth = 6; c.strokeRect(5, 5, 310, 86);
+  c.fillStyle = '#FFFFFF'; c.textAlign = 'center'; c.font = 'bold 34px Georgia, serif'; c.textBaseline = 'middle';
+  c.fillText('EL MERCADITO', 160, 34);
+  c.fillStyle = '#FCE9C8'; c.font = 'bold 20px Georgia, serif'; c.fillText('The Little Market', 160, 68);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.84, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.45, 1.72); M.add(sign);
+  M.position.set(MART_POS.x, 0, MART_POS.z); M.rotation.y = -0.4;
+  g.add(M);
+}
 function buildBeachDecor(g) {
+  buildSpanishMart(g);
   const ocean = new THREE.Mesh(new THREE.CircleGeometry(80, 48), new THREE.MeshLambertMaterial({ color: 0x2FA8D8 }));
   ocean.rotation.x = -Math.PI / 2; ocean.position.y = -0.12; g.add(ocean);                          // sea around the sandy island
   for (let i = 0; i < 12; i++) {
@@ -7704,6 +7884,7 @@ addEventListener('keydown', e => {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+    else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -7994,6 +8175,7 @@ $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
+$('martClose').onclick = () => { Sound.click(); closeMart(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
@@ -8138,6 +8320,7 @@ if (isTouch) {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+    else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -8665,6 +8848,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (postDist() < 3.8) {
       hint.textContent = isTouch ? '🏤 Tap ⭐ USE — Spelling Bee at the Post Office!' : '🏤 Press E — Spelling Bee at the Post Office!';
+      hint.style.display = 'block';
+    } else if (martDist() < 3.8) {
+      hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 Press E — order in Spanish at El Mercadito!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
