@@ -2335,10 +2335,12 @@ function beginPurchase() {
   if (typeof toast === 'function') toast('🧪 Demo: no payment connected yet — unlocking for testing.', 3000);
   doUnlock();
 }
-/* ===== Gift / promo codes — unlock the full game for free (e.g. party favors).
-   Edit this list to add or retire codes. Share a code, or a link like
-   stackadoo.com/?code=STACKPARTY (the kids just open it). ===== */
-const PROMO_CODES = ['STACKPARTY', 'BIRTHDAY2026', 'STACKADOO'];
+/* ===== Gift / promo codes — unlock the full game for free (party favors).
+   These are 10 UNIQUE, hard-to-guess codes — hand ONE to each kid so there's no
+   single "magic word" to spread. (True one-redemption-each enforcement would need
+   a small server; without one, a code still works on any device it's typed into.)
+   Retire a code by deleting it from this list. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
+const PROMO_CODES = ['STK-E8UZD', 'STK-8CSPM', 'STK-XYBJ6', 'STK-K7MUE', 'STK-7SN4K', 'STK-EKEDD', 'STK-FBGY4', 'STK-Z3X58', 'STK-7KG4E', 'STK-EY934'];
 function redeemCode(raw) {
   const code = (raw || '').trim().toUpperCase();
   if (code && PROMO_CODES.includes(code)) { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} return true; }
