@@ -6,6 +6,8 @@
  * Setup: see gift-codes/SETUP.md
  */
 
+var ADMIN_KEY = 'remus';   // must match ADMIN_KEY in admin.html (so only you can generate codes)
+
 function doGet(e)  { return handle(e); }
 function doPost(e) { return handle(e); }
 
@@ -17,21 +19,30 @@ function json_(obj) {
 function sheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName('codes');
-  if (!sh) { sh = ss.insertSheet('codes'); sh.appendRow(['code', 'used', 'redeemedAt']); }
+  if (!sh) { sh = ss.insertSheet('codes'); sh.appendRow(['code', 'used', 'redeemedAt', 'created']); }
   return sh;
 }
 
 function handle(e) {
   var p = (e && e.parameter) || {};
   var action = p.action || 'redeem';
+  // ----- admin actions (require the key) -----
+  if (action === 'gencode') {
+    if (p.key !== ADMIN_KEY) return json_({ ok: false, error: 'unauthorized' });
+    return json_(genCodes_(Number(p.n) || 1));
+  }
+  if (action === 'codes') {
+    if (p.key !== ADMIN_KEY) return json_({ ok: false, error: 'unauthorized' });
+    return json_(codeReport_());
+  }
+  // ----- public: redeem / check a single code -----
   var code = String(p.code || '').trim().toUpperCase();
   if (!code) return json_({ ok: false, reason: 'empty' });
-
   var lock = LockService.getScriptLock();
   try { lock.waitLock(8000); } catch (err) { return json_({ ok: false, reason: 'busy' }); }
   try {
     var sh = sheet_();
-    var data = sh.getDataRange().getValues();        // [header, ...rows]: code | used | redeemedAt
+    var data = sh.getDataRange().getValues();        // [header, ...rows]: code | used | redeemedAt | created
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim().toUpperCase() === code) {
         var used = data[i][1] === true || String(data[i][1]).toLowerCase() === 'true';
@@ -44,6 +55,32 @@ function handle(e) {
     }
     return json_({ ok: false, reason: 'invalid' });
   } finally { lock.releaseLock(); }
+}
+
+/** Generate N fresh unique codes (called by the admin page; also usable by hand). */
+function genCodes_(n) {
+  n = Math.max(1, Math.min(200, n || 1));
+  var chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', sh = sheet_(), made = [], existing = {};
+  sh.getDataRange().getValues().forEach(function (r) { existing[String(r[0]).toUpperCase()] = 1; });
+  var now = new Date();
+  while (made.length < n) {
+    var s = 'STK-';
+    for (var i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    if (existing[s]) continue;
+    existing[s] = 1; made.push(s); sh.appendRow([s, false, '', now]);
+  }
+  return { ok: true, codes: made };
+}
+
+/** Totals + the most recent codes (for the admin page). */
+function codeReport_() {
+  var data = sheet_().getDataRange().getValues(), rows = [], total = 0, used = 0;
+  for (var i = 1; i < data.length; i++) {
+    var u = data[i][1] === true || String(data[i][1]).toLowerCase() === 'true';
+    total++; if (u) used++;
+    rows.push({ code: String(data[i][0]), used: u, redeemedAt: data[i][2] ? new Date(data[i][2]).getTime() : 0 });
+  }
+  return { ok: true, total: total, used: used, available: total - used, codes: rows.slice(-40).reverse() };
 }
 
 /* ----- run these by hand from the Apps Script editor (Run ▸ pick the function) ----- */

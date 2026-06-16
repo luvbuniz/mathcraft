@@ -23,17 +23,26 @@ It's free (Google account only) and takes ~5 minutes.
 2. **Execute as:** *Me*. **Who has access:** *Anyone*.
 3. **Deploy**, authorize, and **copy the Web app URL** (ends in `/exec`).
 
-## 4. Connect the game
-- In **`index.html`**, find `const REDEEM_URL = '';` and paste your `/exec` URL between the quotes.
-- That's it. Now every code redeemed in the game (typed in the unlock dialog **or** opened
-  via a `stackadoo.com/?code=STK-XXXXX` link) is validated and burned server-side.
+## 4. Set your admin key
+- Near the top of `Code.gs`, set **`ADMIN_KEY`** to the **same value** as `ADMIN_KEY` in
+  `admin.html` (currently `remus`). This is what lets your admin page generate codes.
 
-## Managing it
-- **See how many are left:** run **`stats`** → check **View ▸ Logs**.
-- **Give out more:** run **`addCodes(20)`** for 20 new ones (or add rows to the `codes` tab:
-  `code`, `used=false`).
-- **Retire a code:** set its `used` to `true`, or delete its row.
-- **Track redemptions:** the `redeemedAt` column shows when each was used.
+## 5. Connect the game + admin page
+- In **`index.html`**, paste your `/exec` URL into `const REDEEM_URL = '';`.
+- In **`admin.html`**, paste the same `/exec` URL into `const GIFT_URL = '';`.
+- Now every code redeemed in the game (typed in the unlock dialog **or** opened via a
+  `stackadoo.com/?code=STK-XXXXX` link) is validated and burned server-side.
+
+## Managing it — from your admin page (easiest)
+- Open **admin.html** → the **🎁 Gift codes** panel shows **Available / Redeemed** counts.
+- Type how many you want and hit **Generate codes** → it creates tracked codes and shows
+  ready-to-share `?code=` links you can copy. Each works exactly once.
+- The list shows every code as **free** or **used**.
+
+## Managing it — by hand (optional)
+- **`stats`** → totals in **View ▸ Logs**. **`addCodes(20)`** → 20 more. **`seedShippedCodes`** → the original 10.
+- In the `codes` tab: add a row (`code`, `used=false`) to mint one; set `used=true` or delete a row to retire it.
+- The `redeemedAt` column shows when each was used.
 
 ## Notes
 - Until `REDEEM_URL` is set, the game falls back to the built-in code list (works, but

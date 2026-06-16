@@ -50,6 +50,8 @@
     const ANALYTICS_URL = 'https://script.google.com/macros/s/AKfycbyug41VsbpGVy5coddUmA9cBsf6hFNrJhBOiLeNx0ZE5vEHZtugspGDcNmODLkMrOZXkw/exec';
     // Must match the ADMIN_KEY at the top of your Apps Script (Code.gs):
     const ADMIN_KEY = 'remus';
+    // Gift-codes backend Web App URL (gift-codes/SETUP.md). Leave '' to hide the gift panel.
+    const GIFT_URL = '';
     // Passphrase to open THIS page (light gate; real protection is the key above):
     const PAGE_PASS = 'remus';
   </script>
@@ -93,6 +95,22 @@
       <button class="refresh" onclick="loadStats()">↻ Refresh</button>
       <span class="foot" id="updated"></span>
     </div>
+
+    <div class="card" id="giftCard" style="display:none">
+      <h3 style="margin:0 0 4px">🎁 Gift codes</h3>
+      <p class="note" style="margin:0 0 10px">Generate tracked one-use unlock codes to hand out for free.</p>
+      <div class="grid" style="margin-bottom:12px">
+        <div class="stat" style="box-shadow:none; background:#f3f8f1"><div class="n" id="cAvail" style="font-size:30px">—</div><div class="l">Available</div></div>
+        <div class="stat" style="box-shadow:none; background:#f3f8f1"><div class="n" id="cUsed" style="font-size:30px">—</div><div class="l">Redeemed</div></div>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <input id="genN" type="number" min="1" max="100" value="1" style="max-width:90px">
+        <button onclick="genCodes()">Generate codes</button>
+        <button class="refresh" onclick="loadCodes()">↻</button>
+      </div>
+      <div id="genOut"></div>
+      <div id="codeList" style="margin-top:10px"></div>
+    </div>
   </div>
 
   <p class="foot">Stackadoo · admin view</p>
@@ -114,6 +132,42 @@ function boot() {
   if (!ANALYTICS_URL) { $('setup').style.display = 'block'; return; }
   $('dash').style.display = 'block';
   loadStats();
+  if (GIFT_URL) { $('giftCard').style.display = 'block'; loadCodes(); }
+}
+
+function giftFetch(params) {
+  const url = GIFT_URL + (GIFT_URL.indexOf('?') < 0 ? '?' : '&') + params + '&key=' + encodeURIComponent(ADMIN_KEY) + '&_=' + Date.now();
+  return fetch(url).then(r => r.json());
+}
+function loadCodes() {
+  if (!GIFT_URL) return;
+  giftFetch('action=codes').then(d => {
+    if (!d || !d.ok) { $('codeList').innerHTML = '<p class="err">Couldn\'t load codes (check GIFT_URL / key).</p>'; return; }
+    $('cAvail').textContent = d.available; $('cUsed').textContent = d.used;
+    $('codeList').innerHTML = (d.codes || []).map(c =>
+      '<div class="barRow"><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
+      '<span style="flex:1"></span><span class="v" style="width:auto;color:' + (c.used ? '#c0392b' : '#3f9d34') + '">' +
+      (c.used ? 'used' : 'free') + '</span></div>'
+    ).join('') || '<p class="note">No codes yet — generate some above.</p>';
+  }).catch(() => { $('codeList').innerHTML = '<p class="err">Network error reaching gift backend.</p>'; });
+}
+function genCodes() {
+  if (!GIFT_URL) return;
+  const n = Math.max(1, Math.min(100, parseInt($('genN').value, 10) || 1));
+  $('genOut').innerHTML = '<p class="note">Generating…</p>';
+  giftFetch('action=gencode&n=' + n).then(d => {
+    if (!d || !d.ok) { $('genOut').innerHTML = '<p class="err">Couldn\'t generate (check key).</p>'; return; }
+    const site = location.origin.replace(/\/$/, '');
+    const lines = d.codes.map(c => c + '   →   ' + site + '/?code=' + c).join('\n');
+    $('genOut').innerHTML = '<p class="note" style="color:#2f8a52;font-weight:700">✓ ' + d.codes.length + ' new code(s) — hand these out:</p>' +
+      '<textarea readonly style="width:100%;height:' + Math.min(160, 24 + d.codes.length * 20) + 'px;font-family:monospace;font-size:13px;border:2px solid #cfe0cb;border-radius:10px;padding:8px">' + lines + '</textarea>' +
+      '<div class="row" style="margin-top:6px"><button onclick="copyGen(this)">Copy</button></div>';
+    loadCodes();
+  }).catch(() => { $('genOut').innerHTML = '<p class="err">Network error.</p>'; });
+}
+function copyGen(btn) {
+  const ta = btn.parentElement.parentElement.querySelector('textarea');
+  ta.select(); try { document.execCommand('copy'); btn.textContent = 'Copied!'; } catch (e) {}
 }
 
 function loadStats() {
