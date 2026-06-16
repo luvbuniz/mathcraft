@@ -3805,7 +3805,7 @@ const motorsGroup = new THREE.Group();
   drawMotorsSign('AUTO SHOWROOM');
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: tex }));
   sign.position.set(0, 2.78, 1.54); motorsGroup.add(sign);
-  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'AUTOS • CARS' : 'AUTO SHOWROOM');
+  motorsGroup.userData.signDraw = beach => drawMotorsSign(beach ? 'BICI Y BARCOS' : 'AUTO SHOWROOM');
   motorsGroup.position.set(MOTORS_POS.x, 0, MOTORS_POS.z);
   scene.add(motorsGroup);
 }
