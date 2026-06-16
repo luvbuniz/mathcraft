@@ -336,10 +336,10 @@
   #homeBtn { top:114px; }
   #saveBtn { top:166px; }
   #invBtn  { top:218px; }
-  #questBtn { top:270px; display:none; }   /* gemstone quests paused for now (keeps coins, just hides the board) */
-  #selfieBtn { top:270px; }
-  #photoBtn { top:322px; }
-  #cursorBtn { top:374px; font-size:16px; font-weight:bold; }
+  #questBtn { top:270px; font-size:15px; font-weight:bold; }   /* the quest board */
+  #selfieBtn { top:322px; }
+  #photoBtn { top:374px; }
+  #cursorBtn { top:426px; font-size:16px; font-weight:bold; }
   #selfieBtn.on { background:#ffd0e4; box-shadow:0 3px 0 #d98bb0; }
   #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
     padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
@@ -478,9 +478,10 @@
     #homeBtn { top:92px; right:8px; }
     #saveBtn { top:134px; right:8px; }
     #invBtn  { top:176px; right:8px; }
-    #selfieBtn { top:218px; right:8px; }
-    #photoBtn { top:260px; right:8px; }
-    #cursorBtn { top:302px; right:8px; }
+    #questBtn { top:218px; right:8px; }
+    #selfieBtn { top:260px; right:8px; }
+    #photoBtn { top:302px; right:8px; }
+    #cursorBtn { top:344px; right:8px; }
     /* messages sit up top, clear of the controls */
     #hintBar { bottom:auto; top:104px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
@@ -2630,7 +2631,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {} };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {} };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -8229,30 +8230,63 @@ function restoreQuest() {
   updateQuestHud();
 }
 /* ---- Quest Board ("quest mode" menu) ---- */
+/* ============================ 🗺️ QUESTS: bite-size goals that pay coins (keeps kids motivated) ============================ */
+function countPlaced(type) {                 // how many of a placed block-type are in the world (dedup multi-cell)
+  let n = 0; const seen = new Set();
+  blocks.forEach(b => { if (b.type === type && b.removable && !seen.has(b.mesh.id)) { seen.add(b.mesh.id); n++; } });
+  return n;
+}
+const QUESTS = [
+  { id: 'solve5',  icon: '🧮', title: 'Answer 5 questions right', reward: 8,  check: () => (profile.totalSolved || 0) >= 5 },
+  { id: 'getpet',  icon: '🐶', title: 'Bring home a pet', reward: 10, check: () => pets.length > 0 },
+  { id: 'flowers', icon: '🌷', title: 'Plant 5 flowers', reward: 10, check: () => countPlaced('flower') >= 5 },
+  { id: 'house',   icon: '🏠', title: 'Build a house with a door', reward: 15, check: () => !!G.shelterRewarded },
+  { id: 'roof',    icon: '🔺', title: 'Put a roof on your house', reward: 10, check: () => countPlaced('roof') >= 2 },
+  { id: 'furnish', icon: '🛋️', title: 'Place a couch and a table', reward: 12, check: () => countPlaced('couch') >= 1 && (countPlaced('table') + countPlaced('dtable')) >= 1 },
+  { id: 'bake',    icon: '🧁', title: 'Bake a treat at Stack Sweets', reward: 10, check: () => ((profile.byOp || {}).measure || 0) >= 1 },
+  { id: 'read',    icon: '📚', title: 'Read a story at the Library', reward: 12, check: () => (profile.readFirstTotal || 0) >= 1 },
+  { id: 'spell',   icon: '🐝', title: 'Try the Spelling Bee', reward: 10, check: () => (profile.spellFirstTotal || 0) >= 1 },
+  { id: 'buyveh',  icon: '🚗', title: 'Buy your first vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) },
+  { id: 'garage',  icon: '🚙', title: 'Build a garage door', reward: 12, check: () => countPlaced('garage') >= 1 },
+  { id: 'solve25', icon: '🧠', title: 'Answer 25 questions right', reward: 20, check: () => (profile.totalSolved || 0) >= 25 },
+  { id: 'coins',   icon: '🪙', title: 'Save up 60 coins', reward: 15, check: () => G.coins >= 60 },
+  { id: 'solve50', icon: '🏆', title: 'Answer 50 questions right', reward: 30, check: () => (profile.totalSolved || 0) >= 50 }
+];
+let questTimer = 0;
+function checkQuests() {
+  if (!G.running) return;
+  profile.questsDone = profile.questsDone || {};
+  let any = false;
+  for (const q of QUESTS) {
+    if (profile.questsDone[q.id]) continue;
+    let ok = false; try { ok = q.check(); } catch (e) {}
+    if (ok) {
+      profile.questsDone[q.id] = true; G.coins += q.reward; any = true;
+      if (Sound.fanfare) Sound.fanfare();
+      toast('🗺️ Quest complete: ' + q.title + '!  +' + q.reward + ' 🪙', 4200);
+    }
+  }
+  if (any) { profileDirty = true; saveProfile(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); updateQuestBtn(); }
+}
+function updateQuestBtn() {
+  const btn = $('questBtn'); if (!btn) return;
+  const done = QUESTS.filter(q => (profile.questsDone || {})[q.id]).length;
+  btn.textContent = '🗺️ ' + done + '/' + QUESTS.length;
+}
 function renderQuestBoard() {
   const body = $('questBoardBody'); if (!body) return;
-  const q = G.quest || {}, found = q.found || [];
-  let html = '';
-  if (q.stage === 'seek' || q.stage === 'carry') {
-    const t = treasureById(q.tid);
-    html += q.stage === 'seek'
-      ? '<p style="color:#1f6b3a;font-weight:800;font-size:1.05em">🔎 On the hunt for ' + t.emoji + ' ' + t.name + '!</p><p style="color:#5a4632">Follow the glowing beam in the meadow, then carry it home.</p>'
-      : '<p style="color:#1f6b3a;font-weight:800;font-size:1.05em">💎 You\'re carrying ' + t.name + '!</p><p style="color:#5a4632">Step inside a house you built (or return to the start) to finish.</p>';
-  } else {
-    const left = TREASURES.length - found.length;
-    html += '<p style="color:#5a4632;font-weight:700">🧭 ' + (left > 0 ? 'Hunt a hidden gemstone and bring it home for coins + a trophy!' : 'You\'ve found every treasure — go for a victory lap!') + '</p>'
-      + '<button id="questGoBtn" class="petBtn" style="margin-top:4px">🚀 Start a Treasure Hunt</button>';
-  }
-  html += '<div style="margin-top:14px; border-top:1px solid #e2d8c0; padding-top:10px; text-align:left">'
-    + '<b style="color:#b5832a">💎 Treasures found: ' + found.length + ' / ' + TREASURES.length + '</b>';
-  TREASURES.forEach(t => {
-    const got = found.includes(t.id);
-    html += '<div style="color:' + (got ? '#2f8a52' : '#9a8f7a') + ';font-weight:700;margin:4px 0">' + (got ? '✅' : '🔒') + ' ' + t.emoji + ' ' + t.name + '</div>';
+  profile.questsDone = profile.questsDone || {};
+  const done = QUESTS.filter(q => profile.questsDone[q.id]).length;
+  let html = '<p style="color:#8a7a5a;margin:0 0 8px">Do quests to earn coins! (' + done + '/' + QUESTS.length + ' done)</p>' +
+    '<div style="display:flex;flex-direction:column;gap:7px;max-height:52vh;overflow:auto;text-align:left">';
+  QUESTS.forEach(q => {
+    const d = !!profile.questsDone[q.id];
+    html += '<div style="display:flex;align-items:center;gap:9px;background:' + (d ? '#e7f3e7' : '#f4f7fb') + ';border-radius:10px;padding:8px 10px' + (d ? ';opacity:0.75' : '') + '">' +
+      '<span style="font-size:22px">' + q.icon + '</span><b style="flex:1;color:#34495e">' + q.title + '</b>' +
+      '<span style="font-weight:800;white-space:nowrap;color:' + (d ? '#2f8a52' : '#b5832a') + '">' + (d ? '✓ done' : '+' + q.reward + ' 🪙') + '</span></div>';
   });
   html += '</div>';
   body.innerHTML = html;
-  const go = $('questGoBtn');
-  if (go) go.onclick = () => { Sound.click(); closeQuestBoard(); startTreasureQuest(null); };
 }
 function openQuestBoard() {
   if (popupOpen || G.over || !G.running) return;
@@ -9340,6 +9374,7 @@ function startGame() {
   usedLangQ.clear();
   setAvatar(G.avatarIndex);
   updateBadgeBtn(false);
+  updateQuestBtn();
   selectSlot('block', true);
   $('camBtn').textContent = G.firstPerson ? '👁️' : '🧍';
   G.selfie = false; $('selfieBtn').classList.remove('on');
@@ -9413,7 +9448,7 @@ function loop(now) {
   if (!G.running) { renderer.render(scene, camera); return; }
 
   if (!popupOpen && !G.over) updatePlayer(dt);
-  if (!G.over) { updateDoors(dt); updateGarages(dt); }
+  if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
   if (!popupOpen && !G.over) updatePets(dt, now);
   if (!G.over) updateQuest(dt, now);
 
