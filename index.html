@@ -2307,15 +2307,42 @@ const AVATARS = [
   {
     id: 'superhero', name: 'Superhero 🦸',
     build() {
-      const a = buildBiped(0x2255cc, 0xF0C9A0, 0x1b3fa0, 0x2255cc);
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.1, 0.04, 0.03, 0x9a3b2a, 0, -0.13, 0.26);          // smile
-      box(a.head, 0.5, 0.18, 0.5, 0x2b2b2b, 0, 0.18, 0);               // hair
-      box(a.head, 0.34, 0.12, 0.04, 0x111111, 0, 0.06, 0.25);          // domino mask
-      const cape = box(a.group, 0.5, 0.7, 0.05, 0xE53935, 0, 0.8, -0.18);  // cape
-      cape.rotation.x = -0.12;
-      box(a.group, 0.16, 0.16, 0.06, 0xFFD23E, 0, 0.92, 0.15);         // chest emblem
-      box(a.group, 0.07, 0.07, 0.07, 0xE53935, 0, 0.92, 0.18);
+      const suit = 0x2255cc, skin = 0xF0C9A0, accent = 0xE53935, gold = 0xFFD23E;
+      const a = buildBiped(suit, skin, 0x1b3fa0, suit);
+      // face
+      addEyes(a.head, 0x1a1a1a, 0.27);
+      box(a.head, 0.12, 0.04, 0.03, 0x9a3b2a, 0, -0.14, 0.26);         // confident smile
+      box(a.head, 0.18, 0.04, 0.03, 0x8a5a3a, 0, 0.0, 0.255);          // strong jaw shading
+      // swept hair — sized PROUD of the 0.5 head (0.54) so faces never sit coplanar (no flicker)
+      box(a.head, 0.54, 0.16, 0.54, 0x2b2b2b, 0, 0.23, 0);            // hair cap, top only
+      box(a.head, 0.54, 0.24, 0.12, 0x232323, 0, 0.06, -0.25);        // hair down the back of the head
+      const curl = box(a.head, 0.1, 0.1, 0.07, 0x1f1f1f, -0.06, 0.16, 0.27); // heroic forehead curl
+      curl.rotation.z = 0.4;
+      // domino mask across the eyes — hero accent with white eye-shine
+      box(a.head, 0.46, 0.15, 0.05, accent, 0, 0.06, 0.245);          // mask band
+      box(a.head, 0.07, 0.1, 0.05, accent, -0.2, 0.06, 0.18);         // mask wraps to the temples
+      box(a.head, 0.07, 0.1, 0.05, accent, 0.2, 0.06, 0.18);
+      box(a.head, 0.05, 0.05, 0.02, 0xffffff, -0.105, 0.07, 0.292);   // eye shine
+      box(a.head, 0.05, 0.05, 0.02, 0xffffff, 0.115, 0.07, 0.292);
+      // cape — collar on the shoulders + a long flowing back
+      box(a.group, 0.34, 0.16, 0.1, accent, 0, 1.16, -0.16);          // upturned collar (behind the neck)
+      const cape = box(a.group, 0.56, 0.82, 0.05, accent, 0, 0.76, -0.21); // cape
+      cape.rotation.x = -0.13;
+      box(a.group, 0.56, 0.1, 0.05, 0x9c1f17, 0, 0.36, -0.27);        // darker cape hem
+      // chest emblem — gold shield with an accent badge
+      box(a.group, 0.24, 0.26, 0.05, gold, 0, 0.92, 0.145);          // shield
+      box(a.group, 0.13, 0.15, 0.07, accent, 0, 0.92, 0.16);         // inner badge
+      box(a.group, 0.05, 0.05, 0.04, 0xffffff, 0, 0.92, 0.2);        // badge spark
+      // utility belt + buckle
+      box(a.group, 0.52, 0.1, 0.31, gold, 0, 0.6, 0);                // yellow belt (proud of torso)
+      box(a.group, 0.1, 0.1, 0.05, accent, 0, 0.6, 0.16);           // belt buckle
+      // red boots over the feet + lower shins
+      a.legs.forEach(L => {
+        box(L, 0.24, 0.28, 0.24, accent, 0, -0.4, 0);                // boot shaft
+        box(L, 0.27, 0.14, 0.36, accent, 0, -0.5, 0.06);            // boot foot
+      });
+      // red gloves over the hands + cuffs
+      a.arms.forEach(A => box(A, 0.19, 0.22, 0.19, accent, 0, -0.44, 0));
       return a;
     }
   },
@@ -2645,7 +2672,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, bestStreak: 0 };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0 };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -3893,7 +3920,7 @@ const motorsGroup = new THREE.Group();
   scene.add(motorsGroup);
 }
 // ---- a low-poly country pickup truck (body panels share one material so it can be repainted) ----
-const CAR_COLORS = [0xF2F2F2, 0xC0392B, 0x2b5fa8, 0x2b2e34, 0x3CA85C, 0xE0A92B, 0x8E44AD, 0xD2691E];
+const CAR_COLORS = [0xFF69B4, 0xF2F2F2, 0xC0392B, 0x2b5fa8, 0x2b2e34, 0x3CA85C, 0xE0A92B, 0x8E44AD, 0xD2691E];
 const CAR_GLASS = mat(0x1f2a38);
 function carPart(g, m, w, h, d, x, y, z) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; }
 function carDisc(g, m, r, x, y, z) { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.06, 12), m); o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; }
@@ -6289,8 +6316,10 @@ function updatePlayer(dt) {
   // selfie pose: wave a raised hand (bipeds) or bob the head (quads) when standing still
   if (G.selfie && !moving) {
     if (d.arms && d.arms.length >= 2) {
-      d.arms[1].rotation.x = -2.5;                                     // right arm up
-      d.arms[1].rotation.z = -0.5 + Math.sin(t * 7) * 0.4;             // wave hello!
+      // raise the right arm UP and OUT to the side (z roll) so the hand waves
+      // beside the head — never swinging forward through the face/beak.
+      d.arms[1].rotation.x = -0.12;
+      d.arms[1].rotation.z = 2.0 + Math.sin(t * 7) * 0.35;             // wave hello, out to the side!
       d.arms[0].rotation.x = Math.sin(t * 1.6) * 0.06;
     }
     if (d.head) d.head.rotation.z = Math.sin(t * 3) * 0.07;            // cheeky head tilt
@@ -8325,16 +8354,23 @@ let questTimer = 0;
 function checkQuests() {
   if (!G.running) return;
   profile.questsDone = profile.questsDone || {};
+  // First run for this profile: grandfather any quest already satisfied by progress
+  // earned BEFORE quests existed — mark them done silently, with NO coins/fanfare.
+  // (Otherwise a returning player auto-wins a pile of coins the moment they load.)
+  const baseline = !profile.questsBaselined;
   let any = false;
   for (const q of QUESTS) {
     if (profile.questsDone[q.id]) continue;
     let ok = false; try { ok = q.check(); } catch (e) {}
     if (ok) {
-      profile.questsDone[q.id] = true; G.coins += q.reward; any = true;
+      profile.questsDone[q.id] = true;
+      if (baseline) continue;                         // silent grandfather — no payout
+      G.coins += q.reward; any = true;
       if (Sound.fanfare) Sound.fanfare();
       toast('🗺️ Quest complete: ' + q.title + '!  +' + q.reward + ' 🪙', 4200);
     }
   }
+  if (baseline) { profile.questsBaselined = true; profileDirty = true; saveProfile(); updateQuestBtn(); }
   if (any) { profileDirty = true; saveProfile(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); updateQuestBtn(); }
 }
 function updateQuestBtn() {
@@ -8669,6 +8705,7 @@ function toggleSelfie() {
   G.selfie = !G.selfie;
   if (G.selfie && G.firstPerson) { G.firstPerson = false; $('camBtn').textContent = '🧍'; }   // selfie needs to see the character
   $('selfieBtn').classList.toggle('on', G.selfie);
+  $('crosshair').style.display = G.selfie ? 'none' : '';   // hide the aiming + in selfie mode (clean photos)
   toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸!' : '🧍 Back to normal view', 1400);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
@@ -8983,12 +9020,17 @@ function freeMouse() {
 $('cursorBtn').onclick = () => { Sound.click(); freeMouse(); };
 function takePhoto() {
   renderer.render(scene, camera);                 // fresh frame in the buffer
-  const name = 'stackadoo-' + (G.playerName || 'build') + '.png';
+  // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
+  const d = new Date();
+  const p2 = n => String(n).padStart(2, '0');
+  const stamp = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + '-' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds());
+  const name = 'Stackadoo-' + (G.playerName || 'build') + '-' + stamp + '.png';
   const fallbackDownload = url => {
     const a = document.createElement('a');
     a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
-    toast('📸 Photo of your build saved!', 2200);
+    // Browsers save to the Downloads folder — we can't target Pictures directly from a webpage.
+    toast('📸 Saved to your Downloads folder!', 2600);
   };
   try {
     renderer.domElement.toBlob(async blob => {
