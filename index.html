@@ -4385,7 +4385,7 @@ function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST
 const MART_POS = { x: -7, z: 4 };
 function martDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - MART_POS.x, player.pos.z - MART_POS.z) : 999; }
 const BOAT_SHOP_POS = { x: 14, z: 10 };          // Stack Barcos, on the sand by the dock
-const DOCK_POS = { x: 30, z: 12 };               // where your boat floats, beside the dock's end
+const DOCK_POS = { x: 22, z: 12 };               // your boat moors at the foot of the dock (reachable on foot; drive it out to sea)
 function boatShopDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - BOAT_SHOP_POS.x, player.pos.z - BOAT_SHOP_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
