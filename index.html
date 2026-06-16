@@ -228,6 +228,7 @@
   .libText { background:#FBF6EA; border:1px solid #E3D7BE; border-radius:12px; padding:12px 14px; text-align:left;
     color:#4a4030; font-size:clamp(14px,2.5vw,17px); line-height:1.5; max-height:42vh; overflow-y:auto; margin:0; }
   .libText.small { font-size:clamp(12px,2vw,14px); line-height:1.4; max-height:22vh; opacity:.92; }
+  .scriptText { font-family:'Courier New',monospace; white-space:pre-wrap; font-size:clamp(11px,1.9vw,14px); line-height:1.35; }
   .libBtn { font-family:inherit; font-weight:700; font-size:clamp(15px,2.6vw,18px); padding:12px 16px; border:none;
     border-radius:13px; cursor:pointer; color:#5a4632; background:#F0E6D2; box-shadow:0 4px 0 #cdbf9f; }
   .libBtn:active { transform:translateY(3px); box-shadow:0 1px 0 #cdbf9f; }
@@ -4017,6 +4018,19 @@ const STORIES = [
       { q: 'The story says "flowers whisper secrets." Flowers cannot really whisper. This is —', a: 'Personification', o: ['Personification', 'A simile', 'A number', 'A fact'], g: 4 },
       { q: 'Why did Fiona tell people they used a "special fertilizer"?', a: "To keep Bonnie's magic a secret", o: ["To keep Bonnie's magic a secret", 'Because she forgot', 'To sell fertilizer', 'Because she was upset'], g: 5 }
     ] },
+  { e: '🎬', t: 'Whisper Woods Rescue (Screenplay)', script: true,
+    text: 'FADE IN:\n\nEXT. WHISPERING WOODS - DAY\n\nA magical forest with glowing trees. FIONA rides on BONNIE, her plant horse.\n\n        FIONA\n      (excited)\n  Come on, Bonnie! This camping trip is going to be awesome!\n\n        BONNIE\n      (cheerful)\n  I can\'t wait! But no itchy plants, please!\n\nCUT TO:\n\nEXT. CAMPSITE - EVENING\n\nFiona struggles with the tent poles while Bonnie gathers firewood.\n\n        FIONA\n      (frustrated)\n  Oh, come on! Why won\'t you stay up?',
+    qs: [
+      { q: 'Who is riding the plant horse Bonnie?', a: 'Fiona', o: ['Fiona', 'Leo', 'Arty', 'Dracomax'], g: 1 },
+      { q: 'Where does the scene begin?', a: 'In the woods', o: ['In the woods', 'At school', 'At the beach', 'In a castle'], g: 1 },
+      { q: 'What were Fiona and Bonnie trying to set up?', a: 'A campsite', o: ['A campsite', 'A boat', 'A shop', 'A rocket'], g: 2 },
+      { q: 'A screenplay like this is a script used to make a —', a: 'Movie or TV show', o: ['Movie or TV show', 'Sandwich', 'Painting', 'Song'], g: 3 },
+      { q: 'The names in CAPITAL LETTERS (FIONA, BONNIE) tell us —', a: 'Who is speaking', o: ['Who is speaking', 'The ending', 'The title', 'A sound'], g: 3 },
+      { q: '"EXT. WHISPERING WOODS - DAY" is a scene heading. What does it tell you?', a: 'Where and when the scene happens', o: ['Where and when the scene happens', 'Who wins', "The actor's age", 'The end'], g: 4 },
+      { q: 'The note in brackets like "(excited)" tells the actor —', a: 'How to say the line', o: ['How to say the line', 'What to eat', 'The price', 'Nothing'], g: 4 },
+      { q: '"FADE IN" and "CUT TO" are screenplay words that tell —', a: 'How the scene or camera changes', o: ['How the scene or camera changes', 'The weather', "An actor's name", 'The music'], g: 5 },
+      { q: 'A line like "Fiona struggles with the tent poles" (not spoken aloud) is called an —', a: 'Action line', o: ['Action line', 'A song', 'A title', 'A rhyme'], g: 5 }
+    ] },
   { e: '🪁', t: 'The Lost Kite',
     text: 'Mia flew her bright red kite at the park. The wind blew harder and harder. Snap! The string broke and the kite sailed away like a bird. Mia felt very sad. Then a boy named Leo found it caught in a tree. He climbed up and gave it back. "Sharing and helping make everyone happy," Leo said with a smile.',
     qs: [
@@ -4068,6 +4082,11 @@ function storyText(s) {
   for (const v of s.text) { if (G.grade >= v[0]) chosen = v[1]; }
   return chosen;
 }
+function libStoryHTML(small) {                    // screenplays render in monospace, keeping their script layout
+  const body = storyText(lib.story);
+  if (lib.story.script) return '<div class="libText scriptText' + (small ? ' small' : '') + '">' + body + '</div>';
+  return '<p class="libText' + (small ? ' small' : '') + '">' + body + '</p>';
+}
 function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
@@ -4091,8 +4110,8 @@ function renderLib() {
   }
   if (lib.phase === 'read') {
     $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
-    $('libStory').innerHTML = '<p class="libText">' + storyText(lib.story) + '</p>';
-    $('libPrompt').textContent = 'Read the story carefully…';
+    $('libStory').innerHTML = libStoryHTML(false);
+    $('libPrompt').textContent = lib.story.script ? '🎬 This is a screenplay — a script for a TV show or movie. Read the scene, then answer!' : 'Read the story carefully…';
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.background = '#3f9d34'; b.style.color = '#fff'; b.textContent = "📖 I've read it — start the questions!";
     b.onclick = () => {
       Sound.click();
@@ -4106,7 +4125,7 @@ function renderLib() {
   // quiz
   const q = lib.qs[lib.qi];
   $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
-  $('libStory').innerHTML = '<p class="libText small">' + storyText(lib.story) + '</p>';
+  $('libStory').innerHTML = libStoryHTML(true);
   $('libPrompt').textContent = '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q;
   shuffle(q.o.slice()).forEach(opt => {
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '15px'; b.textContent = opt;
