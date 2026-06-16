@@ -4795,6 +4795,14 @@ function libStoryHTML(small) {                    // screenplays render in monos
   if (lib.story.script) return '<div class="libText scriptText' + (small ? ' small' : '') + '">' + body + '</div>';
   return '<p class="libText' + (small ? ' small' : '') + '">' + body + '</p>';
 }
+/* Anti-button-mashing: briefly disable a popup's choice buttons so kids must read &
+   pause instead of spamming answers. Used by every mini-game (math already has its own). */
+function lockChoices(wrap, ms) {
+  if (!wrap) return;
+  const btns = wrap.querySelectorAll('button');
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+  setTimeout(() => { btns.forEach(b => { b.disabled = false; b.style.opacity = ''; }); }, ms || 800);
+}
 function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
   // each reader has their own reading level that gently adapts (Fiona may run ahead of Leo)
@@ -4855,6 +4863,7 @@ function renderLib() {
     b.onclick = () => libAnswer(opt, q, b);
     wrap.appendChild(b);
   });
+  lockChoices(wrap, 1000);            // read first — no instant mashing
 }
 function libAnswer(opt, q, btn) {
   if (!lib) return;
@@ -4876,6 +4885,7 @@ function libAnswer(opt, q, btn) {
     setTimeout(renderLib, 400);
   } else {
     Sound.wrong(); btn.classList.add('flop'); lib.wrong = (lib.wrong || 0) + 1;
+    lockChoices($('libChoices'), 900);   // brief cooldown so a wrong tap can't be mashed straight through
     $('libMsg').style.color = '#c0392b'; $('libMsg').textContent = '🤔 Look back at the story and try again!';
   }
 }
@@ -4998,6 +5008,7 @@ function renderSpell() {
       b.onclick = () => spellAnswer(opt, w, b);
       choices.appendChild(b);
     });
+    lockChoices(choices, 900);          // listen first — no mashing
   }
 }
 function spellAnswer(ans, w, btn) {
@@ -5021,6 +5032,7 @@ function spellAnswer(ans, w, btn) {
     setTimeout(renderSpell, 550);
   } else {
     Sound.wrong(); if (btn && btn.classList) btn.classList.add('flop');
+    if (!spell.typed) lockChoices($('spellChoices'), 900);
     $('spellMsg').style.color = '#c0392b'; $('spellMsg').textContent = '🤔 Not quite — listen again and try!';
     speakWord(w);
   }
@@ -5163,7 +5175,7 @@ function martAnswer(correct, nextPhase, word) {
     mart.phase = nextPhase; mart.attempted = false;
     if (nextPhase === 'done') finishMart(); else renderMart();
   } else {
-    Sound.wrong();
+    Sound.wrong(); lockChoices($('martChoices'), 800);
     $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 ¡Inténtalo otra vez! (Try again)';
     if (mart.lastEs) speakWord(mart.lastEs, Object.assign({ es: true }, mart.lastOpts || {}));
   }
@@ -5203,6 +5215,7 @@ function renderMart() {
     $('martPrompt').textContent = 'Say thank you:';
     shuffle(['gracias', 'por favor', 'hola', 'adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'gracias', 'done', 'gracias'); }));
   }
+  lockChoices(wrap, 650);            // listen to the shopkeeper first
 }
 function finishMart() {
   mart.served = (mart.served || 0) + 1;
@@ -5243,7 +5256,7 @@ function vorderAnswer(correct, next, word) {
     vorder.phase = next; vorder.attempted = false;
     if (next === 'done') finishVehicleOrder(); else renderVehicleOrder();
   } else {
-    Sound.wrong(); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 ¡Inténtalo otra vez! (Try again)';
+    Sound.wrong(); lockChoices($('martChoices'), 800); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 ¡Inténtalo otra vez! (Try again)';
     if (vorder.lastEs) speakWord(vorder.lastEs, { es: true });
   }
 }
@@ -5270,6 +5283,7 @@ function renderVehicleOrder() {
     $('martPrompt').textContent = 'Pay politely:';
     shuffle(['Sí, gracias', 'No, gracias', 'Hola', 'Adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'Sí, gracias', 'done', 'gracias'); }));
   }
+  lockChoices(wrap, 650);
 }
 function finishVehicleOrder() {
   const def = vorder.def, es = VEHICLE_ES[def.id] || 'el vehículo';
@@ -5354,7 +5368,7 @@ function schoolTap(tile) {
       setTimeout(renderSchool, 1150);
     } else { renderSchool(); }
   } else {
-    Sound.wrong(); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 Not that one yet — listen again!';
+    Sound.wrong(); lockChoices($('martChoices'), 700); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 Not that one yet — listen again!';
     speakWord(school.lastSay, { es: true });
     if (!school.missed) { school.missed = true; recordWrong({ skill: 'spanish', level: G.grade }); }
   }
@@ -6292,10 +6306,22 @@ function pickupBlock() {
   if (removePlacedBlock()) return;
   toast('🤲 Nothing close enough — walk up to one of your blocks and try again!', 1800);
 }
+/* A no-build buffer around every shop in the CURRENT world, so houses & roof tiles can't
+   land on top of Stack Motors, the Library, El Mercadito, etc. (positions move per world). */
+function inShopZone(cx, cz) {
+  const px = cx + 0.5, pz = cz + 0.5;
+  const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
+  if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
+  if (G.world === 'meadow' && near(BAKERY_POS, 2.5)) return true;
+  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7))) return true;
+  if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
+  return false;
+}
 /* Place whatever slot is selected at grid cell (x,z). blockY is the height
    for a plain block (stacking); doors/furniture/food sit on the ground. */
 function placeSelectedAt(x, z, blockY) {
   if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
+  if (inShopZone(x, z)) { toast('🏬 That spot belongs to a shop — build a little further away!', 2200); return false; }
   const slot = G.selectedSlot;
   if (slot === 'door') {
     if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🛒 Stack Mart (press B)!', 2400); return false; }
