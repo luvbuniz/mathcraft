@@ -2307,15 +2307,42 @@ const AVATARS = [
   {
     id: 'superhero', name: 'Superhero 🦸',
     build() {
-      const a = buildBiped(0x2255cc, 0xF0C9A0, 0x1b3fa0, 0x2255cc);
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.1, 0.04, 0.03, 0x9a3b2a, 0, -0.13, 0.26);          // smile
-      box(a.head, 0.5, 0.18, 0.5, 0x2b2b2b, 0, 0.18, 0);               // hair
-      box(a.head, 0.34, 0.12, 0.04, 0x111111, 0, 0.06, 0.25);          // domino mask
-      const cape = box(a.group, 0.5, 0.7, 0.05, 0xE53935, 0, 0.8, -0.18);  // cape
-      cape.rotation.x = -0.12;
-      box(a.group, 0.16, 0.16, 0.06, 0xFFD23E, 0, 0.92, 0.15);         // chest emblem
-      box(a.group, 0.07, 0.07, 0.07, 0xE53935, 0, 0.92, 0.18);
+      const suit = 0x2255cc, skin = 0xF0C9A0, accent = 0xE53935, gold = 0xFFD23E;
+      const a = buildBiped(suit, skin, 0x1b3fa0, suit);
+      // face
+      addEyes(a.head, 0x1a1a1a, 0.27);
+      box(a.head, 0.12, 0.04, 0.03, 0x9a3b2a, 0, -0.14, 0.26);         // confident smile
+      box(a.head, 0.18, 0.04, 0.03, 0x8a5a3a, 0, 0.0, 0.255);          // strong jaw shading
+      // swept hair — sized PROUD of the 0.5 head (0.54) so faces never sit coplanar (no flicker)
+      box(a.head, 0.54, 0.16, 0.54, 0x2b2b2b, 0, 0.23, 0);            // hair cap, top only
+      box(a.head, 0.54, 0.24, 0.12, 0x232323, 0, 0.06, -0.25);        // hair down the back of the head
+      const curl = box(a.head, 0.1, 0.1, 0.07, 0x1f1f1f, -0.06, 0.16, 0.27); // heroic forehead curl
+      curl.rotation.z = 0.4;
+      // domino mask across the eyes — hero accent with white eye-shine
+      box(a.head, 0.46, 0.15, 0.05, accent, 0, 0.06, 0.245);          // mask band
+      box(a.head, 0.07, 0.1, 0.05, accent, -0.2, 0.06, 0.18);         // mask wraps to the temples
+      box(a.head, 0.07, 0.1, 0.05, accent, 0.2, 0.06, 0.18);
+      box(a.head, 0.05, 0.05, 0.02, 0xffffff, -0.105, 0.07, 0.292);   // eye shine
+      box(a.head, 0.05, 0.05, 0.02, 0xffffff, 0.115, 0.07, 0.292);
+      // cape — collar on the shoulders + a long flowing back
+      box(a.group, 0.34, 0.16, 0.1, accent, 0, 1.16, -0.16);          // upturned collar (behind the neck)
+      const cape = box(a.group, 0.56, 0.82, 0.05, accent, 0, 0.76, -0.21); // cape
+      cape.rotation.x = -0.13;
+      box(a.group, 0.56, 0.1, 0.05, 0x9c1f17, 0, 0.36, -0.27);        // darker cape hem
+      // chest emblem — gold shield with an accent badge
+      box(a.group, 0.24, 0.26, 0.05, gold, 0, 0.92, 0.145);          // shield
+      box(a.group, 0.13, 0.15, 0.07, accent, 0, 0.92, 0.16);         // inner badge
+      box(a.group, 0.05, 0.05, 0.04, 0xffffff, 0, 0.92, 0.2);        // badge spark
+      // utility belt + buckle
+      box(a.group, 0.52, 0.1, 0.31, gold, 0, 0.6, 0);                // yellow belt (proud of torso)
+      box(a.group, 0.1, 0.1, 0.05, accent, 0, 0.6, 0.16);           // belt buckle
+      // red boots over the feet + lower shins
+      a.legs.forEach(L => {
+        box(L, 0.24, 0.28, 0.24, accent, 0, -0.4, 0);                // boot shaft
+        box(L, 0.27, 0.14, 0.36, accent, 0, -0.5, 0.06);            // boot foot
+      });
+      // red gloves over the hands + cuffs
+      a.arms.forEach(A => box(A, 0.19, 0.22, 0.19, accent, 0, -0.44, 0));
       return a;
     }
   },
