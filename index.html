@@ -2292,7 +2292,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach'];
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
   meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } },
-  city:   { shop: { x: -10, z: -11 },   barn: { x: -4, z: -11 }, motors: { x: 8, z: -11 } },
+  city:   { shop: { x: -8.5, z: -12 },  barn: { x: -4, z: -12 },  motors: { x: 5, z: -12 } },   // a high-street row facing Main St
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
@@ -3608,11 +3608,11 @@ VEHICLES.forEach(def => {
   group.visible = false; scene.add(group);
   cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false };
 });
-// a couple of cars on display in the lot (so kids see them before buying)
-[['tesla', -1.1, 0.95, 0.45], ['corvette', 1.15, 0.95, -0.4]].forEach(([id, dx, dz, rot]) => {
+// a couple of cars on display under the showroom canopy (sit fully on the lot, not jutting out)
+[['tesla', -0.95, 0.1, 0.3], ['corvette', 0.95, 0.1, -0.3]].forEach(([id, dx, dz, rot]) => {
   const def = VEHICLES.find(v => v.id === id), disp = new THREE.Group();
   def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
-  disp.position.set(dx, 0, dz); disp.rotation.y = rot; disp.scale.setScalar(0.82); motorsGroup.add(disp);
+  disp.position.set(dx, 0, dz); disp.rotation.y = rot; disp.scale.setScalar(0.62); motorsGroup.add(disp);
 });
 function carDefColor(id) { return (G.carColors && G.carColors[id] != null) ? G.carColors[id] : cars[id].def.color; }
 function recolorCar(id, c) { cars[id].bodyMat.color.setHex(c); cars[id].bodyMat2.color.setHex(shade(c, 0.8)); }
@@ -3829,8 +3829,25 @@ function buildLibrary(g) {                    // Reading Town's grand civic libr
   });
   L.position.set(0, 0, -18); g.add(L);                                // Main Street (x=0) leads up to it
 }
+function buildHighStreetArch(g) {             // a welcome arch over Main Street at the entrance to downtown
+  const A = new THREE.Group();
+  const POST = 0x6E5043, BEAM = 0x8A6A4A;
+  box(A, 0.34, 4.0, 0.34, POST, -2.0, 2.0, 0); box(A, 0.34, 4.0, 0.34, POST, 2.0, 2.0, 0);   // posts (on the sidewalks)
+  box(A, 4.5, 0.34, 0.34, BEAM, 0, 3.9, 0);                                                   // top beam
+  box(A, 0.32, 0.32, 0.32, 0xC9A24A, -2.0, 4.12, 0); box(A, 0.32, 0.32, 0.32, 0xC9A24A, 2.0, 4.12, 0);  // gold post caps
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#2E6E4E'; c.fillRect(0, 0, 512, 96);
+  c.strokeStyle = '#FFF3D6'; c.lineWidth = 6; c.strokeRect(6, 6, 500, 84);
+  c.fillStyle = '#FFF3D6'; c.font = 'bold 30px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('WELCOME TO HIGH STREET', 256, 50);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.78, 0.12), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 3.25, 0.1); A.add(sign);
+  A.position.set(0.5, 0, -7); g.add(A);       // over Main Street (x≈0.5), just south of the shops
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
+  buildHighStreetArch(g);
   const N = 26;
   for (let i = 0; i < N; i++) {
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.14;
