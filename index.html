@@ -1229,6 +1229,14 @@
   </div>
 </div>
 
+<!-- ================= REPORT CARD POPUP ================= -->
+<div class="popup" id="reportPopup" style="z-index:65">
+  <div class="popupCard" style="width:min(460px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="reportClose" title="Close" aria-label="Close">✕</button></div>
+    <div id="reportBody"></div>
+  </div>
+</div>
+
 <!-- ================= UNLOCK (FULL GAME) POPUP ================= -->
 <div class="popup" id="unlockPopup">
   <div class="popupCard" style="text-align:center">
@@ -2959,6 +2967,11 @@ function renderGrownup() {
     }
 
     card.innerHTML = html;
+    const rcBtn = document.createElement('button');
+    rcBtn.textContent = '📋 Report Card — show it off!';
+    rcBtn.style.cssText = 'margin-top:10px; width:100%; background:#FFE9A0; color:#7a5c00; font-weight:800; border-radius:12px; padding:10px; box-shadow:0 3px 0 #d4b44a; cursor:pointer; border:none; font-size:15px';
+    rcBtn.onclick = () => openReportCard(p);
+    card.appendChild(rcBtn);
     list.appendChild(card);
   });
   // Danger zone (bottom of the page): code-gated delete per player
@@ -2988,6 +3001,46 @@ function openGrownup() {
   $('grownupPopup').style.display = 'flex';
 }
 function closeGrownup() { $('grownupPopup').style.display = 'none'; }
+/* A proud, parent-friendly Report Card you can pull up to show off a child's progress. */
+function openReportCard(p) {
+  const score = (p.stars != null) ? p.stars : estimateStars(p);
+  const solved = p.totalSolved || 0, wrong = p.totalWrong || 0;
+  const acc = (solved + wrong) ? Math.round(solved / (solved + wrong) * 100) : 100;
+  const ms = masteryStage(solved);
+  const rows = [];
+  const mathN = subjectSolved('math', p); if (mathN > 0) rows.push(['🔢', 'Math', mathN + ' solved', '']);
+  const rT = p.readFirstTotal || 0; if (rT > 0) rows.push(['📖', 'Reading', 'Level ' + (p.readLevel || '—'), Math.round((p.readFirstRight || 0) / rT * 100) + '% comprehension']);
+  const sT = p.spellFirstTotal || 0; if (sT > 0) rows.push(['🐝', 'Spelling', 'Level ' + (p.spellLevel || '—'), Math.round((p.spellFirstRight || 0) / sT * 100) + '% first-try']);
+  const spT = p.spanFirstTotal || 0; if (spT > 0) rows.push(['🇪🇸', 'Spanish', '', Math.round((p.spanFirstRight || 0) / spT * 100) + '% first-try']);
+  const allBadges = [].concat(BADGE_SETS.math, BADGE_SETS.reading, BADGE_SETS.spanish);
+  const earned = allBadges.filter(b => (p.badges || []).includes(b.id));
+  const byDay = p.byDay || {}, dayKey = d => { const t = new Date(); t.setDate(t.getDate() - d); return t.toISOString().slice(0, 10); };
+  let activeDays = 0; for (let d = 0; d < 7; d++) if (byDay[dayKey(d)]) activeDays++;
+  let h = '<div style="font-size:44px">🌟</div>';
+  h += '<h2 style="color:#3b5d9e;margin:2px 0 2px">' + (p._name || 'Player') + '’s Report Card</h2>';
+  h += '<div style="font-size:13px;color:#8a7a5a;margin-bottom:8px">Stackadoo • ' + ms.label + '</div>';
+  h += '<div style="font-size:15px;color:#7a5c00">Learning Score</div><div style="font-size:42px;font-weight:900;color:#E0A100;line-height:1.1">⭐ ' + fmtNum(score) + '</div>';
+  h += '<div style="display:flex;gap:12px;justify-content:center;margin:8px 0;font-weight:700;color:#46637e"><span>✅ ' + solved + ' solved</span><span>🎯 ' + acc + '% accuracy</span></div>';
+  h += '<div style="text-align:left;margin:10px 0">';
+  rows.forEach(([ic, name, lvl, extra]) => {
+    h += '<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;background:#f4f7fb;border-radius:10px;margin-bottom:6px">' +
+      '<span style="font-size:22px">' + ic + '</span><b style="flex:1">' + name + '</b>' +
+      '<span style="color:#5b6b80;font-size:13px;text-align:right">' + [lvl, extra].filter(Boolean).join(' • ') + '</span></div>';
+  });
+  if (!rows.length) h += '<div style="color:#8a7a5a">Just getting started — play to fill this in!</div>';
+  h += '</div>';
+  if (earned.length) h += '<div style="margin:8px 0"><div style="font-weight:800;color:#7a5c00;margin-bottom:4px">🏅 ' + earned.length + ' Badge' + (earned.length === 1 ? '' : 's') + '</div><div style="font-size:26px;letter-spacing:3px">' + earned.map(b => b.icon).join('') + '</div></div>';
+  h += '<div style="font-size:13px;color:#5b6b80;margin-top:6px">💪 Active ' + activeDays + ' of the last 7 days • ' + fmtPlayTime(p.secondsPlayed) + ' played</div>';
+  h += '<button id="reportCopy" style="margin-top:12px;background:#dbe7f7;color:#34527e;font-weight:800;border-radius:12px;padding:10px 18px;cursor:pointer;border:none;font-size:15px">📋 Copy summary</button>';
+  $('reportBody').innerHTML = h;
+  $('reportPopup').style.display = 'flex';
+  $('reportCopy').onclick = () => {
+    const txt = (p._name || 'Player') + '’s Stackadoo Report Card\n⭐ Learning Score: ' + fmtNum(score) + ' (' + ms.label + ')\n✅ ' + solved + ' solved • ' + acc + '% accuracy\n' +
+      rows.map(r => r[0] + ' ' + r[1] + ': ' + [r[2], r[3]].filter(Boolean).join(' • ')).join('\n') + '\n🏅 ' + earned.length + ' badges';
+    try { navigator.clipboard.writeText(txt); toast('📋 Copied — paste it anywhere to share!', 2200); } catch (e) { toast('Copy isn\'t available here, but the card is ready to show!', 2600); }
+  };
+}
+function closeReportCard() { $('reportPopup').style.display = 'none'; }
 
 function serializeWorld() {
   const placed = [], seen = new Set();
@@ -8585,6 +8638,7 @@ function shareGame() {
 }
 $('shareBtn').onclick = () => { Sound.click(); shareGame(); };
 $('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
+$('reportClose').onclick = () => { Sound.click(); closeReportCard(); };
 
 /* ---- Export / Import all saves & progress (move builds between devices/addresses) ---- */
 function gatherSaveData() {
