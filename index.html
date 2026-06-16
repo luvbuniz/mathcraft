@@ -3255,8 +3255,8 @@ const barnGroup = new THREE.Group();
   // ---- fancy touches: stone base, gable star, cupola + weathervane, flower baskets, lanterns ----
   const STONE = 0x9a948a;
   box(barnGroup, 3.7, 0.26, 3.3, STONE, 0, 0.13, 0);                  // stone foundation
-  box(barnGroup, 0.9, 0.9, 0.06, 0xF7F1E3, 0, 2.92, 1.46);          // white gable panel
-  const gstar = box(barnGroup, 0.46, 0.46, 0.04, 0xC9A24A, 0, 2.92, 1.5); gstar.rotation.z = 0.78;  // gold quilt star
+  box(barnGroup, 0.9, 0.9, 0.06, 0xF7F1E3, 0, 2.92, 1.54);          // white gable panel (forward of the gable fill so it doesn't z-fight)
+  const gstar = box(barnGroup, 0.46, 0.46, 0.04, 0xC9A24A, 0, 2.92, 1.6); gstar.rotation.z = 0.78;  // gold quilt star
   box(barnGroup, 0.66, 0.66, 0.66, 0xF7F1E3, 0, 3.95, 0);           // cupola box
   box(barnGroup, 0.3, 0.34, 0.1, 0x2b2e34, 0, 3.98, 0.34);          // cupola louver
   const cl = box(barnGroup, 0.1, 0.5, 0.78, RR, -0.2, 4.4, 0); cl.rotation.z = -0.7;
