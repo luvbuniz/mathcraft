@@ -4044,6 +4044,23 @@ function parkActiveCar() {
 }
 function carDist() { const a = activeCarObj(); return (a && a.spawned) ? Math.hypot(player.pos.x - a.group.position.x, player.pos.z - a.group.position.z) : 999; }
 function setActiveCar(id) { G.activeCar = id; recolorCar(id, carDefColor(id)); parkActiveCar(); }
+// Take a vehicle out of the backpack right next to the player (so you can hop straight in).
+function summonVehicle(id) {
+  if (player.driving) toggleDrive();
+  G.activeCar = id; recolorCar(id, carDefColor(id));
+  for (const cid in cars) { cars[cid].group.visible = false; cars[cid].spawned = false; }
+  const a = cars[id];
+  a.group.position.set(player.pos.x + 1.6, 0, player.pos.z);   // appears beside you
+  a.yaw = Math.PI; a.group.rotation.y = a.yaw + Math.PI; a.group.visible = true; a.spawned = true;
+  toast(a.def.emoji + ' ' + a.def.name + ' is right beside you — tap ⭐ USE (E) to drive!', 3200);
+}
+// Put the current vehicle away in the backpack (clears it from the world).
+function stowVehicle() {
+  if (player.driving) toggleDrive();
+  const a = activeCarObj(); if (a) { a.group.visible = false; a.spawned = false; }
+  G.activeCar = null;
+  toast('📦 Vehicle packed away in your 🎒 — take it out any time!', 2400);
+}
 function buyCar(id) {
   const def = cars[id].def;
   if (G.owned[id]) { setActiveCar(id); return; }
@@ -8511,6 +8528,25 @@ function renderInv() {
     row.appendChild(eat);
     wrap.appendChild(row);
   });
+  // 🚗 Your vehicles — take one out to drive, or put it away when you're done
+  const ownedVeh = VEHICLES.filter(v => G.owned[v.id]);
+  if (ownedVeh.length) {
+    const vRow = document.createElement('div');
+    vRow.className = 'invItem'; vRow.style.flexDirection = 'column'; vRow.style.alignItems = 'stretch';
+    vRow.innerHTML = '<div class="info" style="margin-bottom:6px"><b>🚗 Your Vehicles</b><small>Take one out to drive, or put it away when done</small></div>';
+    const vList = document.createElement('div'); vList.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+    ownedVeh.forEach(v => {
+      const out = G.activeCar === v.id;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f3f6fa;border-radius:10px;padding:6px 10px';
+      row.innerHTML = '<span style="font-size:20px">' + v.emoji + '</span><b style="flex:1">' + v.name + '</b>';
+      const btn = document.createElement('button'); btn.className = 'placeBtn';
+      if (out) { btn.textContent = '📦 Put away'; btn.style.background = '#e0a92b'; btn.onclick = () => { Sound.click(); stowVehicle(); renderInv(); }; }
+      else { btn.textContent = '🚗 Take out'; btn.onclick = () => { Sound.click(); summonVehicle(v.id); closeInv(); }; }
+      row.appendChild(btn); vList.appendChild(row);
+    });
+    vRow.appendChild(vList); wrap.appendChild(vRow);
+  }
   // 🏘️ Furniture style — pick ANY town's finish (country / deluxe / Spanish) and mix pieces from every town
   const fRow = document.createElement('div');
   fRow.className = 'invItem'; fRow.style.flexDirection = 'column'; fRow.style.alignItems = 'stretch';
