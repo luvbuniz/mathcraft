@@ -119,7 +119,17 @@
     text-align:center; box-shadow:0 8px 0 rgba(0,0,0,.2); }
   /* keep the ✕ reachable even on a tall, scrolling card */
   .popupCard > div:first-child { position:sticky; top:-2px; z-index:3; }
-  #mathPopup .popupCard { position:relative; width:min(640px,96vw); max-height:94dvh; overflow:hidden; padding:14px 20px 16px; }
+  #mathPopup .popupCard { position:relative; width:min(640px,96vw); padding:14px 20px 16px; }
+  /* short screens (landscape phones): compact the math popup so answer buttons never get cut off */
+  @media (max-height:560px) {
+    #mathPopup .popupCard { padding:8px 16px 12px; }
+    #mathEquation { font-size:clamp(20px,8vh,30px); padding:5px 10px; margin:2px 0 3px; }
+    #mathPrompt { font-size:clamp(12px,2vw,15px); margin-bottom:4px; }
+    #mathNote, #paperTip { padding:4px 9px; margin:0 0 5px; font-size:12px; }
+    #mathChoices { gap:6px; }
+    .answerBlock { padding:9px 6px; font-size:clamp(18px,4.6vh,26px); }
+    #mathFeedback { font-size:16px; min-height:20px; }
+  }
   #mathEquation { font-size:clamp(32px,6vw,48px); color:#34495e; font-weight:bold; margin:4px 0 5px;
     background:#eef7ff; border:4px solid #7fb4dc; border-radius:16px; padding:10px 14px; line-height:1.15; }
   #mathEquation.wordy { font-size:clamp(19px,3.5vw,30px); }
@@ -3652,21 +3662,34 @@ function updatePlayer(dt) {
   let speed = G.owned.shoes ? 7 : 5;
   if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
   const jumpV = G.owned.boots ? 10 : 7.5;
-  if (keys['ArrowLeft']) player.yaw += 2.4 * dt;     // turn with arrows — no mouse needed
+  if (keys['ArrowLeft']) player.yaw += 2.4 * dt;     // keyboard turn (desktop)
   if (keys['ArrowRight']) player.yaw -= 2.4 * dt;
-  let mx = 0, mz = 0;
-  if (keys['ArrowUp'] || keys['KeyW'] || touch.joyY < -0.25) mz -= 1;
-  if (keys['ArrowDown'] || keys['KeyS'] || touch.joyY > 0.25) mz += 1;
-  if (touch.joyX < -0.25) mx -= 1;
-  if (touch.joyX > 0.25) mx += 1;
-  const moving = (mx !== 0 || mz !== 0);
-  if (moving) {
-    const len = Math.hypot(mx, mz); mx /= len; mz /= len;
-    const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
-    player.vel.x = (mx * cos + mz * sin) * speed;
-    player.vel.z = (-mx * sin + mz * cos) * speed;
+  let moving = false;
+  const jmag = Math.hypot(touch.joyX, touch.joyY);
+  if (jmag > 0.18) {
+    // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
+    moving = true;
+    const cfx = -Math.sin(player.yaw), cfz = -Math.cos(player.yaw);   // "forward" (away from camera)
+    const crx = -cfz, crz = cfx;                                      // camera's right
+    let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
+    let dz = crz * touch.joyX + cfz * (-touch.joyY);
+    const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+    player.yaw += shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 9);  // smoothly turn to face it
+    const sp = speed * Math.min(1, jmag);
+    player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
-    player.vel.x = 0; player.vel.z = 0;
+    let mx = 0, mz = 0;
+    if (keys['ArrowUp'] || keys['KeyW']) mz -= 1;
+    if (keys['ArrowDown'] || keys['KeyS']) mz += 1;
+    if (keys['KeyA']) mx -= 1;
+    if (keys['KeyD']) mx += 1;
+    if (mx !== 0 || mz !== 0) {
+      moving = true;
+      const len = Math.hypot(mx, mz); mx /= len; mz /= len;
+      const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+      player.vel.x = (mx * cos + mz * sin) * speed;
+      player.vel.z = (-mx * sin + mz * cos) * speed;
+    } else { player.vel.x = 0; player.vel.z = 0; }
   }
 
   const nearLadder = G.owned.ladder && nearTrunk();
@@ -6188,31 +6211,41 @@ addEventListener('contextmenu', e => e.preventDefault());
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
 const touch = { joyX: 0, joyY: 0, jump: false, placeMode: true };
+let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
-  const joy = $('joyBase'), stick = $('joyStick');
-  let joyId = null;
-  joy.addEventListener('touchstart', e => { joyId = e.changedTouches[0].identifier; e.preventDefault(); }, { passive: false });
-  joy.addEventListener('touchmove', e => {
-    for (const t of e.changedTouches) {
-      if (t.identifier !== joyId) continue;
-      const r = joy.getBoundingClientRect();
-      let dx = (t.clientX - (r.left + r.width / 2)) / (r.width / 2);
-      let dy = (t.clientY - (r.top + r.height / 2)) / (r.height / 2);
-      const len = Math.hypot(dx, dy); if (len > 1) { dx /= len; dy /= len; }
-      touch.joyX = dx; touch.joyY = dy;
-      stick.style.left = 33 + dx * 33 + 'px';
-      stick.style.top = 33 + dy * 33 + 'px';
-    }
+  const joyBase = $('joyBase'), joyStick = $('joyStick');
+  joyBase.style.display = 'none';                       // dynamic move-circle: appears under your thumb (hole.io style)
+  joyBase.style.pointerEvents = 'none';
+  canvas.style.touchAction = 'none';
+  const JOY_R = 60;
+  let moveId = null, oX = 0, oY = 0, moved = 0, t0 = 0, shown = false;
+  function setStick(dx, dy) {
+    const len = Math.hypot(dx, dy) || 1, cl = Math.min(len, JOY_R), ux = dx / len, uy = dy / len;
+    joyStick.style.left = (33 + ux * cl * 0.5) + 'px';
+    joyStick.style.top = (33 + uy * cl * 0.5) + 'px';
+    const frac = cl / JOY_R;
+    touch.joyX = cl > 6 ? ux * frac : 0;
+    touch.joyY = cl > 6 ? uy * frac : 0;
+  }
+  canvas.addEventListener('touchstart', e => {
+    if (moveId !== null) return;
+    const t = e.changedTouches[0];
+    moveId = t.identifier; oX = t.clientX; oY = t.clientY; moved = 0; t0 = performance.now(); shown = false;
     e.preventDefault();
   }, { passive: false });
-  const joyEnd = e => {
-    for (const t of e.changedTouches) if (t.identifier === joyId) {
-      joyId = null; touch.joyX = 0; touch.joyY = 0;
-      stick.style.left = '33px'; stick.style.top = '33px';
+  canvas.addEventListener('touchmove', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier !== moveId) continue;
+      const dx = t.clientX - oX, dy = t.clientY - oY;
+      moved = Math.max(moved, Math.hypot(dx, dy));
+      if (!shown && moved > 6) {                         // reveal the circle once you start dragging
+        joyBase.style.left = (oX - 60) + 'px'; joyBase.style.top = (oY - 60) + 'px';
+        joyBase.style.bottom = 'auto'; joyBase.style.display = 'block'; shown = true; movedHintDone = true;
+      }
+      if (shown) setStick(dx, dy);
+      e.preventDefault();
     }
-  };
-  joy.addEventListener('touchend', joyEnd);
-  joy.addEventListener('touchcancel', joyEnd);
+  }, { passive: false });
 
   $('btnJump').addEventListener('touchstart', e => { touch.jump = true; e.preventDefault(); }, { passive: false });
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
@@ -6234,36 +6267,21 @@ if (isTouch) {
   }, { passive: false });
   $('btnShoot').addEventListener('touchstart', e => { e.preventDefault(); shootBall(); }, { passive: false });
 
-  // look + tap-to-build on the world canvas
-  let lookId = null, lookStart = null, lookLast = null, lookMoved = 0;
-  canvas.addEventListener('touchstart', e => {
-    if (lookId !== null) return;
-    const t = e.changedTouches[0];
-    lookId = t.identifier;
-    lookStart = lookLast = { x: t.clientX, y: t.clientY };
-    lookMoved = 0;
-  }, { passive: true });
-  canvas.addEventListener('touchmove', e => {
+  // a quick tap (barely moved) builds/breaks; a drag is movement (handled above).
+  // touchcancel is handled too, so a touch interrupted by the browser can never get "stuck".
+  function endMove(e) {
     for (const t of e.changedTouches) {
-      if (t.identifier !== lookId) continue;
-      const dx = t.clientX - lookLast.x, dy = t.clientY - lookLast.y;
-      lookMoved += Math.abs(dx) + Math.abs(dy);
-      player.yaw -= dx * 0.005;
-      player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch - dy * 0.005));
-      lookLast = { x: t.clientX, y: t.clientY };
-    }
-  }, { passive: true });
-  canvas.addEventListener('touchend', e => {
-    for (const t of e.changedTouches) {
-      if (t.identifier !== lookId) continue;
-      if (lookMoved < 12 && G.running && !popupOpen) {     // a tap, not a drag
-        const ndcX = (t.clientX / innerWidth) * 2 - 1;
-        const ndcY = -(t.clientY / innerHeight) * 2 + 1;
+      if (t.identifier !== moveId) continue;
+      if (moved < 12 && performance.now() - t0 < 320 && G.running && !popupOpen) {
+        const ndcX = (t.clientX / innerWidth) * 2 - 1, ndcY = -(t.clientY / innerHeight) * 2 + 1;
         interact(ndcX, ndcY, touch.placeMode ? 'place' : 'break');
       }
-      lookId = null;
+      moveId = null; touch.joyX = 0; touch.joyY = 0;
+      joyBase.style.display = 'none'; joyStick.style.left = '33px'; joyStick.style.top = '33px';
     }
-  });
+  }
+  canvas.addEventListener('touchend', endMove);
+  canvas.addEventListener('touchcancel', endMove);
 }
 
 /* ============================ START MENU ============================ */
@@ -6707,6 +6725,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (nearestBed()) {
       hint.textContent = isTouch ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';
+      hint.style.display = 'block';
+    } else if (isTouch && !movedHintDone) {
+      hint.textContent = '🕹️ Drag anywhere to move • tap the world to build!';
       hint.style.display = 'block';
     } else hint.style.display = 'none';
   }
