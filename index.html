@@ -3370,8 +3370,10 @@ function updateStoreSigns(worldId) {
 /* ---- voxel block storage ---- */
 const blocks = new Map();              // "x,y,z" -> {mesh, type, removable}
 const key = (x, y, z) => x + ',' + y + ',' + z;
+const CITY_SOLID = new Set();           // footprints of Reading Town's background houses (so cars/players can't drive through them)
 function solidAt(x, y, z) {
   if (y < 0) return true;              // the ground itself
+  if (y < 4 && G.world === 'city' && CITY_SOLID.has(x + ',' + z)) return true;   // suburban houses are solid
   const b = blocks.get(key(x, y, z));
   if (!b) return false;
   if (b.type === 'door' && b.state && b.state.swing > 1.0) return false;   // an open door lets you through
@@ -5488,6 +5490,11 @@ function suburbHouse(g, x, z, faceAng) {
   if (Math.random() < 0.5) box(h, 0.34, 0.95, 0.34, 0xB23A2E, w * 0.3, yb + wallH + 0.7 * k, -d * 0.22);  // chimney
   if (Math.random() < 0.6) mailbox(h, -w * 0.5 - 0.6, d / 2 + 1.0);             // curbside mailbox
   h.position.set(x, 0, z); h.rotation.y = faceAng; g.add(h);
+  // record the footprint cells that fall inside the play area, so they become solid
+  const r = Math.hypot(w, d) / 2 + 0.2;
+  for (let cx = Math.floor(x - r); cx <= Math.ceil(x + r); cx++)
+    for (let cz = Math.floor(z - r); cz <= Math.ceil(z + r); cz++)
+      if (Math.abs(cx) < WORLD_R && Math.abs(cz) < WORLD_R && Math.hypot(cx + 0.5 - x, cz + 0.5 - z) <= r) CITY_SOLID.add(cx + ',' + cz);
 }
 function buildLibrary(g) {                    // Reading Town's grand civic library (a landmark you can drive up to)
   const STONE = 0xE7DCC4, STONE2 = 0xD8CCB0, ROOF = 0x6E4636, COL = 0xF3EEDF, DOOR = 0x7B4A2C, GOLD = 0xC9A24A, STEP = 0xCFC6AE, FRIEZE = 0x33241a;
@@ -6340,6 +6347,7 @@ function inShopZone(cx, cz) {
 function placeSelectedAt(x, z, blockY) {
   if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
   if (inShopZone(x, z)) { toast('🏬 That spot belongs to a shop — build a little further away!', 2200); return false; }
+  if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { toast('🏠 That\'s a neighbor\'s house — build a bit closer in!', 2000); return false; }
   const slot = G.selectedSlot;
   if (slot === 'door') {
     if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🛒 Stack Mart (press B)!', 2400); return false; }
