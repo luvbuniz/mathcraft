@@ -4707,11 +4707,11 @@ function finishLib() {
    close decoys; older spellers TYPE it. Rated on the first answer, like reading comprehension. */
 let spell = null;
 const SPELL_WORDS = {
-  1: [['cat', 'The cat sat on the soft mat.'], ['dog', 'My dog likes to run and play.'], ['sun', 'The sun is bright and warm.'], ['red', 'She has a red hat.'], ['box', 'Put the toys in the box.'], ['fish', 'A little fish swam in the pond.'], ['jump', 'I can jump very high.'], ['milk', 'He drank a glass of milk.'], ['hand', 'Raise your hand to answer.'], ['nest', 'The bird built a nest.'], ['frog', 'The frog hopped away.'], ['star', 'One star shone in the sky.']],
-  2: [['rain', 'The rain fell all day.'], ['tree', 'A bird sat in the tall tree.'], ['clock', 'The clock says it is three.'], ['green', 'The grass is green.'], ['happy', 'The puppy felt happy.'], ['sheep', 'The sheep ate the grass.'], ['bread', 'We baked fresh bread.'], ['chair', 'Please sit on the chair.'], ['snake', 'The snake slid through the grass.'], ['train', 'The train is very fast.'], ['cloud', 'One fluffy cloud floated by.'], ['smile', 'She gave me a big smile.']],
-  3: [['friend', 'My best friend came to play.'], ['school', 'We learn a lot at school.'], ['garden', 'Flowers grow in the garden.'], ['dragon', 'The dragon flew over the hill.'], ['pencil', 'Write with your pencil.'], ['orange', 'I ate a juicy orange.'], ['winter', 'It snows in the winter.'], ['market', 'We bought fruit at the market.'], ['brave', 'The brave knight helped the king.'], ['bridge', 'We walked across the bridge.'], ['summer', 'We swim in the summer.'], ['planet', 'Earth is our planet.']],
-  4: [['question', 'I asked my teacher a question.'], ['library', 'We borrow books from the library.'], ['measure', 'We measure the flour to bake.'], ['journey', 'They went on a long journey.'], ['special', 'Today is a special day.'], ['beautiful', 'The sunset was beautiful.'], ['mystery', 'They solved the mystery together.'], ['picture', 'She drew a lovely picture.'], ['station', 'The train stopped at the station.'], ['between', 'Sit between your two friends.'], ['machine', 'The machine makes a loud noise.'], ['weather', 'The weather is sunny today.']],
-  5: [['adventure', 'They had a great adventure.'], ['knowledge', 'Reading gives you knowledge.'], ['necessary', 'Sleep is necessary to stay healthy.'], ['separate', 'Keep the colors separate.'], ['different', 'Every snowflake is different.'], ['sentence', 'Write a complete sentence.'], ['important', 'It is important to be kind.'], ['character', 'My favorite story character is brave.'], ['surprise', 'The party was a surprise.'], ['neighbor', 'Our neighbor has a friendly dog.'], ['calendar', 'Mark the date on the calendar.'], ['language', 'Spanish is a beautiful language.']]
+  1: [['cat', 'The cat sat on the soft mat.'], ['dog', 'My dog likes to run and play.'], ['sun', 'The sun is bright and warm.'], ['red', 'She has a red hat.'], ['box', 'Put the toys in the box.'], ['fish', 'A little fish swam in the pond.'], ['jump', 'I can jump very high.'], ['milk', 'He drank a glass of milk.'], ['hand', 'Raise your hand to answer.'], ['nest', 'The bird built a nest.'], ['frog', 'The frog hopped away.'], ['star', 'One star shone in the sky.'], ['bed', 'I sleep in my bed.'], ['cup', 'She drank from a cup.'], ['hat', 'He wore a warm hat.'], ['pig', 'The pig rolled in mud.'], ['bus', 'We ride the bus to school.'], ['ten', 'I can count to ten.']],
+  2: [['rain', 'The rain fell all day.'], ['tree', 'A bird sat in the tall tree.'], ['clock', 'The clock says it is three.'], ['green', 'The grass is green.'], ['happy', 'The puppy felt happy.'], ['sheep', 'The sheep ate the grass.'], ['bread', 'We baked fresh bread.'], ['chair', 'Please sit on the chair.'], ['snake', 'The snake slid through the grass.'], ['train', 'The train is very fast.'], ['cloud', 'One fluffy cloud floated by.'], ['smile', 'She gave me a big smile.'], ['beach', 'We built a castle at the beach.'], ['grass', 'The green grass is soft.'], ['plant', 'Water the little plant.'], ['crab', 'A crab walked on the sand.'], ['queen', 'The queen wore a crown.'], ['black', 'The cat is black.']],
+  3: [['friend', 'My best friend came to play.'], ['school', 'We learn a lot at school.'], ['garden', 'Flowers grow in the garden.'], ['dragon', 'The dragon flew over the hill.'], ['pencil', 'Write with your pencil.'], ['orange', 'I ate a juicy orange.'], ['winter', 'It snows in the winter.'], ['market', 'We bought fruit at the market.'], ['brave', 'The brave knight helped the king.'], ['bridge', 'We walked across the bridge.'], ['summer', 'We swim in the summer.'], ['planet', 'Earth is our planet.'], ['rabbit', 'The rabbit hopped fast.'], ['window', 'I looked out the window.'], ['tiger', 'The tiger has orange stripes.'], ['candle', 'We lit a candle on the cake.'], ['basket', 'She filled the basket with apples.'], ['yellow', 'The sun is bright yellow.']],
+  4: [['question', 'I asked my teacher a question.'], ['library', 'We borrow books from the library.'], ['measure', 'We measure the flour to bake.'], ['journey', 'They went on a long journey.'], ['special', 'Today is a special day.'], ['beautiful', 'The sunset was beautiful.'], ['mystery', 'They solved the mystery together.'], ['picture', 'She drew a lovely picture.'], ['station', 'The train stopped at the station.'], ['between', 'Sit between your two friends.'], ['machine', 'The machine makes a loud noise.'], ['weather', 'The weather is sunny today.'], ['animal', 'A lion is a wild animal.'], ['holiday', 'We travel on a holiday.'], ['treasure', 'The pirates found a treasure.'], ['captain', 'The captain steered the ship.'], ['village', 'They live in a small village.'], ['remember', 'I remember your birthday.']],
+  5: [['adventure', 'They had a great adventure.'], ['knowledge', 'Reading gives you knowledge.'], ['necessary', 'Sleep is necessary to stay healthy.'], ['separate', 'Keep the colors separate.'], ['different', 'Every snowflake is different.'], ['sentence', 'Write a complete sentence.'], ['important', 'It is important to be kind.'], ['character', 'My favorite story character is brave.'], ['surprise', 'The party was a surprise.'], ['neighbor', 'Our neighbor has a friendly dog.'], ['calendar', 'Mark the date on the calendar.'], ['language', 'Spanish is a beautiful language.'], ['community', 'Our community helps each other.'], ['favorite', 'Blue is my favorite color.'], ['vegetable', 'A carrot is a healthy vegetable.'], ['dangerous', 'Fire can be dangerous.'], ['tomorrow', 'We will play again tomorrow.'], ['believe', 'I believe you can do it.']]
 };
 let spellVoice = null, spanVoice = null;
 function pickSpellVoice() {
@@ -4852,7 +4852,10 @@ const MART_ITEMS = [
   { es: 'leche', en: 'milk', e: '🥛', price: 2 }, { es: 'queso', en: 'cheese', e: '🧀', price: 4 },
   { es: 'huevos', en: 'eggs', e: '🥚', price: 3 }, { es: 'plátano', en: 'banana', e: '🍌', price: 2 },
   { es: 'naranja', en: 'orange', e: '🍊', price: 3 }, { es: 'tomate', en: 'tomato', e: '🍅', price: 2 },
-  { es: 'agua', en: 'water', e: '💧', price: 1 }, { es: 'pollo', en: 'chicken', e: '🍗', price: 5 }
+  { es: 'agua', en: 'water', e: '💧', price: 1 }, { es: 'pollo', en: 'chicken', e: '🍗', price: 5 },
+  { es: 'fresa', en: 'strawberry', e: '🍓', price: 2 }, { es: 'uvas', en: 'grapes', e: '🍇', price: 3 },
+  { es: 'zanahoria', en: 'carrot', e: '🥕', price: 2 }, { es: 'galleta', en: 'cookie', e: '🍪', price: 1 },
+  { es: 'jugo', en: 'juice', e: '🧃', price: 2 }, { es: 'sandía', en: 'watermelon', e: '🍉', price: 4 }
 ];
 const ES_NUM = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
 function openMart() {
@@ -4912,7 +4915,8 @@ function martAnswer(correct, nextPhase) {
     if (mart.lastEs) speakWord(mart.lastEs, Object.assign({ es: true }, mart.lastOpts || {}));
   }
 }
-const norm = s => (s || '').trim().toLowerCase().replace(/[.,!¡¿?]/g, '');
+// accent-insensitive so a kid typing "platano" matches "plátano"
+const norm = s => (s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.,!¡¿?]/g, '');
 function renderMart() {
   if (!mart) return;
   const wrap = $('martChoices'); wrap.innerHTML = ''; $('martMsg').textContent = '';
@@ -7006,9 +7010,13 @@ function buildFurnitureMesh(type, variant) {
     [[-0.48, -0.86], [0.48, -0.86], [-0.48, 0.86], [0.48, 0.86]].forEach(([lx, lz]) =>
       box(g, 0.1, 0.18, 0.1, 0x4a2c18, lx, 0.09, lz));                 // legs
     if (finish === 1) { box(g, 0.12, 0.06, 0.12, 0xC9A24A, -0.48, 0.2, -0.86); box(g, 0.12, 0.06, 0.12, 0xC9A24A, 0.48, 0.2, -0.86); box(g, 1.17, 0.03, 0.05, 0xC9A24A, 0, 0.31, 0.97); }  // gold post caps + rail (deluxe)
+    else if (finish === 0) { box(g, 1.06, 0.06, 0.34, 0x6FA85B, 0, 0.43, 0.55); box(g, 1.06, 0.02, 0.34, 0xEDE3CF, 0, 0.47, 0.55); }   // country folded quilt at the foot
+    else if (finish === 2) [0xE5534B, 0xF2C14E, 0x2E6E9E].forEach((cc, i) => box(g, 1.06, 0.03, 0.1, cc, 0, 0.43, 0.4 + i * 0.11));   // spanish woven blanket stripes
   } else if (type === 'couch') {
     buildCouch(g, variant);
     if (finish === 1) for (let i = 0; i < 7; i++) box(g, 0.022, 0.022, 0.03, 0xC9A24A, -0.36 + i * 0.12, 0.27, 0.255);   // gold nailhead studs (deluxe)
+    else if (finish === 0) { box(g, 0.42, 0.05, 0.34, 0x6FA85B, -0.18, 0.52, 0.06); box(g, 0.42, 0.02, 0.34, 0xEDE3CF, -0.18, 0.55, 0.06); }   // country knitted throw
+    else if (finish === 2) [0xE5534B, 0xF2C14E, 0x2E6E9E].forEach((cc, i) => box(g, 0.42, 0.04, 0.08, cc, 0.18, 0.52, -0.04 + i * 0.1));   // spanish serape stripes
   } else if (type === 'tv') {
     box(g, 0.6, 0.1, 0.32, 0x6d4326, 0, 0.18, 0);                      // stand top
     if (finish === 1) box(g, 0.62, 0.03, 0.34, 0xC9A24A, 0, 0.24, 0);  // gold media-stand trim (deluxe)
