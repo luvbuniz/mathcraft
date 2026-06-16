@@ -359,6 +359,7 @@
 
   /* ---------- Grown-ups dashboard ---------- */
   #grownupPopup { z-index:60; }   /* opens from the start screen, so it must sit above it */
+  #delPopup { z-index:70; }       /* the delete confirm must sit above the Grown-ups page too */
   #grownupBtn { margin-top:10px; background:#dbe7f7; color:#34527e; font-weight:bold;
     font-size:clamp(13px,2.2vw,16px); padding:9px 18px; border-radius:14px; box-shadow:0 3px 0 #b0c4de; }
   #grownupList { display:flex; flex-direction:column; gap:12px; margin-top:10px; }
@@ -1041,9 +1042,9 @@
 <div class="popup" id="delPopup">
   <div class="popupCard" style="width:min(440px,94vw); text-align:center">
     <div style="font-size:46px">🗑️</div>
-    <h2 style="color:#c0392b; margin:6px 0">Delete this game?</h2>
+    <h2 id="delTitle" style="color:#c0392b; margin:6px 0">Delete this game?</h2>
     <p id="delWho" style="font-weight:800; color:#2f4a33; margin:4px 0"></p>
-    <p style="color:#7a6a35; font-weight:700">This <u>permanently</u> erases the whole build — it can't be brought back.</p>
+    <p id="delWarn" style="color:#7a6a35; font-weight:700">This <u>permanently</u> erases the whole build — it can't be brought back.</p>
     <p style="color:#2f4a33; font-weight:800; margin:14px 0 2px">A grown-up step — type this code to delete:</p>
     <div id="delCode" style="font-size:34px; font-weight:900; letter-spacing:8px; color:#c0392b; margin:2px 0"></div>
     <input id="delInput" inputmode="numeric" autocomplete="off" placeholder="type the code"
@@ -1106,7 +1107,12 @@
       <span style="color:#6c84a6; font-size:13px">Full game: <b id="purchaseStatus">—</b></span>
       <button id="resetPurchaseBtn" style="font-size:12px; background:#eef1f5; color:#6c84a6; border:none; border-radius:8px; padding:5px 11px; cursor:pointer; font-family:inherit">Reset purchase (testing)</button>
     </div>
-    <div style="margin-top:8px; color:#9aa9bd; font-size:11px; text-align:center">
+    <div style="margin-top:14px; padding:10px 14px; background:#FDECEA; border:1px solid #f3b7ad; border-radius:14px; text-align:left">
+      <div style="color:#c0392b; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">🗑️ Danger zone — delete a player</div>
+      <div style="color:#9a6a60; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Permanently erases that player's saved games <b>and</b> progress on this device. You'll be asked <b>“Are you sure?”</b> and have to type a code — so a child can't do it by accident.</div>
+      <div id="grownupDelete"></div>
+    </div>
+    <div style="margin-top:12px; color:#9aa9bd; font-size:11px; text-align:center">
       <a href="support.html#privacy" target="_blank" style="color:#9aa9bd; text-decoration:none">Privacy</a> ·
       <a href="support.html#terms" target="_blank" style="color:#9aa9bd; text-decoration:none">Terms</a> ·
       <a href="support.html" target="_blank" style="color:#9aa9bd; text-decoration:none">Support</a>
@@ -2776,18 +2782,23 @@ function renderGrownup() {
     });
     if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
     card.innerHTML = html;
-    const reset = document.createElement('button');
-    reset.className = 'guReset';
-    reset.textContent = '🗑 Reset ' + p._name + "'s progress";
-    reset.onclick = () => {
-      Sound.click();
-      try { localStorage.removeItem(PROFILE_PREFIX + p._name); localStorage.removeItem('mathcraftProfile:' + p._name); } catch (e) {}
-      if (p._name === G.playerName) { profile = freshProfile(); profile.firstPlayed = Date.now(); }
-      renderGrownup();
-    };
-    card.appendChild(reset);
     list.appendChild(card);
   });
+  // Danger zone (bottom of the page): code-gated delete per player
+  const del = $('grownupDelete');
+  if (del) {
+    del.innerHTML = '';
+    profs.forEach(p => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0';
+      row.innerHTML = '<span style="font-weight:700; color:#7a4b44">🙂 ' + p._name + '</span>';
+      const b = document.createElement('button');
+      b.textContent = '🗑️ Delete';
+      b.style.cssText = 'font-size:13px; background:#c0392b; color:#fff; border:none; border-radius:9px; padding:7px 13px; cursor:pointer; font-family:inherit; font-weight:bold; box-shadow:0 3px 0 #8e2820';
+      b.onclick = () => { Sound.click(); askDeletePlayer(p._name); };
+      row.appendChild(b); del.appendChild(row);
+    });
+  }
 }
 function openGrownup() {
   renderGrownup();
@@ -7231,16 +7242,38 @@ buildMenu();
 /* Deleting a saved game asks for a typed code first, so a button-happy little one
    can't wipe out a build by accident (this really happened to Leo!). */
 let delTarget = null, delCodeVal = '';
-function askDelete(name, world) {
-  delTarget = { name: name, world: world };
+function showDelPopup() {
   delCodeVal = String(Math.floor(1000 + Math.random() * 9000));     // a fresh 4-digit code each time
-  const w = WORLDS[world] || WORLDS.meadow;
-  $('delWho').textContent = w.emoji + ' ' + (name || 'Player') + ' — ' + w.name;
   $('delCode').textContent = delCodeVal;
   $('delInput').value = '';
   $('delConfirm').disabled = true;
   $('delPopup').style.display = 'flex';
   setTimeout(() => $('delInput').focus(), 60);
+}
+function askDelete(name, world) {
+  delTarget = { name: name, world: world };
+  const w = WORLDS[world] || WORLDS.meadow;
+  $('delTitle').textContent = 'Delete this game?';
+  $('delWho').textContent = w.emoji + ' ' + (name || 'Player') + ' — ' + w.name;
+  $('delWarn').innerHTML = 'This <u>permanently</u> erases the whole build — it can\'t be brought back.';
+  showDelPopup();
+}
+function askDeletePlayer(name) {
+  delTarget = { player: name };
+  $('delTitle').textContent = 'Delete this player?';
+  $('delWho').textContent = '🙂 ' + (name || 'Player');
+  $('delWarn').innerHTML = 'This <u>permanently</u> erases <b>' + (name || 'Player') + '\'s</b> saved games <b>and</b> progress on this device — it can\'t be brought back.';
+  showDelPopup();
+}
+function deletePlayer(name) {                          // wipe a player's saves (every world) + their progress profile
+  const savePrefixes = ['stackadooSave:', 'mathcraftSave:'], toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i); if (!k) continue;
+    for (const sp of savePrefixes) { if (k === sp + name || k.indexOf(sp + name + '::') === 0) { toRemove.push(k); break; } }
+  }
+  toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  try { localStorage.removeItem('stackadooProfile:' + name); localStorage.removeItem('mathcraftProfile:' + name); } catch (e) {}
+  if (name === G.playerName) { profile = freshProfile(); profile.firstPlayed = Date.now(); }
 }
 function closeDel() { $('delPopup').style.display = 'none'; delTarget = null; }
 $('delInput').oninput = () => { $('delConfirm').disabled = $('delInput').value.trim() !== delCodeVal; };
@@ -7249,9 +7282,11 @@ $('delCancel').onclick = () => { Sound.click(); closeDel(); };
 $('delConfirm').onclick = () => {
   if (!delTarget || $('delInput').value.trim() !== delCodeVal) return;
   Sound.click();
-  clearSave(delTarget.name, delTarget.world);
+  const t = delTarget;
+  if (t.player) deletePlayer(t.player); else clearSave(t.name, t.world);
   closeDel();
-  refreshSavedList();
+  if (typeof refreshSavedList === 'function') refreshSavedList();
+  if (t.player) renderGrownup();
 };
 const SVG_PLAY = '<svg class="ic ic-fill" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>';
 const SVG_TRASH = '<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
