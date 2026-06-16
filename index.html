@@ -2394,7 +2394,7 @@ const G = {
   world: 'meadow',
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
-  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false },
+  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, bike: false, speedboat: false, sailboat: false },
   activeCar: null, carColors: {},
   quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
@@ -3229,7 +3229,7 @@ function resetGameState() {
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A; G.furnFinish = 0;
-  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false };
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
 }
@@ -3940,6 +3940,44 @@ function buildConvertibleShape(g, bm, bm2, gm) {    // open-top luxury cruiser
   P(mat(0xD23A3A), 0.9, 0.07, 0.05, 0, 0.5, -1.62); // tail light strip
   carWheels(g, [[-0.62, 1.0, 0.36], [0.62, 1.0, 0.36], [-0.62, -1.05, 0.36], [0.62, -1.05, 0.36]]);
 }
+function buildSpeedboatShape(g, bm, bm2, gm) {     // sporty motorboat (floats on the ocean)
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.1, 0.36, 2.7, 0, 0.5, -0.1);              // hull
+  P(bm, 0.66, 0.3, 1.0, 0, 0.56, 1.25);             // pointed bow
+  P(bm2, 1.16, 0.14, 2.8, 0, 0.34, -0.1);           // waterline trim
+  P(mat(0xEFF6FA), 0.88, 0.16, 1.5, 0, 0.66, -0.25);// deck
+  P(gm, 0.8, 0.3, 0.06, 0, 0.86, 0.25);             // windshield
+  P(mat(0x6b4a2c), 0.4, 0.2, 0.4, 0, 0.72, -0.45);  // seat
+  P(mat(0x2a2a2a), 0.3, 0.42, 0.3, 0, 0.66, -1.35); // outboard motor
+  P(mat(0xD23A3A), 1.12, 0.06, 0.1, 0, 0.74, 0.0);  // racing stripe
+  g.userData.wheels = [];
+}
+function buildSailboatShape(g, bm, bm2, gm) {       // gentle sailboat (floats on the ocean)
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.0, 0.42, 3.1, 0, 0.5, 0);                 // hull
+  P(bm, 0.6, 0.3, 0.9, 0, 0.56, 1.4);               // bow
+  P(bm2, 1.06, 0.14, 3.1, 0, 0.33, 0);              // waterline
+  P(mat(0xEFF6FA), 0.8, 0.14, 2.0, 0, 0.68, 0);     // deck
+  P(mat(0x7a5a36), 0.1, 2.4, 0.1, 0, 1.85, 0.1);    // mast
+  P(mat(0xF7F2E6), 0.05, 1.7, 1.1, 0, 1.6, 0.6);    // main sail
+  P(mat(0xE5534B), 0.05, 1.1, 0.7, 0, 1.1, -0.5);   // small jib (red)
+  P(mat(0x6b4a2c), 0.34, 0.2, 0.4, 0, 0.76, -0.7);  // cockpit seat
+  P(mat(0x2a2a2a), 0.06, 0.34, 0.06, 0, 0.62, -1.5);// tiller
+  g.userData.wheels = [];
+}
+function buildBikeShape(g, bm, bm2, gm) {           // beach-cruiser bicycle
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 0.08, 0.08, 1.2, 0, 0.6, 0);                // top tube
+  P(bm, 0.08, 0.62, 0.08, 0, 0.42, 0.5);            // head tube
+  P(bm, 0.08, 0.55, 0.08, 0, 0.42, -0.45);          // seat tube
+  P(bm, 0.08, 0.5, 0.08, -0.0, 0.4, 0.05);          // down tube
+  P(mat(0x222), 0.12, 0.1, 0.3, 0, 0.82, -0.5);     // saddle
+  P(mat(0x16161a), 0.05, 0.22, 0.05, 0, 0.76, 0.52);// stem
+  P(mat(0x33373d), 0.42, 0.06, 0.06, 0, 0.88, 0.55);// handlebars
+  P(mat(0x9a8a6a), 0.3, 0.06, 0.22, 0, 0.6, 0.78);  // basket base
+  P(mat(0xC9A24A), 0.32, 0.22, 0.06, 0, 0.72, 0.88); P(mat(0xC9A24A), 0.32, 0.22, 0.06, 0, 0.72, 0.68);  // basket walls
+  carWheels(g, [[0, 0.6, 0.42], [0, -0.6, 0.42]]);  // two in-line wheels
+}
 // Each town's Stack Motors stocks its own lineup (a car can be sold in more than one town).
 const VEHICLES = [
   { id: 'pickup',   name: 'Pickup Truck',   emoji: '🛻', price: 58, color: 0x3f7fbf, speed: 11, shape: buildPickupShape,      worlds: ['meadow', 'beach'] },
@@ -3948,9 +3986,12 @@ const VEHICLES = [
   { id: 'minivan',  name: 'Family Van',     emoji: '🚐', price: 64, color: 0x8FA6BC, speed: 10, shape: buildMinivanShape,     worlds: ['meadow'] },
   { id: 'police',   name: 'Police Cruiser', emoji: '🚓', price: 80, color: 0x1b1f27, speed: 14, shape: buildPoliceShape,      worlds: ['city'] },
   { id: 'monster',  name: 'Monster Truck',  emoji: '🦖', price: 86, color: 0x6a3fb0, speed: 12, shape: buildMonsterShape,     worlds: ['meadow'] },
-  { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'] },
+  { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'], open: true, seat: [0, 0.62, -0.1] },
   { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape,    worlds: ['city'] },
-  { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape,       worlds: ['city'] }
+  { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape,       worlds: ['city'] },
+  { id: 'bike',     name: 'Beach Cruiser',  emoji: '🚲', price: 40, color: 0x2b9fb0, speed: 9, shape: buildBikeShape,         worlds: ['beach'], bike: true, open: true, seat: [0, 0.78, -0.45] },
+  { id: 'speedboat', name: 'Speedboat',     emoji: '🚤', price: 135, color: 0xF2F2F2, speed: 17, shape: buildSpeedboatShape,  worlds: ['beach'], water: true, open: true, seat: [0, 0.66, -0.45] },
+  { id: 'sailboat', name: 'Sailboat',       emoji: '⛵', price: 150, color: 0xEDE3CF, speed: 12, shape: buildSailboatShape,   worlds: ['beach'], water: true, open: true, seat: [0, 0.7, -0.7] }
 ];
 const cars = {};   // id -> { def, group, bodyMat, bodyMat2, yaw, spawned }
 VEHICLES.forEach(def => {
@@ -5594,20 +5635,45 @@ function updatePlayer(dt) {
       if (f) { moving = true; player.vel.x = -Math.sin(v.yaw) * speed * f; player.vel.z = -Math.cos(v.yaw) * speed * f; }
       else { player.vel.x = 0; player.vel.z = 0; }
     }
-    player.vel.y -= 22 * dt; player.onGround = false;
-    collideAxis('x', player.vel.x * dt);                 // reuse the player collider so the truck respects walls
-    collideAxis('z', player.vel.z * dt);
-    collideAxis('y', player.vel.y * dt);
-    const lim = WORLD_R - 1.0;
-    player.pos.x = Math.max(-lim, Math.min(lim, player.pos.x));
-    player.pos.z = Math.max(-lim, Math.min(lim, player.pos.z));
+    const isBoat = !!(v.def && v.def.water);
+    if (isBoat) {                                        // ⛵ float on the water — no gravity, free to sail onto the ocean
+      player.pos.x += player.vel.x * dt; player.pos.z += player.vel.z * dt;
+      const wlim = WORLD_R + 14;                         // can sail well out past the island
+      player.pos.x = Math.max(-wlim, Math.min(wlim, player.pos.x));
+      player.pos.z = Math.max(-wlim, Math.min(wlim, player.pos.z));
+      player.pos.y = 0; player.vel.y = 0; player.onGround = false;
+    } else {                                             // 🛻 land vehicles: gravity + wall collision
+      player.vel.y -= 22 * dt; player.onGround = false;
+      collideAxis('x', player.vel.x * dt);
+      collideAxis('z', player.vel.z * dt);
+      collideAxis('y', player.vel.y * dt);
+      const lim = WORLD_R - 1.0;
+      player.pos.x = Math.max(-lim, Math.min(lim, player.pos.x));
+      player.pos.z = Math.max(-lim, Math.min(lim, player.pos.z));
+    }
     player.yaw = v.yaw;
-    v.group.position.set(player.pos.x, player.pos.y, player.pos.z);
-    v.group.rotation.y = v.yaw + Math.PI;                // model faces +Z; forward is -Z (same as avatars)
-    const wsp = Math.hypot(player.vel.x, player.vel.z);
+    const wsp = Math.hypot(player.vel.x, player.vel.z), tnow = performance.now();
+    if (isBoat) {                                        // bob with the swell + lean into turns
+      const bob = Math.sin(tnow / 350) * 0.06;
+      v.group.position.set(player.pos.x, player.pos.y + bob, player.pos.z);
+      v.group.rotation.set(Math.min(0.14, wsp * 0.012), v.yaw + Math.PI, Math.sin(tnow / 320) * 0.05);
+    } else {
+      v.group.position.set(player.pos.x, player.pos.y, player.pos.z);
+      v.group.rotation.y = v.yaw + Math.PI;             // model faces +Z; forward is -Z (same as avatars)
+    }
     Sound.engineSet(Math.min(1, wsp / 11));              // engine revs with speed
     if (v.group.userData.wheels) v.group.userData.wheels.forEach(w => w.rotation.x -= wsp * dt * 1.5);
-    if (player.avatar) player.avatar.visible = false;
+    if (player.avatar) {                                 // show the rider on open vehicles (bikes, boats, convertible)
+      if (v.def && v.def.open) {
+        player.avatar.visible = true;
+        const seat = v.def.seat || [0, 0.55, -0.1], ang = v.yaw + Math.PI;
+        const wx = Math.cos(ang) * seat[0] + Math.sin(ang) * seat[2];
+        const wz = -Math.sin(ang) * seat[0] + Math.cos(ang) * seat[2];
+        const yb = isBoat ? Math.sin(tnow / 350) * 0.06 : 0;
+        player.avatar.position.set(player.pos.x + wx, player.pos.y + yb + seat[1], player.pos.z + wz);
+        player.avatar.rotation.set(0, ang, 0);
+      } else player.avatar.visible = false;
+    }
     const headY = player.pos.y + 1.55, dist = 6.6;
     const cx = player.pos.x + Math.sin(v.yaw) * dist, cz = player.pos.z + Math.cos(v.yaw) * dist;
     camera.position.lerp(new THREE.Vector3(cx, Math.max(0.7, headY + 1.6), cz), 0.16);
