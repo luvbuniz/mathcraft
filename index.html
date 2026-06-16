@@ -4284,11 +4284,12 @@ function isTrickyQuestion(eq) {
   const t = String(eq.text).replace(/−/g, '-');
   const nums = (t.match(/\d+/g) || []).map(Number);
   if (sk === 'word') return Math.max(0, ...nums) >= 12;
+  if (Math.max(0, ...nums) >= 100) return true;        // any triple-digit number → grab paper
   let m;
-  // multiplication: only multi-digit (a two-digit factor) is "grab paper" — single-digit table facts like 5×8 aren't
+  // division is always worth working out at these grades
+  if ((m = t.match(/(\d+)\s*[÷\/]\s*(\d+)/))) return true;
+  // multiplication: only multi-digit (single-digit table facts like 5×8 aren't tricky)
   if ((m = t.match(/(\d+)\s*[×x*]\s*(\d+)/i))) return (+m[1]) >= 11 || (+m[2]) >= 11;
-  // division: bigger dividends or a two-digit divisor (basic facts like 24÷6 aren't tricky)
-  if ((m = t.match(/(\d+)\s*[÷\/]\s*(\d+)/)))  return (+m[1]) >= 50 || (+m[2]) >= 11;
   if (nums.length >= 3) return true;                                                    // three numbers in a row
   if ((m = t.match(/(\d+)\s*\+\s*(\d+)/))) {     // adding a small number (e.g. 19+1) is NOT tricky
     const a = +m[1], b = +m[2], hi = Math.max(a, b), lo = Math.min(a, b);
