@@ -1377,25 +1377,39 @@ const Sound = {
   engineStart() {
     this.init();
     if (!this.ctx || this.engineOsc) return;
-    this.engineOsc = this.ctx.createOscillator(); this.engineOsc.type = 'sawtooth'; this.engineOsc.frequency.value = 58;
-    this.engineSub = this.ctx.createOscillator(); this.engineSub.type = 'triangle'; this.engineSub.frequency.value = 29;
-    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
-    this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = 0.0001;
-    this.engineOsc.connect(lp); this.engineSub.connect(lp); lp.connect(this.engineGain); this.engineGain.connect(this.master);
-    this.engineOsc.start(); this.engineSub.start();
+    const ctx = this.ctx;
+    this.engineOsc = ctx.createOscillator(); this.engineOsc.type = 'sawtooth'; this.engineOsc.frequency.value = 60;   // main growl
+    this.engineOsc2 = ctx.createOscillator(); this.engineOsc2.type = 'sawtooth'; this.engineOsc2.frequency.value = 90; // detuned body
+    this.engineSub = ctx.createOscillator(); this.engineSub.type = 'triangle'; this.engineSub.frequency.value = 30;   // sub rumble
+    this.engineLP = ctx.createBiquadFilter(); this.engineLP.type = 'lowpass'; this.engineLP.frequency.value = 560; this.engineLP.Q.value = 7;
+    this.engineGain = ctx.createGain(); this.engineGain.gain.value = 0.0001;
+    // a "chug" LFO modulates the volume so it putters like a real engine firing, faster as it revs
+    this.engineLFO = ctx.createOscillator(); this.engineLFO.type = 'sawtooth'; this.engineLFO.frequency.value = 10;
+    this.engineLFOGain = ctx.createGain(); this.engineLFOGain.gain.value = 0.45;
+    this.engineChug = ctx.createGain(); this.engineChug.gain.value = 1;
+    this.engineLFO.connect(this.engineLFOGain); this.engineLFOGain.connect(this.engineChug.gain);
+    this.engineOsc.connect(this.engineLP); this.engineOsc2.connect(this.engineLP); this.engineSub.connect(this.engineLP);
+    this.engineLP.connect(this.engineChug); this.engineChug.connect(this.engineGain); this.engineGain.connect(this.master);
+    this.engineOsc.start(); this.engineOsc2.start(); this.engineSub.start(); this.engineLFO.start();
   },
   engineSet(s) {                                   // s = 0..1 (speed); reads mute live
     if (!this.engineGain) return;
-    const t = this.ctx.currentTime, f = 56 + s * 168;
-    this.engineOsc.frequency.setTargetAtTime(f, t, 0.07);
-    this.engineSub.frequency.setTargetAtTime(f * 0.5, t, 0.07);
-    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.05 + s * 0.13), t, 0.09);
+    const t = this.ctx.currentTime, f = 50 + s * 150;
+    this.engineOsc.frequency.setTargetAtTime(f, t, 0.06);
+    this.engineOsc2.frequency.setTargetAtTime(f * 1.5, t, 0.06);
+    this.engineSub.frequency.setTargetAtTime(f * 0.5, t, 0.06);
+    this.engineLFO.frequency.setTargetAtTime(9 + s * 36, t, 0.08);          // putter speeds up with the revs
+    this.engineLP.frequency.setTargetAtTime(420 + s * 1500, t, 0.08);       // engine brightens as it opens up
+    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.045 + s * 0.12), t, 0.08);
   },
   engineStop() {
     if (!this.engineOsc) return;
     const t = this.ctx.currentTime;
-    try { this.engineGain.gain.setTargetAtTime(0.0001, t, 0.05); this.engineOsc.stop(t + 0.25); this.engineSub.stop(t + 0.25); } catch (e) {}
-    this.engineOsc = this.engineGain = this.engineSub = null;
+    try {
+      this.engineGain.gain.setTargetAtTime(0.0001, t, 0.05);
+      [this.engineOsc, this.engineOsc2, this.engineSub, this.engineLFO].forEach(o => { try { o.stop(t + 0.25); } catch (e) {} });
+    } catch (e) {}
+    this.engineOsc = this.engineOsc2 = this.engineSub = this.engineLFO = this.engineLFOGain = this.engineChug = this.engineLP = this.engineGain = null;
   },
   toggleMute() { this.muted = !this.muted; return this.muted; }
 };
@@ -2631,7 +2645,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {} };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, bestStreak: 0 };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -7064,6 +7078,7 @@ function answerPicked(btn, opt) {
     G.solved++;
     G.mathMisses = 0;
     G.mathCorrectStreak++;
+    if (G.mathCorrectStreak > (profile.bestStreak || 0)) { profile.bestStreak = G.mathCorrectStreak; profileDirty = true; }
     bumpSkill(currentEq.skill, true);
     const ceiling = Math.min(5, (G.grade || 2) + 1);
     let levelNote = '';
@@ -8276,21 +8291,25 @@ function countPlaced(type) {                 // how many of a placed block-type 
   blocks.forEach(b => { if (b.type === type && b.removable && !seen.has(b.mesh.id)) { seen.add(b.mesh.id); n++; } });
   return n;
 }
+const mathSolved = () => subjectSolved('math');           // math questions answered right (across all worlds)
+const byOpN = op => (profile.byOp || {})[op] || 0;
+// Quests are math-FIRST — the whole point is to practise. The few "build/buy" goals still need
+// coins & blocks, which you only earn by doing math, so they reward math too.
 const QUESTS = [
-  { id: 'solve5',  icon: '🧮', title: 'Answer 5 questions right', reward: 8,  check: () => (profile.totalSolved || 0) >= 5 },
-  { id: 'getpet',  icon: '🐶', title: 'Bring home a pet', reward: 10, check: () => pets.length > 0 },
-  { id: 'flowers', icon: '🌷', title: 'Plant 5 flowers', reward: 10, check: () => countPlaced('flower') >= 5 },
-  { id: 'house',   icon: '🏠', title: 'Build a house with a door', reward: 15, check: () => !!G.shelterRewarded },
-  { id: 'roof',    icon: '🔺', title: 'Put a roof on your house', reward: 10, check: () => countPlaced('roof') >= 2 },
-  { id: 'furnish', icon: '🛋️', title: 'Place a couch and a table', reward: 12, check: () => countPlaced('couch') >= 1 && (countPlaced('table') + countPlaced('dtable')) >= 1 },
-  { id: 'bake',    icon: '🧁', title: 'Bake a treat at Stack Sweets', reward: 10, check: () => ((profile.byOp || {}).measure || 0) >= 1 },
-  { id: 'read',    icon: '📚', title: 'Read a story at the Library', reward: 12, check: () => (profile.readFirstTotal || 0) >= 1 },
-  { id: 'spell',   icon: '🐝', title: 'Try the Spelling Bee', reward: 10, check: () => (profile.spellFirstTotal || 0) >= 1 },
-  { id: 'buyveh',  icon: '🚗', title: 'Buy your first vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) },
-  { id: 'garage',  icon: '🚙', title: 'Build a garage door', reward: 12, check: () => countPlaced('garage') >= 1 },
-  { id: 'solve25', icon: '🧠', title: 'Answer 25 questions right', reward: 20, check: () => (profile.totalSolved || 0) >= 25 },
-  { id: 'coins',   icon: '🪙', title: 'Save up 60 coins', reward: 15, check: () => G.coins >= 60 },
-  { id: 'solve50', icon: '🏆', title: 'Answer 50 questions right', reward: 30, check: () => (profile.totalSolved || 0) >= 50 }
+  { id: 'm5',     icon: '🧮', title: 'Answer 5 math questions', reward: 8,  check: () => mathSolved() >= 5 },
+  { id: 'add10',  icon: '➕', title: 'Solve 10 addition questions', reward: 10, check: () => byOpN('add') >= 10 },
+  { id: 'sub10',  icon: '➖', title: 'Solve 10 subtraction questions', reward: 10, check: () => byOpN('sub') >= 10 },
+  { id: 'm20',    icon: '🧠', title: 'Answer 20 math questions', reward: 16, check: () => mathSolved() >= 20 },
+  { id: 'streak', icon: '🔥', title: 'Get 6 math questions right in a row', reward: 14, check: () => (profile.bestStreak || 0) >= 6 },
+  { id: 'score75',icon: '⭐', title: 'Reach a Learning Score of 75', reward: 12, check: () => ((profile.stars != null ? profile.stars : 0)) >= 75 },
+  { id: 'coins',  icon: '🪙', title: 'Earn 60 coins by doing math', reward: 12, check: () => G.coins >= 60 },
+  { id: 'house',  icon: '🏠', title: 'Earn blocks with math & build a house', reward: 12, check: () => !!G.shelterRewarded },
+  { id: 'buyveh', icon: '🚗', title: 'Earn coins with math & buy a vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) },
+  { id: 'read',   icon: '📚', title: 'Read a story at the Library', reward: 10, check: () => (profile.readFirstTotal || 0) >= 1 },
+  { id: 'spell',  icon: '🐝', title: 'Try the Spelling Bee', reward: 10, check: () => (profile.spellFirstTotal || 0) >= 1 },
+  { id: 'mul5',   icon: '✖️', title: 'Solve 5 times-table questions', reward: 16, check: () => byOpN('mul') >= 5 },
+  { id: 'm40',    icon: '🏆', title: 'Answer 40 math questions', reward: 24, check: () => mathSolved() >= 40 },
+  { id: 'm75',    icon: '🌟', title: 'Answer 75 math questions', reward: 35, check: () => mathSolved() >= 75 }
 ];
 let questTimer = 0;
 function checkQuests() {
