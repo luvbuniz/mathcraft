@@ -1834,10 +1834,26 @@ const AVATARS = [
       box(a.head, 0.07, 0.2, 0.07, 0xD8342C, 0.09, 0.28, -0.12);
       for (let i = 0; i < 3; i++)                                       // spikes along the spine
         box(a.group, 0.08, 0.16, 0.08, 0xD8342C, 0, 0.96, 0.26 - i * 0.26);
-      const wingL = box(a.group, 0.55, 0.4, 0.06, 0xD8342C, -0.4, 1.05, -0.05);  // wings on the back
-      wingL.rotation.y = 0.5; wingL.rotation.z = 0.5;
-      const wingR = box(a.group, 0.55, 0.4, 0.06, 0xD8342C, 0.4, 1.05, -0.05);
-      wingR.rotation.y = -0.5; wingR.rotation.z = -0.5;
+      // proper bat/dragon wings: a leathery membrane with a scalloped trailing edge + finger-bone spars
+      const makeWing = (dir) => {
+        const wing = new THREE.Group();
+        const P = [[0, 0], [1.0, 0.55], [0.82, 0.14], [0.66, 0.34], [0.48, 0.04], [0.38, 0.24], [0.22, -0.03], [0.16, 0.15], [0, 0]];
+        const s = new THREE.Shape();
+        s.moveTo(P[0][0] * dir, P[0][1]);
+        for (let i = 1; i < P.length; i++) s.lineTo(P[i][0] * dir, P[i][1]);
+        wing.add(new THREE.Mesh(new THREE.ShapeGeometry(s),
+          new THREE.MeshLambertMaterial({ color: 0xC0392B, side: THREE.DoubleSide })));
+        [[1.0, 0.55], [0.66, 0.34], [0.38, 0.24], [0.16, 0.15]].forEach(([tx, ty]) => {   // finger bones
+          const L = Math.hypot(tx, ty);
+          const spar = box(wing, L, 0.05, 0.04, 0x7E241C, tx * dir / 2, ty / 2, 0.02);
+          spar.rotation.z = Math.atan2(ty, tx * dir);
+        });
+        return wing;
+      };
+      const wingL = makeWing(-1); a.group.add(wingL);
+      wingL.position.set(-0.12, 0.98, -0.12); wingL.rotation.y = -0.6; wingL.rotation.z = 0.12;
+      const wingR = makeWing(1); a.group.add(wingR);
+      wingR.position.set(0.12, 0.98, -0.12); wingR.rotation.y = 0.6; wingR.rotation.z = -0.12;
       const tail = box(a.group, 0.15, 0.15, 0.7, 0x3CA13C, 0, 0.82, -0.78);     // long tail
       tail.rotation.x = 0.5;
       box(a.group, 0.09, 0.14, 0.09, 0xD8342C, 0, 0.92, -0.85);         // spike along the tail
@@ -2888,6 +2904,14 @@ const ground = new THREE.InstancedMesh(groundGeo, groundMat, groundCount);
 }
 scene.add(ground);
 
+/* a big flat "skirt" of ground stretching out past the play field so the edge fades
+   into the hazy horizon (background) instead of dropping off into floating sky. */
+const skirtMat = new THREE.MeshLambertMaterial({ color: 0x63B243 });
+const skirt = new THREE.Mesh(new THREE.CircleGeometry(170, 56), skirtMat);
+skirt.rotation.x = -Math.PI / 2;
+skirt.position.y = -0.08;
+scene.add(skirt);
+
 /* recolor the ground + sky + fog to match the current world's theme */
 function applyGroundColors(cols) {
   const c = [new THREE.Color(cols[0]), new THREE.Color(cols[1]), new THREE.Color(cols[2])];
@@ -2901,6 +2925,7 @@ function applyWorldTheme(worldId) {
   const w = WORLDS[worldId] || WORLDS.meadow;
   scene.background = new THREE.Color(w.sky);
   if (scene.fog) scene.fog.color.setHex(w.fog);
+  if (typeof skirtMat !== 'undefined') skirtMat.color.setHex(w.ground[1]);   // skirt matches the world's ground
   applyGroundColors(w.ground);
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
 }
@@ -3395,14 +3420,16 @@ function buildBeachDecor(g) {
 }
 /* Math Meadow gets a countryside feel: rolling green hills on the horizon */
 function buildMeadowDecor(g) {
-  const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843];
-  for (let i = 0; i < 12; i++) {
-    const ang = (i / 12) * Math.PI * 2 + 0.35;
-    const rad = 4 + (i % 4) * 2;                        // 4..10
-    const r = 27 + rad + (i % 3) * 3;                   // inner edge stays well outside the play area (no walking through)
-    const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 12), mat(greens[i % greens.length]));
-    hill.scale.y = 0.42;                                // flatten into a rolling dome
-    hill.position.set(Math.cos(ang) * r, -rad * 0.18, Math.sin(ang) * r);
+  const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
+  // a ring of overlapping rolling hills sitting ON the far ground, their bases sunk
+  // below the skirt so only the rounded tops show — a soft ridge that fades into the haze.
+  for (let i = 0; i < 26; i++) {
+    const ang = (i / 26) * Math.PI * 2 + 0.2;
+    const rad = 6 + (i % 5) * 2.4;                      // 6..15.6
+    const r = 30 + rad + (i % 4) * 5;                   // inner edge ~30 — well past the play field
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 18, 12), mat(greens[i % greens.length]));
+    hill.scale.y = 0.5;                                 // flatten into a rolling dome
+    hill.position.set(Math.cos(ang) * r, -rad * 0.32, Math.sin(ang) * r);   // sink base under the skirt
     g.add(hill);
   }
 }
@@ -5893,11 +5920,13 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
-    if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
+    if (player.restingBed) { Sound.click(); toggleBedRest(); }       // get up FIRST, whatever else is nearby
+    else if (player.sittingChair) { Sound.click(); toggleSit(); }
+    else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
-    else if (player.sittingChair || nearestChair()) { Sound.click(); toggleSit(); }
+    else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
   }
   if (e.code === 'KeyL') { Sound.click(); toggleBedRest(); }
@@ -6265,11 +6294,13 @@ if (isTouch) {
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
+    if (player.restingBed) { Sound.click(); toggleBedRest(); }       // get up FIRST, whatever else is nearby
+    else if (player.sittingChair) { Sound.click(); toggleSit(); }
+    else if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
-    else if (player.sittingChair || nearestChair()) { Sound.click(); toggleSit(); }
+    else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
     else pickupBlock();
   }, { passive: false });
