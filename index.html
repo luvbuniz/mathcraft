@@ -220,6 +220,11 @@
     border-radius:14px; cursor:pointer; color:#7a4a1e; background:linear-gradient(180deg,#FBE7C8,#F3D2A4); box-shadow:0 5px 0 #d9ad74; }
   .bakeBtn:active { transform:translateY(4px); box-shadow:0 1px 0 #d9ad74; }
   .bakeBtn.flop { animation:shake .35s; background:linear-gradient(180deg,#f3b0b0,#e98989); }
+  .recipeCard { display:inline-block; text-align:left; background:#FFF9EE; border:2px dashed #E3B98A; border-radius:14px; padding:8px 14px; margin:0 auto; }
+  .recipeScale { color:#B23A6B; font-weight:800; text-align:center; margin-bottom:4px; }
+  .recipeRow { font-size:clamp(14px,2.4vw,17px); font-weight:700; color:#9a8c70; padding:2px 0; }
+  .recipeRow.now { color:#B23A6B; }
+  .recipeRow.done { color:#2f8a52; }
   .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
   .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
@@ -3747,95 +3752,115 @@ const bakeryGroup = new THREE.Group();
   bakeryGroup.position.set(BAKERY_POS.x, 0, BAKERY_POS.z);
   scene.add(bakeryGroup);
 }
-// ---- treats + measurement questions (scaled to grade) ----
+// ---- Stack Sweets: real, consistent recipes the kids measure correctly (so the amounts stick!) ----
 const INGS = {                                   // name -> [emoji, unit]
   flour: ['🌾', 'cups'], milk: ['🥛', 'cups'], cream: ['🥛', 'cups'], sugar: ['🍬', 'cups'], butter: ['🧈', 'sticks'],
-  vanilla: ['🍮', 'drops'], cocoa: ['🍫', 'spoonfuls'], berries: ['🫐', ''], cookies: ['🍪', ''],
-  sprinkles: ['🌈', 'spoonfuls'], cherries: ['🍒', ''], sauce: ['🍯', 'spoonfuls']
+  vanilla: ['🍮', 'spoons'], cocoa: ['🍫', 'spoons'], berries: ['🍓', 'cups'], cookies: ['🍪', ''],
+  sprinkles: ['🌈', 'spoons'], cherries: ['🍒', ''], sauce: ['🍯', 'spoons'], mint: ['🌿', 'spoons']
 };
-const TREATS = [                                 // ice cream sandwich first (Leo's favorite!) — you MAKE the ice cream
-  { e: '🍨', n: 'Ice Cream Sandwich', cold: true, churn: true, ings: ['milk', 'cream', 'sugar', 'cookies'] },
-  { e: '🍦', n: 'Ice Cream Cone', cold: true, churn: true, ings: ['milk', 'cream', 'sugar', 'vanilla'] },
-  { e: '🍨', n: 'Sundae', cold: true, churn: true, ings: ['milk', 'sugar', 'sauce', 'sprinkles'] },
-  { e: '🍫🎂', n: 'Chocolate Cake', cold: false, ings: ['flour', 'milk', 'sugar', 'cocoa'] },
-  { e: '🧁', n: 'Cupcakes', cold: false, ings: ['flour', 'sugar', 'butter', 'sprinkles'] },
-  { e: '🍓🎂', n: 'Strawberry Cake', cold: false, ings: ['flour', 'milk', 'sugar', 'berries'] }
+const ICE_BASE = [['cream', 2], ['milk', 1], ['sugar', 1]];        // a real, simple ice cream base
+const FLAVORS = [
+  ['🍦', 'Vanilla', ['vanilla', 2]], ['🍫', 'Chocolate', ['cocoa', 2]], ['🍓', 'Strawberry', ['berries', 1]],
+  ['🌿', 'Mint', ['mint', 2]], ['🍪', 'Cookies & Cream', ['cookies', 3]]
 ];
-function bakeOptions(answer) {
-  const opts = new Set([answer]);
-  let guard = 0;
-  while (opts.size < 3 && guard++ < 30) {
-    const d = answer + (Math.random() < 0.5 ? 1 : -1) * (1 + (Math.random() * 2 | 0));
+const TREATS = [
+  { e: '🍨', n: 'Ice Cream Sandwich', ice: true, extra: [['cookies', 2]] },
+  { e: '🍦', n: 'Ice Cream Cone', ice: true, extra: [] },
+  { e: '🍨', n: 'Sundae', ice: true, extra: [['sauce', 2], ['sprinkles', 2]] },
+  { e: '🍫🎂', n: 'Chocolate Cake', ice: false, recipe: [['flour', 2], ['sugar', 1], ['milk', 1], ['cocoa', 2]] },
+  { e: '🧁', n: 'Cupcakes', ice: false, recipe: [['flour', 2], ['sugar', 1], ['butter', 1], ['sprinkles', 2]] },
+  { e: '🍓🎂', n: 'Strawberry Cake', ice: false, recipe: [['flour', 2], ['sugar', 1], ['milk', 1], ['berries', 1]] }
+];
+const SCALE_WORD = { 2: 'Double', 3: 'Triple', 4: 'Quadruple' };
+function bakeScale() { return G.grade <= 2 ? 1 : Math.min(4, G.grade - 1); }   // g≤2 read the recipe; g3 ×2, g4 ×3, g5 ×4
+function bakeOptions(answer, step) {
+  step = step || 1;
+  const opts = new Set([answer]); let guard = 0;
+  while (opts.size < 3 && guard++ < 40) {
+    const d = answer + (Math.random() < 0.5 ? 1 : -1) * step * (1 + (Math.random() * 2 | 0));
     if (d > 0 && d !== answer) opts.add(d);
   }
   return shuffle([...opts]);
 }
-function ingUnit(name) { const u = INGS[name][1]; return u ? u + ' of ' + name : name; }       // "scoops of ice cream" / "cookies"
-function ingAmt(a, name) { const u = INGS[name][1]; return a + ' ' + (u ? u + ' of ' : '') + name; }   // "2 scoops of ice cream" / "2 cookies"
-function bakeStep(grade, name) {                 // one ingredient → a measurement question
-  let text, answer;
-  if (grade <= 2) {
-    const a = 1 + (Math.random() * 3 | 0), b = 1 + (Math.random() * 3 | 0);
-    text = 'Add ' + a + ', then ' + b + ' more — how many ' + ingUnit(name) + '?'; answer = a + b;
-  } else if (grade === 3) {
-    const a = 1 + (Math.random() * 4 | 0);
-    text = 'Double it! ' + ingAmt(a, name) + ' × 2 = ?'; answer = a * 2;
-  } else {
-    if (Math.random() < 0.5) { text = '½ + ½ ' + ingUnit(name) + ' = ?'; answer = 1; }
-    else { const a = 1 + (Math.random() * 4 | 0); text = 'Make twice as much: ' + ingAmt(a, name) + ' becomes ?'; answer = a * 2; }
-  }
-  return { emoji: INGS[name][0], name: name, text: text, answer: answer, options: bakeOptions(answer) };
+function mergeRecipe(list) {                       // sum any duplicate ingredient, keep order
+  const order = [], map = {};
+  list.forEach(([ing, amt]) => { if (map[ing] == null) { map[ing] = 0; order.push(ing); } map[ing] += amt; });
+  return order.map(ing => [ing, map[ing]]);
 }
-function churnStep(grade) {                       // the ice cream maker — churn the base you measured
-  let text, answer;
-  if (grade <= 2) { const a = 2 + (Math.random() * 4 | 0), b = 2 + (Math.random() * 4 | 0); text = '🍦 Crank the ice cream maker: ' + a + ' turns, then ' + b + ' more — how many turns?'; answer = a + b; }
-  else { const a = 5 + (Math.random() * 6 | 0); text = '🍦 Churn the ice cream maker twice as much: ' + a + ' turns × 2 = ?'; answer = a * 2; }
-  return { emoji: '🍦', name: 'churn', text: text, answer: answer, options: bakeOptions(answer) };
+function recipeFor(treat, flavor) {
+  let r;
+  if (treat.ice) { r = ICE_BASE.slice(); if (flavor && flavor[2]) r.push(flavor[2]); r = mergeRecipe(r.concat(treat.extra || [])); }
+  else r = treat.recipe.slice();
+  return r.slice(0, G.grade <= 2 ? 3 : 5);          // shorter recipe for little kids
 }
-function finalStep(grade, cold) {                // oven for baked treats, freezer for frozen ones
-  let text, answer;
-  if (cold) {
-    if (grade <= 2) { const a = 2 + (Math.random() * 3 | 0), b = 1 + (Math.random() * 3 | 0); text = '❄️ Freeze ' + a + ' min, then ' + b + ' more — how long?'; answer = a + b; }
-    else { const a = 3 + (Math.random() * 5 | 0); text = '❄️ Freeze it twice as long: ' + a + ' min × 2 = ?'; answer = a * 2; }
-    return { emoji: '❄️', name: 'freezer', text: text, answer: answer, options: bakeOptions(answer) };
-  }
-  if (grade <= 2) { answer = 300 + 25 * (Math.random() * 4 | 0); text = '🔥 Set the oven dial to ' + answer + '°. Which number?'; }
-  else { const base = 300 + 25 * (Math.random() * 3 | 0), d = 25 + 25 * (Math.random() * 2 | 0); text = '🔥 The recipe says ' + base + '°, bake ' + d + '° hotter. Set the oven to ?'; answer = base + d; }
-  const opts = new Set([answer]); let guard = 0;
-  while (opts.size < 3 && guard++ < 30) { const dd = answer + (Math.random() < 0.5 ? 25 : -25) * (1 + (Math.random() * 2 | 0)); if (dd > 0 && dd !== answer) opts.add(dd); }
-  return { emoji: '🔥', name: 'oven', text: text, answer: answer, options: shuffle([...opts]) };
+function unitOf(ing, amt) { const u = INGS[ing][1]; return u ? (amt === 1 ? u.replace(/s$/, '') : u) : ''; }
+function measureStep(ing, baseAmt) {               // measure one ingredient correctly (scaled for older kids)
+  const unit = INGS[ing][1], scale = bakeScale(), answer = baseAmt * scale;
+  const text = scale === 1
+    ? 'Measure the ' + ing + (unit ? ' — how many ' + unit + '?' : ' — how many?')
+    : (SCALE_WORD[scale] || scale + '×') + ' the recipe! ' + baseAmt + ' ' + (unit ? unit + ' of ' : '') + ing + ' × ' + scale + ' = ?';
+  return { emoji: INGS[ing][0], name: ing, base: baseAmt, answer: answer, options: bakeOptions(answer), text: text };
 }
+function churnStep() { return { emoji: '🍦', name: 'churn', base: null, answer: 20, options: bakeOptions(20, 5), text: '🍦 Crank the ice cream maker 20 times — turn the dial to the right number!' }; }
+function freezeStep() { return { emoji: '❄️', name: 'freezer', base: null, answer: 30, options: bakeOptions(30, 10), text: '❄️ Freeze it for 30 minutes — set the timer!' }; }
+function ovenStep() { return { emoji: '🔥', name: 'oven', base: null, answer: 350, options: shuffle([350, 325, 375]), text: '🔥 Bake at 350° — set the oven dial!' }; }
 let bake = null;
 function openBakery() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
-  const t = TREATS[Math.random() * TREATS.length | 0];
-  const n = G.grade >= 3 ? Math.min(4, t.ings.length) : Math.min(3, t.ings.length);
-  const ings = t.ings.slice(0, n);                // keep recipe order (base first), so you always make the ice cream
-  const steps = ings.map(i => bakeStep(G.grade, i));
-  if (t.churn) steps.push(churnStep(G.grade));    // ice cream maker, then…
-  steps.push(finalStep(G.grade, t.cold));         // …the freezer
-  bake = { cake: [t.e, t.n], cold: t.cold, steps: steps, step: 0, made: [] };
+  bake = { phase: 'menu', treat: null, flavor: null, steps: [], step: 0 };
   renderBake();
   $('bakePopup').style.display = 'flex';
 }
+function startMaking() {
+  const recipe = recipeFor(bake.treat, bake.flavor);
+  const steps = recipe.map(([ing, amt]) => measureStep(ing, amt));
+  if (bake.treat.ice) { steps.push(churnStep()); steps.push(freezeStep()); } else steps.push(ovenStep());
+  bake.steps = steps; bake.step = 0; bake.phase = 'make';
+  renderBake();
+}
 function closeBakery() { $('bakePopup').style.display = 'none'; popupOpen = false; bake = null; }
+function treatName() { return (bake.flavor && bake.treat.ice && bake.flavor[1] !== 'Vanilla' ? bake.flavor[1] + ' ' : '') + bake.treat.n; }
 function renderBake() {
   if (!bake) return;
-  $('bakeTitle').innerHTML = bake.cake[0] + ' ' + bake.cake[1];
-  // progress: ingredients gathered
-  $('bakeTray').innerHTML = bake.steps.map((s, i) =>
-    '<span class="bakeChip' + (i < bake.step ? ' done' : (i === bake.step ? ' now' : '')) + '">' + s.emoji + (i < bake.step ? ' ✓' : '') + '</span>'
-  ).join('');
+  const wrap = $('bakeChoices'); wrap.innerHTML = ''; $('bakeMsg').textContent = '';
+  if (bake.phase === 'menu') {
+    $('bakeTitle').innerHTML = '🧁 Stack Sweets'; $('bakeTray').innerHTML = '';
+    $('bakePrompt').textContent = 'What would you like to make?';
+    TREATS.forEach(t => {
+      const b = document.createElement('button'); b.className = 'bakeBtn'; b.style.fontSize = '16px'; b.innerHTML = t.e + '<br>' + t.n;
+      b.onclick = () => { Sound.click(); bake.treat = t; if (t.ice) { bake.phase = 'flavor'; renderBake(); } else startMaking(); };
+      wrap.appendChild(b);
+    });
+    return;
+  }
+  if (bake.phase === 'flavor') {
+    $('bakeTitle').innerHTML = bake.treat.e + ' ' + bake.treat.n; $('bakeTray').innerHTML = '';
+    $('bakePrompt').textContent = '🍦 Pick your flavor!';
+    FLAVORS.forEach(f => {
+      const b = document.createElement('button'); b.className = 'bakeBtn'; b.style.fontSize = '15px'; b.innerHTML = f[0] + '<br>' + f[1];
+      b.onclick = () => { Sound.click(); bake.flavor = f; startMaking(); };
+      wrap.appendChild(b);
+    });
+    return;
+  }
+  // phase 'make': recipe card + current measure question
+  $('bakeTitle').innerHTML = (bake.flavor ? bake.flavor[0] : bake.treat.e) + ' ' + treatName();
+  const scale = bakeScale();
+  $('bakeTray').innerHTML = '<div class="recipeCard">' +
+    (scale > 1 ? '<div class="recipeScale">✖️ ' + (SCALE_WORD[scale] || scale + '×') + ' the recipe!</div>' : '') +
+    bake.steps.filter(s => s.base != null).map((s, i) => {
+      const done = i < bake.step, now = i === bake.step;
+      return '<div class="recipeRow' + (done ? ' done' : (now ? ' now' : '')) + '">' + s.emoji + ' ' + s.base + ' ' +
+        (unitOf(s.name, s.base) ? unitOf(s.name, s.base) + ' ' : '') + s.name + (done ? ' ✓' : (now ? ' ⟵' : '')) + '</div>';
+    }).join('') + '</div>';
   const s = bake.steps[bake.step];
   $('bakePrompt').textContent = s.text;
-  const wrap = $('bakeChoices'); wrap.innerHTML = '';
   s.options.forEach(opt => {
     const b = document.createElement('button'); b.className = 'bakeBtn'; b.textContent = opt;
     b.onclick = () => bakeAnswer(opt, b);
     wrap.appendChild(b);
   });
-  $('bakeMsg').textContent = '';
 }
 function bakeAnswer(opt, btn) {
   if (!bake) return;
@@ -3844,19 +3869,19 @@ function bakeAnswer(opt, btn) {
     Sound.correct(); G.solved++; recordSolve({ skill: 'measure', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
     bake.step++;
     if (bake.step >= bake.steps.length) { finishBake(); return; }
-    $('bakeMsg').style.color = '#2f8a52'; $('bakeMsg').textContent = '✓ Added!';
+    $('bakeMsg').style.color = '#2f8a52'; $('bakeMsg').textContent = '✓ Perfect!';
     setTimeout(renderBake, 350);
   } else {
     Sound.wrong(); btn.classList.add('flop');
-    $('bakeMsg').style.color = '#c0392b'; $('bakeMsg').textContent = '😅 Oops — that\'s not the right amount! Try again.';
+    $('bakeMsg').style.color = '#c0392b'; $('bakeMsg').textContent = '😅 Not quite — measure it again!';
     setTimeout(() => { s.options = shuffle(s.options.slice()); renderBake(); }, 700);
   }
 }
 function finishBake() {
   const reward = 8 + G.grade * 2 + bake.steps.length;
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
-  $('bakeTray').innerHTML = '<div style="font-size:54px">' + bake.cake[0] + '</div>';
-  $('bakePrompt').innerHTML = '🎉 Your <b>' + bake.cake[1] + '</b> is ' + (bake.cold ? 'frozen just right' : 'baked perfectly') + ' — yum!';
+  $('bakeTray').innerHTML = '<div style="font-size:54px">' + (bake.flavor ? bake.flavor[0] : '') + bake.treat.e + '</div>';
+  $('bakePrompt').innerHTML = '🎉 Your <b>' + treatName() + '</b> is ' + (bake.treat.ice ? 'frozen just right' : 'baked perfectly') + ' — yum!';
   $('bakeChoices').innerHTML = '<button class="bakeBtn" style="background:#3f9d34;color:#fff" id="bakeAgainBtn">🪙 +' + reward + ' — Make another!</button>' +
     '<button class="bakeBtn" id="bakeDoneBtn">Done</button>';
   $('bakeMsg').textContent = '';
