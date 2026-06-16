@@ -191,6 +191,16 @@
   .swatch { width:46px; height:46px; border-radius:50%; border:3px solid #fff; cursor:pointer;
     box-shadow:0 2px 5px rgba(0,0,0,.25); padding:0; }
   .swatch.sel { outline:4px solid #ffd23f; outline-offset:2px; transform:scale(1.08); }
+  .carRow { display:flex; align-items:center; gap:10px; background:#eef3f9; border:2px solid #d8e2ee; border-radius:14px; padding:8px 10px; }
+  .carRow.active { background:#e2f3e6; border-color:#9bd6a8; }
+  .carRow .carEmoji { font-size:30px; flex:none; }
+  .carRow .carInfo { display:flex; flex-direction:column; text-align:left; line-height:1.2; flex:1; min-width:0; }
+  .carRow .carInfo b { color:#33507a; font-size:clamp(14px,2.4vw,17px); }
+  .carRow .carInfo small { color:#6c84a6; font-size:12px; }
+  .carGo { flex:none; font-family:inherit; font-weight:800; font-size:14px; border:none; border-radius:10px;
+    padding:9px 16px; color:#fff; background:#3f9d34; box-shadow:0 3px 0 #2c6f24; cursor:pointer; min-width:64px; }
+  .carGo:active { transform:translateY(2px); box-shadow:0 1px 0 #2c6f24; }
+  .carGo:disabled { opacity:.5; box-shadow:0 3px 0 #2c6f24; cursor:default; }
   .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
   .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
@@ -1109,9 +1119,11 @@
 <div class="popup" id="motorsPopup">
   <div class="popupCard" style="text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="motorsClose" title="Close" aria-label="Close">✕</button></div>
-    <div style="font-size:42px">🛻</div>
+    <div style="font-size:42px">🚗</div>
     <h2 id="motorsTitle" style="color:#3b5d9e; margin:2px 0 6px">Stack Motors</h2>
     <div id="motorsDesc" style="font-weight:bold; color:#7a6a35; margin-bottom:10px"></div>
+    <div id="motorsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px"></div>
+    <div style="font-weight:700; color:#7a6a35; font-size:14px; margin-bottom:4px">🎨 Paint your car</div>
     <div id="motorsColors" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:12px"></div>
     <button id="motorsBuy" class="petBtn" style="font-size:clamp(15px,2.6vw,19px)"></button>
   </div>
@@ -2232,7 +2244,8 @@ const G = {
   selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0,
   world: 'meadow',
   firstPerson: false, snackUntil: 0, pickupColor: 0x3f7fbf,
-  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false },
+  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, corvette: false },
+  activeCar: null, carColors: {},
   quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
   mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
@@ -2759,7 +2772,7 @@ function saveGame() {
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
       blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
-      pickupColor: G.pickupColor,
+      pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
@@ -2817,6 +2830,9 @@ function restoreGame(s) {
   Object.assign(G.furniture, s.furniture || {});
   Object.assign(G.owned, s.owned || {});
   G.pickupColor = s.pickupColor || 0x3f7fbf;
+  G.activeCar = s.activeCar || (s.owned && s.owned.pickup ? 'pickup' : null);
+  G.carColors = s.carColors || {};
+  if (s.pickupColor && G.carColors.pickup == null) G.carColors.pickup = s.pickupColor;   // migrate old single-truck color
   G.balls = s.balls || 0;
   G.shelterRewarded = !!s.shelterRewarded;
   G.mathLevel = Math.max(1, Math.min(5, s.mathLevel || G.grade || 2));
@@ -2892,8 +2908,8 @@ function resetGameState() {
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
-  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false };
-  G.pickupColor = 0x3f7fbf;
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, corvette: false };
+  G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
 }
 function goHome() {
@@ -3413,7 +3429,6 @@ function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.po
 
 /* ============================ 🛻 STACK MOTORS: a country dealership + a drivable pickup ============================ */
 const MOTORS_POS = { x: 12, z: -9 };
-const PICKUP_PRICE = 58;                  // affordable enough to stay motivating; vehicles sit around this range
 function motorsDist() { return Math.hypot(player.pos.x - MOTORS_POS.x, player.pos.z - MOTORS_POS.z); }
 // ---- the dealership lot ----
 const motorsGroup = new THREE.Group();
@@ -3432,123 +3447,185 @@ const motorsGroup = new THREE.Group();
   c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, 256, 64);
   c.fillStyle = '#Cf5b4a'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('STACK MOTORS', 128, 23);
-  c.fillStyle = '#4a6fa5'; c.font = 'bold 15px sans-serif'; c.fillText('FARM & COUNTRY', 128, 48);
+  c.fillStyle = '#4a6fa5'; c.font = 'bold 15px sans-serif'; c.fillText('AUTO SHOWROOM', 128, 48);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 2.78, 1.54); motorsGroup.add(sign);
   motorsGroup.position.set(MOTORS_POS.x, 0, MOTORS_POS.z);
   scene.add(motorsGroup);
 }
 // ---- a low-poly country pickup truck (body panels share one material so it can be repainted) ----
-const PICKUP_COLORS = [0xC0392B, 0x3f7fbf, 0x3CA85C, 0x2b2e34, 0xE8E8E8, 0xE0A92B, 0xD2691E, 0x6B4226];
-const pickupBodyMat = new THREE.MeshLambertMaterial({ color: 0x3f7fbf });
-const pickupBodyMat2 = new THREE.MeshLambertMaterial({ color: shade(0x3f7fbf, 0.82) });  // slightly darker accents
-function repaintPickup(c) {
-  G.pickupColor = c;
-  pickupBodyMat.color.setHex(c);
-  pickupBodyMat2.color.setHex(shade(c, 0.82));
-}
-function buildPickup() {
-  const g = new THREE.Group();
-  const TIRE = 0x1d1d20, RIM = 0xd2d6dc, CHROME = 0xdfe6ee, GLASS = 0x213243, WOOD = 0x7a5a36;
-  const part = (matr, w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matr); m.position.set(x, y, z); g.add(m); return m; };
-  // ---- chassis: hood (front) + cab + bed (back) ----
-  part(pickupBodyMat, 1.16, 0.3, 2.5, 0, 0.46, 0);                  // main chassis rail
-  part(pickupBodyMat, 1.16, 0.26, 0.95, 0, 0.72, 0.78);            // hood (lower & forward)
-  part(pickupBodyMat2, 0.06, 0.16, 0.95, -0.55, 0.86, 0.78); part(pickupBodyMat2, 0.06, 0.16, 0.95, 0.55, 0.86, 0.78); // hood fender tops
-  // ---- cab ----
-  part(pickupBodyMat, 1.12, 0.6, 1.0, 0, 0.92, -0.05);             // cab body
-  part(pickupBodyMat, 1.0, 0.46, 0.9, 0, 1.4, -0.05);             // cab roof block
-  part(mat(GLASS), 1.02, 0.34, 0.04, 0, 1.34, 0.46);             // windshield
-  part(mat(GLASS), 1.02, 0.34, 0.04, 0, 1.34, -0.56);           // rear window
-  part(mat(GLASS), 0.04, 0.34, 0.86, -0.55, 1.34, -0.05); part(mat(GLASS), 0.04, 0.34, 0.86, 0.55, 1.34, -0.05); // side windows
-  part(pickupBodyMat2, 0.06, 0.5, 0.06, -0.55, 1.1, 0.46); part(pickupBodyMat2, 0.06, 0.5, 0.06, 0.55, 1.1, 0.46); // A-pillars
-  // ---- bed (back) ----
-  part(pickupBodyMat, 1.16, 0.46, 1.1, 0, 0.66, -1.1);            // bed outer
-  part(mat(WOOD), 0.94, 0.06, 0.96, 0, 0.74, -1.1);             // wooden bed floor
-  part(pickupBodyMat2, 1.16, 0.4, 0.06, 0, 0.62, -1.66);        // tailgate
-  // ---- details ----
-  part(mat(CHROME), 1.12, 0.16, 0.12, 0, 0.42, 1.28);           // front bumper
-  part(mat(0x2a2a2a), 0.7, 0.2, 0.06, 0, 0.62, 1.27);          // grille
-  part(mat(0xFFF6C0), 0.2, 0.14, 0.06, -0.42, 0.66, 1.27); part(mat(0xFFF6C0), 0.2, 0.14, 0.06, 0.42, 0.66, 1.27);  // headlights
-  part(mat(0x2a2a2a), 1.12, 0.14, 0.1, 0, 0.42, -1.68);        // rear bumper
-  part(mat(0xD2403A), 0.16, 0.12, 0.05, -0.45, 0.7, -1.69); part(mat(0xD2403A), 0.16, 0.12, 0.05, 0.45, 0.7, -1.69);  // taillights
-  part(mat(0x33373d), 0.05, 0.16, 0.05, -0.62, 1.18, 0.42); part(mat(0x33373d), 0.05, 0.16, 0.05, 0.62, 1.18, 0.42); // side mirrors
-  // ---- wheels (with arches) ----
+const CAR_COLORS = [0xF2F2F2, 0xC0392B, 0x2b5fa8, 0x2b2e34, 0x3CA85C, 0xE0A92B, 0x8E44AD, 0xD2691E];
+const CAR_GLASS = mat(0x1f2a38);
+function carPart(g, m, w, h, d, x, y, z) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; }
+function carDisc(g, m, r, x, y, z) { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.06, 12), m); o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; }
+function carWheels(g, defs, tireC) {
   const wheels = [];
-  [[-0.62, 0.92], [0.62, 0.92], [-0.62, -1.0], [0.62, -1.0]].forEach(([wx, wz]) => {
-    const w = new THREE.Group();
-    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.26, 16), mat(TIRE)); tire.rotation.z = Math.PI / 2; w.add(tire);
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.28, 8), mat(RIM)); rim.rotation.z = Math.PI / 2; w.add(rim);
-    w.position.set(wx, 0.34, wz); g.add(w); wheels.push(w);
+  defs.forEach(([wx, wz, rad]) => {
+    const r = rad || 0.34, wgrp = new THREE.Group();
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.24, 16), mat(tireC || 0x16161a)); tire.rotation.z = Math.PI / 2; wgrp.add(tire);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.46, r * 0.46, 0.26, 8), mat(0xd2d6dc)); rim.rotation.z = Math.PI / 2; wgrp.add(rim);
+    wgrp.position.set(wx, r, wz); g.add(wgrp); wheels.push(wgrp);
   });
   g.userData.wheels = wheels;
-  return g;
 }
-const pickup = { group: buildPickup(), yaw: 0, spawned: false };
-pickup.group.visible = false;
-scene.add(pickup.group);
-function parkPickup() {
-  pickup.group.position.set(MOTORS_POS.x - 1.0, 0, MOTORS_POS.z + 3.4);   // parked out front
-  pickup.yaw = Math.PI; pickup.group.rotation.y = pickup.yaw + Math.PI;    // faces the meadow, ready to drive out
-  pickup.group.visible = true; pickup.spawned = true;
+// ---- car shapes (front = +Z). bm = body (recolorable), bm2 = darker accent, gm = glass ----
+function buildPickupShape(g, bm, bm2, gm) {
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.16, 0.3, 2.5, 0, 0.46, 0); P(bm, 1.16, 0.26, 0.95, 0, 0.72, 0.78);
+  P(bm, 1.12, 0.6, 1.0, 0, 0.92, -0.05); P(bm, 1.0, 0.46, 0.9, 0, 1.4, -0.05);
+  P(gm, 1.02, 0.34, 0.04, 0, 1.34, 0.46); P(gm, 1.02, 0.34, 0.04, 0, 1.34, -0.56);
+  P(gm, 0.04, 0.34, 0.86, -0.55, 1.34, -0.05); P(gm, 0.04, 0.34, 0.86, 0.55, 1.34, -0.05);
+  P(bm, 1.16, 0.46, 1.1, 0, 0.66, -1.1); P(mat(0x7a5a36), 0.94, 0.06, 0.96, 0, 0.74, -1.1); P(bm2, 1.16, 0.4, 0.06, 0, 0.62, -1.66);
+  P(mat(0xdfe6ee), 1.12, 0.16, 0.12, 0, 0.42, 1.28); P(mat(0x2a2a2a), 0.7, 0.2, 0.06, 0, 0.62, 1.27);
+  P(mat(0xFFF6C0), 0.2, 0.14, 0.06, -0.42, 0.66, 1.27); P(mat(0xFFF6C0), 0.2, 0.14, 0.06, 0.42, 0.66, 1.27);
+  P(mat(0xD2403A), 0.16, 0.12, 0.05, -0.45, 0.7, -1.69); P(mat(0xD2403A), 0.16, 0.12, 0.05, 0.45, 0.7, -1.69);
+  carWheels(g, [[-0.62, 0.92], [0.62, 0.92], [-0.62, -1.0], [0.62, -1.0]]);
 }
-function pickupDist() { return pickup.spawned ? Math.hypot(player.pos.x - pickup.group.position.x, player.pos.z - pickup.group.position.z) : 999; }
-function openMotors() {                    // buy a truck, or repaint one you own — with color swatches
+function buildTeslaShape(g, bm, bm2, gm) {       // sleek electric sedan
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.22, 0.36, 3.0, 0, 0.42, 0); P(bm, 1.16, 0.2, 1.0, 0, 0.66, 1.05); P(bm, 1.16, 0.22, 0.8, 0, 0.66, -1.2);
+  P(bm, 1.04, 0.34, 1.5, 0, 0.78, -0.1); P(bm, 0.98, 0.1, 1.0, 0, 0.98, -0.1);
+  P(gm, 1.0, 0.3, 0.06, 0, 0.8, 0.62); P(gm, 1.0, 0.3, 0.06, 0, 0.84, -0.86);
+  P(gm, 0.04, 0.26, 1.3, -0.53, 0.82, -0.1); P(gm, 0.04, 0.26, 1.3, 0.53, 0.82, -0.1);
+  P(mat(0xEAF6FF), 0.32, 0.07, 0.05, -0.4, 0.5, 1.5); P(mat(0xEAF6FF), 0.32, 0.07, 0.05, 0.4, 0.5, 1.5);
+  P(mat(0xD23A3A), 1.0, 0.07, 0.05, 0, 0.6, -1.55); P(bm2, 1.22, 0.08, 0.1, 0, 0.3, 1.52);
+  P(mat(0x33373d), 0.05, 0.12, 0.05, -0.6, 0.92, 0.4); P(mat(0x33373d), 0.05, 0.12, 0.05, 0.6, 0.92, 0.4);
+  carWheels(g, [[-0.6, 0.95], [0.6, 0.95], [-0.6, -1.0], [0.6, -1.0]]);
+}
+function buildJeepShape(g, bm, bm2, gm) {         // boxy trail SUV
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.34, 0.66, 2.5, 0, 0.6, 0); P(bm, 1.34, 0.34, 0.8, 0, 0.62, 1.15);
+  P(bm, 1.28, 0.62, 1.5, 0, 1.2, -0.1); P(bm2, 1.3, 0.12, 1.6, 0, 1.54, -0.1);
+  P(gm, 1.18, 0.5, 0.05, 0, 1.2, 0.62); P(gm, 1.18, 0.46, 0.05, 0, 1.2, -0.86);
+  P(gm, 0.05, 0.42, 1.3, -0.63, 1.2, -0.1); P(gm, 0.05, 0.42, 1.3, 0.63, 1.2, -0.1);
+  P(mat(0x2a2a2a), 0.8, 0.4, 0.06, 0, 0.78, 1.27);
+  [-0.22, -0.07, 0.07, 0.22].forEach(gx => P(mat(0x111111), 0.05, 0.36, 0.07, gx, 0.78, 1.29));
+  carDisc(g, mat(0xFFF6C0), 0.13, -0.46, 0.82, 1.3); carDisc(g, mat(0xFFF6C0), 0.13, 0.46, 0.82, 1.3);
+  P(mat(0x1c1c1f), 1.34, 0.16, 0.12, 0, 0.36, 1.3); P(mat(0x1c1c1f), 1.34, 0.16, 0.12, 0, 0.36, -1.3);
+  const spare = new THREE.Group(); const st = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.2, 16), mat(0x16161a)); st.rotation.z = Math.PI / 2; spare.add(st);
+  const sr = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), mat(0xd2d6dc)); sr.rotation.z = Math.PI / 2; spare.add(sr); spare.position.set(0, 0.75, -1.4); g.add(spare);
+  P(mat(0xD2403A), 0.18, 0.34, 0.05, -0.5, 0.85, -1.28); P(mat(0xD2403A), 0.18, 0.34, 0.05, 0.5, 0.85, -1.28);
+  carWheels(g, [[-0.66, 0.9, 0.42], [0.66, 0.9, 0.42], [-0.66, -0.95, 0.42], [0.66, -0.95, 0.42]]);
+}
+function buildMinivanShape(g, bm, bm2, gm) {      // long family van
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.28, 0.66, 3.1, 0, 0.58, 0); P(bm, 1.22, 0.5, 2.0, 0, 1.05, -0.2); P(bm, 1.2, 0.12, 1.9, 0, 1.36, -0.2);
+  P(gm, 1.12, 0.42, 0.05, 0, 1.02, 0.95); P(gm, 1.12, 0.4, 0.05, 0, 1.05, -1.18);
+  P(gm, 0.04, 0.36, 2.0, -0.61, 1.05, -0.2); P(gm, 0.04, 0.36, 2.0, 0.61, 1.05, -0.2);
+  P(bm2, 0.03, 0.4, 0.9, -0.62, 0.6, -0.2); P(bm2, 0.03, 0.4, 0.9, 0.62, 0.6, -0.2);
+  P(bm, 1.28, 0.34, 0.7, 0, 0.52, 1.3);
+  P(mat(0xFFF6C0), 0.28, 0.16, 0.05, -0.44, 0.6, 1.62); P(mat(0xFFF6C0), 0.28, 0.16, 0.05, 0.44, 0.6, 1.62); P(mat(0x3a3a3a), 0.66, 0.16, 0.05, 0, 0.5, 1.63);
+  P(mat(0xD2403A), 0.16, 0.42, 0.05, -0.54, 0.95, -1.5); P(mat(0xD2403A), 0.16, 0.42, 0.05, 0.54, 0.95, -1.5);
+  P(mat(0x1c1c1f), 1.28, 0.14, 0.1, 0, 0.34, 1.62); P(mat(0x1c1c1f), 1.28, 0.14, 0.1, 0, 0.34, -1.55);
+  carWheels(g, [[-0.62, 1.05], [0.62, 1.05], [-0.62, -1.05], [0.62, -1.05]]);
+}
+function buildCorvetteShape(g, bm, bm2, gm) {     // low sports car
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.34, 0.26, 3.3, 0, 0.34, 0); P(bm, 1.22, 0.16, 1.4, 0, 0.46, 1.0);
+  P(bm, 1.0, 0.3, 0.95, 0, 0.62, -0.25); P(gm, 0.92, 0.26, 1.0, 0, 0.68, -0.2); P(gm, 0.86, 0.22, 0.05, 0, 0.66, 0.28);
+  P(bm, 1.34, 0.28, 1.0, 0, 0.46, -1.15);
+  P(mat(0xEAF6FF), 0.3, 0.07, 0.05, -0.42, 0.42, 1.62); P(mat(0xEAF6FF), 0.3, 0.07, 0.05, 0.42, 0.42, 1.62);
+  [-0.46, -0.2, 0.2, 0.46].forEach(tx => carDisc(g, mat(0xD23A3A), 0.1, tx, 0.5, -1.66));
+  P(bm2, 1.34, 0.06, 0.12, 0, 0.24, 1.64); P(bm2, 1.2, 0.05, 0.18, 0, 0.66, -1.55);
+  P(mat(0x33373d), 0.05, 0.1, 0.05, -0.6, 0.74, -0.1); P(mat(0x33373d), 0.05, 0.1, 0.05, 0.6, 0.74, -0.1);
+  carWheels(g, [[-0.64, 1.05, 0.34], [0.64, 1.05, 0.34], [-0.64, -1.05, 0.36], [0.64, -1.05, 0.36]]);
+}
+const VEHICLES = [
+  { id: 'pickup',   name: 'Pickup Truck',   emoji: '🛻', price: 58, color: 0x3f7fbf, speed: 11, shape: buildPickupShape },
+  { id: 'tesla',    name: 'Electric Sedan', emoji: '🚗', price: 72, color: 0xF2F2F2, speed: 13, shape: buildTeslaShape },
+  { id: 'jeep',     name: 'Trail SUV',      emoji: '🚙', price: 78, color: 0x4E7B3A, speed: 10, shape: buildJeepShape },
+  { id: 'minivan',  name: 'Family Van',     emoji: '🚐', price: 64, color: 0x8FA6BC, speed: 10, shape: buildMinivanShape },
+  { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape }
+];
+const cars = {};   // id -> { def, group, bodyMat, bodyMat2, yaw, spawned }
+VEHICLES.forEach(def => {
+  const group = new THREE.Group();
+  const bm = new THREE.MeshLambertMaterial({ color: def.color });
+  const bm2 = new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) });
+  def.shape(group, bm, bm2, CAR_GLASS);
+  group.visible = false; scene.add(group);
+  cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false };
+});
+// a couple of cars on display in the lot (so kids see them before buying)
+[['tesla', -1.1, 0.95, 0.45], ['corvette', 1.15, 0.95, -0.4]].forEach(([id, dx, dz, rot]) => {
+  const def = VEHICLES.find(v => v.id === id), disp = new THREE.Group();
+  def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
+  disp.position.set(dx, 0, dz); disp.rotation.y = rot; disp.scale.setScalar(0.82); motorsGroup.add(disp);
+});
+function carDefColor(id) { return (G.carColors && G.carColors[id] != null) ? G.carColors[id] : cars[id].def.color; }
+function recolorCar(id, c) { cars[id].bodyMat.color.setHex(c); cars[id].bodyMat2.color.setHex(shade(c, 0.8)); }
+function activeCarObj() { return G.activeCar ? cars[G.activeCar] : null; }
+function parkActiveCar() {
+  for (const id in cars) { cars[id].group.visible = false; cars[id].spawned = false; }
+  const a = activeCarObj(); if (!a || !G.owned[G.activeCar]) return;
+  a.group.position.set(MOTORS_POS.x - 1.0, 0, MOTORS_POS.z + 3.4);   // parked out front
+  a.yaw = Math.PI; a.group.rotation.y = a.yaw + Math.PI;
+  a.group.visible = true; a.spawned = true;
+}
+function carDist() { const a = activeCarObj(); return (a && a.spawned) ? Math.hypot(player.pos.x - a.group.position.x, player.pos.z - a.group.position.z) : 999; }
+function setActiveCar(id) { G.activeCar = id; recolorCar(id, carDefColor(id)); parkActiveCar(); }
+function buyCar(id) {
+  const def = cars[id].def;
+  if (G.owned[id]) { setActiveCar(id); return; }
+  if (G.coins < def.price) { toast('🔒 The ' + def.name + ' costs ' + def.price + ' 🪙 — do math to earn more!', 3200); return; }
+  G.coins -= def.price; G.owned[id] = true; Sound.coin(); refreshHUD();
+  setActiveCar(id); Sound.honk();
+  toast('🎉 You got the ' + def.name + '! It\'s parked out front — tap ⭐ USE to drive!', 4200);
+}
+function openMotors() {                    // the showroom: buy a car, switch which you drive, or repaint it
   if (popupOpen || G.over || !G.running) return;
-  popupOpen = true;
-  document.exitPointerLock && document.exitPointerLock();
-  const owned = G.owned.pickup;
-  $('motorsTitle').textContent = owned ? '🎨 Repaint your pickup' : '🛻 Stack Motors';
-  $('motorsDesc').innerHTML = owned
-    ? 'Pick a new color for your truck!'
-    : 'A country pickup truck — <b>' + PICKUP_PRICE + ' 🪙</b>.<br>You have <b>' + G.coins + ' 🪙</b>.';
-  const sw = $('motorsColors'); sw.innerHTML = '';
-  PICKUP_COLORS.forEach(c => {
-    const b = document.createElement('button');
-    b.className = 'swatch' + (c === G.pickupColor ? ' sel' : '');
-    b.style.background = '#' + c.toString(16).padStart(6, '0');
-    b.onclick = () => { Sound.click(); repaintPickup(c); openMotors(); };   // live recolor + refresh selection
-    sw.appendChild(b);
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  $('motorsTitle').textContent = '🚗 Stack Motors';
+  $('motorsDesc').innerHTML = 'You have <b>' + G.coins + ' 🪙</b>. Buy a car (it parks out front to drive), or switch which one you drive.';
+  const list = $('motorsList'); list.innerHTML = '';
+  VEHICLES.forEach(def => {
+    const owned = !!G.owned[def.id], active = G.activeCar === def.id;
+    const row = document.createElement('div'); row.className = 'carRow' + (active ? ' active' : '');
+    row.innerHTML = '<span class="carEmoji">' + def.emoji + '</span><span class="carInfo"><b>' + def.name + '</b><small>' +
+      (owned ? (active ? '🟢 Driving now' : 'Owned') : (def.price + ' 🪙')) + '</small></span>';
+    const btn = document.createElement('button'); btn.className = 'carGo';
+    if (active) { btn.textContent = '✓'; btn.disabled = true; }
+    else if (owned) { btn.textContent = 'Drive'; btn.onclick = () => { Sound.click(); setActiveCar(def.id); openMotors(); }; }
+    else { const can = G.coins >= def.price; btn.disabled = !can; btn.textContent = can ? 'Buy' : '🔒'; btn.onclick = () => { buyCar(def.id); openMotors(); }; }
+    row.appendChild(btn); list.appendChild(row);
   });
-  const buy = $('motorsBuy');
-  if (owned) { buy.style.display = 'none'; }
-  else {
-    buy.style.display = 'block';
-    const canAfford = G.coins >= PICKUP_PRICE;
-    buy.disabled = !canAfford;
-    buy.textContent = canAfford ? ('🛻 Buy for ' + PICKUP_PRICE + ' 🪙') : ('Need ' + PICKUP_PRICE + ' 🪙 — do math to earn them!');
-    buy.onclick = () => {
-      if (G.coins < PICKUP_PRICE) return;
-      G.coins -= PICKUP_PRICE; G.owned.pickup = true; Sound.coin(); refreshHUD();
-      repaintPickup(G.pickupColor); parkPickup(); closeMotors(); Sound.honk();
-      toast('🎉 It\'s yours! Your pickup is parked out front — walk over and tap ⭐ USE to drive!', 4400);
-    };
+  const sw = $('motorsColors'); sw.innerHTML = '';
+  if (G.activeCar) {
+    const cur = carDefColor(G.activeCar);
+    CAR_COLORS.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'swatch' + (c === cur ? ' sel' : '');
+      b.style.background = '#' + c.toString(16).padStart(6, '0');
+      b.onclick = () => { Sound.click(); G.carColors[G.activeCar] = c; recolorCar(G.activeCar, c); openMotors(); };
+      sw.appendChild(b);
+    });
   }
+  $('motorsBuy').style.display = 'none';
   $('motorsPopup').style.display = 'flex';
 }
 function closeMotors() { $('motorsPopup').style.display = 'none'; popupOpen = false; }
 function toggleDrive() {
+  const a = activeCarObj();
   if (player.driving) {                                   // hop off
     player.driving = null; Sound.engineStop();
-    player.pos.set(pickup.group.position.x + 1.2, 0, pickup.group.position.z);
+    if (a) player.pos.set(a.group.position.x + 1.2, 0, a.group.position.z);
     player.vel.set(0, 0, 0);
     if (player.avatar) player.avatar.visible = !G.firstPerson;
     toast('🧍 Off you hop!', 1100); return;
   }
-  if (!pickup.spawned) return;
-  player.driving = pickup;
-  player.pos.set(pickup.group.position.x, 0, pickup.group.position.z);
-  player.yaw = pickup.yaw; player.vel.set(0, 0, 0);
+  if (!a || !a.spawned) return;
+  player.driving = a;
+  player.pos.set(a.group.position.x, 0, a.group.position.z);
+  player.yaw = a.yaw; player.vel.set(0, 0, 0);
   if (document.pointerLockElement) document.exitPointerLock();
   Sound.engineStart(); Sound.honk();
-  toast('🛻 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
+  toast('🚗 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
 }
-// keep the truck parked & ready (or hidden) whenever a game starts/loads
-function syncPickup() {
+// park the active car (or hide all) whenever a game starts/loads
+function syncCars() {
   player.driving = null; Sound.engineStop();
-  repaintPickup(G.pickupColor || 0x3f7fbf);
-  if (G.owned.pickup) parkPickup();
-  else { pickup.spawned = false; pickup.group.visible = false; }
+  for (const id in cars) recolorCar(id, carDefColor(id));
+  parkActiveCar();
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
@@ -3883,7 +3960,7 @@ function ensureBedProps() {
 }
 function updatePlayer(dt) {
   if (player.driving) {                                   // 🛻 driving a vehicle
-    const v = player.driving, speed = 11;
+    const v = player.driving, speed = (v.def && v.def.speed) || 11;
     const jmag = Math.hypot(touch.joyX, touch.joyY);
     let moving = false;
     if (jmag > 0.22) {                                    // steer with the move-circle (same feel as on foot)
@@ -6217,7 +6294,7 @@ addEventListener('keydown', e => {
     else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
-    else if (pickupDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in the parked pickup
+    else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
@@ -6595,7 +6672,7 @@ if (isTouch) {
     else if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
     else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
-    else if (pickupDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in the parked pickup
+    else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
@@ -6911,7 +6988,7 @@ function startGame() {
   if (isTouch) $('hudMode').style.display = G.gloomiesEnabled ? 'block' : 'none';   // empty on mobile w/o a timer
   if (isTouch) $('btnShoot').style.display = G.gloomiesEnabled && G.doomsday ? 'block' : 'none';
   spawnBerries();
-  syncPickup();                                 // park the pickup out front if they own it (else keep it hidden)
+  syncCars();                                   // park the active car out front if owned (else hide all)
   G.running = true;
 
   $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 Calm') + ' • Grade ' + G.grade;
@@ -7061,13 +7138,12 @@ function loop(now) {
       const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
       hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ Press E to ' + verb + ' and pick a reward!');
       hint.style.display = 'block';
-    } else if (pickupDist() < 2.8) {
-      hint.textContent = isTouch ? '🛻 Tap ⭐ USE to drive your pickup!' : '🛻 Press E to drive your pickup!';
+    } else if (carDist() < 2.8) {
+      const nm = activeCarObj() ? activeCarObj().def.name : 'car';
+      hint.textContent = isTouch ? '🚗 Tap ⭐ USE to drive your ' + nm + '!' : '🚗 Press E to drive your ' + nm + '!';
       hint.style.display = 'block';
     } else if (motorsDist() < 4.0) {
-      hint.textContent = G.owned.pickup
-        ? (isTouch ? '🎨 Tap ⭐ USE to repaint your truck!' : '🎨 Press E to repaint your truck!')
-        : (isTouch ? '🛻 Tap ⭐ USE — buy a pickup (' + PICKUP_PRICE + ' 🪙)!' : '🛻 Press E — buy a pickup (' + PICKUP_PRICE + ' 🪙)!');
+      hint.textContent = isTouch ? '🚗 Tap ⭐ USE — Stack Motors car showroom!' : '🚗 Press E — Stack Motors car showroom!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
