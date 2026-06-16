@@ -3893,7 +3893,7 @@ const motorsGroup = new THREE.Group();
   scene.add(motorsGroup);
 }
 // ---- a low-poly country pickup truck (body panels share one material so it can be repainted) ----
-const CAR_COLORS = [0xF2F2F2, 0xC0392B, 0x2b5fa8, 0x2b2e34, 0x3CA85C, 0xE0A92B, 0x8E44AD, 0xD2691E];
+const CAR_COLORS = [0xFF69B4, 0xF2F2F2, 0xC0392B, 0x2b5fa8, 0x2b2e34, 0x3CA85C, 0xE0A92B, 0x8E44AD, 0xD2691E];
 const CAR_GLASS = mat(0x1f2a38);
 function carPart(g, m, w, h, d, x, y, z) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; }
 function carDisc(g, m, r, x, y, z) { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.06, 12), m); o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; }
@@ -8983,12 +8983,17 @@ function freeMouse() {
 $('cursorBtn').onclick = () => { Sound.click(); freeMouse(); };
 function takePhoto() {
   renderer.render(scene, camera);                 // fresh frame in the buffer
-  const name = 'stackadoo-' + (G.playerName || 'build') + '.png';
+  // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
+  const d = new Date();
+  const p2 = n => String(n).padStart(2, '0');
+  const stamp = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + '-' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds());
+  const name = 'Stackadoo-' + (G.playerName || 'build') + '-' + stamp + '.png';
   const fallbackDownload = url => {
     const a = document.createElement('a');
     a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
-    toast('📸 Photo of your build saved!', 2200);
+    // Browsers save to the Downloads folder — we can't target Pictures directly from a webpage.
+    toast('📸 Saved to your Downloads folder!', 2600);
   };
   try {
     renderer.domElement.toBlob(async blob => {
