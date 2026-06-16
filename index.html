@@ -187,6 +187,10 @@
   .petBtn { font-family:inherit; font-size:clamp(15px,2.6vw,18px); font-weight:800; border:none; border-radius:14px;
     padding:14px 16px; color:#fff; cursor:pointer; background:#3f9d34; box-shadow:0 5px 0 #2c6f24; min-width:122px; }
   .petBtn:active { transform:translateY(4px); box-shadow:0 1px 0 #2c6f24; }
+  .petBtn:disabled { opacity:.5; box-shadow:0 4px 0 #2c6f24; cursor:default; }
+  .swatch { width:46px; height:46px; border-radius:50%; border:3px solid #fff; cursor:pointer;
+    box-shadow:0 2px 5px rgba(0,0,0,.25); padding:0; }
+  .swatch.sel { outline:4px solid #ffd23f; outline-offset:2px; transform:scale(1.08); }
   .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
   .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
@@ -1101,6 +1105,18 @@
   </div>
 </div>
 
+<!-- ================= STACK MOTORS (buy / repaint) POPUP ================= -->
+<div class="popup" id="motorsPopup">
+  <div class="popupCard" style="text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="motorsClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="font-size:42px">🛻</div>
+    <h2 id="motorsTitle" style="color:#3b5d9e; margin:2px 0 6px">Stack Motors</h2>
+    <div id="motorsDesc" style="font-weight:bold; color:#7a6a35; margin-bottom:10px"></div>
+    <div id="motorsColors" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:12px"></div>
+    <button id="motorsBuy" class="petBtn" style="font-size:clamp(15px,2.6vw,19px)"></button>
+  </div>
+</div>
+
 <!-- ================= UNLOCK (FULL GAME) POPUP ================= -->
 <div class="popup" id="unlockPopup">
   <div class="popupCard" style="text-align:center">
@@ -1215,6 +1231,31 @@ const Sound = {
   },
   doorOpen()  { this.tone(300, 0.22, 'sine', 0.12, 0, 520); this.noise(0.12, 0.05, 700); },   // soft creak up
   doorClose() { this.tone(520, 0.12, 'sine', 0.13, 0, 240); this.noise(0.1, 0.12, 320, 0.05); }, // gentle thud/click
+  honk()      { this.tone(360, 0.22, 'square', 0.16); this.tone(285, 0.24, 'square', 0.11, 0.02); },
+  // a continuous engine that revs with speed (started on hop-on, stopped on hop-off)
+  engineStart() {
+    this.init();
+    if (!this.ctx || this.engineOsc) return;
+    this.engineOsc = this.ctx.createOscillator(); this.engineOsc.type = 'sawtooth'; this.engineOsc.frequency.value = 58;
+    this.engineSub = this.ctx.createOscillator(); this.engineSub.type = 'triangle'; this.engineSub.frequency.value = 29;
+    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
+    this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = 0.0001;
+    this.engineOsc.connect(lp); this.engineSub.connect(lp); lp.connect(this.engineGain); this.engineGain.connect(this.master);
+    this.engineOsc.start(); this.engineSub.start();
+  },
+  engineSet(s) {                                   // s = 0..1 (speed); reads mute live
+    if (!this.engineGain) return;
+    const t = this.ctx.currentTime, f = 56 + s * 168;
+    this.engineOsc.frequency.setTargetAtTime(f, t, 0.07);
+    this.engineSub.frequency.setTargetAtTime(f * 0.5, t, 0.07);
+    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.05 + s * 0.13), t, 0.09);
+  },
+  engineStop() {
+    if (!this.engineOsc) return;
+    const t = this.ctx.currentTime;
+    try { this.engineGain.gain.setTargetAtTime(0.0001, t, 0.05); this.engineOsc.stop(t + 0.25); this.engineSub.stop(t + 0.25); } catch (e) {}
+    this.engineOsc = this.engineGain = this.engineSub = null;
+  },
   toggleMute() { this.muted = !this.muted; return this.muted; }
 };
 document.addEventListener('pointerdown', function initAudioOnce() {
@@ -2190,7 +2231,7 @@ const G = {
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
   selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0,
   world: 'meadow',
-  firstPerson: false, snackUntil: 0,
+  firstPerson: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false },
   quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
@@ -2711,6 +2752,7 @@ function saveGame() {
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
       blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
+      pickupColor: G.pickupColor,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
@@ -2767,6 +2809,7 @@ function restoreGame(s) {
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
   Object.assign(G.owned, s.owned || {});
+  G.pickupColor = s.pickupColor || 0x3f7fbf;
   G.balls = s.balls || 0;
   G.shelterRewarded = !!s.shelterRewarded;
   G.mathLevel = Math.max(1, Math.min(5, s.mathLevel || G.grade || 2));
@@ -2843,6 +2886,7 @@ function resetGameState() {
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false };
+  G.pickupColor = 0x3f7fbf;
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
 }
 function goHome() {
@@ -3345,7 +3389,7 @@ function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.po
 
 /* ============================ 🛻 STACK MOTORS: a country dealership + a drivable pickup ============================ */
 const MOTORS_POS = { x: 12, z: -9 };
-const PICKUP_PRICE = 45;
+const PICKUP_PRICE = 120;                 // vehicles are a big-ticket, non-refundable coin sink
 function motorsDist() { return Math.hypot(player.pos.x - MOTORS_POS.x, player.pos.z - MOTORS_POS.z); }
 // ---- the dealership lot ----
 const motorsGroup = new THREE.Group();
@@ -3370,24 +3414,48 @@ const motorsGroup = new THREE.Group();
   motorsGroup.position.set(MOTORS_POS.x, 0, MOTORS_POS.z);
   scene.add(motorsGroup);
 }
-// ---- a low-poly country pickup truck ----
+// ---- a low-poly country pickup truck (body panels share one material so it can be repainted) ----
+const PICKUP_COLORS = [0xC0392B, 0x3f7fbf, 0x3CA85C, 0x2b2e34, 0xE8E8E8, 0xE0A92B, 0xD2691E, 0x6B4226];
+const pickupBodyMat = new THREE.MeshLambertMaterial({ color: 0x3f7fbf });
+const pickupBodyMat2 = new THREE.MeshLambertMaterial({ color: shade(0x3f7fbf, 0.82) });  // slightly darker accents
+function repaintPickup(c) {
+  G.pickupColor = c;
+  pickupBodyMat.color.setHex(c);
+  pickupBodyMat2.color.setHex(shade(c, 0.82));
+}
 function buildPickup() {
   const g = new THREE.Group();
-  const BODY = 0x3f7fbf, BODY2 = 0x356fa8, CAB = 0xBFE0F4, TIRE = 0x222226, RIM = 0xcfd4da, CHROME = 0xdfe6ee;
-  box(g, 1.12, 0.34, 2.2, BODY, 0, 0.52, 0);                        // main body
-  box(g, 1.08, 0.3, 1.0, BODY2, 0, 0.68, -0.55);                   // bed walls (raised back)
-  box(g, 0.9, 0.16, 0.86, 0x6b5236, 0, 0.64, -0.55);              // wooden bed floor
-  box(g, 1.0, 0.5, 0.95, BODY, 0, 0.92, 0.45);                    // cab body
-  box(g, 0.92, 0.42, 0.6, CAB, 0, 1.16, 0.46);                   // cabin / windows
-  box(g, 1.04, 0.22, 0.12, CHROME, 0, 0.5, 1.12);                // front grille/bumper
-  box(g, 0.18, 0.14, 0.06, 0xFFF3B0, -0.4, 0.6, 1.13); box(g, 0.18, 0.14, 0.06, 0xFFF3B0, 0.4, 0.6, 1.13);  // headlights
-  box(g, 1.04, 0.18, 0.1, 0x2b2b2b, 0, 0.5, -1.12);             // rear bumper
+  const TIRE = 0x1d1d20, RIM = 0xd2d6dc, CHROME = 0xdfe6ee, GLASS = 0x213243, WOOD = 0x7a5a36;
+  const part = (matr, w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matr); m.position.set(x, y, z); g.add(m); return m; };
+  // ---- chassis: hood (front) + cab + bed (back) ----
+  part(pickupBodyMat, 1.16, 0.3, 2.5, 0, 0.46, 0);                  // main chassis rail
+  part(pickupBodyMat, 1.16, 0.26, 0.95, 0, 0.72, 0.78);            // hood (lower & forward)
+  part(pickupBodyMat2, 0.06, 0.16, 0.95, -0.55, 0.86, 0.78); part(pickupBodyMat2, 0.06, 0.16, 0.95, 0.55, 0.86, 0.78); // hood fender tops
+  // ---- cab ----
+  part(pickupBodyMat, 1.12, 0.6, 1.0, 0, 0.92, -0.05);             // cab body
+  part(pickupBodyMat, 1.0, 0.46, 0.9, 0, 1.4, -0.05);             // cab roof block
+  part(mat(GLASS), 1.02, 0.34, 0.04, 0, 1.34, 0.46);             // windshield
+  part(mat(GLASS), 1.02, 0.34, 0.04, 0, 1.34, -0.56);           // rear window
+  part(mat(GLASS), 0.04, 0.34, 0.86, -0.55, 1.34, -0.05); part(mat(GLASS), 0.04, 0.34, 0.86, 0.55, 1.34, -0.05); // side windows
+  part(pickupBodyMat2, 0.06, 0.5, 0.06, -0.55, 1.1, 0.46); part(pickupBodyMat2, 0.06, 0.5, 0.06, 0.55, 1.1, 0.46); // A-pillars
+  // ---- bed (back) ----
+  part(pickupBodyMat, 1.16, 0.46, 1.1, 0, 0.66, -1.1);            // bed outer
+  part(mat(WOOD), 0.94, 0.06, 0.96, 0, 0.74, -1.1);             // wooden bed floor
+  part(pickupBodyMat2, 1.16, 0.4, 0.06, 0, 0.62, -1.66);        // tailgate
+  // ---- details ----
+  part(mat(CHROME), 1.12, 0.16, 0.12, 0, 0.42, 1.28);           // front bumper
+  part(mat(0x2a2a2a), 0.7, 0.2, 0.06, 0, 0.62, 1.27);          // grille
+  part(mat(0xFFF6C0), 0.2, 0.14, 0.06, -0.42, 0.66, 1.27); part(mat(0xFFF6C0), 0.2, 0.14, 0.06, 0.42, 0.66, 1.27);  // headlights
+  part(mat(0x2a2a2a), 1.12, 0.14, 0.1, 0, 0.42, -1.68);        // rear bumper
+  part(mat(0xD2403A), 0.16, 0.12, 0.05, -0.45, 0.7, -1.69); part(mat(0xD2403A), 0.16, 0.12, 0.05, 0.45, 0.7, -1.69);  // taillights
+  part(mat(0x33373d), 0.05, 0.16, 0.05, -0.62, 1.18, 0.42); part(mat(0x33373d), 0.05, 0.16, 0.05, 0.62, 1.18, 0.42); // side mirrors
+  // ---- wheels (with arches) ----
   const wheels = [];
-  [[-0.62, 0.78], [0.62, 0.78], [-0.62, -0.74], [0.62, -0.74]].forEach(([wx, wz]) => {
+  [[-0.62, 0.92], [0.62, 0.92], [-0.62, -1.0], [0.62, -1.0]].forEach(([wx, wz]) => {
     const w = new THREE.Group();
-    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.22, 14), mat(TIRE)); tire.rotation.z = Math.PI / 2; w.add(tire);
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.24, 10), mat(RIM)); rim.rotation.z = Math.PI / 2; w.add(rim);
-    w.position.set(wx, 0.33, wz); g.add(w); wheels.push(w);
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.26, 16), mat(TIRE)); tire.rotation.z = Math.PI / 2; w.add(tire);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.28, 8), mat(RIM)); rim.rotation.z = Math.PI / 2; w.add(rim);
+    w.position.set(wx, 0.34, wz); g.add(w); wheels.push(w);
   });
   g.userData.wheels = wheels;
   return g;
@@ -3401,15 +3469,43 @@ function parkPickup() {
   pickup.group.visible = true; pickup.spawned = true;
 }
 function pickupDist() { return pickup.spawned ? Math.hypot(player.pos.x - pickup.group.position.x, player.pos.z - pickup.group.position.z) : 999; }
-function buyPickup() {
-  if (G.owned.pickup) { if (!pickup.spawned) parkPickup(); toast('🛻 Your pickup is parked out front — hop on with ⭐ USE!', 2600); return; }
-  if (G.coins < PICKUP_PRICE) { toast('🛻 The pickup costs ' + PICKUP_PRICE + ' 🪙 — do math to earn coins, then come back!', 3400); return; }
-  G.coins -= PICKUP_PRICE; G.owned.pickup = true; Sound.coin(); refreshHUD(); parkPickup();
-  toast('🎉 You bought a pickup truck! It\'s parked out front — walk over and tap ⭐ USE to drive!', 4400);
+function openMotors() {                    // buy a truck, or repaint one you own — with color swatches
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true;
+  document.exitPointerLock && document.exitPointerLock();
+  const owned = G.owned.pickup;
+  $('motorsTitle').textContent = owned ? '🎨 Repaint your pickup' : '🛻 Stack Motors';
+  $('motorsDesc').innerHTML = owned
+    ? 'Pick a new color for your truck!'
+    : 'A country pickup truck — <b>' + PICKUP_PRICE + ' 🪙</b>. <span style="color:#c0392b">No refunds!</span><br>You have <b>' + G.coins + ' 🪙</b>.';
+  const sw = $('motorsColors'); sw.innerHTML = '';
+  PICKUP_COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (c === G.pickupColor ? ' sel' : '');
+    b.style.background = '#' + c.toString(16).padStart(6, '0');
+    b.onclick = () => { Sound.click(); repaintPickup(c); openMotors(); };   // live recolor + refresh selection
+    sw.appendChild(b);
+  });
+  const buy = $('motorsBuy');
+  if (owned) { buy.style.display = 'none'; }
+  else {
+    buy.style.display = 'block';
+    const canAfford = G.coins >= PICKUP_PRICE;
+    buy.disabled = !canAfford;
+    buy.textContent = canAfford ? ('🛻 Buy for ' + PICKUP_PRICE + ' 🪙 — no refunds') : ('Need ' + PICKUP_PRICE + ' 🪙 — do math to earn them!');
+    buy.onclick = () => {
+      if (G.coins < PICKUP_PRICE) return;
+      G.coins -= PICKUP_PRICE; G.owned.pickup = true; Sound.coin(); refreshHUD();
+      repaintPickup(G.pickupColor); parkPickup(); closeMotors(); Sound.honk();
+      toast('🎉 It\'s yours! Your pickup is parked out front — walk over and tap ⭐ USE to drive!', 4400);
+    };
+  }
+  $('motorsPopup').style.display = 'flex';
 }
+function closeMotors() { $('motorsPopup').style.display = 'none'; popupOpen = false; }
 function toggleDrive() {
   if (player.driving) {                                   // hop off
-    player.driving = null;
+    player.driving = null; Sound.engineStop();
     player.pos.set(pickup.group.position.x + 1.2, 0, pickup.group.position.z);
     player.vel.set(0, 0, 0);
     if (player.avatar) player.avatar.visible = !G.firstPerson;
@@ -3420,11 +3516,13 @@ function toggleDrive() {
   player.pos.set(pickup.group.position.x, 0, pickup.group.position.z);
   player.yaw = pickup.yaw; player.vel.set(0, 0, 0);
   if (document.pointerLockElement) document.exitPointerLock();
+  Sound.engineStart(); Sound.honk();
   toast('🛻 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
 }
 // keep the truck parked & ready (or hidden) whenever a game starts/loads
 function syncPickup() {
-  player.driving = null;
+  player.driving = null; Sound.engineStop();
+  repaintPickup(G.pickupColor || 0x3f7fbf);
   if (G.owned.pickup) parkPickup();
   else { pickup.spawned = false; pickup.group.visible = false; }
 }
@@ -3754,6 +3852,7 @@ function updatePlayer(dt) {
     v.group.position.set(player.pos.x, player.pos.y, player.pos.z);
     v.group.rotation.y = v.yaw + Math.PI;                // model faces +Z; forward is -Z (same as avatars)
     const wsp = Math.hypot(player.vel.x, player.vel.z);
+    Sound.engineSet(Math.min(1, wsp / 11));              // engine revs with speed
     if (v.group.userData.wheels) v.group.userData.wheels.forEach(w => w.rotation.x -= wsp * dt * 1.5);
     if (player.avatar) player.avatar.visible = false;
     const headY = player.pos.y + 1.55, dist = 6.6;
@@ -6055,7 +6154,7 @@ addEventListener('keydown', e => {
     else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (pickupDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in the parked pickup
-    else if (motorsDist() < 4.0) { Sound.click(); buyPickup(); }     // dealership
+    else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -6309,6 +6408,7 @@ $('invBtn').onclick = () => { Sound.click(); openInv(); };
 $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
+$('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
@@ -6432,7 +6532,7 @@ if (isTouch) {
     else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (pickupDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in the parked pickup
-    else if (motorsDist() < 4.0) { Sound.click(); buyPickup(); }     // dealership
+    else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -6901,8 +7001,9 @@ function loop(now) {
       hint.textContent = isTouch ? '🛻 Tap ⭐ USE to drive your pickup!' : '🛻 Press E to drive your pickup!';
       hint.style.display = 'block';
     } else if (motorsDist() < 4.0) {
-      hint.textContent = G.owned.pickup ? '🛻 Your pickup is parked out front!'
-        : (isTouch ? '🛻 Tap ⭐ USE — buy a pickup for ' + PICKUP_PRICE + ' 🪙!' : '🛻 Press E — buy a pickup for ' + PICKUP_PRICE + ' 🪙!');
+      hint.textContent = G.owned.pickup
+        ? (isTouch ? '🎨 Tap ⭐ USE to repaint your truck!' : '🎨 Press E to repaint your truck!')
+        : (isTouch ? '🛻 Tap ⭐ USE — buy a pickup (' + PICKUP_PRICE + ' 🪙)!' : '🛻 Press E — buy a pickup (' + PICKUP_PRICE + ' 🪙)!');
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
