@@ -3985,6 +3985,38 @@ const LIBRARY_POS = { x: -13, z: -14 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
+  { e: '🐉', t: "Arty's High-Flying Heist",
+    text: [
+      [1, 'Arty was a young dragon who could fly faster than anyone. He went to the Dragon Games to race, and there he made friends with a kind little dragon named Bronco. But a mean dragon called Dracomax took Arty\'s family away! He made Arty race wearing a black disguise. Arty won the race, but as he flew he dropped secret notes asking for help. A boy named Leo found a note, and his family rescued Arty\'s family. Arty was so happy!'],
+      [3, 'High in the misty mountains lived Arty, a young dragon and the fastest flyer anyone had ever seen — a blue and silver streak across the sky. At the Grand Dragon Games he befriended Bronco, a servant dragon. But the wicked Dracomax was jealous of Arty\'s speed. He kidnapped Arty\'s family and forced Arty to race in disguise, his scales painted black. Arty won, but as he flew he secretly dropped notes telling everyone about Dracomax\'s evil plan. A boy named Leo found a note, and with his clever family and their inventions they rescued the trapped dragons. From then on, Arty used his speed to help others.'],
+      [5, 'High in the misty mountains, where clouds brushed the rocky peaks, lived Arty Swiftscale — the fastest flyer anyone had ever seen, a blue and silver streak across the sky. At the Grand Dragon Games he befriended Bronco, a humble castle servant, despite their different backgrounds. But the cunning Dracomax coveted Arty\'s speed. The night before the race he kidnapped Arty\'s family and forced the heartbroken dragon to compete disguised in black scales. Arty won easily — yet as he raced, he scattered tiny notes across the kingdom, exposing the villain\'s scheme. One note reached Leo, who, with his inventive family and their magical dog Popcorn, tracked the captured dragons to a hidden dungeon and set them free. Arty had learned to use his gift not for glory, but to help others.']
+    ],
+    qs: [
+      { q: 'What is Arty the dragon very good at?', a: 'Flying fast', o: ['Flying fast', 'Cooking', 'Singing', 'Painting'], g: 1 },
+      { q: 'Who did Arty become friends with at the castle?', a: 'Bronco', o: ['Bronco', 'Dracomax', 'A guard', 'A cat'], g: 1 },
+      { q: 'What did the villain Dracomax want from Arty?', a: 'His speed', o: ['His speed', 'His gold', 'His crown', 'His cave'], g: 2 },
+      { q: 'How did Arty feel when his family was taken?', a: 'Sad and worried', o: ['Sad and worried', 'Happy', 'Bored', 'Sleepy'], g: 2 },
+      { q: 'How did Arty get people to help while he raced?', a: 'He dropped notes about the evil plan', o: ['He dropped notes about the evil plan', 'He roared loudly', 'He flew home', 'He stopped racing'], g: 3 },
+      { q: 'What is the main lesson of the story?', a: 'Use your talents to help others', o: ['Use your talents to help others', 'Always win every race', 'Never make new friends', 'Castles are scary'], g: 3 },
+      { q: 'The story calls Arty "a blue and silver streak across the sky." This word-picture is a —', a: 'Metaphor', o: ['Metaphor', 'Rhyme', 'Fact', 'List'], g: 4 },
+      { q: 'Why did Arty risk dropping notes during the race?', a: 'He trusted someone would help free his family', o: ['He trusted someone would help free his family', 'He wanted to make a mess', 'He was lost', 'He disliked flying'], g: 5 }
+    ] },
+  { e: '🌸', t: "Bonnie's Magical Meadow",
+    text: [
+      [1, 'Bonnie was a magical plant horse with flowers in her mane. At school she learned plant magic. One day she found a secret meadow and met a human girl named Fiona. They became best friends! When the garden in Fiona\'s town was dying, Bonnie used her magic to make all the plants healthy and green again. Bonnie learned that her magic grew stronger when she helped others.'],
+      [3, 'Bonnie was a young plant horse whose coat shimmered like spring leaves and whose mane bloomed with flowers. At Greenwood Academy she studied plant magic. While practicing portal-jumping, she found a hidden meadow between the magical and human worlds — and met Fiona, a curious human girl. Instead of being scared, Fiona was delighted, and the two became close friends. When Fiona\'s community garden began to die, Bonnie touched her glowing horn to the soil and filled the garden with green magic until the plants grew healthy again. Bonnie discovered that her magic grew strongest when she used it to help others.'],
+      [5, 'In a realm where rainbows bridge worlds and flowers whisper secrets lived Bonnie, a young plant horse whose coat shimmered like spring leaves and whose mane changed with her mood. At Greenwood Academy she studied potion-making and plant magic, but her true passion was the boundary between the magical and human worlds. While practicing portal-jumping, she discovered a hidden meadow and met Fiona, a curious human girl who greeted her with wonder instead of fear. Their friendship blossomed, and so did the meadow. When Fiona\'s community garden withered, Bonnie sensed the soil was out of balance and healed it with waves of green magic. She learned a lesson she would carry forever: magic — and friendship — grow strongest when shared to help others.']
+    ],
+    qs: [
+      { q: 'What kind of creature is Bonnie?', a: 'A plant horse', o: ['A plant horse', 'A dragon', 'A puppy', 'A robot'], g: 1 },
+      { q: 'Who did Bonnie meet in the secret meadow?', a: 'Fiona, a human girl', o: ['Fiona, a human girl', 'A dragon', 'A wizard', 'A pirate'], g: 1 },
+      { q: "What was wrong in Fiona's town?", a: 'The community garden was dying', o: ['The community garden was dying', 'It snowed', 'The school closed', 'A dragon attacked'], g: 2 },
+      { q: 'Where did Bonnie go to school?', a: 'Greenwood Academy', o: ['Greenwood Academy', 'Castle Dracomax', 'Reading Town', 'The food bank'], g: 2 },
+      { q: 'What lesson did Bonnie learn about her magic?', a: 'It grew stronger when she helped others', o: ['It grew stronger when she helped others', 'It only worked at night', 'It was for showing off', 'It was dangerous'], g: 3 },
+      { q: '"Her coat shimmered like spring leaves" is an example of a —', a: 'Simile', o: ['Simile', 'Rhyme', 'Question', 'Title'], g: 4 },
+      { q: 'The story says "flowers whisper secrets." Flowers cannot really whisper. This is —', a: 'Personification', o: ['Personification', 'A simile', 'A number', 'A fact'], g: 4 },
+      { q: 'Why did Fiona tell people they used a "special fertilizer"?', a: "To keep Bonnie's magic a secret", o: ["To keep Bonnie's magic a secret", 'Because she forgot', 'To sell fertilizer', 'Because she was upset'], g: 5 }
+    ] },
   { e: '🪁', t: 'The Lost Kite',
     text: 'Mia flew her bright red kite at the park. The wind blew harder and harder. Snap! The string broke and the kite sailed away like a bird. Mia felt very sad. Then a boy named Leo found it caught in a tree. He climbed up and gave it back. "Sharing and helping make everyone happy," Leo said with a smile.',
     qs: [
