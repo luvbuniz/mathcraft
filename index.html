@@ -2335,28 +2335,41 @@ function beginPurchase() {
   if (typeof toast === 'function') toast('🧪 Demo: no payment connected yet — unlocking for testing.', 3000);
   doUnlock();
 }
-/* ===== Gift / promo codes — unlock the full game for free (party favors).
-   These are 10 UNIQUE, hard-to-guess codes — hand ONE to each kid so there's no
-   single "magic word" to spread. (True one-redemption-each enforcement would need
-   a small server; without one, a code still works on any device it's typed into.)
-   Retire a code by deleting it from this list. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
+/* ===== Gift / promo codes — unlock the full game for free (party favors), with
+   server-enforced ONE-USE-EACH so you control exactly how many you give out.
+   • Paste your Apps Script Web App /exec URL into REDEEM_URL (see gift-codes/SETUP.md)
+     and each code burns after a single redemption — no spreading into the ether.
+   • Until then, PROMO_CODES below works as a local fallback (multi-use) so the
+     flow is testable today. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
+const REDEEM_URL = '';   // <-- paste your Apps Script Web App URL here to enforce one-use-each
 const PROMO_CODES = ['STK-E8UZD', 'STK-8CSPM', 'STK-XYBJ6', 'STK-K7MUE', 'STK-7SN4K', 'STK-EKEDD', 'STK-FBGY4', 'STK-Z3X58', 'STK-7KG4E', 'STK-EY934'];
-function redeemCode(raw) {
+function unlockNow() { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} }
+async function redeemCode(raw) {                 // -> { ok, reason }
   const code = (raw || '').trim().toUpperCase();
-  if (code && PROMO_CODES.includes(code)) { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} return true; }
-  return false;
+  if (!code) return { ok: false, reason: 'empty' };
+  if (!REDEEM_URL) return { ok: PROMO_CODES.includes(code), reason: 'local' };   // no backend yet → local list
+  try {
+    const r = await fetch(REDEEM_URL + '?action=redeem&code=' + encodeURIComponent(code));
+    return await r.json();
+  } catch (e) { return { ok: false, reason: 'network' }; }
 }
-/* If a provider sent the player back with ?unlocked=1 — or a gift link with ?code=XXX —
-   complete the unlock and tidy the URL. */
-(function handlePurchaseReturn() {
+/* ?unlocked=1 from the payment return, or a gift link ?code=XXX (server-validated, one use) */
+(function handleUnlockReturn() {
   try {
     const p = new URLSearchParams(location.search);
-    const codeOk = p.get('code') && redeemCode(p.get('code'));
-    if (p.get('unlocked') === '1' || codeOk) {
-      localStorage.setItem(UNLOCK_KEY, '1');
-      history.replaceState(null, '', location.pathname + location.hash);
-      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 ' + (codeOk ? 'Gift code accepted!' : 'Thank you!') + ' The full game is unlocked — explore 🏘️ Reading Town now!', 4500); }, 700));
+    const sayLater = t => addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast(t, 4500); }, 700));
+    if (p.get('unlocked') === '1') {
+      unlockNow(); history.replaceState(null, '', location.pathname + location.hash);
+      sayLater('🎉 Thank you! The full game is unlocked — explore 🏘️ Reading Town now!'); return;
     }
+    const code = p.get('code');
+    if (!code) return;
+    if (isUnlocked()) { history.replaceState(null, '', location.pathname + location.hash); return; }   // already unlocked — don't burn a code
+    redeemCode(code).then(res => {
+      history.replaceState(null, '', location.pathname + location.hash);
+      if (res.ok) { unlockNow(); sayLater('🎉 Gift code accepted! The full game is unlocked — explore 🏘️ Reading Town now!'); }
+      else sayLater(res.reason === 'used' ? '😅 That gift code was already used.' : '🤔 That gift code wasn\'t valid.');
+    });
   } catch (e) {}
 })();
 
@@ -6591,15 +6604,20 @@ $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
-$('promoBtn').onclick = () => {
+$('promoBtn').onclick = async () => {
   Sound.click();
-  const msg = $('promoMsg');
-  if (redeemCode($('promoInput').value)) {
-    msg.style.color = '#2f8a52'; msg.textContent = '🎉 Code accepted! Unlocking…';
-    Sound.fanfare && Sound.fanfare();
-    setTimeout(doUnlock, 500);
+  const msg = $('promoMsg'), btn = $('promoBtn');
+  msg.style.color = '#7a6a35'; msg.textContent = 'Checking…'; btn.disabled = true;
+  const res = await redeemCode($('promoInput').value);
+  btn.disabled = false;
+  if (res.ok) {
+    unlockNow(); msg.style.color = '#2f8a52'; msg.textContent = '🎉 Code accepted! Unlocking…';
+    Sound.fanfare && Sound.fanfare(); setTimeout(doUnlock, 600);
   } else {
-    msg.style.color = '#c0392b'; msg.textContent = 'Hmm, that code didn\'t work. Check the spelling?';
+    msg.style.color = '#c0392b';
+    msg.textContent = res.reason === 'used' ? 'This code was already used.'
+      : res.reason === 'network' ? 'Connection problem — please try again.'
+      : 'That code didn\'t work. Check the spelling?';
   }
 };
 $('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('promoBtn').click(); });
