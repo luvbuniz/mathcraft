@@ -3389,7 +3389,7 @@ function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.po
 
 /* ============================ 🛻 STACK MOTORS: a country dealership + a drivable pickup ============================ */
 const MOTORS_POS = { x: 12, z: -9 };
-const PICKUP_PRICE = 120;                 // vehicles are a big-ticket, non-refundable coin sink
+const PICKUP_PRICE = 58;                  // affordable enough to stay motivating; vehicles sit around this range
 function motorsDist() { return Math.hypot(player.pos.x - MOTORS_POS.x, player.pos.z - MOTORS_POS.z); }
 // ---- the dealership lot ----
 const motorsGroup = new THREE.Group();
@@ -3477,7 +3477,7 @@ function openMotors() {                    // buy a truck, or repaint one you ow
   $('motorsTitle').textContent = owned ? '🎨 Repaint your pickup' : '🛻 Stack Motors';
   $('motorsDesc').innerHTML = owned
     ? 'Pick a new color for your truck!'
-    : 'A country pickup truck — <b>' + PICKUP_PRICE + ' 🪙</b>. <span style="color:#c0392b">No refunds!</span><br>You have <b>' + G.coins + ' 🪙</b>.';
+    : 'A country pickup truck — <b>' + PICKUP_PRICE + ' 🪙</b>.<br>You have <b>' + G.coins + ' 🪙</b>.';
   const sw = $('motorsColors'); sw.innerHTML = '';
   PICKUP_COLORS.forEach(c => {
     const b = document.createElement('button');
@@ -3492,7 +3492,7 @@ function openMotors() {                    // buy a truck, or repaint one you ow
     buy.style.display = 'block';
     const canAfford = G.coins >= PICKUP_PRICE;
     buy.disabled = !canAfford;
-    buy.textContent = canAfford ? ('🛻 Buy for ' + PICKUP_PRICE + ' 🪙 — no refunds') : ('Need ' + PICKUP_PRICE + ' 🪙 — do math to earn them!');
+    buy.textContent = canAfford ? ('🛻 Buy for ' + PICKUP_PRICE + ' 🪙') : ('Need ' + PICKUP_PRICE + ' 🪙 — do math to earn them!');
     buy.onclick = () => {
       if (G.coins < PICKUP_PRICE) return;
       G.coins -= PICKUP_PRICE; G.owned.pickup = true; Sound.coin(); refreshHUD();
