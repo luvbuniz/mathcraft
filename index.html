@@ -6793,13 +6793,14 @@ function buildFurnitureMesh(type, variant) {
     }
   } else if (type === 'coffeetable') {
     box(g, 0.86, 0.08, 0.5, 0x8a5c33, 0, 0.32, 0);                    // low top
+    if (finish === 1) box(g, 0.88, 0.02, 0.52, 0xC9A24A, 0, 0.37, 0);  // gold edge (deluxe)
     box(g, 0.8, 0.05, 0.44, 0x5a3a1e, 0, 0.18, 0);                   // lower shelf
     [[-0.36, -0.18], [0.36, -0.18], [-0.36, 0.18], [0.36, 0.18]].forEach(([x, z]) => box(g, 0.07, 0.3, 0.07, 0x6d4326, x, 0.15, z));
   } else if (type === 'dresser') {
     box(g, 0.8, 0.9, 0.42, 0x7a5230, 0, 0.45, 0);                     // cabinet
     [0.22, 0.5, 0.78].forEach(yy => {                                 // 3 drawers
       box(g, 0.7, 0.22, 0.04, 0x8d6238, 0, yy, 0.21);
-      box(g, 0.08, 0.05, 0.05, 0xE4D9C0, 0, yy, 0.24);              // drawer knob
+      box(g, 0.08, 0.05, 0.05, finish === 1 ? 0xC9A24A : 0xE4D9C0, 0, yy, 0.24);   // drawer knob (gold in deluxe)
     });
     [[-0.34, -0.16], [0.34, -0.16], [-0.34, 0.16], [0.34, 0.16]].forEach(([x, z]) => box(g, 0.06, 0.1, 0.06, 0x4a2c18, x, 0.05, z));
   } else if (type === 'table') {
@@ -6824,10 +6825,13 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.94, 0.14, 0.34, 0xFFFFFF, 0, 0.42, -0.68);                // pillow
     [[-0.48, -0.86], [0.48, -0.86], [-0.48, 0.86], [0.48, 0.86]].forEach(([lx, lz]) =>
       box(g, 0.1, 0.18, 0.1, 0x4a2c18, lx, 0.09, lz));                 // legs
+    if (finish === 1) { box(g, 0.12, 0.06, 0.12, 0xC9A24A, -0.48, 0.2, -0.86); box(g, 0.12, 0.06, 0.12, 0xC9A24A, 0.48, 0.2, -0.86); box(g, 1.17, 0.03, 0.05, 0xC9A24A, 0, 0.31, 0.97); }  // gold post caps + rail (deluxe)
   } else if (type === 'couch') {
     buildCouch(g, variant);
+    if (finish === 1) for (let i = 0; i < 7; i++) box(g, 0.022, 0.022, 0.03, 0xC9A24A, -0.36 + i * 0.12, 0.27, 0.255);   // gold nailhead studs (deluxe)
   } else if (type === 'tv') {
     box(g, 0.6, 0.1, 0.32, 0x6d4326, 0, 0.18, 0);                      // stand top
+    if (finish === 1) box(g, 0.62, 0.03, 0.34, 0xC9A24A, 0, 0.24, 0);  // gold media-stand trim (deluxe)
     box(g, 0.12, 0.18, 0.12, 0x4a2c18, -0.22, 0.09, 0);               // stand legs
     box(g, 0.12, 0.18, 0.12, 0x4a2c18, 0.22, 0.09, 0);
     box(g, 0.16, 0.5, 0.16, 0x3a3a3a, 0, 0.5, 0);                     // pedestal
@@ -6835,6 +6839,7 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.78, 0.42, 0.03, 0x4a90d9, 0, 0.78, 0.05);               // glowing blue screen
   } else if (type === 'bookshelf') {
     box(g, 0.8, 1.3, 0.34, 0x7a5230, 0, 0.65, 0);                     // wooden cabinet
+    if (finish === 1) box(g, 0.84, 0.04, 0.37, 0xC9A24A, 0, 1.32, 0);  // gold cornice (deluxe)
     box(g, 0.72, 0.05, 0.3, 0x5a3a1e, 0, 0.42, 0.02);                // shelves
     box(g, 0.72, 0.05, 0.3, 0x5a3a1e, 0, 0.86, 0.02);
     const bookCols = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0xCF6F9B];
@@ -6857,6 +6862,7 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.14, 1.5, 0.14, 0x6d6d6d, 0, 0.75, 0);                     // post
     box(g, 0.34, 0.14, 0.34, 0x5a5a5a, 0, 0.04, 0);                    // base
     box(g, 0.34, 0.34, 0.34, 0xFFF1A8, 0, 1.6, 0);                     // glowing shade
+    if (finish === 1) { box(g, 0.36, 0.05, 0.36, 0xC9A24A, 0, 0.12, 0); box(g, 0.09, 0.1, 0.09, 0xC9A24A, 0, 1.82, 0); }  // gold base ring + finial (deluxe)
   } else if (type === 'fence') {
     box(g, 0.16, 0.7, 0.16, 0x8a5c33, -0.38, 0.35, 0);                 // posts
     box(g, 0.16, 0.7, 0.16, 0x8a5c33, 0.38, 0.35, 0);
