@@ -2546,15 +2546,42 @@ let currentStore = 'mart';
 let shopCat = 'food';
 
 /* ============================ BADGES & SAVING ============================ */
-const BADGES = [
-  { id: 'star',   n: 5,  icon: '⭐', name: 'Math Star' },
-  { id: 'tophat', n: 10, icon: '🎩', name: 'Fancy Top Hat', wear: true },
-  { id: 'crown',  n: 15, icon: '👑', name: 'Golden Crown', wear: true },
-  { id: 'champ',  n: 25, icon: '🏆', name: 'Math Champion' }
-];
+/* Badges are themed per town so a reader isn't called a "Math Champion". The math
+   ids stay the same (star/tophat/crown/champ) so older saves keep their badges &
+   wearable hats; reading & Spanish have their own sets. */
+const BADGE_SETS = {
+  math: [
+    { id: 'star',   n: 5,  icon: '⭐', name: 'Math Star' },
+    { id: 'tophat', n: 10, icon: '🎩', name: 'Fancy Top Hat', wear: true },
+    { id: 'crown',  n: 15, icon: '👑', name: 'Golden Crown', wear: true },
+    { id: 'champ',  n: 25, icon: '🏆', name: 'Math Champion' }
+  ],
+  reading: [
+    { id: 'r_star',  n: 5,  icon: '📖', name: 'Reading Star' },
+    { id: 'r_worm',  n: 10, icon: '🐛', name: 'Bookworm' },
+    { id: 'r_owl',   n: 15, icon: '🦉', name: 'Wise Owl' },
+    { id: 'r_champ', n: 25, icon: '🏆', name: 'Reading Champion' }
+  ],
+  spanish: [
+    { id: 'e_star',  n: 5,  icon: '🌟', name: 'Spanish Star' },
+    { id: 'e_sun',   n: 10, icon: '🌞', name: 'Sol Brillante' },
+    { id: 'e_shell', n: 15, icon: '🐚', name: 'Beach Explorer' },
+    { id: 'e_champ', n: 25, icon: '🏆', name: 'Spanish Champion' }
+  ]
+};
+const BADGE_SUBJECTS = [['math', '🌳 Math Meadow'], ['reading', '🏘️ Reading Town'], ['spanish', '🏖️ Spanish Beach']];
+const BADGES = BADGE_SETS.math;               // back-compat: HUD next-goal + math wearables
+const subjectOf = op => (op === 'reading' ? 'reading' : op === 'spanish' ? 'spanish' : 'math');
+function subjectSolved(subj, p) {             // how many problems solved in a given town
+  p = p || profile; const byOp = p.byOp || {};
+  const readN = byOp.reading || 0, spanN = byOp.spanish || 0;
+  if (subj === 'reading') return readN;
+  if (subj === 'spanish') return spanN;
+  return Math.max(0, (p.totalSolved || 0) - readN - spanN);
+}
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {} };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -2639,14 +2666,17 @@ function recordSolve(eq) {
     profile.byOp[op] = (profile.byOp[op] || 0) + 1;
     profile.byGrade[level] = (profile.byGrade[level] || 0) + 1;
   }
-  for (const b of BADGES) {
-    if (profile.totalSolved >= b.n && !profile.badges.includes(b.id)) {
+  // award badges from THIS subject's set, against THIS subject's solved count
+  const subj = subjectOf(eq && eq.skill);
+  const subjCount = subjectSolved(subj);
+  for (const b of BADGE_SETS[subj]) {
+    if (subjCount >= b.n && !profile.badges.includes(b.id)) {
       profile.badges.push(b.id);
       setTimeout(() => {
         Sound.fanfare();
         toast(b.icon + ' New badge: ' + b.name + '!' + (b.wear ? ' Your hero is wearing it!' : ' Tap 🏅 to see it.'), 2400);
       }, 900);
-      applyHeadwear();
+      if (b.wear) applyHeadwear();
     }
   }
   saveProfile();
@@ -2666,13 +2696,20 @@ function renderBadges() {
   $('badgeSolved').textContent = profile.totalSolved;
   const grid = $('badgeGrid');
   grid.innerHTML = '';
-  BADGES.forEach(b => {
-    const earned = profile.badges.includes(b.id);
-    const card = document.createElement('div');
-    card.className = 'badgeCard' + (earned ? '' : ' locked');
-    card.innerHTML = '<div class="bIcon">' + b.icon + '</div><b>' + b.name + '</b><small>' +
-      (earned ? 'Earned! 🎉' : Math.min(profile.totalSolved, b.n) + '/' + b.n + ' solved') + '</small>';
-    grid.appendChild(card);
+  BADGE_SUBJECTS.forEach(([subj, label]) => {
+    const cnt = subjectSolved(subj);
+    const head = document.createElement('div');
+    head.style.cssText = 'grid-column:1/-1;font-weight:800;color:#5b6b80;margin-top:8px';
+    head.textContent = label + ' — ' + cnt + ' solved';
+    grid.appendChild(head);
+    BADGE_SETS[subj].forEach(b => {
+      const earned = profile.badges.includes(b.id);
+      const card = document.createElement('div');
+      card.className = 'badgeCard' + (earned ? '' : ' locked');
+      card.innerHTML = '<div class="bIcon">' + b.icon + '</div><b>' + b.name + '</b><small>' +
+        (earned ? 'Earned! 🎉' : Math.min(cnt, b.n) + '/' + b.n + ' solved') + '</small>';
+      grid.appendChild(card);
+    });
   });
 }
 function openBadges() {
@@ -2840,6 +2877,31 @@ function renderGrownup() {
       html += '<div class="guSkillSub">' + prog + tag + '</div>';
     });
     if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
+
+    const sectionHead = (t) => '<div style="font-weight:800;color:#5b6b80;margin:11px 0 3px;border-top:1px solid #ececec;padding-top:7px">' + t + '</div>';
+    // 📖 Reading — comprehension is rated on the FIRST answer to each question (not after retries)
+    html += sectionHead('📖 Reading');
+    const rTotal = p.readFirstTotal || 0, rRight = p.readFirstRight || 0;
+    if (rTotal > 0) {
+      const comp = Math.round(rRight / rTotal * 100);
+      let crate, ccol;
+      if (rTotal < 6) { crate = '🌱 Just getting started — not enough data yet'; ccol = '#6c84a6'; }
+      else if (comp >= 80) { crate = '✅ Strong comprehension'; ccol = '#2f8a52'; }
+      else if (comp >= 55) { crate = '🟡 Developing — review the trickier questions together'; ccol = '#b07d00'; }
+      else { crate = '🔴 Needs support — read together'; ccol = '#c0392b'; }
+      html += '<div class="guStats"><span>📈 Reading Level: ' + (p.readLevel || '—') + '</span>' +
+        '<span>🧠 Comprehension: ' + comp + '% (first try)</span><span>📚 ' + rRight + '/' + rTotal + ' first-try</span></div>';
+      html += '<div class="guFocus" style="color:' + ccol + '">' + crate + '</div>';
+      const rbg = p.readFirstByGrade || {}; const rk = Object.keys(rbg).sort();
+      if (rk.length) html += '<div class="guSkillSub">By level: ' +
+        rk.map(g => 'L' + g + ' (' + (rbg[g].right || 0) + '/' + (rbg[g].total || 0) + ')').join(' · ') + '</div>';
+    } else {
+      html += '<div class="guSkillSub">No reading yet — visit the 📚 Library in Reading Town.</div>';
+    }
+    // 🇪🇸 Spanish — content coming soon; grammar & vocabulary will be rated here
+    html += sectionHead('🇪🇸 Spanish');
+    html += '<div class="guSkillSub">Coming soon — grammar &amp; vocabulary progress will appear here.</div>';
+
     card.innerHTML = html;
     list.appendChild(card);
   });
@@ -4469,7 +4531,8 @@ function renderLib() {
   if (lib.phase === 'read') {
     $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
     $('libStory').innerHTML = libStoryHTML(false);
-    $('libPrompt').textContent = lib.story.script ? '🎬 This is a screenplay — a script for a TV show or movie. Read the scene, then answer!' : 'Read the story carefully…';
+    $('libPrompt').innerHTML = (lib.story.script ? '🎬 This is a screenplay — a script for a TV show or movie. Read the scene carefully!' : '📖 Read the story carefully!') +
+      '<br><span style="font-size:0.84em;color:#8a6d3b">Your <b>first</b> answer to each question counts toward your reading score — so take your time and check the story.</span>';
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.background = '#3f9d34'; b.style.color = '#fff'; b.textContent = "📖 I've read it — start the questions!";
     b.onclick = () => {
       Sound.click();
@@ -4485,13 +4548,14 @@ function renderLib() {
       else if (core.length > 3) qs.push(core[3]);
       if (qs.length < 2) qs = lib.story.qs.filter(q => q.g <= rl + 1).slice(0, 4);
       lib.level = rl; lib.qs = shuffle(qs);
-      lib.qi = 0; lib.right = 0; lib.wrong = 0; lib.phase = 'quiz'; renderLib();
+      lib.qi = 0; lib.right = 0; lib.wrong = 0; lib.firstRight = 0; lib.attempted = false; lib.phase = 'quiz'; renderLib();
     };
     wrap.appendChild(b);
     return;
   }
   // quiz
   const q = lib.qs[lib.qi];
+  lib.attempted = false;                            // a freshly shown question — the next tap is the "first answer"
   const isCh = q.g > (lib.level != null ? lib.level : readLevelNow());
   $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
   $('libStory').innerHTML = libStoryHTML(true);
@@ -4504,11 +4568,21 @@ function renderLib() {
 }
 function libAnswer(opt, q, btn) {
   if (!lib) return;
+  const firstAttempt = !lib.attempted;             // only the FIRST answer to a question is rated for comprehension
+  lib.attempted = true;
+  if (firstAttempt) {
+    profile.readFirstTotal = (profile.readFirstTotal || 0) + 1;
+    profile.readFirstByGrade = profile.readFirstByGrade || {};
+    const bg = profile.readFirstByGrade; bg[q.g] = bg[q.g] || { right: 0, total: 0 }; bg[q.g].total++;
+    if (opt === q.a) { profile.readFirstRight = (profile.readFirstRight || 0) + 1; bg[q.g].right++; lib.firstRight = (lib.firstRight || 0) + 1; }
+    else { recordWrong({ skill: 'reading', level: q.g }); }   // a missed first try counts against comprehension
+    profileDirty = true; saveProfile();
+  }
   if (opt === q.a) {
     Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++;
     lib.qi++;
     if (lib.qi >= lib.qs.length) { finishLib(); return; }
-    $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
+    $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = firstAttempt ? '✓ Nice reading!' : '✓ Got it!';
     setTimeout(renderLib, 400);
   } else {
     Sound.wrong(); btn.classList.add('flop'); lib.wrong = (lib.wrong || 0) + 1;
@@ -4522,18 +4596,21 @@ function finishLib() {
   let reward = 3, hadChallenge = false;
   for (const q of lib.qs) { let w = 1 + q.g; if (q.g > lvl) { w *= 2; hadChallenge = true; } reward += w; }
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
-  // gently adapt the reading level: clean runs move up, repeated struggles ease back down
+  // gently adapt the reading level using FIRST-attempt accuracy: perfect runs move up,
+  // repeated struggles ease back down
   let levelMsg = '';
-  if (lib.wrong === 0) {
+  const total = lib.qs.length, fr = lib.firstRight || 0;
+  if (fr === total) {
     G.readSlip = 0; G.readStreak = (G.readStreak || 0) + 1;
     if (G.readStreak >= 2 && G.readLevel < 5) { G.readLevel++; G.readStreak = 0; levelMsg = '📈 Reading Level up — now Level ' + G.readLevel + '! 🎉'; }
-  } else if (lib.wrong >= 4) {
+  } else if (fr <= total / 2) {
     G.readStreak = 0; G.readSlip = (G.readSlip || 0) + 1;
     if (G.readSlip >= 2 && G.readLevel > 1) { G.readLevel--; G.readSlip = 0; levelMsg = '📖 Now at Reading Level ' + G.readLevel + ' — you\'ve got this!'; }
   } else { G.readStreak = 0; }
   profile.readLevel = G.readLevel; profileDirty = true; saveProfile();
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
-  $('libPrompt').innerHTML = '🎉 You read <b>' + lib.story.t + '</b> and answered every question — wonderful reading!' +
+  $('libPrompt').innerHTML = '🎉 You read <b>' + lib.story.t + '</b> — wonderful reading!' +
+    '<br><span style="color:#3b5d9e;font-weight:800">📖 First-try score: ' + (lib.firstRight || 0) + '/' + lib.qs.length + '</span>' +
     (hadChallenge ? '<br><span style="color:#E0A100;font-weight:800">🌟 Challenge bonus included!</span>' : '') +
     (levelMsg ? '<br><span style="color:#2f8a52;font-weight:800">' + levelMsg + '</span>' : '');
   $('libChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
@@ -5664,8 +5741,10 @@ function refreshHUD() {
   $('ballCount').textContent = G.balls;
   // show lifetime problems solved and the next goal (no more "16/10"!)
   $('solvedCount').textContent = profile.totalSolved;
-  const nextBadge = BADGES.find(b => profile.totalSolved < b.n);
-  $('solvedGoal').textContent = nextBadge ? '→🏅' + nextBadge.n : '🏅✓';
+  // the next-badge goal matches the town you're in (reading badges in Reading Town, etc.)
+  const wSubj = G.world === 'city' ? 'reading' : G.world === 'beach' ? 'spanish' : 'math';
+  const wCnt = subjectSolved(wSubj), nextBadge = BADGE_SETS[wSubj].find(b => wCnt < b.n);
+  $('solvedGoal').textContent = nextBadge ? '→' + nextBadge.icon + nextBadge.n : '🏅✓';
   $('shopCoins').textContent = G.coins;
 }
 function fmtTime(s) {
@@ -7775,10 +7854,25 @@ function syncGloomyMenu() {
     (b.dataset.gloomies === 'on') === G.gloomiesEnabled));
   $('timeRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
 }
+// the "Choose your level" cards describe what each grade covers in the chosen world
+const GRADE_DESCS = {
+  meadow: { 2: 'Add & subtract to 100', 3: 'To 1,000 & times tables', 4: 'Multi-digit × and ÷', 5: 'Fractions & decimals' },
+  city:   { 2: 'Short stories • who & what', 3: 'Longer stories • the main idea', 4: 'Similes & describing words', 5: 'Metaphors & author\'s craft' },
+  beach:  { 2: 'First words & greetings', 3: 'Colours, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' }
+};
+function updateGradeDescs(world) {
+  const map = GRADE_DESCS[world] || GRADE_DESCS.meadow;
+  $('gradeRow').querySelectorAll('button').forEach(b => {
+    const small = b.querySelector('small');
+    if (small && map[b.dataset.grade]) small.textContent = map[b.dataset.grade];
+  });
+}
 function buildMenu() {
+  updateGradeDescs(G.world || 'meadow');                // start matching the pre-selected world
   // world buttons (coming-soon worlds tease; locked worlds open the unlock dialog instead of selecting)
   $('worldRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
+    updateGradeDescs(b.dataset.world);                 // preview this world's grade levels (reading / Spanish / math)
     if (worldComingSoon(b.dataset.world)) { comingSoonNote(b.dataset.world); return; }
     if (worldLocked(b.dataset.world)) { openUnlock(); return; }
     $('worldRow').querySelectorAll('button').forEach(x => x.classList.remove('selected'));
