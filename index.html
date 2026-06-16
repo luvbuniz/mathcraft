@@ -2342,7 +2342,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach'];
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
   meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } },
-  city:   { shop: { x: -8.5, z: -12 },  barn: { x: -4, z: -12 },  motors: { x: 5, z: -12 } },   // a high-street row facing Main St
+  city:   { shop: { x: -6, z: -14 },    barn: { x: 3, z: -14 },    motors: { x: 9, z: -14 } },   // one side-by-side high-street row (with the Library) facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
@@ -3266,7 +3266,8 @@ function updateDoors(dt) {
 /* ---- trees (trunks are solid & climbable; canopies hold berries) ---- */
 const trees = [];                      // {x,z,topY}
 const berries = [];                    // {mesh, alive, respawnAt}
-const treeSpots = [[-14, -10], [12, -14], [16, 9], [-10, 14], [-18, 3], [7, 18], [18, -3], [-5, -18], [10, 4]];
+// trees hug the edges/corners so the middle stays open for kids to build
+const treeSpots = [[-20, -20], [20, -20], [20, 20], [-20, 20], [21, 5], [-21, -6], [6, 21]];
 function buildTrees() {
   const trunkMat = mat(0x7a5230);
   const leafMats = [mat(0x4C8C3A), mat(0x5BA546), mat(0x3E7A2E), mat(0x69B84F)];
@@ -3980,7 +3981,7 @@ function finishBake() {
 /* ============================ 📚 THE LIBRARY (Reading Town): pick a story, then answer about it ============================
    Tied to the Library — its own read-a-story comprehension/theme/literary-device game,
    separate from the ❓ reading stations. Questions are tagged by grade so they're age-appropriate. */
-const LIBRARY_POS = { x: 0, z: -18 };
+const LIBRARY_POS = { x: -13, z: -14 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
@@ -4235,7 +4236,7 @@ function buildLibrary(g) {                    // Reading Town's grand civic libr
     box(L, 0.5, 0.4, 0.5, 0x8a6b4a, px * 0.78, 0.2, D / 2 + 0.95);    // planter
     box(L, 0.46, 0.34, 0.46, 0x4f9a37, px * 0.78, 0.52, D / 2 + 0.95);// shrub
   });
-  L.position.set(0, 0, -18); g.add(L);                                // Main Street (x=0) leads up to it
+  L.position.set(-13, 0, -14); g.add(L);                              // west end of the high-street row
 }
 function buildHighStreetArch(g) {             // a welcome arch over Main Street at the entrance to downtown
   const A = new THREE.Group();
@@ -4261,10 +4262,10 @@ function buildCityDecor(g) {                  // (name kept) Reading Town's subu
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.14;
     const r = 27 + Math.random() * 8;                                       // varied depth → a layered neighborhood
     suburbHouse(g, Math.cos(ang) * r, Math.sin(ang) * r, Math.atan2(-Math.cos(ang), -Math.sin(ang)) + (Math.random() - 0.5) * 0.3);
-    if (Math.random() < 0.7) decoTree(g, Math.cos(ang + 0.06) * (r - 3.5), Math.sin(ang + 0.06) * (r - 3.5), 0.8 + Math.random() * 0.5);
+    if (Math.random() < 0.6) decoTree(g, Math.cos(ang + 0.06) * (r - 1.5), Math.sin(ang + 0.06) * (r - 1.5), 0.8 + Math.random() * 0.5);
   }
-  for (let i = 0; i < 16; i++) {              // trees dotted on the lawn just past the build area
-    const ang = Math.random() * Math.PI * 2, r = 25.5 + Math.random() * 1.8;
+  for (let i = 0; i < 8; i++) {               // a few trees on the lawn JUST past the build area (kept outside so plots stay open)
+    const ang = Math.random() * Math.PI * 2, r = 26 + Math.random() * 2;
     decoTree(g, Math.cos(ang) * r, Math.sin(ang) * r, 0.8 + Math.random() * 0.4);
   }
 }
