@@ -2250,6 +2250,13 @@ const WORLDS = {
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
 };
 const WORLD_ORDER = ['meadow', 'city', 'beach'];
+/* Where each world places the (shared) shops. Reading Town clusters them into a
+   downtown row along Main Street, just south of the Library, so kids can drive there. */
+const WORLD_LAYOUT = {
+  meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } },
+  city:   { shop: { x: -10, z: -11 },   barn: { x: -4, z: -11 }, motors: { x: 8, z: -11 } },
+  beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
+};
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
 const worldComingSoon = id => !!(WORLDS[id] && WORLDS[id].comingSoon);
 function comingSoonNote(id) {
@@ -2983,6 +2990,11 @@ function applyWorldTheme(worldId) {
   if (scene.fog) scene.fog.color.setHex(w.fog);
   if (typeof skirtMat !== 'undefined') skirtMat.color.setHex(w.ground[1]);   // skirt matches the world's ground
   applyGroundColors(w.ground, worldId);
+  // place the shared shops where this world wants them (Reading Town clusters them downtown)
+  const L = WORLD_LAYOUT[worldId] || WORLD_LAYOUT.meadow;
+  SHOP_POS.x = L.shop.x; SHOP_POS.z = L.shop.z; shopGroup.position.set(L.shop.x, 0, L.shop.z);
+  BARN_POS.x = L.barn.x; BARN_POS.z = L.barn.z; barnGroup.position.set(L.barn.x, 0, L.barn.z);
+  MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z);
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
 }
 
