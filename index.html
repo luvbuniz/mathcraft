@@ -2394,7 +2394,7 @@ const G = {
   world: 'meadow',
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
-  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, corvette: false, race: false },
+  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false },
   activeCar: null, carColors: {},
   quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
@@ -3229,7 +3229,7 @@ function resetGameState() {
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A; G.furnFinish = 0;
-  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, corvette: false, race: false };
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
 }
@@ -3347,6 +3347,7 @@ function applyWorldTheme(worldId) {
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
   G.furnFinish = worldId === 'city' ? 1 : worldId === 'beach' ? 2 : 0;   // default to this town's furniture style (kids can change it in the 🎒)
   updateStoreSigns(worldId);                                            // shop signs go bilingual (Español • English) in Spanish Beach
+  if (typeof setDealerDisplay === 'function') setDealerDisplay(worldId); // each town shows off its own vehicles
 }
 function updateStoreSigns(worldId) {
   const beach = worldId === 'beach';
@@ -3925,15 +3926,31 @@ function buildRaceShape(g, bm, bm2, gm) {           // open-wheel race car with 
   P(mat(0xD23A3A), 0.4, 0.1, 0.05, 0, 0.42, -1.62); // tail light
   carWheels(g, [[-0.62, 1.1, 0.4], [0.62, 1.1, 0.4], [-0.62, -1.05, 0.44], [0.62, -1.05, 0.44]]);  // exposed wheels
 }
+function buildConvertibleShape(g, bm, bm2, gm) {    // open-top luxury cruiser
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.3, 0.34, 3.1, 0, 0.4, 0);                 // long low body
+  P(bm, 1.22, 0.18, 1.4, 0, 0.6, 0.85);             // hood
+  P(bm2, 1.12, 0.16, 1.2, 0, 0.56, -0.2);           // open cockpit floor
+  P(mat(0x6b4a2c), 0.46, 0.2, 0.4, -0.28, 0.66, -0.1); P(mat(0x6b4a2c), 0.46, 0.2, 0.4, 0.28, 0.66, -0.1);  // two leather seats
+  P(bm, 1.3, 0.3, 0.7, 0, 0.55, -1.25);             // rear deck
+  P(gm, 1.0, 0.22, 0.04, 0, 0.78, 0.46);            // low windshield
+  P(mat(0xEAF6FF), 0.32, 0.07, 0.05, -0.42, 0.46, 1.56); P(mat(0xEAF6FF), 0.32, 0.07, 0.05, 0.42, 0.46, 1.56);  // headlights
+  P(mat(0xC9A24A), 1.3, 0.05, 0.08, 0, 0.28, 1.55); // gold front trim (luxury)
+  P(mat(0xC9A24A), 1.3, 0.04, 0.07, 0, 0.58, -1.62);// gold rear trim
+  P(mat(0xD23A3A), 0.9, 0.07, 0.05, 0, 0.5, -1.62); // tail light strip
+  carWheels(g, [[-0.62, 1.0, 0.36], [0.62, 1.0, 0.36], [-0.62, -1.05, 0.36], [0.62, -1.05, 0.36]]);
+}
+// Each town's Stack Motors stocks its own lineup (a car can be sold in more than one town).
 const VEHICLES = [
-  { id: 'pickup',   name: 'Pickup Truck',   emoji: '🛻', price: 58, color: 0x3f7fbf, speed: 11, shape: buildPickupShape },
-  { id: 'tesla',    name: 'Electric Sedan', emoji: '🚗', price: 72, color: 0xF2F2F2, speed: 13, shape: buildTeslaShape },
-  { id: 'jeep',     name: 'Trail SUV',      emoji: '🚙', price: 78, color: 0x4E7B3A, speed: 10, shape: buildJeepShape },
-  { id: 'minivan',  name: 'Family Van',     emoji: '🚐', price: 64, color: 0x8FA6BC, speed: 10, shape: buildMinivanShape },
-  { id: 'police',   name: 'Police Cruiser', emoji: '🚓', price: 80, color: 0x1b1f27, speed: 14, shape: buildPoliceShape },
-  { id: 'monster',  name: 'Monster Truck',  emoji: '🦖', price: 86, color: 0x6a3fb0, speed: 12, shape: buildMonsterShape },
-  { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape },
-  { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape }
+  { id: 'pickup',   name: 'Pickup Truck',   emoji: '🛻', price: 58, color: 0x3f7fbf, speed: 11, shape: buildPickupShape,      worlds: ['meadow', 'beach'] },
+  { id: 'tesla',    name: 'Electric Sedan', emoji: '🚗', price: 72, color: 0xF2F2F2, speed: 13, shape: buildTeslaShape,       worlds: ['city'] },
+  { id: 'jeep',     name: 'Trail SUV',      emoji: '🚙', price: 78, color: 0x4E7B3A, speed: 10, shape: buildJeepShape,        worlds: ['meadow', 'beach'] },
+  { id: 'minivan',  name: 'Family Van',     emoji: '🚐', price: 64, color: 0x8FA6BC, speed: 10, shape: buildMinivanShape,     worlds: ['meadow'] },
+  { id: 'police',   name: 'Police Cruiser', emoji: '🚓', price: 80, color: 0x1b1f27, speed: 14, shape: buildPoliceShape,      worlds: ['city'] },
+  { id: 'monster',  name: 'Monster Truck',  emoji: '🦖', price: 86, color: 0x6a3fb0, speed: 12, shape: buildMonsterShape,     worlds: ['meadow'] },
+  { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'] },
+  { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape,    worlds: ['city'] },
+  { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape,       worlds: ['city'] }
 ];
 const cars = {};   // id -> { def, group, bodyMat, bodyMat2, yaw, spawned }
 VEHICLES.forEach(def => {
@@ -3944,13 +3961,22 @@ VEHICLES.forEach(def => {
   group.visible = false; scene.add(group);
   cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false };
 });
-// display cars on the lot: a sedan tucked on the pad, plus a gleaming full-size
-// sports car shown off out front — every Stack Motors (incl. Reading Town) has one.
-[['tesla', -0.95, 0.2, 0.3, 0.62], ['corvette', 0.55, 1.95, 0.45, 0.92]].forEach(([id, dx, dz, rot, sc]) => {
-  const def = VEHICLES.find(v => v.id === id), disp = new THREE.Group();
-  def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
-  disp.position.set(dx, 0, dz); disp.rotation.y = rot; disp.scale.setScalar(sc); motorsGroup.add(disp);
-});
+// display cars on the lot — each town shows off two of ITS OWN vehicles
+const DEALER_DISPLAY = { meadow: ['monster', 'pickup'], city: ['corvette', 'tesla'], beach: ['convertible', 'jeep'] };
+let dealerDisplay = [];
+function setDealerDisplay(world) {
+  dealerDisplay.forEach(d => motorsGroup.remove(d)); dealerDisplay = [];
+  const ids = DEALER_DISPLAY[world] || DEALER_DISPLAY.meadow;
+  const slots = [[0.55, 1.95, 0.45, 0.92], [-0.95, 0.2, 0.3, 0.62]];   // hero out front, one tucked on the pad
+  ids.forEach((id, i) => {
+    const def = VEHICLES.find(v => v.id === id); if (!def) return;
+    const disp = new THREE.Group();
+    def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
+    const s = slots[i] || slots[0]; disp.position.set(s[0], 0, s[1]); disp.rotation.y = s[2]; disp.scale.setScalar(s[3]);
+    motorsGroup.add(disp); dealerDisplay.push(disp);
+  });
+}
+setDealerDisplay('meadow');
 function carDefColor(id) { return (G.carColors && G.carColors[id] != null) ? G.carColors[id] : cars[id].def.color; }
 function recolorCar(id, c) { cars[id].bodyMat.color.setHex(c); cars[id].bodyMat2.color.setHex(shade(c, 0.8)); }
 function activeCarObj() { return G.activeCar ? cars[G.activeCar] : null; }
@@ -3975,9 +4001,10 @@ function openMotors() {                    // the showroom: buy a car, switch wh
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   $('motorsTitle').textContent = '🚗 Stack Motors';
-  $('motorsDesc').innerHTML = 'You have <b>' + G.coins + ' 🪙</b>. Buy a car (it parks out front to drive), or switch which one you drive.';
+  $('motorsDesc').innerHTML = 'You have <b>' + G.coins + ' 🪙</b>. This lot stocks <b>' + curWorld().name + '</b> vehicles — buy one (it parks out front), or switch which you drive.';
   const list = $('motorsList'); list.innerHTML = '';
-  VEHICLES.forEach(def => {
+  // show this town's lineup, plus any car you already own (so you can drive/repaint it anywhere)
+  VEHICLES.filter(def => (def.worlds || []).includes(G.world) || G.owned[def.id]).forEach(def => {
     const owned = !!G.owned[def.id], active = G.activeCar === def.id;
     const row = document.createElement('div'); row.className = 'carRow' + (active ? ' active' : '');
     row.innerHTML = '<span class="carEmoji">' + def.emoji + '</span><span class="carInfo"><b>' + def.name + '</b><small>' +
