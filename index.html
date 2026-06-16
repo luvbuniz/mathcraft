@@ -225,6 +225,13 @@
   .recipeRow { font-size:clamp(14px,2.4vw,17px); font-weight:700; color:#9a8c70; padding:2px 0; }
   .recipeRow.now { color:#B23A6B; }
   .recipeRow.done { color:#2f8a52; }
+  .libText { background:#FBF6EA; border:1px solid #E3D7BE; border-radius:12px; padding:12px 14px; text-align:left;
+    color:#4a4030; font-size:clamp(14px,2.5vw,17px); line-height:1.5; max-height:42vh; overflow-y:auto; margin:0; }
+  .libText.small { font-size:clamp(12px,2vw,14px); line-height:1.4; max-height:22vh; opacity:.92; }
+  .libBtn { font-family:inherit; font-weight:700; font-size:clamp(15px,2.6vw,18px); padding:12px 16px; border:none;
+    border-radius:13px; cursor:pointer; color:#5a4632; background:#F0E6D2; box-shadow:0 4px 0 #cdbf9f; }
+  .libBtn:active { transform:translateY(3px); box-shadow:0 1px 0 #cdbf9f; }
+  .libBtn.flop { animation:shake .35s; background:#f3b0b0; }
   .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
   .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
@@ -1173,6 +1180,18 @@
     <div id="bakePrompt" style="font-size:clamp(17px,3vw,22px); color:#34495e; font-weight:bold; background:#FFF6E3; border:3px solid #F0CBA0; border-radius:14px; padding:12px 14px; margin-bottom:10px; line-height:1.3"></div>
     <div id="bakeChoices" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center"></div>
     <div id="bakeMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ================= LIBRARY (read-a-story) POPUP ================= -->
+<div class="popup" id="libraryPopup">
+  <div class="popupCard" style="width:min(560px,95vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="libraryClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="libTitle" style="color:#6E4636; margin:2px 0 6px; font-size:clamp(22px,4vw,30px)">📚 Library</h2>
+    <div id="libStory" style="margin:4px 0 10px"></div>
+    <div id="libPrompt" style="font-size:clamp(16px,2.8vw,20px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35"></div>
+    <div id="libChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
+    <div id="libMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
   </div>
 </div>
 
@@ -3958,6 +3977,127 @@ function finishBake() {
   $('bakeDoneBtn').onclick = closeBakery;
 }
 
+/* ============================ 📚 THE LIBRARY (Reading Town): pick a story, then answer about it ============================
+   Tied to the Library — its own read-a-story comprehension/theme/literary-device game,
+   separate from the ❓ reading stations. Questions are tagged by grade so they're age-appropriate. */
+const LIBRARY_POS = { x: 0, z: -18 };
+function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
+// q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
+const STORIES = [
+  { e: '🪁', t: 'The Lost Kite',
+    text: 'Mia flew her bright red kite at the park. The wind blew harder and harder. Snap! The string broke and the kite sailed away like a bird. Mia felt very sad. Then a boy named Leo found it caught in a tree. He climbed up and gave it back. "Sharing and helping make everyone happy," Leo said with a smile.',
+    qs: [
+      { q: 'Who flew the kite?', a: 'Mia', o: ['Mia', 'Leo', 'Dad', 'A bird'], g: 1 },
+      { q: 'Where was Mia?', a: 'At the park', o: ['At the park', 'At school', 'At the beach', 'At home'], g: 1 },
+      { q: 'What broke?', a: 'The kite string', o: ['The kite string', 'A tree', 'Her shoe', 'The bench'], g: 2 },
+      { q: 'How did Mia feel when the kite flew away?', a: 'Sad', o: ['Sad', 'Happy', 'Angry', 'Hungry'], g: 2 },
+      { q: 'What is the lesson (theme) of the story?', a: 'Helping and sharing make people happy', o: ['Helping and sharing make people happy', 'Kites are bad', 'Never go outside', 'Always be first'], g: 3 },
+      { q: '"The kite sailed away like a bird" is an example of a —', a: 'Simile', o: ['Simile', 'Rhyme', 'Title', 'Question'], g: 4 }
+    ] },
+  { e: '🐢', t: 'Tilly and the Race',
+    text: 'Tilly the turtle was the slowest in the forest. The fast rabbit laughed at her. "You will never win the race!" he said. But Tilly did not give up. Slow and steady, step by step, she kept going while the rabbit took a long nap. When the rabbit woke up, Tilly had already crossed the finish line. Slow and steady wins the race!',
+    qs: [
+      { q: 'Who is the slowest animal?', a: 'Tilly the turtle', o: ['Tilly the turtle', 'The rabbit', 'The fox', 'The bird'], g: 1 },
+      { q: 'Who raced against Tilly?', a: 'The rabbit', o: ['The rabbit', 'A turtle', 'A dog', 'A snail'], g: 1 },
+      { q: 'What did the rabbit do during the race?', a: 'Took a nap', o: ['Took a nap', 'Ran the whole way', 'Cried', 'Cheered'], g: 2 },
+      { q: 'Who won the race?', a: 'Tilly', o: ['Tilly', 'The rabbit', 'Nobody', 'The fox'], g: 2 },
+      { q: 'What does this story teach us?', a: 'Never give up — slow and steady wins', o: ['Never give up — slow and steady wins', 'Napping is good', 'Rabbits are mean', 'Racing is bad'], g: 3 },
+      { q: '"Slow and steady" repeats the same first sound. This is —', a: 'Alliteration', o: ['Alliteration', 'A simile', 'A rhyme', 'A metaphor'], g: 4 },
+      { q: 'Why did Tilly win even though she was slow?', a: 'She kept trying and never stopped', o: ['She kept trying and never stopped', 'She was faster', 'She cheated', 'The rabbit helped her'], g: 5 }
+    ] },
+  { e: '🌱', t: 'The Little Seed',
+    text: 'Ava planted a tiny seed in the dark soil. Every day she gave it water and waited. At first, nothing happened. "Be patient," said her grandma. Days went by. Then one morning a little green sprout pushed up to say hello to the sun. Soon a bright sunflower danced in the wind. Good things take time.',
+    qs: [
+      { q: 'What did Ava plant?', a: 'A seed', o: ['A seed', 'A tree', 'A rock', 'A flower pot'], g: 1 },
+      { q: 'Who told Ava to be patient?', a: 'Her grandma', o: ['Her grandma', 'Her teacher', 'Her dog', 'Her brother'], g: 1 },
+      { q: 'What did Ava give the seed every day?', a: 'Water', o: ['Water', 'Milk', 'Sand', 'Nothing'], g: 2 },
+      { q: 'What is the message of the story?', a: 'Good things take time — be patient', o: ['Good things take time — be patient', 'Seeds are boring', "Don't plant things", 'The sun is hot'], g: 3 },
+      { q: '"A sunflower danced in the wind." Flowers cannot really dance. This is —', a: 'Personification', o: ['Personification', 'A rhyme', 'A fact', 'A question'], g: 4 },
+      { q: 'Why did grandma say "be patient"?', a: 'Because growing takes a long time', o: ['Because growing takes a long time', 'Because Ava was loud', 'Because it was raining', 'Because she was tired'], g: 5 }
+    ] },
+  { e: '🪙', t: 'Sam Tells the Truth',
+    text: 'Sam found a shiny coin on the playground. He really wanted to keep it. But then he saw his friend Ben looking sad and searching the ground. Sam knew the coin was Ben\'s. His tummy felt funny. Sam took a deep breath and gave the coin back. Ben smiled big. Telling the truth felt much better than keeping the coin.',
+    qs: [
+      { q: 'What did Sam find?', a: 'A coin', o: ['A coin', 'A toy', 'A book', 'A dog'], g: 1 },
+      { q: 'Where did Sam find it?', a: 'On the playground', o: ['On the playground', 'At home', 'In a store', 'At the park'], g: 1 },
+      { q: 'How did Ben feel before he got the coin back?', a: 'Sad', o: ['Sad', 'Happy', 'Silly', 'Sleepy'], g: 2 },
+      { q: 'What is the lesson of the story?', a: 'Being honest is the right thing to do', o: ['Being honest is the right thing to do', 'Keep what you find', 'Coins are shiny', "Don't play outside"], g: 3 },
+      { q: 'Why did Sam\'s "tummy feel funny"?', a: 'He felt bad about keeping what wasn\'t his', o: ['He felt bad about keeping what wasn\'t his', 'He was hungry', 'He was sick', 'He was cold'], g: 4 },
+      { q: 'What does the author want us to learn?', a: 'Honesty feels better than being greedy', o: ['Honesty feels better than being greedy', 'Always look for coins', 'Run very fast', 'Never share'], g: 5 }
+    ] }
+];
+let lib = null;
+function openLibrary() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  lib = { phase: 'pick', story: null, qs: [], qi: 0, right: 0 };
+  renderLib();
+  $('libraryPopup').style.display = 'flex';
+}
+function closeLibrary() { $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
+function renderLib() {
+  if (!lib) return;
+  const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
+  if (lib.phase === 'pick') {
+    $('libTitle').innerHTML = '📚 Library'; $('libStory').innerHTML = '';
+    $('libPrompt').textContent = 'Pick a story to read:';
+    shuffle(STORIES.slice()).slice(0, 3).forEach(s => {
+      const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.innerHTML = s.e + ' ' + s.t;
+      b.onclick = () => { Sound.click(); lib.story = s; lib.phase = 'read'; renderLib(); };
+      wrap.appendChild(b);
+    });
+    return;
+  }
+  if (lib.phase === 'read') {
+    $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
+    $('libStory').innerHTML = '<p class="libText">' + lib.story.text + '</p>';
+    $('libPrompt').textContent = 'Read the story carefully…';
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.background = '#3f9d34'; b.style.color = '#fff'; b.textContent = "📖 I've read it — start the questions!";
+    b.onclick = () => {
+      Sound.click();
+      const pool = lib.story.qs.filter(q => q.g <= G.grade);
+      lib.qs = shuffle(pool.length >= 2 ? pool : lib.story.qs.filter(q => q.g <= G.grade + 1)).slice(0, 4);
+      lib.qi = 0; lib.right = 0; lib.phase = 'quiz'; renderLib();
+    };
+    wrap.appendChild(b);
+    return;
+  }
+  // quiz
+  const q = lib.qs[lib.qi];
+  $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
+  $('libStory').innerHTML = '<p class="libText small">' + lib.story.text + '</p>';
+  $('libPrompt').textContent = '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q;
+  shuffle(q.o.slice()).forEach(opt => {
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '15px'; b.textContent = opt;
+    b.onclick = () => libAnswer(opt, q, b);
+    wrap.appendChild(b);
+  });
+}
+function libAnswer(opt, q, btn) {
+  if (!lib) return;
+  if (opt === q.a) {
+    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: G.grade }); refreshHUD(); bumpHud('solvedCount'); lib.right++;
+    lib.qi++;
+    if (lib.qi >= lib.qs.length) { finishLib(); return; }
+    $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
+    setTimeout(renderLib, 400);
+  } else {
+    Sound.wrong(); btn.classList.add('flop');
+    $('libMsg').style.color = '#c0392b'; $('libMsg').textContent = '🤔 Look back at the story and try again!';
+  }
+}
+function finishLib() {
+  const reward = 6 + G.grade * 2 + lib.qs.length;
+  G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
+  $('libPrompt').innerHTML = '🎉 You read <b>' + lib.story.t + '</b> and answered every question — wonderful reading!';
+  $('libChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
+    '<button class="libBtn" id="libDoneBtn">Done</button>';
+  $('libMsg').textContent = '';
+  $('libAgainBtn').onclick = () => { closeLibrary(); openLibrary(); };
+  $('libDoneBtn').onclick = closeLibrary;
+}
+
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group() };
 function cityTexture(bodyN, litN) {
@@ -6711,6 +6851,7 @@ addEventListener('keydown', e => {
     else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
+    else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -6966,6 +7107,7 @@ $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
+$('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
@@ -7108,6 +7250,7 @@ if (isTouch) {
     else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
+    else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -7613,6 +7756,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (bakeryDist() < 3.6) {
       hint.textContent = isTouch ? '🧁 Tap ⭐ USE — make a treat at Stack Sweets!' : '🧁 Press E — make a treat at Stack Sweets!';
+      hint.style.display = 'block';
+    } else if (libraryDist() < 4.2) {
+      hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 Press E — read a story at the Library!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
