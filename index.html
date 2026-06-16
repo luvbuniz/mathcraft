@@ -3749,14 +3749,14 @@ const bakeryGroup = new THREE.Group();
 }
 // ---- treats + measurement questions (scaled to grade) ----
 const INGS = {                                   // name -> [emoji, unit]
-  flour: ['🌾', 'cups'], milk: ['🥛', 'cups'], sugar: ['🍬', 'cups'], butter: ['🧈', 'sticks'],
-  cocoa: ['🍫', 'spoonfuls'], berries: ['🫐', ''], 'ice cream': ['🍨', 'scoops'], cookies: ['🍪', ''],
+  flour: ['🌾', 'cups'], milk: ['🥛', 'cups'], cream: ['🥛', 'cups'], sugar: ['🍬', 'cups'], butter: ['🧈', 'sticks'],
+  vanilla: ['🍮', 'drops'], cocoa: ['🍫', 'spoonfuls'], berries: ['🫐', ''], cookies: ['🍪', ''],
   sprinkles: ['🌈', 'spoonfuls'], cherries: ['🍒', ''], sauce: ['🍯', 'spoonfuls']
 };
-const TREATS = [                                 // ice cream sandwich first (Leo's favorite!)
-  { e: '🍨', n: 'Ice Cream Sandwich', cold: true, ings: ['cookies', 'ice cream', 'sprinkles'] },
-  { e: '🍦', n: 'Ice Cream Cone', cold: true, ings: ['ice cream', 'sprinkles', 'cherries'] },
-  { e: '🍨', n: 'Sundae', cold: true, ings: ['ice cream', 'sauce', 'sprinkles', 'cherries'] },
+const TREATS = [                                 // ice cream sandwich first (Leo's favorite!) — you MAKE the ice cream
+  { e: '🍨', n: 'Ice Cream Sandwich', cold: true, churn: true, ings: ['milk', 'cream', 'sugar', 'cookies'] },
+  { e: '🍦', n: 'Ice Cream Cone', cold: true, churn: true, ings: ['milk', 'cream', 'sugar', 'vanilla'] },
+  { e: '🍨', n: 'Sundae', cold: true, churn: true, ings: ['milk', 'sugar', 'sauce', 'sprinkles'] },
   { e: '🍫🎂', n: 'Chocolate Cake', cold: false, ings: ['flour', 'milk', 'sugar', 'cocoa'] },
   { e: '🧁', n: 'Cupcakes', cold: false, ings: ['flour', 'sugar', 'butter', 'sprinkles'] },
   { e: '🍓🎂', n: 'Strawberry Cake', cold: false, ings: ['flour', 'milk', 'sugar', 'berries'] }
@@ -3786,6 +3786,12 @@ function bakeStep(grade, name) {                 // one ingredient → a measure
   }
   return { emoji: INGS[name][0], name: name, text: text, answer: answer, options: bakeOptions(answer) };
 }
+function churnStep(grade) {                       // the ice cream maker — churn the base you measured
+  let text, answer;
+  if (grade <= 2) { const a = 2 + (Math.random() * 4 | 0), b = 2 + (Math.random() * 4 | 0); text = '🍦 Crank the ice cream maker: ' + a + ' turns, then ' + b + ' more — how many turns?'; answer = a + b; }
+  else { const a = 5 + (Math.random() * 6 | 0); text = '🍦 Churn the ice cream maker twice as much: ' + a + ' turns × 2 = ?'; answer = a * 2; }
+  return { emoji: '🍦', name: 'churn', text: text, answer: answer, options: bakeOptions(answer) };
+}
 function finalStep(grade, cold) {                // oven for baked treats, freezer for frozen ones
   let text, answer;
   if (cold) {
@@ -3804,8 +3810,11 @@ function openBakery() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   const t = TREATS[Math.random() * TREATS.length | 0];
-  const ings = shuffle(t.ings.slice()).slice(0, G.grade >= 3 ? Math.min(4, t.ings.length) : 3);
-  const steps = ings.map(i => bakeStep(G.grade, i)); steps.push(finalStep(G.grade, t.cold));
+  const n = G.grade >= 3 ? Math.min(4, t.ings.length) : Math.min(3, t.ings.length);
+  const ings = t.ings.slice(0, n);                // keep recipe order (base first), so you always make the ice cream
+  const steps = ings.map(i => bakeStep(G.grade, i));
+  if (t.churn) steps.push(churnStep(G.grade));    // ice cream maker, then…
+  steps.push(finalStep(G.grade, t.cold));         // …the freezer
   bake = { cake: [t.e, t.n], cold: t.cold, steps: steps, step: 0, made: [] };
   renderBake();
   $('bakePopup').style.display = 'flex';
