@@ -1213,10 +1213,21 @@
   </div>
 </div>
 
+<!-- ================= MI VOCABULARIO POPUP ================= -->
+<div class="popup" id="vocabPopup" style="z-index:66">
+  <div class="popupCard" style="width:min(460px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="vocabClose" title="Close" aria-label="Close">✕</button></div>
+    <div id="vocabBody"></div>
+  </div>
+</div>
+
 <!-- ================= SPANISH MART (El Mercadito) POPUP ================= -->
 <div class="popup" id="martPopup">
   <div class="popupCard" style="width:min(540px,95vw); text-align:center">
-    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="martClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="display:flex; justify-content:space-between; align-items:center">
+      <button id="vocabBtn" title="My vocabulary" style="background:#FCE9C8;color:#8a5a1a;font-weight:800;border:none;border-radius:10px;padding:5px 10px;cursor:pointer">📒 Vocabulario</button>
+      <button class="closeX" id="martClose" title="Close" aria-label="Close">✕</button>
+    </div>
     <h2 id="martHeading" style="color:#C8602E; margin:2px 0 2px; font-size:clamp(22px,4vw,30px)">🏪 El Mercadito</h2>
     <div id="martSub" style="color:#7a6a55; font-weight:700; font-size:13px; margin-bottom:4px">The Little Market — order in Spanish!</div>
     <div style="font-size:42px" id="martKeeper">🧑‍🌾</div>
@@ -3011,7 +3022,9 @@ function openReportCard(p) {
   const mathN = subjectSolved('math', p); if (mathN > 0) rows.push(['🔢', 'Math', mathN + ' solved', '']);
   const rT = p.readFirstTotal || 0; if (rT > 0) rows.push(['📖', 'Reading', 'Level ' + (p.readLevel || '—'), Math.round((p.readFirstRight || 0) / rT * 100) + '% comprehension']);
   const sT = p.spellFirstTotal || 0; if (sT > 0) rows.push(['🐝', 'Spelling', 'Level ' + (p.spellLevel || '—'), Math.round((p.spellFirstRight || 0) / sT * 100) + '% first-try']);
-  const spT = p.spanFirstTotal || 0; if (spT > 0) rows.push(['🇪🇸', 'Spanish', '', Math.round((p.spanFirstRight || 0) / spT * 100) + '% first-try']);
+  const spT = p.spanFirstTotal || 0;
+  const vocabN = Object.keys(p.spanWords || {}).filter(k => (p.spanWords[k].n || 0) >= VOCAB_LEARN_AT).length;
+  if (spT > 0 || vocabN > 0) rows.push(['🇪🇸', 'Spanish', vocabN ? '📒 ' + vocabN + ' words/phrases' : '', spT ? Math.round((p.spanFirstRight || 0) / spT * 100) + '% first-try' : '']);
   const allBadges = [].concat(BADGE_SETS.math, BADGE_SETS.reading, BADGE_SETS.spanish);
   const earned = allBadges.filter(b => (p.badges || []).includes(b.id));
   const byDay = p.byDay || {}, dayKey = d => { const t = new Date(); t.setDate(t.getDate() - d); return t.toISOString().slice(0, 10); };
@@ -4387,6 +4400,8 @@ function martDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - MAR
 const BOAT_SHOP_POS = { x: 14, z: 10 };          // Stack Barcos, on the sand by the dock
 const DOCK_POS = { x: 22, z: 12 };               // your boat moors at the foot of the dock (reachable on foot; drive it out to sea)
 function boatShopDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - BOAT_SHOP_POS.x, player.pos.z - BOAT_SHOP_POS.z) : 999; }
+const SCHOOL_POS = { x: 2, z: -11 };             // La Escuela — the language school
+function schoolDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - SCHOOL_POS.x, player.pos.z - SCHOOL_POS.z) : 999; }
 // q.g = lowest grade the question suits.  recall/setting=1, sequence/feeling=2, theme=3, device/inference=4, author/metaphor=5
 const STORIES = [
   { e: '🐉', t: "Arty's High-Flying Heist",
@@ -5051,6 +5066,50 @@ const MART_ITEMS = [
   { es: 'jugo', en: 'juice', e: '🧃', price: 2 }, { es: 'sandía', en: 'watermelon', e: '🍉', price: 4 }
 ];
 const ES_NUM = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
+/* ---- Spanish vocabulary: get a word right a few times and it's "learned" — added to the
+   list of words the child can say. Every Spanish activity feeds this. ---- */
+const VOCAB_LEARN_AT = 3;
+const ES_EN = {
+  hola: 'hello', 'adiós': 'goodbye', 'buenos días': 'good morning', 'gracias': 'thank you', 'de nada': "you're welcome",
+  'por favor': 'please', 'sí': 'yes', no: 'no', 'sí, gracias': 'yes, thank you', bien: 'good / fine',
+  '¿cómo estás?': 'how are you?', 'me llamo': 'my name is', amigo: 'friend',
+  yo: 'I', 'tú': 'you', 'él': 'he', ella: 'she', 'qué': 'what', 'dónde': 'where', 'quién': 'who', 'cómo': 'how', 'cuándo': 'when',
+  uno: 'one', dos: 'two', tres: 'three', cuatro: 'four', cinco: 'five', seis: 'six', siete: 'seven', ocho: 'eight', nueve: 'nine', diez: 'ten',
+  manzana: 'apple', pan: 'bread', leche: 'milk', queso: 'cheese', huevos: 'eggs', 'plátano': 'banana', naranja: 'orange',
+  tomate: 'tomato', agua: 'water', pollo: 'chicken', fresa: 'strawberry', uvas: 'grapes', zanahoria: 'carrot', galleta: 'cookie', jugo: 'juice', 'sandía': 'watermelon',
+  'la lancha': 'speedboat', 'el velero': 'sailboat', 'la bicicleta': 'bicycle', 'la camioneta': 'pickup', 'el jeep': 'jeep', 'el convertible': 'convertible',
+  casa: 'house', gato: 'cat', perro: 'dog', sol: 'sun', mar: 'sea', playa: 'beach',
+  quiero: 'I want', tengo: 'I have', helado: 'ice cream', negro: 'black', rojo: 'red', grande: 'big',
+  'buenas tardes': 'good afternoon', 'mucho gusto': 'nice to meet you', 'te quiero': 'I love you'
+};
+function learnSpanish(es, en) {
+  if (!es) return;
+  es = es.trim().toLowerCase();
+  profile.spanWords = profile.spanWords || {};
+  const w = profile.spanWords[es] || { n: 0, en: en || ES_EN[es] || '' };
+  w.n++; if (!w.en) w.en = en || ES_EN[es] || ''; profile.spanWords[es] = w;
+  if (w.n === VOCAB_LEARN_AT) toast('📒 ¡Nueva frase! You can now say "' + es + '" (' + (w.en || '') + ')!', 3400);
+  profileDirty = true;
+}
+function vocabLearned() {   // [es, en] pairs the child has mastered
+  const out = []; const sw = profile.spanWords || {};
+  for (const es in sw) if ((sw[es].n || 0) >= VOCAB_LEARN_AT) out.push([es, sw[es].en || (ES_EN[es] || '')]);
+  return out.sort((a, b) => a[0].localeCompare(b[0]));
+}
+function openVocab() {
+  const learned = vocabLearned();
+  let h = '<div style="font-size:40px">📒</div><h2 style="color:#C8602E;margin:2px 0 2px">Mi Vocabulario</h2>' +
+    '<div style="font-size:13px;color:#7a6a55;margin-bottom:10px">Words you can say — tap 🔊 to hear them! (' + learned.length + ')</div>';
+  if (!learned.length) h += '<div style="color:#8a7a5a;padding:10px">Play at 🏪 El Mercadito, 🏫 La Escuela or 🚤 Stack Barcos to learn words. Get one right ' + VOCAB_LEARN_AT + ' times and it lands here!</div>';
+  else { h += '<div style="display:flex;flex-direction:column;gap:7px;max-height:46vh;overflow:auto">';
+    learned.forEach(([es, en]) => { h += '<div class="vocabRow" data-es="' + es.replace(/"/g, '') + '" style="display:flex;align-items:center;gap:10px;background:#f4f7fb;border-radius:10px;padding:8px 10px;cursor:pointer">' +
+      '<span style="font-size:20px">🔊</span><b style="flex:1;color:#2E5E8C">' + es + '</b><span style="color:#5b6b80">' + en + '</span></div>'; });
+    h += '</div>'; }
+  $('vocabBody').innerHTML = h;
+  $('vocabPopup').style.display = 'flex';
+  $('vocabBody').querySelectorAll('.vocabRow').forEach(r => r.onclick = () => { Sound.click(); speakWord(r.dataset.es, { es: true }); });
+}
+function closeVocab() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('vocabPopup').style.display = 'none'; }
 function openMart() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
@@ -5097,10 +5156,10 @@ function martRecord(correct) {     // rate the FIRST answer to each step as 'spa
   }
   mart.attempted = true;
 }
-function martAnswer(correct, nextPhase) {
+function martAnswer(correct, nextPhase, word) {
   martRecord(correct);
   if (correct) {
-    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); learnSpanish(word); refreshHUD(); bumpHud('solvedCount');
     mart.phase = nextPhase; mart.attempted = false;
     if (nextPhase === 'done') finishMart(); else renderMart();
   } else {
@@ -5121,28 +5180,28 @@ function renderMart() {
     martSay('¡Hola! ¿Qué te gustaría?', 'Hello! What would you like?');
     $('martGoal').innerHTML = '🛒 Order: ' + it.e + ' <b>' + it.en + '</b>';
     $('martPrompt').textContent = mart.typed ? 'Type it in Spanish (just the word):' : 'Tap the Spanish word for it:';
-    if (mart.typed) martTypeInput(wrap, it.es, v => martAnswer(norm(v) === norm(it.es), 'polite'));
+    if (mart.typed) martTypeInput(wrap, it.es, v => martAnswer(norm(v) === norm(it.es), 'polite', it.es));
     else {
       const pool = MART_ITEMS.filter(m => m !== it); shuffle(pool);
       const opts = shuffle([it, pool[0], pool[1], pool[2]]);
-      opts.forEach(o => martChoiceBtn(wrap, o.e + '  ' + o.es, () => { speakWord(o.es, { es: true }); martAnswer(o === it, 'polite'); }));
+      opts.forEach(o => martChoiceBtn(wrap, o.e + '  ' + o.es, () => { speakWord(o.es, { es: true }); martAnswer(o === it, 'polite', it.es); }));
     }
   } else if (mart.phase === 'polite') {
     martSay('Quiero ' + it.es + '…', 'I want ' + it.en + '…');
     $('martPrompt').textContent = 'Finish it politely — pick the polite words:';
-    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'por favor', 'pay'); }));
+    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'por favor', 'pay', 'por favor'); }));
   } else if (mart.phase === 'pay') {
     martSay('Son ' + ES_NUM[it.price] + ' monedas.', 'That is ' + it.price + ' coins.');
     $('martPrompt').textContent = mart.typed ? 'Type the number you heard (in Spanish):' : 'Tap the number the shopkeeper said:';
-    if (mart.typed) martTypeInput(wrap, ES_NUM[it.price], v => martAnswer(norm(v) === norm(ES_NUM[it.price]), 'thanks'));
+    if (mart.typed) martTypeInput(wrap, ES_NUM[it.price], v => martAnswer(norm(v) === norm(ES_NUM[it.price]), 'thanks', ES_NUM[it.price]));
     else {
       const nums = new Set([it.price]); while (nums.size < 4) nums.add(1 + Math.floor(Math.random() * 6));
-      shuffle([...nums]).forEach(n => martChoiceBtn(wrap, ES_NUM[n], () => { speakWord(ES_NUM[n], { es: true }); martAnswer(n === it.price, 'thanks'); }));
+      shuffle([...nums]).forEach(n => martChoiceBtn(wrap, ES_NUM[n], () => { speakWord(ES_NUM[n], { es: true }); martAnswer(n === it.price, 'thanks', ES_NUM[it.price]); }));
     }
   } else if (mart.phase === 'thanks') {
     martSay('¡Aquí tienes!', 'Here you go!');
     $('martPrompt').textContent = 'Say thank you:';
-    shuffle(['gracias', 'por favor', 'hola', 'adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'gracias', 'done'); }));
+    shuffle(['gracias', 'por favor', 'hola', 'adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); martAnswer(w === 'gracias', 'done', 'gracias'); }));
   }
 }
 function finishMart() {
@@ -5171,7 +5230,7 @@ function openVehicleOrder(def) {
 }
 function closeVehicleOrder() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('martPopup').style.display = 'none'; popupOpen = false; vorder = null; $('martKeeper').textContent = '🧑‍🌾'; }
 function vorderSay(es, en) { vorder.lastEs = es; $('martLine').innerHTML = '<b>' + es + '</b><br><span style="font-size:0.82em;color:#7a6a55">' + en + '</span>'; speakWord(es, { es: true }); }
-function vorderAnswer(correct, next) {
+function vorderAnswer(correct, next, word) {
   if (!vorder.attempted) {
     profile.spanFirstTotal = (profile.spanFirstTotal || 0) + 1;
     profile.spanFirstByGrade = profile.spanFirstByGrade || {}; const bg = profile.spanFirstByGrade; bg[G.grade] = bg[G.grade] || { right: 0, total: 0 }; bg[G.grade].total++;
@@ -5180,7 +5239,7 @@ function vorderAnswer(correct, next) {
   }
   vorder.attempted = true;
   if (correct) {
-    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade }); learnSpanish(word); refreshHUD(); bumpHud('solvedCount');
     vorder.phase = next; vorder.attempted = false;
     if (next === 'done') finishVehicleOrder(); else renderVehicleOrder();
   } else {
@@ -5197,19 +5256,19 @@ function renderVehicleOrder() {
     vorderSay('¡Hola! ¿Qué quieres comprar?', 'Hello! What would you like to buy?');
     $('martGoal').innerHTML = '🛒 Order: ' + def.emoji + ' <b>' + def.name + '</b>';
     $('martPrompt').textContent = vorder.typed ? 'Type its Spanish name:' : 'Tap its Spanish name:';
-    if (vorder.typed) martTypeInput(wrap, es, val => vorderAnswer(norm(val) === norm(es), 'polite'));
+    if (vorder.typed) martTypeInput(wrap, es, val => vorderAnswer(norm(val) === norm(es), 'polite', es));
     else {
       const others = VEHICLES.filter(x => x.id !== def.id).map(x => VEHICLE_ES[x.id]).filter(Boolean); shuffle(others);
-      shuffle([es, others[0], others[1], others[2]]).forEach(o => martChoiceBtn(wrap, o, () => { speakWord(o, { es: true }); vorderAnswer(o === es, 'polite'); }));
+      shuffle([es, others[0], others[1], others[2]]).forEach(o => martChoiceBtn(wrap, o, () => { speakWord(o, { es: true }); vorderAnswer(o === es, 'polite', es); }));
     }
   } else if (vorder.phase === 'polite') {
     vorderSay('Quiero ' + es + '…', 'I want the ' + def.name + '…');
     $('martPrompt').textContent = 'Finish it politely:';
-    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'por favor', 'pay'); }));
+    shuffle(['por favor', 'gracias', 'adiós', 'hola']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'por favor', 'pay', 'por favor'); }));
   } else if (vorder.phase === 'pay') {
     vorderSay('Son ' + def.price + ' monedas. ¿Pagas?', 'That is ' + def.price + ' coins. Will you pay?');
     $('martPrompt').textContent = 'Pay politely:';
-    shuffle(['Sí, gracias', 'No, gracias', 'Hola', 'Adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'Sí, gracias', 'done'); }));
+    shuffle(['Sí, gracias', 'No, gracias', 'Hola', 'Adiós']).forEach(w => martChoiceBtn(wrap, w, () => { speakWord(w, { es: true }); vorderAnswer(w === 'Sí, gracias', 'done', 'gracias'); }));
   }
 }
 function finishVehicleOrder() {
@@ -5220,6 +5279,96 @@ function finishVehicleOrder() {
   $('martPrompt').innerHTML = '¡Buen trabajo! You ordered it in Spanish.';
   const wrap = $('martChoices'); wrap.innerHTML = '';
   martChoiceBtn(wrap, '🚗 Conducir (drive it!)', () => closeVehicleOrder()).style.background = '#3f9d34';
+}
+
+/* ============================ 🏫 LA ESCUELA: the language school — build Spanish sentences ============================
+   The teacher shows a sentence; the child taps the Spanish word-tiles in the right ORDER to build it.
+   Completed sentences join their vocabulary (things they can say). Younger kids get shorter sentences. */
+let school = null;
+const SCHOOL_SENTENCES = [
+  { t: ['Buenos', 'días'], en: 'Good morning', say: 'Buenos días' },
+  { t: ['¿Cómo', 'estás?'], en: 'How are you?', say: '¿Cómo estás?' },
+  { t: ['Yo', 'quiero', 'agua'], en: 'I want water', say: 'Yo quiero agua' },
+  { t: ['Me', 'llamo', 'Ana'], en: 'My name is Ana', say: 'Me llamo Ana' },
+  { t: ['Quiero', 'un', 'helado'], en: 'I want an ice cream', say: 'Quiero un helado' },
+  { t: ['Tú', 'eres', 'mi', 'amigo'], en: 'You are my friend', say: 'Tú eres mi amigo' },
+  { t: ['Yo', 'tengo', 'un', 'gato'], en: 'I have a cat', say: 'Yo tengo un gato' },
+  { t: ['El', 'gato', 'es', 'negro'], en: 'The cat is black', say: 'El gato es negro' },
+  { t: ['¿Dónde', 'está', 'la', 'playa?'], en: 'Where is the beach?', say: '¿Dónde está la playa?' },
+  { t: ['Por', 'favor', 'y', 'gracias'], en: 'Please and thank you', say: 'Por favor y gracias' }
+];
+function openSchool() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  const pool = SCHOOL_SENTENCES.filter(s => G.grade >= 4 ? true : s.t.length <= 3);
+  school = { list: shuffle(pool.slice()).slice(0, 4), si: 0 };
+  $('martHeading').textContent = '🏫 La Escuela'; $('martSub').textContent = 'Language School — build the sentence!';
+  $('martKeeper').textContent = '🧑‍🏫';
+  $('martPopup').style.display = 'flex';
+  renderSchool();
+}
+function closeSchool() { try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('martPopup').style.display = 'none'; popupOpen = false; school = null; $('martKeeper').textContent = '🧑‍🌾'; }
+function renderSchool() {
+  if (!school) return;
+  const wrap = $('martChoices'); wrap.innerHTML = ''; $('martMsg').textContent = '';
+  if (school.si >= school.list.length) { finishSchool(); return; }
+  const s = school.list[school.si];
+  if (!school.tiles) { school.tiles = s.t.map((w, i) => ({ w, i })); shuffle(school.tiles); school.built = []; school.missed = false; }
+  school.lastSay = s.say;
+  $('martLine').innerHTML = '<b>' + s.say + '</b><br><span style="font-size:0.82em;color:#7a6a55">' + s.en + '</span>';
+  speakWord(s.say, { es: true });
+  $('martSay').onclick = () => { Sound.click(); speakWord(s.say, { es: true }); };
+  $('martGoal').innerHTML = '🧩 Build: <b>' + s.en + '</b>';
+  $('martPrompt').textContent = 'Tap the words in the right order:';
+  const builtDiv = document.createElement('div');
+  builtDiv.style.cssText = 'min-height:34px;background:#EAF2FB;border:2px dashed #B8D2EC;border-radius:10px;padding:8px;margin-bottom:8px;font-size:18px;font-weight:800;color:#2E5E8C';
+  builtDiv.textContent = school.built.join(' ') || '…';
+  wrap.appendChild(builtDiv);
+  const tilesRow = document.createElement('div');
+  tilesRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center';
+  school.tiles.forEach(tile => {
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.cssText = 'font-size:17px;padding:8px 13px;width:auto';
+    b.textContent = tile.w;
+    if (tile.placed) { b.disabled = true; b.style.opacity = '0.35'; }
+    b.onclick = () => schoolTap(tile);
+    tilesRow.appendChild(b);
+  });
+  wrap.appendChild(tilesRow);
+}
+function schoolTap(tile) {
+  if (!school || tile.placed) return;
+  const need = school.target_ = school.list[school.si].t[school.built.length];
+  if (tile.w === need) {
+    tile.placed = true; school.built.push(tile.w); speakWord(tile.w, { es: true });
+    const s = school.list[school.si];
+    if (school.built.length === s.t.length) {                       // sentence complete!
+      Sound.correct(); G.solved++; recordSolve({ skill: 'spanish', level: G.grade });
+      learnSpanish(norm(s.say), s.en);                              // the whole sentence becomes something they can say
+      s.t.forEach(w => { const k = norm(w); if (ES_EN[k]) learnSpanish(k); });   // plus any known content words
+      profile.spanFirstTotal = (profile.spanFirstTotal || 0) + 1;
+      profile.spanFirstByGrade = profile.spanFirstByGrade || {}; const bg = profile.spanFirstByGrade; bg[G.grade] = bg[G.grade] || { right: 0, total: 0 }; bg[G.grade].total++;
+      if (!school.missed) { profile.spanFirstRight = (profile.spanFirstRight || 0) + 1; bg[G.grade].right++; }
+      profileDirty = true; saveProfile(); refreshHUD(); bumpHud('solvedCount');
+      $('martMsg').style.color = '#2f8a52'; $('martMsg').textContent = '✓ ¡Muy bien! (' + s.en + ')';
+      school.si++; school.tiles = null;
+      setTimeout(renderSchool, 1150);
+    } else { renderSchool(); }
+  } else {
+    Sound.wrong(); $('martMsg').style.color = '#c0392b'; $('martMsg').textContent = '🤔 Not that one yet — listen again!';
+    speakWord(school.lastSay, { es: true });
+    if (!school.missed) { school.missed = true; recordWrong({ skill: 'spanish', level: G.grade }); }
+  }
+}
+function finishSchool() {
+  const reward = 8 + G.grade * 2;
+  G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  $('martLine').innerHTML = '<b>¡Excelente trabajo!</b><br><span style="font-size:0.82em;color:#7a6a55">Excellent work!</span>';
+  speakWord('¡Excelente trabajo!', { es: true });
+  $('martGoal').innerHTML = '🎓 ¡Muy bien!';
+  $('martPrompt').innerHTML = '🪙 +' + reward + ' • You built sentences in Spanish!';
+  const wrap = $('martChoices'); wrap.innerHTML = '';
+  martChoiceBtn(wrap, '📒 Ver mi vocabulario', () => openVocab()).style.background = '#FCE9C8';
+  martChoiceBtn(wrap, 'Adiós (Done)', () => closeSchool());
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
@@ -5506,9 +5655,41 @@ function buildBoatShop(g) {                    // Stack Barcos — beach shack s
   S.position.set(BOAT_SHOP_POS.x, 0, BOAT_SHOP_POS.z); S.rotation.y = 0.5;
   g.add(S);
 }
+function buildLaEscuela(g) {                    // La Escuela — a sunny Spanish-style schoolhouse
+  const S = new THREE.Group();
+  const WALL = 0xF3E0C0, TRIM = 0xF5EFE2, ROOF = 0xC2603A, DOOR = 0x6E4630, GOLD = 0xC9A24A;
+  box(S, 4.0, 0.16, 3.2, 0xCBB89A, 0, 0.08, 0);                    // base
+  box(S, 3.6, 2.6, 0.16, WALL, 0, 1.4, -1.5);                      // back wall
+  box(S, 0.16, 2.6, 3.0, WALL, -1.78, 1.4, 0); box(S, 0.16, 2.6, 3.0, WALL, 1.78, 1.4, 0);  // sides
+  box(S, 3.6, 0.5, 0.16, WALL, -0.0, 2.4, 1.5);                    // front header above the door
+  box(S, 1.0, 1.9, 0.1, DOOR, 0, 1.05, 1.5);                       // door
+  box(S, 1.0, 1.0, 0.06, 0xBFE3F2, -1.1, 1.5, 1.5); box(S, 1.0, 1.0, 0.06, 0xBFE3F2, 1.1, 1.5, 1.5);  // windows
+  box(S, 1.06, 0.08, 0.07, TRIM, -1.1, 2.02, 1.52); box(S, 1.06, 0.08, 0.07, TRIM, 1.1, 2.02, 1.52);  // window trim
+  // terracotta tiled gable roof
+  const sl = box(S, 0.2, 2.0, 3.6, ROOF, -0.9, 3.1, 0); sl.rotation.z = -0.95;
+  const sr = box(S, 0.2, 2.0, 3.6, ROOF, 0.9, 3.1, 0); sr.rotation.z = 0.95;
+  box(S, 0.24, 0.24, 3.7, 0x8a4329, 0, 3.78, 0);                   // ridge
+  // a little bell tower
+  box(S, 0.7, 0.7, 0.7, TRIM, 0, 3.7, 0.6); box(S, 0.5, 0.4, 0.1, 0x6E4630, 0, 3.9, 0.95);
+  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 0.2, 10), mat(GOLD)); bell.position.set(0, 3.85, 0.95); S.add(bell);
+  // bilingual sign
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 96;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#C2603A'; c.fillRect(0, 0, 320, 96); c.strokeStyle = '#F5EFE2'; c.lineWidth = 6; c.strokeRect(5, 5, 310, 86);
+  c.fillStyle = '#FFFFFF'; c.textAlign = 'center'; c.font = 'bold 34px Georgia, serif'; c.textBaseline = 'middle';
+  c.fillText('🏫 LA ESCUELA', 160, 32);
+  c.fillStyle = '#FCE9C8'; c.font = 'bold 19px Georgia, serif'; c.fillText('Language School', 160, 66);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.84, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.42, 1.6); S.add(sign);
+  // a flag of letters (ABC) by the door
+  box(S, 0.06, 1.4, 0.06, 0x8a8f96, -1.55, 1.1, 1.7); box(S, 0.5, 0.34, 0.04, 0xE0B23A, -1.28, 1.7, 1.7);
+  S.position.set(SCHOOL_POS.x, 0, SCHOOL_POS.z); S.rotation.y = 0.2;
+  g.add(S);
+}
 function buildBeachDecor(g) {
   buildSpanishMart(g);
   buildBoatShop(g);
+  buildLaEscuela(g);
   buildDock(g);
   const ocean = new THREE.Mesh(new THREE.CircleGeometry(80, 48), new THREE.MeshLambertMaterial({ color: 0x2FA8D8 }));
   ocean.rotation.x = -Math.PI / 2; ocean.position.y = -0.12; g.add(ocean);                          // sea around the sandy island
@@ -8227,6 +8408,7 @@ addEventListener('keydown', e => {
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
+    else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -8517,7 +8699,9 @@ $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
-$('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else closeMart(); };
+$('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else if (school) closeSchool(); else closeMart(); };
+$('vocabBtn').onclick = () => { Sound.click(); openVocab(); };
+$('vocabClose').onclick = () => { Sound.click(); closeVocab(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
@@ -8664,6 +8848,7 @@ if (isTouch) {
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
+    else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -9198,6 +9383,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (boatShopDist() < 3.8) {
       hint.textContent = isTouch ? '🚤 Tap ⭐ USE — bikes & boats at Stack Barcos!' : '🚤 Press E — bikes & boats at Stack Barcos!';
+      hint.style.display = 'block';
+    } else if (schoolDist() < 3.8) {
+      hint.textContent = isTouch ? '🏫 Tap ⭐ USE — learn Spanish at La Escuela!' : '🏫 Press E — learn Spanish at La Escuela!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
