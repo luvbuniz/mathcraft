@@ -1812,6 +1812,38 @@ function addEyes(head, color, z) {
   box(head, 0.08, 0.08, 0.03, color || 0x222222, -0.11, 0.05, z);
   box(head, 0.08, 0.08, 0.03, color || 0x222222, 0.11, 0.05, z);
 }
+/* A bendy mouth + brows on the head front, so the avatar can smile, grin or frown.
+   Returns the pieces so the animation loop can switch expressions (great for selfies). */
+function addFace(head, y, z, color) {
+  const col = color || 0x7a2b2b;
+  const mouth = new THREE.Group(); mouth.position.set(0, y, z);
+  box(mouth, 0.16, 0.04, 0.03, col, 0, 0, 0);                 // mouth centre bar
+  const lc = box(mouth, 0.055, 0.04, 0.03, col, -0.105, 0, 0); // left corner
+  const rc = box(mouth, 0.055, 0.04, 0.03, col, 0.105, 0, 0);  // right corner
+  head.add(mouth);
+  const browL = box(head, 0.1, 0.035, 0.03, 0x4a3326, -0.11, 0.16, z); // brows sit just above the eyes
+  const browR = box(head, 0.1, 0.035, 0.03, 0x4a3326, 0.11, 0.16, z);
+  browL.visible = browR.visible = false;                      // only shown for a frown
+  return { mouth, lc, rc, browL, browR, y };
+}
+function setFaceExpr(face, kind) {
+  if (!face) return;
+  const f = face;
+  if (kind === 'grin') {                                      // big happy selfie smile
+    f.mouth.position.y = f.y - 0.01; f.mouth.scale.set(1.25, 1.6, 1);
+    f.lc.position.y = 0.075; f.rc.position.y = 0.075; f.lc.rotation.z = 0.6; f.rc.rotation.z = -0.6;
+    f.browL.visible = f.browR.visible = false;
+  } else if (kind === 'frown') {
+    f.mouth.position.y = f.y - 0.02; f.mouth.scale.set(1, 1, 1);
+    f.lc.position.y = -0.06; f.rc.position.y = -0.06; f.lc.rotation.z = -0.55; f.rc.rotation.z = 0.55;
+    f.browL.visible = f.browR.visible = true;
+    f.browL.rotation.z = -0.4; f.browR.rotation.z = 0.4;       // angry/sad angled brows
+  } else {                                                    // gentle everyday smile
+    f.mouth.position.y = f.y; f.mouth.scale.set(1, 1, 1);
+    f.lc.position.y = 0.045; f.rc.position.y = 0.045; f.lc.rotation.z = 0.45; f.rc.rotation.z = -0.45;
+    f.browL.visible = f.browR.visible = false;
+  }
+}
 
 /* Each builder returns {group, legs, arms, head} — feet at y=0, faces +Z. */
 /* Four-legged base: horizontal body, head up front, legs at the corners. */
@@ -2585,12 +2617,14 @@ const SKILL_LABELS = {
   reading: 'Reading', spanish: 'Spanish', other: 'Other'
 };
 function recordWrong(eq, fast) {
+  if (typeof player !== 'undefined' && player) player.sadUntil = performance.now() + 1400;   // a quick frown
   profile.totalWrong = (profile.totalWrong || 0) + 1;
   if (eq) { const op = eq.skill || 'other'; profile.byOpWrong[op] = (profile.byOpWrong[op] || 0) + 1; }
   if (fast) profile.fastWrong = (profile.fastWrong || 0) + 1;   // a quick wrong tap = a likely guess
   profileDirty = true;
 }
 function recordSolve(eq) {
+  if (typeof player !== 'undefined' && player) player.happyUntil = performance.now() + 1500;   // a happy grin
   profile.totalSolved++;
   const today = new Date().toISOString().slice(0, 10);        // effort over time
   profile.byDay[today] = (profile.byDay[today] || 0) + 1;
@@ -4823,6 +4857,12 @@ function toggleBedRest() {
 function setAvatar(index) {
   if (player.avatar) scene.remove(player.avatar);
   const data = AVATARS[index].build();
+  // give the avatar an expressive face on its front (best seen in selfie mode).
+  // bipeds have a flat face + arms; quads get a smaller mouth on the muzzle.
+  data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
+  setFaceExpr(data.face, 'smile');
+  // remember each arm's resting pose so we can return to it after a wave
+  if (data.arms) data.armRest = data.arms.map(a => ({ x: a.rotation.x, z: a.rotation.z }));
   player.avatar = data.group;
   player.avatarData = data;
   applyHeadwear();
@@ -5104,6 +5144,7 @@ function updatePlayer(dt) {
     } else {
       d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
       d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7;
+      d.arms[0].rotation.z = 0; d.arms[1].rotation.z = 0;
     }
   } else if (d.dancer) {                                               // unicorn prances & twirls
     d.legs[0].rotation.x = -0.8; d.legs[1].rotation.x = -0.5;
@@ -5111,7 +5152,28 @@ function updatePlayer(dt) {
     av.rotation.y += Math.sin(t * 2) * 0.15;
   } else {
     d.legs.forEach(l => l.rotation.x *= 0.8);
-    d.arms.forEach(arm => arm.rotation.x *= 0.8);
+    if (d.arms && d.arms.length >= 2) {                                // gentle breathing arm-sway so they look alive
+      d.arms[0].rotation.x = Math.sin(t * 1.6) * 0.08;
+      d.arms[1].rotation.x = -Math.sin(t * 1.6) * 0.08;
+      d.arms[0].rotation.z *= 0.8; d.arms[1].rotation.z *= 0.8;
+    }
+  }
+  // expression: happy by default, a big grin for selfies/celebrations, a frown when something went wrong
+  const nowMs = performance.now();
+  let expr = 'smile';
+  if (player.sadUntil && nowMs < player.sadUntil) expr = 'frown';
+  else if (G.selfie || (player.happyUntil && nowMs < player.happyUntil)) expr = 'grin';
+  if (d.face) setFaceExpr(d.face, expr);
+  // selfie pose: wave a raised hand (bipeds) or bob the head (quads) when standing still
+  if (G.selfie && !moving) {
+    if (d.arms && d.arms.length >= 2) {
+      d.arms[1].rotation.x = -2.5;                                     // right arm up
+      d.arms[1].rotation.z = -0.5 + Math.sin(t * 7) * 0.4;             // wave hello!
+      d.arms[0].rotation.x = Math.sin(t * 1.6) * 0.06;
+    }
+    if (d.head) d.head.rotation.z = Math.sin(t * 3) * 0.07;            // cheeky head tilt
+  } else if (d.head) {
+    d.head.rotation.z *= 0.8;
   }
 
   // camera
