@@ -1128,8 +1128,8 @@
       and any new worlds we add later.
     </p>
     <div style="display:flex; flex-direction:column; gap:8px; margin:12px 0; text-align:left">
-      <div class="unlockPerk">🏘️ <b>Reading Town</b> — reading &amp; grammar</div>
-      <div class="unlockPerk">🏖️ <b>Spanish Beach</b> — beginner Spanish</div>
+      <div class="unlockPerk">🏘️ <b>Reading Town</b> — reading &amp; grammar <span style="color:#2f8a52; font-weight:700">• Open now!</span></div>
+      <div class="unlockPerk">🏖️ <b>Spanish Beach</b> — beginner Spanish <span style="color:#b5832a; font-weight:700">• Coming soon</span></div>
       <div class="unlockPerk">✨ All future worlds &amp; updates</div>
     </div>
     <button id="unlockBuyBtn">Unlock everything — $4.99 once</button>
@@ -2244,8 +2244,8 @@ const G = {
 const WORLDS = {
   meadow: { id: 'meadow', name: 'Math Meadow',    emoji: '🌳', subject: 'math',    chip: 'Math', free: true,
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
-  city:   { id: 'city',   name: 'Reading Town',   emoji: '🏘️', subject: 'reading', chip: 'Reading', comingSoon: true,
-            sky: 0xAFC4DC, fog: 0xC4D4E6, ground: [0x9aa3ad, 0x8d96a1, 0xa6afb9] },
+  city:   { id: 'city',   name: 'Reading Town',   emoji: '🏘️', subject: 'reading', chip: 'Reading',
+            sky: 0x9FC6E8, fog: 0xC2DCF0, ground: [0x86C05A, 0x79B24E, 0x93C970] },
   beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] }
 };
@@ -2296,7 +2296,7 @@ function beginPurchase() {
     if (new URLSearchParams(location.search).get('unlocked') === '1') {
       localStorage.setItem(UNLOCK_KEY, '1');
       history.replaceState(null, '', location.pathname + location.hash);
-      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 Thank you! The full game is unlocked. Enjoy Reading Town & Spanish Beach!', 4500); }, 700));
+      addEventListener('load', () => setTimeout(() => { if (typeof toast === 'function') toast('🎉 Thank you! The full game is unlocked. Explore 🏘️ Reading Town now — 🏖️ Spanish Beach is coming soon!', 4500); }, 700));
     }
   } catch (e) {}
 })();
@@ -2576,7 +2576,7 @@ function doUnlock() {
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
-  toast('🎉 Full game unlocked! Reading Town and Spanish Beach are open — find a 🌀 portal to visit them!', 4500);
+  toast('🎉 Full game unlocked! 🏘️ Reading Town is open — find a 🌀 portal to visit. 🏖️ Spanish Beach is coming soon!', 4500);
   if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
 }
 /* reflect lock state on the homepage world picker */
@@ -3544,33 +3544,44 @@ const CITY_PALETTE = [
   [0x6b7280, 0xffe9a0], [0x7c4a3a, 0xffd27a], [0x46637e, 0xbfe6ff],
   [0x8a8f98, 0xfff1c2], [0x3f5a52, 0xcfeede], [0x5b5560, 0xffe0b0]
 ];
-function buildCityDecor(g) {
-  const N = 40;
+/* Reading Town = a friendly SUBURBAN town — kids build their own house among cosy houses & trees */
+function decoTree(g, x, z, s) {
+  s = s || 1;
+  box(g, 0.42 * s, 2.0 * s, 0.42 * s, 0x7a5230, x, 1.0 * s, z);                 // trunk
+  const greens = [0x4f9a37, 0x5BA84F, 0x3d8b41, 0x66B843];
+  const cg = greens[(Math.random() * greens.length) | 0];
+  box(g, 1.9 * s, 1.4 * s, 1.9 * s, cg, x, 2.4 * s, z);                         // round canopy
+  box(g, 1.35 * s, 1.2 * s, 1.35 * s, cg, x, 3.25 * s, z);
+}
+function suburbHouse(g, x, z, faceAng) {
+  const walls = [0xF3E2C7, 0xF0D7D0, 0xD9E6F2, 0xE7EFD8, 0xF7E9CF, 0xEAD9EC, 0xFBEAC8];
+  const roofs = [0x9E5B4A, 0x6E7F9A, 0x7E6A52, 0x5E8A6A, 0xA86B5A, 0x88566F];
+  const wall = walls[(Math.random() * walls.length) | 0], roof = roofs[(Math.random() * roofs.length) | 0];
+  const h = new THREE.Group();
+  const w = 3.4 + Math.random() * 1.4, d = 3.0 + Math.random() * 1.0, wallH = 2.2 + Math.random() * 0.9, k = w / 3.5;
+  box(h, w, wallH, d, wall, 0, wallH / 2, 0);                                   // house body
+  const sl = box(h, 0.18, 2.0 * k, d + 0.4, roof, -0.85 * k, wallH + 0.5 * k, 0); sl.rotation.z = -1.039;  // peaked roof
+  const sr = box(h, 0.18, 2.0 * k, d + 0.4, roof, 0.85 * k, wallH + 0.5 * k, 0); sr.rotation.z = 1.039;
+  box(h, 0.24, 0.24, d + 0.5, 0x4a3a2a, 0, wallH + 1.02 * k, 0);                // ridge beam
+  box(h, 0.66, 1.15, 0.08, 0x8a5c33, 0, 0.58, d / 2 + 0.03);                    // front door
+  box(h, 0.7, 0.7, 0.06, 0xBFE3F2, -w * 0.27, wallH * 0.62, d / 2 + 0.03);      // window L
+  box(h, 0.7, 0.7, 0.06, 0xBFE3F2, w * 0.27, wallH * 0.62, d / 2 + 0.03);       // window R
+  box(h, 0.78, 0.06, 0.1, 0xFFFFFF, -w * 0.27, wallH * 0.62 - 0.4, d / 2 + 0.05); // window boxes
+  box(h, 0.78, 0.06, 0.1, 0xFFFFFF, w * 0.27, wallH * 0.62 - 0.4, d / 2 + 0.05);
+  if (Math.random() < 0.5) box(h, 0.34, 0.95, 0.34, 0xB23A2E, w * 0.3, wallH + 0.7 * k, -d * 0.22);   // chimney
+  h.position.set(x, 0, z); h.rotation.y = faceAng; g.add(h);
+}
+function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring
+  const N = 18;
   for (let i = 0; i < N; i++) {
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.05;
-    const r = 24.5 + Math.random() * 11;                 // varied distance — a layered skyline
-    const w = 2.2 + Math.random() * 2, d = 2.2 + Math.random() * 2;
-    let h = 5 + Math.random() * 12;
-    if (Math.random() < 0.14) h += 4 + Math.random() * 7;            // a few towers stand tall
-    const [body, lit] = CITY_PALETTE[i % CITY_PALETTE.length];
-    const bx = Math.cos(ang) * r, bz = Math.sin(ang) * r;
-    const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ map: cityTexture(body, lit) }));
-    tower.position.set(bx, h / 2, bz); tower.rotation.y = ang;
-    g.add(tower);
-    const top = Math.random();
-    if (top < 0.28) {                                                 // stepped setback + antenna
-      box(g, w * 0.62, 1.4 + Math.random() * 1.8, d * 0.62, body, bx, h + 0.7, bz);
-      box(g, 0.1, 1.2 + Math.random(), 0.1, 0xcfd3d9, bx, h + 2.2, bz);
-    } else if (top < 0.5) {                                           // rooftop water tower (NYC classic)
-      box(g, 1.0, 0.5, 1.0, 0x4a3a2a, bx, h + 0.25, bz);
-      const wt = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.85, 8), mat(0x8a5c33));
-      wt.position.set(bx, h + 0.9, bz); g.add(wt);
-      box(g, 0.84, 0.3, 0.84, 0x6d4326, bx, h + 1.45, bz);
-    } else if (top < 0.72) {                                          // thin spire / antenna
-      box(g, 0.12, 2 + Math.random() * 3, 0.12, 0xcfd3d9, bx, h + 1.4, bz);
-    } else {                                                          // flat parapet roof
-      box(g, w * 0.96, 0.4, d * 0.96, body, bx, h + 0.2, bz);
-    }
+    const r = 27 + Math.random() * 5;
+    suburbHouse(g, Math.cos(ang) * r, Math.sin(ang) * r, Math.atan2(-Math.cos(ang), -Math.sin(ang)));   // face the town center
+    if (Math.random() < 0.7) decoTree(g, Math.cos(ang + 0.05) * (r - 3.5), Math.sin(ang + 0.05) * (r - 3.5));
+  }
+  for (let i = 0; i < 12; i++) {              // trees dotted on the lawn just past the build area
+    const ang = Math.random() * Math.PI * 2, r = 25.5 + Math.random() * 1.5;
+    decoTree(g, Math.cos(ang) * r, Math.sin(ang) * r, 0.85 + Math.random() * 0.3);
   }
 }
 function buildPalm(g, x, z, lean) {
