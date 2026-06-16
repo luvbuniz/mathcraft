@@ -7995,6 +7995,18 @@ function updatePets(dt, now) {
     petLegsRest(p);                                                          // legs settle unless a walk step moves them
     if (p.mode !== 'eat') { m.rotation.x += (0 - m.rotation.x) * 0.2; if (p.head) p.head.position.y += (p.headY - p.head.position.y) * 0.3; }
 
+    if (p.mode === 'ride') {                                                  // riding along in your vehicle 🚗
+      const a = activeCarObj();
+      if (a && a.spawned) {
+        const v = a.group, ang = a.yaw + Math.PI, oz = -0.4;                  // sit toward the back / truck bed
+        m.position.set(v.position.x + Math.sin(ang) * oz, v.position.y + 0.78, v.position.z + Math.cos(ang) * oz);
+        m.rotation.set(0, ang, 0); m.scale.set(1, 1, 1);
+        if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 6) * 0.3;          // happy wag
+        p.f.x = Math.floor(m.position.x); p.f.z = Math.floor(m.position.z);
+        continue;
+      } else { p.mode = 'walk'; p.timer = 0; m.position.y = p.baseY; }        // car's gone → hop out
+    }
+
     if (p.mode === 'sleep') {
       const bed = nearestPetTarget('petbed', m.position.x, m.position.z, false);
       if (bed && bed.dist > 0.45) {                                          // pad over to the bed first
@@ -8078,6 +8090,8 @@ function openPetMenu(pet) {
   const modes = pet.kind === 'dog'
     ? [['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
     : [['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
+  const ride = activeCarObj();
+  if (ride && ride.spawned) modes.push(['ride', '🚗 Ride along']);            // hop in your vehicle!
   const wrap = $('petModes'); wrap.innerHTML = '';
   modes.forEach(([m, label]) => {
     const b = document.createElement('button');
