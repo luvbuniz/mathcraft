@@ -290,9 +290,9 @@
   #homeBtn { top:114px; }
   #saveBtn { top:166px; }
   #invBtn  { top:218px; }
-  #questBtn { top:270px; }
-  #photoBtn { top:322px; }
-  #cursorBtn { top:374px; font-size:16px; font-weight:bold; }
+  #questBtn { top:270px; display:none; }   /* gemstone quests paused for now (keeps coins, just hides the board) */
+  #photoBtn { top:270px; }
+  #cursorBtn { top:322px; font-size:16px; font-weight:bold; }
   #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
     padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
   @keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
@@ -2327,7 +2327,7 @@ const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🛒 Stack Mart — the general store
   blocks: 'build', powerBlocks: 'build', door: 'build', window: 'build', roof: 'build',
-  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear', treasuremap: 'gear',
+  ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',   // treasuremap removed: gemstone quests are paused for now
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
   petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets',
   usahat: 'july4', flag: 'july4', bunting: 'july4', bbq: 'july4', hotdog: 'july4', sausage: 'july4', ribs: 'july4', corn: 'july4', sparkler: 'july4', fireworks: 'july4',
