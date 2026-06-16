@@ -2792,6 +2792,18 @@ function openTravel() {
   $('travelPopup').style.display = 'flex';
 }
 function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
+/* ---- a road out of town: drive/walk to the edge sign to travel (portal still works too) ---- */
+const ROAD_DEST = { meadow: 'city', city: 'meadow' };     // Spanish Beach is benched, so no road there yet
+const ROAD_EXIT = { x: 21, z: 4 };
+function roadExitDist() { return (G.running && ROAD_DEST[G.world]) ? Math.hypot(player.pos.x - ROAD_EXIT.x, player.pos.z - ROAD_EXIT.z) : 999; }
+let roadTraveling = false;
+function travelRoad() {
+  const dest = ROAD_DEST[G.world]; if (!dest || roadTraveling) return;
+  roadTraveling = true;
+  if (player.driving) toggleDrive();                       // park the car (it comes with you — it's yours)
+  travelToWorld(dest);
+  setTimeout(() => { roadTraveling = false; }, 1500);
+}
 function travelToWorld(id) {
   if (!WORLDS[id] || id === G.world) { closeTravel(); return; }
   if (worldComingSoon(id)) { closeTravel(); comingSoonNote(id); return; }   // not ready yet → tease it
@@ -5640,6 +5652,7 @@ function buildPostOffice(g) {                 // Reading Town's Spelling-Bee pos
   P.position.set(9, 0, -15); g.add(P);                       // east end of the high-street row, facing the street
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
+  buildRoad(g, 'meadow');
   buildLibrary(g);
   buildPostOffice(g);
   buildHighStreetArch(g);
@@ -5784,7 +5797,34 @@ function buildBeachDecor(g) {
   sun.position.set(-28, 16, -58); g.add(sun);
 }
 /* Math Meadow gets a countryside feel: rolling green hills on the horizon */
+function buildRoad(g, destId) {                // a paved road leading off the east edge to the next town
+  const R = new THREE.Group();
+  const ROAD = 0x6e7378, LINE = 0xd9cf86;
+  for (let x = 9; x <= 24; x++) {
+    box(R, 1.0, 0.06, 3.0, ROAD, x, 0.04, 4);
+    if (x % 2 === 0) box(R, 0.5, 0.07, 0.18, LINE, x, 0.06, 4);   // dashed center line
+  }
+  const dest = WORLDS[destId];
+  box(R, 0.16, 1.9, 0.16, 0x6d4326, 15.6, 0.95, 6.2);            // signpost
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128; const c = cv.getContext('2d');
+  c.fillStyle = '#2E7D46'; c.fillRect(0, 0, 256, 128); c.strokeStyle = '#FFFFFF'; c.lineWidth = 6; c.strokeRect(6, 6, 244, 116);
+  c.fillStyle = '#FFFFFF'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 30px sans-serif';
+  c.fillText(dest.name + ' →', 128, 42);
+  c.font = 'bold 18px sans-serif'; c.fillStyle = '#CFE8D6'; c.fillText('🏖️ Spanish Beach', 128, 82);
+  c.font = 'bold 13px sans-serif'; c.fillStyle = '#a9d3b6'; c.fillText('(Coming Soon)', 128, 104);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.1, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(15.6, 1.7, 6.2); sign.rotation.y = -0.5; R.add(sign);
+  box(R, 0.3, 3.0, 0.3, 0x8a5c33, 23, 1.5, 2.5); box(R, 0.3, 3.0, 0.3, 0x8a5c33, 23, 1.5, 5.5);   // gate posts at the town limits
+  box(R, 0.42, 0.42, 3.4, 0x6d4326, 23, 3.0, 4);                  // gate beam
+  const cv2 = document.createElement('canvas'); cv2.width = 256; cv2.height = 56; const c2 = cv2.getContext('2d');
+  c2.fillStyle = '#8a5c33'; c2.fillRect(0, 0, 256, 56); c2.fillStyle = '#FFF3D6'; c2.font = 'bold 24px Georgia, serif'; c2.textAlign = 'center'; c2.textBaseline = 'middle';
+  c2.fillText('🛣️ ' + dest.name, 128, 28);
+  const banner = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.6, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv2) }));
+  banner.position.set(23, 3.4, 4); banner.rotation.y = -Math.PI / 2; R.add(banner);
+  g.add(R);
+}
 function buildMeadowDecor(g) {
+  buildRoad(g, 'city');
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
   // a ring of overlapping rolling hills sitting ON the far ground, their bases sunk
   // below the skirt so only the rounded tops show — a soft ridge that fades into the haze.
@@ -8558,7 +8598,8 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyE') {
-    if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
+    if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
+    else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
     else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
     else if (player.sittingChair) { Sound.click(); toggleSit(); }
     else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
@@ -9018,7 +9059,8 @@ if (isTouch) {
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
+    if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
+    else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
     else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
     else if (player.sittingChair) { Sound.click(); toggleSit(); }
     else if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
@@ -9539,7 +9581,11 @@ function loop(now) {
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
     const ns = nearestStation();
-    if (player.driving) {
+    if (roadExitDist() < 3.2) {
+      const dest = WORLDS[ROAD_DEST[G.world]];
+      hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ Press E — take the road to ') + (dest ? dest.name : 'the next town') + '!';
+      hint.style.display = 'block';
+    } else if (player.driving) {
       hint.textContent = isTouch ? '🛻 Steer with the move-circle • Tap ⭐ USE to hop off' : '🛻 Drive with WASD/arrows • Press E to hop off';
       hint.style.display = 'block';
     } else if (ns.dist < 2.6) {
