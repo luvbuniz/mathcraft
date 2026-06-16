@@ -213,6 +213,13 @@
     padding:9px 16px; color:#fff; background:#3f9d34; box-shadow:0 3px 0 #2c6f24; cursor:pointer; min-width:64px; }
   .carGo:active { transform:translateY(2px); box-shadow:0 1px 0 #2c6f24; }
   .carGo:disabled { opacity:.5; box-shadow:0 3px 0 #2c6f24; cursor:default; }
+  .bakeChip { display:inline-block; font-size:24px; padding:5px 9px; margin:3px; border-radius:12px; background:#f3eee6; border:2px solid #e3d7c4; }
+  .bakeChip.now { background:#FFF1D6; border-color:#F0CBA0; transform:scale(1.12); }
+  .bakeChip.done { background:#e2f3e6; border-color:#9bd6a8; }
+  .bakeBtn { font-family:inherit; font-weight:800; font-size:clamp(20px,4vw,28px); min-width:84px; padding:14px 20px; border:none;
+    border-radius:14px; cursor:pointer; color:#7a4a1e; background:linear-gradient(180deg,#FBE7C8,#F3D2A4); box-shadow:0 5px 0 #d9ad74; }
+  .bakeBtn:active { transform:translateY(4px); box-shadow:0 1px 0 #d9ad74; }
+  .bakeBtn.flop { animation:shake .35s; background:linear-gradient(180deg,#f3b0b0,#e98989); }
   .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
   .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
@@ -1142,6 +1149,19 @@
     <div style="font-weight:700; color:#7a6a35; font-size:14px; margin-bottom:4px">🎨 Paint your car</div>
     <div id="motorsColors" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:12px"></div>
     <button id="motorsBuy" class="petBtn" style="font-size:clamp(15px,2.6vw,19px)"></button>
+  </div>
+</div>
+
+<!-- ================= STACK BAKERY (measuring minigame) POPUP ================= -->
+<div class="popup" id="bakePopup">
+  <div class="popupCard" style="text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="bakeClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="bakeTitle" style="color:#B23A6B; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🧁 Stack Bakery</h2>
+    <div style="color:#7a6a35; font-weight:700; font-size:13px; margin-bottom:6px">Measure each thing just right, then set the oven!</div>
+    <div id="bakeTray" style="min-height:40px; margin:6px 0 10px"></div>
+    <div id="bakePrompt" style="font-size:clamp(17px,3vw,22px); color:#34495e; font-weight:bold; background:#FFF6E3; border:3px solid #F0CBA0; border-radius:14px; padding:12px 14px; margin-bottom:10px; line-height:1.3"></div>
+    <div id="bakeChoices" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center"></div>
+    <div id="bakeMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
   </div>
 </div>
 
@@ -3073,6 +3093,7 @@ function applyWorldTheme(worldId) {
   SHOP_POS.x = L.shop.x; SHOP_POS.z = L.shop.z; shopGroup.position.set(L.shop.x, 0, L.shop.z);
   BARN_POS.x = L.barn.x; BARN_POS.z = L.barn.z; barnGroup.position.set(L.barn.x, 0, L.barn.z);
   MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z);
+  if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = (worldId === 'meadow');   // the bakery is a Math Meadow shop
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
 }
 
@@ -3688,6 +3709,127 @@ function syncCars() {
   player.driving = null; Sound.engineStop();
   for (const id in cars) recolorCar(id, carDefColor(id));
   parkActiveCar();
+}
+
+/* ============================ 🧁 STACK BAKERY (Math Meadow): bake a cake by measuring right ============================ */
+const BAKERY_POS = { x: 13, z: 7 };
+function bakeryDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - BAKERY_POS.x, player.pos.z - BAKERY_POS.z) : 999; }
+const bakeryGroup = new THREE.Group();
+{
+  const WALL = 0xFBE3EC, ROOF = 0x9A5A6A, TRIM = 0xFFFFFF, GLASS = 0xCFEAF2, WOOD = 0x8a5c33, AWN = 0xE9637A;
+  box(bakeryGroup, 3.5, 0.14, 3.1, 0x9a948a, 0, 0.07, 0);              // base pad
+  box(bakeryGroup, 3.3, 2.3, 0.16, WALL, 0, 1.22, -1.45);             // back wall
+  box(bakeryGroup, 0.16, 2.3, 3.0, WALL, -1.6, 1.22, 0);             // left wall
+  box(bakeryGroup, 0.16, 2.3, 3.0, WALL, 1.6, 1.22, 0);             // right wall
+  box(bakeryGroup, 1.8, 1.3, 0.06, GLASS, -0.5, 1.2, 1.44);          // shop window (cakes inside)
+  box(bakeryGroup, 1.86, 0.1, 0.08, TRIM, -0.5, 0.52, 1.46); box(bakeryGroup, 1.86, 0.1, 0.08, TRIM, -0.5, 1.86, 1.46);  // window frame
+  box(bakeryGroup, 0.85, 1.8, 0.1, WOOD, 0.95, 0.96, 1.46);          // door
+  box(bakeryGroup, 0.12, 0.12, 0.06, 0xE0C24A, 0.66, 0.96, 1.52);    // door knob
+  for (let i = 0; i < 7; i++) box(bakeryGroup, 0.27, 0.12, 0.66, i % 2 ? AWN : 0xFBE7D6, -1.4 + i * 0.31, 1.94, 1.62);  // striped awning
+  box(bakeryGroup, 3.7, 0.32, 3.4, ROOF, 0, 2.5, 0);                  // roof
+  // sign
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 72;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#FFF6E3'; c.fillRect(0, 0, 256, 72); c.strokeStyle = '#E9637A'; c.lineWidth = 6; c.strokeRect(5, 5, 246, 62);
+  c.fillStyle = '#B23A6B'; c.font = 'bold 30px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('🧁 STACK BAKERY', 128, 38);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.62, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.78, 1.5); bakeryGroup.add(sign);
+  // a giant cupcake on the roof
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.46, 0.5, 12), mat(0xE9A66A)); cup.position.set(1.0, 2.95, 0); bakeryGroup.add(cup);
+  const frost = new THREE.Mesh(new THREE.SphereGeometry(0.46, 12, 10), mat(0xFBD0E2)); frost.scale.y = 0.8; frost.position.set(1.0, 3.4, 0); bakeryGroup.add(frost);
+  box(bakeryGroup, 0.12, 0.18, 0.12, 0xC0392B, 1.0, 3.78, 0);         // cherry on top
+  bakeryGroup.position.set(BAKERY_POS.x, 0, BAKERY_POS.z);
+  scene.add(bakeryGroup);
+}
+// ---- recipe + measurement questions (scaled to grade) ----
+const CAKES = [['🍫🎂', 'Chocolate Cake'], ['🍓🎂', 'Strawberry Cake'], ['🧁', 'Vanilla Cupcakes'], ['🎂', 'Birthday Cake'], ['🥕🎂', 'Carrot Cake']];
+const INGREDIENTS = [['🌾', 'flour'], ['🥛', 'milk'], ['🍬', 'sugar'], ['🥚', 'eggs'], ['🧈', 'butter'], ['🍫', 'cocoa'], ['🫐', 'berries']];
+function bakeOptions(answer) {
+  const opts = new Set([answer]);
+  let guard = 0;
+  while (opts.size < 3 && guard++ < 30) {
+    const d = answer + (Math.random() < 0.5 ? 1 : -1) * (1 + (Math.random() * 2 | 0));
+    if (d > 0 && d !== answer) opts.add(d);
+  }
+  return shuffle([...opts]);
+}
+function bakeStep(grade, ing) {                  // one ingredient → a measurement question
+  const r = Math.random(); let text, answer;
+  if (grade <= 2) {
+    const a = 1 + (Math.random() * 3 | 0), b = 1 + (Math.random() * 3 | 0);
+    text = 'Pour ' + a + ' cups, then ' + b + ' more. How many cups of ' + ing[1] + '?'; answer = a + b;
+  } else if (grade === 3) {
+    const a = 1 + (Math.random() * 4 | 0);
+    text = 'Double the recipe! ' + a + ' cups of ' + ing[1] + ' × 2 = ?'; answer = a * 2;
+  } else {
+    if (r < 0.5) { text = '½ cup + ½ cup of ' + ing[1] + ' = ? cup'; answer = 1; }
+    else { const a = 1 + (Math.random() * 4 | 0); text = 'Recipe makes 6, you want 12: ' + a + ' cups of ' + ing[1] + ' becomes ?'; answer = a * 2; }
+  }
+  return { emoji: ing[0], name: ing[1], text: text, answer: answer, options: bakeOptions(answer) };
+}
+function ovenStep(grade) {
+  let text, answer;
+  if (grade <= 2) { answer = 300 + 25 * (Math.random() * 4 | 0); text = '🔥 Set the oven dial to ' + answer + '°. Which number?'; }
+  else { const base = 300 + 25 * (Math.random() * 3 | 0), d = 25 + 25 * (Math.random() * 2 | 0); text = '🔥 The recipe says ' + base + '°, bake ' + d + '° hotter. Set the oven to ?'; answer = base + d; }
+  const opts = new Set([answer]); let guard = 0;
+  while (opts.size < 3 && guard++ < 30) { const dd = answer + (Math.random() < 0.5 ? 25 : -25) * (1 + (Math.random() * 2 | 0)); if (dd > 0 && dd !== answer) opts.add(dd); }
+  return { emoji: '🔥', name: 'oven', text: text, answer: answer, options: shuffle([...opts]) };
+}
+let bake = null;
+function openBakery() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  const cake = CAKES[Math.random() * CAKES.length | 0];
+  const ings = shuffle(INGREDIENTS.slice()).slice(0, G.grade >= 3 ? 4 : 3);
+  const steps = ings.map(i => bakeStep(G.grade, i)); steps.push(ovenStep(G.grade));
+  bake = { cake: cake, steps: steps, step: 0, made: [] };
+  renderBake();
+  $('bakePopup').style.display = 'flex';
+}
+function closeBakery() { $('bakePopup').style.display = 'none'; popupOpen = false; bake = null; }
+function renderBake() {
+  if (!bake) return;
+  $('bakeTitle').innerHTML = bake.cake[0] + ' ' + bake.cake[1];
+  // progress: ingredients gathered
+  $('bakeTray').innerHTML = bake.steps.map((s, i) =>
+    '<span class="bakeChip' + (i < bake.step ? ' done' : (i === bake.step ? ' now' : '')) + '">' + s.emoji + (i < bake.step ? ' ✓' : '') + '</span>'
+  ).join('');
+  const s = bake.steps[bake.step];
+  $('bakePrompt').textContent = s.text;
+  const wrap = $('bakeChoices'); wrap.innerHTML = '';
+  s.options.forEach(opt => {
+    const b = document.createElement('button'); b.className = 'bakeBtn'; b.textContent = opt;
+    b.onclick = () => bakeAnswer(opt, b);
+    wrap.appendChild(b);
+  });
+  $('bakeMsg').textContent = '';
+}
+function bakeAnswer(opt, btn) {
+  if (!bake) return;
+  const s = bake.steps[bake.step];
+  if (opt === s.answer) {
+    Sound.correct(); G.solved++; recordSolve({ skill: 'measure', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
+    bake.step++;
+    if (bake.step >= bake.steps.length) { finishBake(); return; }
+    $('bakeMsg').style.color = '#2f8a52'; $('bakeMsg').textContent = '✓ Added!';
+    setTimeout(renderBake, 350);
+  } else {
+    Sound.wrong(); btn.classList.add('flop');
+    $('bakeMsg').style.color = '#c0392b'; $('bakeMsg').textContent = '😅 Oops — that\'s not the right amount! Try again.';
+    setTimeout(() => { s.options = shuffle(s.options.slice()); renderBake(); }, 700);
+  }
+}
+function finishBake() {
+  const reward = 8 + G.grade * 2 + bake.steps.length;
+  G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  $('bakeTray').innerHTML = '<div style="font-size:54px">' + bake.cake[0] + '</div>';
+  $('bakePrompt').innerHTML = '🎉 The Baker pulls your <b>' + bake.cake[1] + '</b> out of the oven — perfect!';
+  $('bakeChoices').innerHTML = '<button class="bakeBtn" style="background:#3f9d34;color:#fff" id="bakeAgainBtn">🪙 +' + reward + ' — Bake another!</button>' +
+    '<button class="bakeBtn" id="bakeDoneBtn">Done</button>';
+  $('bakeMsg').textContent = '';
+  $('bakeAgainBtn').onclick = () => { closeBakery(); openBakery(); };
+  $('bakeDoneBtn').onclick = closeBakery;
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
@@ -6442,6 +6584,7 @@ addEventListener('keydown', e => {
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
+    else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -6696,6 +6839,7 @@ $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
+$('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
 $('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
 $('promoBtn').onclick = async () => {
@@ -6837,6 +6981,7 @@ if (isTouch) {
     else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
     else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
+    else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
     else if (nearestChair()) { Sound.click(); toggleSit(); }
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
@@ -7315,6 +7460,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (motorsDist() < 4.0) {
       hint.textContent = isTouch ? '🚗 Tap ⭐ USE — Stack Motors car showroom!' : '🚗 Press E — Stack Motors car showroom!';
+      hint.style.display = 'block';
+    } else if (bakeryDist() < 3.6) {
+      hint.textContent = isTouch ? '🧁 Tap ⭐ USE — bake a cake at Stack Bakery!' : '🧁 Press E — bake a cake at Stack Bakery!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
