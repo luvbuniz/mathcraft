@@ -2564,7 +2564,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -2711,7 +2711,9 @@ const SHOP_ITEMS = [
   { id: 'bathtub',icon: '🛁', name: 'Bathtub', price: 14,      kind: 'many',  desc: 'A cozy bathtub for the bathroom.' },
   { id: 'shower', icon: '🚿', name: 'Shower', price: 12,       kind: 'many',  desc: 'A shower for the bathroom.' },
   { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
-  { id: 'pool',   icon: '🏊', name: 'Swimming Pool', price: 30, kind: 'many', desc: 'A swimmable pool with rippling water — drop it in any open yard and dive in!' },
+  { id: 'pool',     icon: '🏊', name: 'Splash Pool', price: 30,  kind: 'many', desc: 'A swimmable pool with rippling water — drop it in any open yard and dive in! Removes in one tap, all in one piece.' },
+  { id: 'poolfam',  icon: '🏊', name: 'Family Pool', price: 75,  kind: 'many', desc: 'A big swimmable pool — lots more room to splash. The whole thing places & packs up as one item.' },
+  { id: 'poolmega', icon: '🌊', name: 'Mega Pool',   price: 150, kind: 'many', desc: 'The giant one! A huge swimmable pool — the grandest splash in town. Places & packs up as one item.' },
   { id: 'bush',   icon: '🌳', name: 'Leafy Bush', price: 4,    kind: 'many',  desc: 'A round green bush for the garden.' },
   { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
   { id: 'petfood',  icon: '🥫', name: 'Pet Food', price: 4,   kind: 'many',  desc: 'Cat & dog food. Pour it into a food bowl, then a hungry pet will come eat!' },
@@ -2756,7 +2758,7 @@ const ITEM_CAT = {
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
-  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor'
+  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolmega: 'outdoor'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
@@ -3332,6 +3334,7 @@ function serializeWorld() {
   const placed = [], seen = new Set();
   blocks.forEach((b, k) => {
     if (!b.removable || seen.has(b.mesh.id)) return;
+    if (b.pool) return;   // pools are saved as whole units below, not cell-by-cell
     seen.add(b.mesh.id);
     const [x, y, z] = k.split(',').map(Number);
     if (b.type === 'door' && b.partner) placed.push([x, Math.min(y, Number(b.partner.split(',')[1])), z, 'door', b.rot || 0]);
@@ -3345,6 +3348,7 @@ function serializeWorld() {
     else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind), b.rotY || 0]);
     else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant, b.rotY || 0]);
   });
+  pools.forEach(p => placed.push([p.x0, 0, p.z0, 'pool', POOL_TIERS[p.tier] ? p.tier : 'pool']));   // whole pools
   return placed;
 }
 const SAVE_PREFIX = 'stackadooSave:';
@@ -3463,7 +3467,8 @@ function restoreGame(s) {
     else if (type === 'window') addWindow(x, y, z, detail);
     else if (type === 'roof') addRoof(x, y, z, detail, extra);
     else if (type === 'autoroof') { const d = detail || [2, 2, 1, 'pointed']; spawnAutoRoof(x, y, z, d[0], d[1], d[2], d[3]); }
-    else if (type === 'water') placePoolWater(x, z);
+    else if (type === 'pool') buildPool(detail || 'pool', x, z, true);   // whole pool item
+    else if (type === 'water') placePoolWater(x, z);                     // legacy loose water (old saves)
     else if (type === 'stove') {
       placeFurnitureAt('stove', x, z, null, extra);
       const st = blocks.get(key(x, 0, z));
@@ -3501,6 +3506,7 @@ function resetWorld() {
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   poolWater = [];                                  // pool meshes are removed with the blocks above
+  pools = [];                                      // whole-pool registry, rebuilt on load
   undoStack = [];                                  // fresh undo history per world
   pets.length = 0;
   if (typeof removeQuestGem === 'function') { removeQuestGem(); removeCarriedGem(); }
@@ -3516,7 +3522,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -3700,36 +3706,76 @@ function addBlockMesh(x, y, z, material, type, removable, customMesh) {
 const poolWaterGeo = new THREE.BoxGeometry(1.0, 0.5, 1.0);
 const poolWaterMat = new THREE.MeshLambertMaterial({ color: 0x4fb3e8, emissive: 0x123c5a, transparent: true, opacity: 0.8 });
 let poolWater = [];
-function placePoolWater(x, z) {
+let pools = [];   // every placed pool is ONE whole item: { tier, x0, z0, w, d, cells:[[cx,cz,kind]...] }
+// Pool sizes you can buy & upgrade to. w×d is the inner water; a tile rim wraps around it.
+const POOL_TIERS = {
+  pool:     { name: 'Splash Pool', icon: '🏊', price: 30,  w: 4, d: 3 },
+  poolfam:  { name: 'Family Pool', icon: '🏊', price: 75,  w: 6, d: 4 },
+  poolmega: { name: 'Mega Pool',   icon: '🌊', price: 150, w: 8, d: 5 },
+};
+const POOL_KEYS = Object.keys(POOL_TIERS);
+function placePoolWater(x, z, poolRef) {
   if (blocks.has(key(x, 0, z))) return;
   const mesh = new THREE.Mesh(poolWaterGeo, poolWaterMat);
   mesh.position.set(x + 0.5, 0.3, z + 0.5);
   addBlockMesh(x, 0, z, null, 'water', true, mesh);
+  if (poolRef) blocks.get(key(x, 0, z)).pool = poolRef;   // tag so the whole pool removes as one item
   poolWater.push({ mesh, x, z, baseY: 0.3 });
 }
-// drop a standalone swimming pool (a tile rim + animated water) at the tapped spot
-function placePoolAt(x, z) {
-  const pw = 3, pd = 2;
-  for (let cx = x - 1; cx <= x + pw; cx++) for (let cz = z - 1; cz <= z + pd; cz++) {
-    if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) { toast('🌍 Too close to the edge for a pool!', 2000); return false; }
-    if (blocks.has(key(cx, 0, cz))) { toast('🏊 A pool needs a clear open patch — find a bigger empty spot!', 2800); return false; }
-    if (inShopZone(cx, cz) || (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz))) { toast('🏊 Too close to a building — pick an open yard!', 2400); return false; }
-    if (cellOverlapsPlayer(cx, 0, cz)) { toast('🙂 Step back a little first!', 1500); return false; }
+// Build a whole pool (tile rim + swimmable water) as ONE item. x0,z0 = front-left of the water.
+// force=true skips the clearance checks (used when restoring a saved world).
+function buildPool(tier, x0, z0, force) {
+  const t = POOL_TIERS[tier] || POOL_TIERS.pool;
+  const w = t.w, d = t.d;
+  if (!force) {
+    for (let cx = x0 - 1; cx <= x0 + w; cx++) for (let cz = z0 - 1; cz <= z0 + d; cz++) {
+      if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) { toast('🌍 Too close to the edge for that pool!', 2200); return null; }
+      if (blocks.has(key(cx, 0, cz))) { toast('🏊 That pool needs a clear open patch — find a bigger empty spot!', 3000); return null; }
+      if (inShopZone(cx, cz) || (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz))) { toast('🏊 Too close to a building — pick an open yard!', 2400); return null; }
+      if (cellOverlapsPlayer(cx, 0, cz)) { toast('🙂 Step back a little first!', 1500); return null; }
+    }
   }
-  for (let cx = x - 1; cx <= x + pw; cx++) for (let cz = z - 1; cz <= z + pd; cz++) {
-    if (cx === x - 1 || cx === x + pw || cz === z - 1 || cz === z + pd) {
+  const p = { tier: POOL_TIERS[tier] ? tier : 'pool', x0, z0, w, d, cells: [] };
+  for (let cx = x0 - 1; cx <= x0 + w; cx++) for (let cz = z0 - 1; cz <= z0 + d; cz++) {
+    if (blocks.has(key(cx, 0, cz))) continue;
+    if (cx === x0 - 1 || cx === x0 + w || cz === z0 - 1 || cz === z0 + d) {
       const mesh = new THREE.Mesh(blockGeo, blockMat(0xEDE8DE)); mesh.position.set(cx + 0.5, 0.5, cz + 0.5);
-      addBlockMesh(cx, 0, cz, null, 'placed', true, mesh); blocks.get(key(cx, 0, cz)).color = 0xEDE8DE;   // tile rim
-    } else placePoolWater(cx, cz);                                                                          // animated, swimmable water
+      addBlockMesh(cx, 0, cz, null, 'placed', true, mesh);
+      const bb = blocks.get(key(cx, 0, cz)); bb.color = 0xEDE8DE; bb.pool = p;   // tile rim
+      p.cells.push([cx, cz, 'rim']);
+    } else { placePoolWater(cx, cz, p); p.cells.push([cx, cz, 'water']); }       // animated, swimmable water
   }
-  Sound.place(); toast('🏊 Splash! Your pool is ready — jump in and swim!', 2600);
+  pools.push(p);
+  return p;
+}
+// drop a whole pool from the backpack at the tapped spot
+function placePoolAt(x, z, tier) {
+  const t = POOL_TIERS[tier] ? tier : 'pool';
+  const p = buildPool(t, x, z);
+  if (!p) return false;
+  Sound.place(); toast('🏊 Splash! Your ' + POOL_TIERS[t].name + ' is ready — jump in and swim!', 2800);
   return true;
+}
+// remove a whole pool as ONE item and give it back to the backpack (no shards left behind)
+function removeWholePool(p) {
+  const idx = pools.indexOf(p); if (idx < 0) return;
+  for (const [cx, cz] of p.cells) {
+    const b = blocks.get(key(cx, 0, cz)); if (!b) continue;
+    scene.remove(b.mesh); blocks.delete(key(cx, 0, cz));
+    if (b.type === 'water') poolWater = poolWater.filter(w => w.mesh !== b.mesh);
+  }
+  pools.splice(idx, 1);
+  const tier = POOL_TIERS[p.tier] ? p.tier : 'pool';
+  G.furniture[tier] = (G.furniture[tier] || 0) + 1;
+  Sound.brk(); refreshHUD();
+  toast('📦 Packed up your ' + POOL_TIERS[tier].name + ' — back in your 🎒!', 2200);
 }
 /* ↩️ Undo — put back the last thing you took apart. Snapshots a block before it's
    removed; undo re-creates it exactly (color, rotation, style, all types). */
 let undoStack = [];
 function captureCell(x, y, z) {
   const b = blocks.get(key(x, y, z)); if (!b || !b.removable) return null;
+  if (b.pool) return null;   // pools are handled as whole items, not single-cell undo
   const t = b.type, s = { t, x, y, z };
   if (t === 'placed') s.color = b.color || 0xC9B79A;
   else if (t === 'window') s.rot = b.rot || 0;
@@ -7203,6 +7249,7 @@ function removePlacedBlock() {
     if (y > bestY || (y === bestY && d < bestDist)) { bk = k; be = b; bestY = y; bestDist = d; }
   });
   if (!bk) return false;
+  if (be.pool) { removeWholePool(be.pool); return true; }   // a pool comes up as ONE whole item
   const [x, y, z] = bk.split(',').map(Number);
   pushUndo(captureCell(x, y, z));
   removeBlockAt(x, y, z);
@@ -7256,9 +7303,9 @@ function placeSelectedAt(x, z, blockY) {
     if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
   }
-  if (slot === 'pool') {
-    if (G.furniture.pool < 1) { toast('🏊 No pools in your 🎒 — buy one at 🏚️ Stack Barn (🌳 Garden)!', 2400); return false; }
-    if (placePoolAt(x, z)) { G.furniture.pool -= 1; refreshHUD(); return true; }
+  if (POOL_KEYS.includes(slot)) {
+    if ((G.furniture[slot] || 0) < 1) { toast('🏊 No ' + POOL_TIERS[slot].name + ' in your 🎒 — buy one at 🏚️ Stack Barn (🌳 Garden)!', 2600); return false; }
+    if (placePoolAt(x, z, slot)) { G.furniture[slot] -= 1; refreshHUD(); return true; }
     return false;
   }
   if (slot === 'garagedoor') {
@@ -8102,7 +8149,7 @@ function buyItem(id) {
     else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
     else if (id === 'garagedoor') { G.garageDoors++; toast('🚙 Garage door in your 🎒! Place it across a 2-wide gap in a wall.', 3400); }
     else if (id === 'roof') { G.furniture.roof += 12; toast('🔺 +12 roof tiles in your 🎒 — enough to roof a house! Tap the top of your walls.', 3200); }
-    else if (id === 'pool') { G.furniture.pool++; toast('🏊 Swimming Pool in your 🎒! Open it (press I), Place it in an open yard, and dive in!', 3600); }
+    else if (POOL_KEYS.includes(id)) { G.furniture[id]++; toast(POOL_TIERS[id].icon + ' ' + POOL_TIERS[id].name + ' in your 🎒! Open it (press I), place it in an open yard, and dive in!', 3600); }
     else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
     if (G.owned[id] || G.coins < item.price) return;
@@ -9471,6 +9518,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
   if (action === 'break') {
     if (!entry) return;
     if (!entry.removable) { toast(entry.type === 'tree' || entry.type === 'leaf' ? '🌳 Trees are friends — build with your own blocks!' : '✨ That one stays put!', 1600); return; }
+    if (entry.pool) { removeWholePool(entry.pool); return; }   // a pool comes up as ONE whole item
     // doors span two cells; find the base cell from the mesh
     let bx, by, bz;
     if (entry.type === 'door') {
@@ -9596,7 +9644,7 @@ function toggleSelfie() {
   toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸!' : '🧍 Back to normal view', 1400);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -9722,7 +9770,9 @@ function renderInv() {
     ['🛁', 'Bathtubs', G.furniture.bathtub, 'bathtub'],
     ['🚿', 'Showers', G.furniture.shower, 'shower'],
     ['🌱', 'Garden Planters', G.furniture.garden, 'garden'],
-    ['🏊', 'Swimming Pools', G.furniture.pool, 'pool'],
+    ['🏊', 'Splash Pools', G.furniture.pool, 'pool'],
+    ['🏊', 'Family Pools', G.furniture.poolfam, 'poolfam'],
+    ['🌊', 'Mega Pools', G.furniture.poolmega, 'poolmega'],
     ['🌳', 'Bushes', G.furniture.bush, 'bush'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
