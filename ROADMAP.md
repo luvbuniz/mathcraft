@@ -215,6 +215,39 @@ Park it until Reading Town proves the "walk-in building + learning quest" model.
 
 ---
 
+## 👪 Accounts & cloud saves (post-launch, the real fix for lost saves)
+
+**The problem today:** saves live only in one browser's `localStorage`. Clear the
+browser, switch tablets, or split www-vs-apex → the world is gone. This is what
+caused the resets (Leo's puppy + coins). Cloud accounts make saves **portable and
+durable** across devices.
+
+**Design principles (don't compromise the trust pitch):**
+- **Parent account, not a kid account.** The grown-up signs in (we already have
+  their email from Stripe); kid profiles are *nicknames under* that account — **no
+  kid email, no kid PII.** Keeps the COPPA-friendly "no data collection" story intact.
+- **Magic-link + Google Sign-In.** No passwords for kids to manage. Offer Google
+  one-tap *and* email magic-link ("tap the link to log in").
+- **Tie it to the existing purchase.** The "Founding Family" unlock is basically an
+  account already — sign-in becomes "restore your unlock + your worlds on any
+  device," which also retires the localStorage / www-vs-apex split-save risk.
+- **Free game stays login-free.** Don't gate Math Meadow behind sign-in (kills the
+  frictionless hook). Cloud save is an opt-in perk for paying/multi-device families;
+  **local-first stays the default**, cloud is a backup layer on top.
+
+**Architecture, when ready:** **Cloudflare Worker + KV/D1** (we're moving to
+Cloudflare anyway) storing each kid's save JSON — it's a tiny blob — keyed to the
+parent account, with Google/magic-link auth. Stays in one ecosystem. (Firebase or
+Supabase also give Google auth out of the box, at the cost of more 3rd-party data.)
+
+**Why it's low-risk to add later:** the save is already a small JSON blob, so "sync
+this blob to the cloud" is an add-on, not a rebuild of the game.
+
+**Stopgap until then:** the one-tap "Save my world" export/backup button (so a fresh
+backup is always two taps away before any update).
+
+---
+
 ## 🏪 Two stores (when there are enough items)
 
 Split Stack Mart into two once the catalog is big enough:
