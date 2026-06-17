@@ -6669,8 +6669,7 @@ function applyHeadwear() {
   if (h) { d.head.add(h); d.headwear = h; }
 }
 
-function collideAxis(axis, delta) {
-  player.pos[axis] += delta;
+function playerBlocked() {
   const half = player.width / 2;
   const minX = Math.floor(player.pos.x - half), maxX = Math.floor(player.pos.x + half);
   const minY = Math.floor(player.pos.y + 0.01), maxY = Math.floor(player.pos.y + player.height - 0.01);
@@ -6678,14 +6677,25 @@ function collideAxis(axis, delta) {
   for (let x = minX; x <= maxX; x++)
     for (let y = minY; y <= maxY; y++)
       for (let z = minZ; z <= maxZ; z++)
-        if (solidAt(x, y, z)) {
-          player.pos[axis] -= delta;
-          if (axis === 'y') {
-            if (delta < 0) player.onGround = true;
-            player.vel.y = 0;
-          }
-          return;
-        }
+        if (solidAt(x, y, z)) return true;
+  return false;
+}
+function collideAxis(axis, delta) {
+  player.pos[axis] += delta;
+  if (playerBlocked()) {
+    // auto-step: when walking into a single-block ledge (a stair, a curb, your own block)
+    // and you were on the ground, hop up onto it instead of stopping — easy stairs!
+    if (axis !== 'y' && player._wasGrounded && player.vel.y <= 0.2) {
+      player.pos.y += 1.02;
+      if (!playerBlocked()) { player.onGround = true; player.vel.y = 0; return; }   // stepped up cleanly
+      player.pos.y -= 1.02;                                                          // no headroom → block normally
+    }
+    player.pos[axis] -= delta;
+    if (axis === 'y') {
+      if (delta < 0) player.onGround = true;
+      player.vel.y = 0;
+    }
+  }
 }
 
 function cellOverlapsPlayer(cx, cy, cz) {
@@ -6913,6 +6923,7 @@ function updatePlayer(dt) {
     }
   }
 
+  player._wasGrounded = player.onGround;   // remember for auto-step (climb a 1-block ledge while grounded)
   player.onGround = false;
   collideAxis('x', player.vel.x * dt);
   collideAxis('z', player.vel.z * dt);
