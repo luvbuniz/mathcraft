@@ -71,8 +71,32 @@ The work is making the level the *source of truth* and surfacing it.
    moment is genuinely motivating for kids (why Minecraft/Roblox feel rewarding).
    The level-up toasts already exist; a visible bar would do a lot.
 
-**Sketch of the build, when ready:** placement → per-subject levels as the source of
-truth → visible XP/level bar + level-up celebration → coins scaled by level reached.
+### 🔐 Secret grade-mapping (the parent selling point)
+
+Each level **secretly maps to a grade band** behind the scenes. Two audiences, one
+system:
+- **Kid-facing = pure fun.** They only ever see "Level 12 ⭐", an XP bar, and
+  level-up confetti. **No grade labels** — a struggling kid never sees a low grade
+  stamped on them; they just watch their level climb. Healthier and more motivating.
+- **Parent-facing = the reveal.** The dashboard translates the earned level into a
+  grade-equivalency: *"working at ≈ Grade 4 level."* Because we capture the kid's
+  **actual grade at placement**, we get the killer line for free:
+  **actual grade vs current working level →** *"🎉 Your 3rd grader is doing
+  4th-grade-level math."* Aspirational, screenshot-worthy, a concrete reason to buy
+  & stay.
+
+**Guardrails:**
+- **Per-subject**, not one global number — "strong reader, building math" is itself a
+  valuable (and honest) parent insight.
+- **Frame as growth, not a scoreboard.** Use "working at ≈ Grade X level" (not a
+  guarantee) and show the line *moving up over weeks* ("grew a grade level in 6
+  weeks" sells harder than a static badge — and avoids competitive-parent stress).
+- Map levels to grade **bands with overlap** so the claim stays defensible.
+
+**Sketch of the build, when ready:** placement (sets actual grade + starting level) →
+per-subject earned levels as the source of truth → visible XP/level bar + level-up
+celebration → coins scaled by level reached → parent dashboard shows grade-equivalency
+("working at ≈ Grade X") and growth over time.
 
 ---
 
