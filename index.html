@@ -1381,20 +1381,24 @@ const Sound = {
   },
   doorOpen()  { this.tone(300, 0.22, 'sine', 0.12, 0, 520); this.noise(0.12, 0.05, 700); },   // soft creak up
   doorClose() { this.tone(520, 0.12, 'sine', 0.13, 0, 240); this.noise(0.1, 0.12, 320, 0.05); }, // gentle thud/click
-  honk()      { this.tone(360, 0.22, 'square', 0.16); this.tone(285, 0.24, 'square', 0.11, 0.02); },
-  // a continuous engine that revs with speed (started on hop-on, stopped on hop-off)
-  engineStart() {
+  honk(p)     { const f = (p && p.horn) || 360; this.tone(f, 0.22, 'square', 0.16); this.tone(f * 0.79, 0.24, 'square', 0.11, 0.02); },
+  // a continuous engine that revs with speed — each vehicle has its own sound profile
+  engineStart(profile) {
     this.init();
     if (!this.ctx || this.engineOsc) return;
     const ctx = this.ctx;
-    this.engineOsc = ctx.createOscillator(); this.engineOsc.type = 'sawtooth'; this.engineOsc.frequency.value = 60;   // main growl
-    this.engineOsc2 = ctx.createOscillator(); this.engineOsc2.type = 'sawtooth'; this.engineOsc2.frequency.value = 90; // detuned body
-    this.engineSub = ctx.createOscillator(); this.engineSub.type = 'triangle'; this.engineSub.frequency.value = 30;   // sub rumble
-    this.engineLP = ctx.createBiquadFilter(); this.engineLP.type = 'lowpass'; this.engineLP.frequency.value = 560; this.engineLP.Q.value = 7;
+    const p = profile || ENGINE_DEFAULT;
+    this.engProfile = p;
+    if (p.silent) return;                          // bikes / sailboats have no motor
+    this.engineOsc = ctx.createOscillator(); this.engineOsc.type = p.wave; this.engineOsc.frequency.value = p.f0;       // main growl
+    this.engineOsc2 = ctx.createOscillator(); this.engineOsc2.type = p.wave; this.engineOsc2.frequency.value = p.f0 * 1.5; // detuned body
+    this.engineSub = ctx.createOscillator(); this.engineSub.type = 'triangle'; this.engineSub.frequency.value = p.f0 * 0.5; // sub rumble
+    this.engineLP = ctx.createBiquadFilter(); this.engineLP.type = 'lowpass'; this.engineLP.frequency.value = p.lp0; this.engineLP.Q.value = 7;
     this.engineGain = ctx.createGain(); this.engineGain.gain.value = 0.0001;
-    // a "chug" LFO modulates the volume so it putters like a real engine firing, faster as it revs
-    this.engineLFO = ctx.createOscillator(); this.engineLFO.type = 'sawtooth'; this.engineLFO.frequency.value = 10;
-    this.engineLFOGain = ctx.createGain(); this.engineLFOGain.gain.value = 0.45;
+    // a "chug" LFO modulates the volume so it putters like a real engine firing — slow & deep for a
+    // diesel truck, fast & smooth for a sports car, slow & BIG for the bumpy monster truck.
+    this.engineLFO = ctx.createOscillator(); this.engineLFO.type = 'sawtooth'; this.engineLFO.frequency.value = p.chug;
+    this.engineLFOGain = ctx.createGain(); this.engineLFOGain.gain.value = p.chugDepth;
     this.engineChug = ctx.createGain(); this.engineChug.gain.value = 1;
     this.engineLFO.connect(this.engineLFOGain); this.engineLFOGain.connect(this.engineChug.gain);
     this.engineOsc.connect(this.engineLP); this.engineOsc2.connect(this.engineLP); this.engineSub.connect(this.engineLP);
@@ -1403,13 +1407,14 @@ const Sound = {
   },
   engineSet(s) {                                   // s = 0..1 (speed); reads mute live
     if (!this.engineGain) return;
-    const t = this.ctx.currentTime, f = 50 + s * 150;
+    const p = this.engProfile || ENGINE_DEFAULT;
+    const t = this.ctx.currentTime, f = p.f0 + s * p.fSpan;
     this.engineOsc.frequency.setTargetAtTime(f, t, 0.06);
     this.engineOsc2.frequency.setTargetAtTime(f * 1.5, t, 0.06);
     this.engineSub.frequency.setTargetAtTime(f * 0.5, t, 0.06);
-    this.engineLFO.frequency.setTargetAtTime(9 + s * 36, t, 0.08);          // putter speeds up with the revs
-    this.engineLP.frequency.setTargetAtTime(420 + s * 1500, t, 0.08);       // engine brightens as it opens up
-    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.045 + s * 0.12), t, 0.08);
+    this.engineLFO.frequency.setTargetAtTime(p.chug + s * p.chug * 2.6, t, 0.08);   // putter speeds up with the revs
+    this.engineLP.frequency.setTargetAtTime(p.lp0 + s * p.lpSpan, t, 0.08);         // engine brightens as it opens up
+    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.04 + s * 0.12) * p.gain, t, 0.08);
   },
   engineStop() {
     if (!this.engineOsc) return;
@@ -4178,7 +4183,7 @@ const VEHICLES = [
   { id: 'jeep',     name: 'Trail SUV',      emoji: '🚙', price: 78, color: 0x4E7B3A, speed: 10, shape: buildJeepShape,        worlds: ['meadow', 'beach'] },
   { id: 'minivan',  name: 'Family Van',     emoji: '🚐', price: 64, color: 0x8FA6BC, speed: 10, shape: buildMinivanShape,     worlds: ['meadow'] },
   { id: 'police',   name: 'Police Cruiser', emoji: '🚓', price: 80, color: 0x1b1f27, speed: 14, shape: buildPoliceShape,      worlds: ['city'] },
-  { id: 'monster',  name: 'Monster Truck',  emoji: '🦖', price: 86, color: 0x6a3fb0, speed: 12, shape: buildMonsterShape,     worlds: ['meadow'] },
+  { id: 'monster',  name: 'Monster Truck',  emoji: '🦖', price: 86, color: 0x6a3fb0, speed: 12, shape: buildMonsterShape,     worlds: ['meadow'], bumpy: true },
   { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'], open: true, seat: [0, 0.62, -0.1] },
   { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape,    worlds: ['city'] },
   { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape,       worlds: ['city'] },
@@ -4186,6 +4191,25 @@ const VEHICLES = [
   { id: 'speedboat', name: 'Speedboat',     emoji: '🚤', price: 135, color: 0xF2F2F2, speed: 17, shape: buildSpeedboatShape,  worlds: [], shop: 'boats', water: true, open: true, seat: [0, 0.66, -0.45] },
   { id: 'sailboat', name: 'Sailboat',       emoji: '⛵', price: 150, color: 0xEDE3CF, speed: 12, shape: buildSailboatShape,   worlds: [], shop: 'boats', water: true, open: true, seat: [0, 0.7, -0.7] }
 ];
+/* 🔊 Each vehicle sounds different: f0/fSpan = pitch (idle→top), wave = tone,
+   chug = how puttery (low = lazy diesel, high = smooth/whiny), chugDepth = how bumpy,
+   lp0/lpSpan = brightness, gain = loudness, horn = its honk pitch. */
+const ENGINE_DEFAULT = { wave: 'sawtooth', f0: 50, fSpan: 150, chug: 9, chugDepth: 0.45, lp0: 420, lpSpan: 1500, gain: 1, horn: 360 };
+const ENGINE_PROFILES = {
+  pickup:      { wave: 'sawtooth', f0: 40, fSpan: 110, chug: 6,  chugDepth: 0.55, lp0: 330, lpSpan: 1000, gain: 1.05, horn: 250 }, // deep diesel rumble
+  jeep:        { wave: 'sawtooth', f0: 44, fSpan: 120, chug: 7,  chugDepth: 0.55, lp0: 360, lpSpan: 1150, gain: 1.0,  horn: 280 }, // burly off-roader
+  minivan:     { wave: 'sawtooth', f0: 52, fSpan: 130, chug: 9,  chugDepth: 0.32, lp0: 470, lpSpan: 1400, gain: 0.8,  horn: 330 }, // smooth & quiet
+  monster:     { wave: 'sawtooth', f0: 34, fSpan: 100, chug: 4,  chugDepth: 0.95, lp0: 290, lpSpan: 950,  gain: 1.15, horn: 200 }, // huge, BUMPY, slow chug
+  tesla:       { wave: 'triangle', f0: 130, fSpan: 360, chug: 26, chugDepth: 0.06, lp0: 1300, lpSpan: 2600, gain: 0.55, horn: 460 }, // electric whir
+  police:      { wave: 'sawtooth', f0: 58, fSpan: 200, chug: 12, chugDepth: 0.28, lp0: 540, lpSpan: 1900, gain: 0.9,  horn: 420 }, // brisk cruiser
+  corvette:    { wave: 'sawtooth', f0: 66, fSpan: 250, chug: 17, chugDepth: 0.2,  lp0: 640, lpSpan: 2300, gain: 1.0,  horn: 400 }, // revvy sports car
+  convertible: { wave: 'sawtooth', f0: 60, fSpan: 210, chug: 14, chugDepth: 0.18, lp0: 600, lpSpan: 2100, gain: 0.85, horn: 380 }, // smooth cruiser
+  race:        { wave: 'sawtooth', f0: 84, fSpan: 320, chug: 22, chugDepth: 0.16, lp0: 720, lpSpan: 2700, gain: 1.05, horn: 520 }, // screaming racer
+  speedboat:   { wave: 'sawtooth', f0: 46, fSpan: 150, chug: 8,  chugDepth: 0.4,  lp0: 420, lpSpan: 1400, gain: 0.95, horn: 300 }, // outboard motor
+  bike:        { silent: true, horn: 700 },         // pedal power — just a bell
+  sailboat:    { silent: true, horn: 300 }          // wind power — quiet
+};
+const engineProfileFor = id => ENGINE_PROFILES[id] || ENGINE_DEFAULT;
 const cars = {};   // id -> { def, group, bodyMat, bodyMat2, yaw, spawned }
 VEHICLES.forEach(def => {
   const group = new THREE.Group();
@@ -4382,7 +4406,8 @@ function toggleDrive() {
   player.pos.set(a.group.position.x, 0, a.group.position.z);
   player.yaw = a.yaw; player.vel.set(0, 0, 0);
   if (document.pointerLockElement) document.exitPointerLock();
-  Sound.engineStart(); Sound.honk();
+  const prof = engineProfileFor(a.def.id);
+  Sound.engineStart(prof); Sound.honk(prof);
   toast('🚗 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
 }
 // park the active car (or hide all) whenever a game starts/loads
@@ -6289,6 +6314,11 @@ function updatePlayer(dt) {
       const bob = Math.sin(tnow / 350) * 0.06;
       v.group.position.set(player.pos.x, player.pos.y + bob, player.pos.z);
       v.group.rotation.set(Math.min(0.14, wsp * 0.012), v.yaw + Math.PI, Math.sin(tnow / 320) * 0.05);
+    } else if (v.def && v.def.bumpy) {                  // 🦖 monster truck — a big bouncy, rolling ride
+      const f = Math.min(1, wsp / 4);
+      const by = (Math.abs(Math.sin(tnow / 95)) + Math.abs(Math.sin(tnow / 61)) * 0.5) * 0.11 * f;
+      v.group.position.set(player.pos.x, player.pos.y + by, player.pos.z);
+      v.group.rotation.set(Math.sin(tnow / 70) * 0.04 * f, v.yaw + Math.PI, Math.sin(tnow / 110) * 0.06 * f);
     } else {
       v.group.position.set(player.pos.x, player.pos.y, player.pos.z);
       v.group.rotation.y = v.yaw + Math.PI;             // model faces +Z; forward is -Z (same as avatars)
