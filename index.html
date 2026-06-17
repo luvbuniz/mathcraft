@@ -1161,7 +1161,7 @@
       <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Saves live <b>on this device</b> (no cloud account). <b>Export</b> a backup file now and then — it protects against a lost/cleared device, and lets you move a child&rsquo;s game to another tablet (then <b>Import</b> there).</div>
       <div id="backupNudge" style="display:none; background:#FFF3D6; border:1px solid #ECD89A; color:#7a5c1e; border-radius:10px; padding:8px 11px; margin:0 0 8px; font-size:clamp(12px,2.1vw,14px); line-height:1.4"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap">
-        <button id="exportSavesBtn" style="font-size:14px; background:#e7f6ec; color:#2f8a52; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">⬇️ Export all saves</button>
+        <button id="exportSavesBtn" style="font-size:14px; background:#e7f6ec; color:#2f8a52; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">🛟 Back up now</button>
         <button id="importSavesBtn" style="font-size:14px; background:#e6f0ff; color:#3b5d9e; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">⬆️ Import saves</button>
         <input type="file" id="importSavesFile" accept="application/json,.json" style="display:none">
       </div>
@@ -10317,20 +10317,41 @@ function gatherSaveData() {
   }
   return data;
 }
-function exportSaves() {
+async function exportSaves() {
   const data = gatherSaveData();
   const count = Object.keys(data).filter(k => k.indexOf(SAVE_PREFIX) === 0).length;
-  if (!Object.keys(data).length) { $('ioStatus').textContent = 'Nothing to export on this device yet.'; return; }
+  if (!Object.keys(data).length) { $('ioStatus').textContent = 'Nothing to back up on this device yet.'; return; }
   const payload = { app: 'stackadoo', version: 1, exportedAt: new Date().toISOString(), data };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(payload, null, 2);
+  const stamp = new Date().toISOString().slice(0, 10);
+  const fname = 'stackadoo-saves-' + stamp + '.json';
+  const markBackedUp = () => { try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {} };
+  // On a tablet/phone the native share sheet is the one-tap path → "Save to Files", email, Drive, etc.
+  // (A plain download is hard to find again on iPad/Android.) Desktop keeps the simple download.
+  if (isTouch && navigator.canShare) {
+    try {
+      const file = new File([json], fname, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Stackadoo backup',
+          text: 'Stackadoo backup — keep this file safe to restore your kids’ worlds on any device.' });
+        markBackedUp();
+        $('ioStatus').textContent = '✅ Backup ready — save it to Files, email, or your cloud. Keep it safe!';
+        renderBackupNudge();
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') { $('ioStatus').textContent = 'Backup cancelled — tap 🛟 Back up now when you’re ready.'; return; }
+      // any other share error → fall through to the download
+    }
+  }
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const stamp = new Date().toISOString().slice(0, 10);
-  a.href = url; a.download = 'stackadoo-saves-' + stamp + '.json';
+  a.href = url; a.download = fname;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 4000);
-  try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {}
-  $('ioStatus').textContent = '✅ Exported ' + count + ' build' + (count === 1 ? '' : 's') + ' + progress. Keep the file safe!';
+  markBackedUp();
+  $('ioStatus').textContent = '✅ Backed up ' + count + ' build' + (count === 1 ? '' : 's') + ' + progress. Keep the file safe!';
   renderBackupNudge();
 }
 const BACKUP_KEY = 'stackadooLastBackup';
@@ -10350,7 +10371,7 @@ function renderBackupNudge() {
     el.style.display = 'block';
     el.style.background = '#FFF3D6'; el.style.borderColor = '#ECD89A'; el.style.color = '#7a5c1e';
     el.innerHTML = (last ? '🛟 It&rsquo;s been a while since your last backup.' : '🛟 You haven&rsquo;t backed up yet.') +
-      ' Tap <b>⬇️ Export all saves</b> below to save a copy of every child&rsquo;s game — so a lost or cleared device can&rsquo;t erase it.';
+      ' Tap <b>🛟 Back up now</b> below to save a copy of every child&rsquo;s game — so a lost or cleared device can&rsquo;t erase it.';
   }
 }
 function importSaves(file) {
