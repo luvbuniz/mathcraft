@@ -3882,6 +3882,16 @@ function portalSwirlTexture() {
   const star = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.1),
     new THREE.MeshBasicMaterial({ color: 0xFFF3B0 }));
   star.position.set(0, 2.4, 0); portalGroup.add(star);
+  // big friendly sign so little kids know THIS is the easy way to travel
+  box(portalGroup, 2.3, 0.18, 0.18, 0x6d4326, 0, 2.15, 0);             // crossbar between the posts
+  const pcv = document.createElement('canvas'); pcv.width = 320; pcv.height = 96; const pc = pcv.getContext('2d');
+  pc.fillStyle = '#4a1f8a'; pc.fillRect(0, 0, 320, 96);
+  pc.strokeStyle = '#FFE680'; pc.lineWidth = 7; pc.strokeRect(7, 7, 306, 82);
+  pc.textAlign = 'center'; pc.textBaseline = 'middle';
+  pc.fillStyle = '#FFFFFF'; pc.font = 'bold 40px sans-serif'; pc.fillText('🌀 TRAVEL', 160, 38);
+  pc.fillStyle = '#E0C4FF'; pc.font = 'bold 22px sans-serif'; pc.fillText('Visit other worlds!', 160, 72);
+  const psign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.78, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(pcv) }));
+  psign.position.set(0, 2.75, 0.05); portalGroup.add(psign);
   portalGroup.position.set(PORTAL_POS.x, 0, PORTAL_POS.z);
   scene.add(portalGroup);
   portalGroup.userData = { ring, swirl, star, glowRings, sparkles };
