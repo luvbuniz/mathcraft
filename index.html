@@ -4843,17 +4843,22 @@ const REALTY_POS = { x: 14, z: -15 };
 function realtyDist() { return G.world === 'city' ? Math.hypot(player.pos.x - REALTY_POS.x, player.pos.z - REALTY_POS.z) : 999; }
 /* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
 const HOME_MODELS = [
-  { id: 'ranch',  name: '🏡 Cozy Ranch',      price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, desc: '1 story • garage • front & back yard' },
-  { id: 'family', name: '🏠 Family Two-Story', price: 265, stories: 2, garage: true, pool: false, color: 0xD9C39A, desc: '2 stories + stairs • garage • yards' },
-  { id: 'deluxe', name: '🏊 Deluxe with Pool', price: 340, stories: 2, garage: true, pool: true,  color: 0xCFE0E8, desc: '2 stories + stairs • garage • yards • POOL' }
+  { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard' },
+  { id: 'modern',  name: '🏢 Modern Flat',      price: 300, stories: 2, garage: true, pool: false, color: 0xDDE3EA, roofStyle: 'flat',    desc: '2 stories • sleek flat roof • garage • yards' },
+  { id: 'family',  name: '🏠 Family Two-Story',  price: 340, stories: 2, garage: true, pool: false, color: 0xD9C39A, roofStyle: 'pointed', desc: '2 stories + stairs • garage • yards' },
+  { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • POOL' },
+  { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
+  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, desc: 'Huge • columns • 3-car garage • POOL • the grandest of all!' }
 ];
 function homeLayout(ox, oz, m) {
-  const twoStory = m.stories > 1, hw = twoStory ? 6 : 5, hd = 5, sH = 3, wallH = sH * m.stories;
-  const garW = m.garage ? 3 : 0, garD = 4, garH = 2, backD = m.pool ? 4 : 3, frontD = 2, margin = 1;
+  const stories = m.stories || 1, twoStory = stories > 1;
+  const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
+  const garW = m.garage ? (m.garW || 3) : 0, garD = 4, garH = 2;
+  const backD = m.pool ? 4 : 3, frontD = m.columns ? 3 : 2, margin = 1;
   const lotW = margin + hw + garW + margin, lotD = margin + backD + hd + frontD + margin;
   const hx0 = ox + margin, hx1 = hx0 + hw - 1, hz0 = oz + margin + backD, hz1 = hz0 + hd - 1;
   const doorX = hx0 + (hw >> 1), frontZ = hz1, gx0 = hx1 + 1, gx1 = gx0 + garW - 1, gz1 = hz1, gz0 = gz1 - garD + 1;
-  return { twoStory, hw, hd, sH, wallH, garW, garD, garH, backD, frontD, margin, lotW, lotD, hx0, hx1, hz0, hz1, doorX, frontZ, gx0, gx1, gz0, gz1 };
+  return { twoStory, stories, hw, hd, sH, wallH, garW, garD, garH, backD, frontD, margin, lotW, lotD, hx0, hx1, hz0, hz1, doorX, frontZ, gx0, gx1, gz0, gz1 };
 }
 const homeLotSize = m => { const L = homeLayout(0, 0, m); return [L.lotW, L.lotD]; };
 function openRealty() {
@@ -4908,7 +4913,7 @@ function lotClear(ox, oz, W, D) {
 function findHomeLot(W, D) {                  // nearest clear lot, searching out from in front of the player
   const bx = Math.round(player.pos.x - Math.sin(player.yaw) * 5);
   const bz = Math.round(player.pos.z - Math.cos(player.yaw) * 5);
-  for (let rad = 0; rad <= 16; rad++)
+  for (let rad = 0; rad <= 22; rad++)
     for (let dx = -rad; dx <= rad; dx++) for (let dz = -rad; dz <= rad; dz++) {
       if (Math.max(Math.abs(dx), Math.abs(dz)) !== rad) continue;
       const ox = bx + dx - (W >> 1), oz = bz + dz - (D >> 1);
@@ -4927,8 +4932,12 @@ function buildHome(ox, oz, m) {
     blocks.get(key(x, y, z)).color = color;
   };
   // ---- house: hollow walls, windows + a real door ----
-  const wins = [[L.hx0 + 1, 1, L.frontZ, 0], [L.hx0 + L.hw - 2, 1, L.frontZ, 0], [L.hx0, 1, L.hz0 + 2, Math.PI / 2], [L.hx1, 1, L.hz0 + 2, Math.PI / 2]];
-  if (L.twoStory) { wins.push([L.hx0 + 1, 4, L.frontZ, 0]); wins.push([L.hx0 + L.hw - 2, 4, L.frontZ, 0]); }
+  const wins = [[L.hx0 + 1, 1, L.frontZ, 0], [L.hx1 - 1, 1, L.frontZ, 0], [L.hx0, 1, L.hz0 + 2, Math.PI / 2], [L.hx1, 1, L.hz0 + 2, Math.PI / 2]];
+  if (L.hw >= 7) { wins.push([L.doorX - 2, 1, L.frontZ, 0]); wins.push([L.doorX + 2, 1, L.frontZ, 0]); }   // extra front windows on wide homes
+  if (L.twoStory) {
+    wins.push([L.hx0 + 1, 4, L.frontZ, 0]); wins.push([L.hx1 - 1, 4, L.frontZ, 0]);
+    if (L.hw >= 7) { wins.push([L.doorX - 2, 4, L.frontZ, 0]); wins.push([L.doorX + 2, 4, L.frontZ, 0]); }
+  }
   const isWin = (x, y, z) => wins.some(w => w[0] === x && w[1] === y && w[2] === z);
   for (let y = 0; y < L.wallH; y++)
     for (let x = L.hx0; x <= L.hx1; x++)
@@ -4949,19 +4958,27 @@ function buildHome(ox, oz, m) {
     }
     for (let s = 0; s < L.sH; s++) cell(stairX, s, stairZ - s, woodC);           // stairs up to the deck
   }
-  // ---- roof over the house ----
-  spawnAutoRoof(L.hx0, L.wallH, L.hz0, L.hw, L.hd, Math.max(4, Math.ceil(L.hw * L.hd / 2)), 'pointed');
-  // ---- attached garage with a roll-up door ----
+  // ---- grand columned portico (mansions) ----
+  if (m.columns) {
+    const pz = L.frontZ + 1, ph = Math.min(L.wallH, 3);
+    [L.doorX - 1, L.doorX + 1].forEach(px => { for (let y = 0; y < ph; y++) cell(px, y, pz, trim); });   // pillars flanking the door
+    for (let x = L.doorX - 1; x <= L.doorX + 1; x++) { cell(x, ph, L.frontZ, roofC); cell(x, ph, pz, roofC); }  // porch roof
+  }
+  // ---- roof over the house (peaked or flat to match the style) ----
+  spawnAutoRoof(L.hx0, L.wallH, L.hz0, L.hw, L.hd, Math.max(4, Math.ceil(L.hw * L.hd / 2)), m.roofStyle || 'pointed');
+  // ---- attached garage with roll-up door(s) — a wide garage gets two ----
   if (m.garage) {
+    const doorXs = L.garW >= 5 ? [L.gx0, L.gx0 + 2] : [L.gx0 + 1];   // left cell of each 2-wide door
+    const openCells = new Set(); doorXs.forEach(dx => { openCells.add(dx); openCells.add(dx + 1); });
     for (let y = 0; y < L.garH; y++)
       for (let x = L.gx0; x <= L.gx1; x++)
         for (let z = L.gz0; z <= L.gz1; z++) {
           if (x !== L.gx0 && x !== L.gx1 && z !== L.gz0 && z !== L.gz1) continue;            // perimeter
-          if (z === L.gz1 && y < 2 && (x === L.gx0 + 1 || x === L.gx0 + 2)) continue;        // 2-wide door opening
+          if (z === L.gz1 && y < 2 && openCells.has(x)) continue;                            // garage-door opening(s)
           cell(x, y, z, wall);
         }
     for (let x = L.gx0; x <= L.gx1; x++) for (let z = L.gz0; z <= L.gz1; z++) cell(x, L.garH, z, roofC);  // flat garage roof
-    placeGarageDoor(L.gx0 + 1, 0, L.gz1, 0);                                     // 2-wide roll-up door
+    doorXs.forEach(dx => placeGarageDoor(dx, 0, L.gz1, 0));                                   // roll-up door(s)
   }
   // ---- fenced yards (front gate), flowers, and a back-yard pool ----
   const lx0 = ox, lx1 = ox + L.lotW - 1, lz0 = oz, lz1 = oz + L.lotD - 1;
