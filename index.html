@@ -342,6 +342,10 @@
   #cursorBtn { top:426px; font-size:16px; font-weight:bold; }
   #modeBtn { top:478px; font-size:14px; font-weight:bold; }
   #modeBtn.remove { background:#ffd2cc; box-shadow:0 3px 0 #d98b80; }
+  #mouseLegend { position:absolute; left:12px; bottom:12px; display:none; pointer-events:none;
+    background:rgba(0,0,0,.5); color:#fff; padding:6px 13px; border-radius:13px;
+    font-size:14px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+  #mouseLegend b { color:#ffe27a; }
   #selfieBtn.on { background:#ffd0e4; box-shadow:0 3px 0 #d98bb0; }
   #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
     padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
@@ -1003,6 +1007,7 @@
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
   <div id="crosshair">＋</div>
+  <div id="mouseLegend">🖱️ Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️</div>
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
@@ -9653,6 +9658,7 @@ function startGame() {
   $('camBtn').textContent = G.firstPerson ? '👁️' : '🧍';
   G.selfie = false; $('selfieBtn').classList.remove('on');
   setRemoveMode(false);                        // always start in 🧱 Build mode
+  $('mouseLegend').style.display = isTouch ? 'none' : 'block';   // show the click shortcut on desktop
   $('coinRow').style.display = 'block';        // coins matter in every mode now
   $('playerRow').style.display = 'block';
   $('playerName').textContent = G.playerName;
