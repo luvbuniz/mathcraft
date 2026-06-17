@@ -315,6 +315,7 @@
   #btnJump { right:26px; bottom:96px; }
   #btnAction { right:26px; bottom:170px; background:rgba(255,233,150,.85); }
   #btnModeTouch { right:104px; bottom:96px; }
+  #btnUndoTouch { right:182px; bottom:96px; background:rgba(196,238,201,.92); }
   #btnShoot { right:104px; bottom:170px; background:rgba(255,170,150,.9); }
 
   /* ---------- Names + saved games ---------- */
@@ -342,7 +343,7 @@
   #cursorBtn { top:426px; font-size:16px; font-weight:bold; }
   #modeBtn { top:478px; font-size:14px; font-weight:bold; }
   #modeBtn.remove { background:#ffd2cc; box-shadow:0 3px 0 #d98b80; }
-  #undoBtn { top:530px; font-size:14px; font-weight:bold; }
+  #undoBtn { top:530px; font-size:14px; font-weight:bold; background:#cdeed1; box-shadow:0 3px 0 #a4ccaa; }
   #mouseLegend { position:absolute; left:12px; bottom:12px; display:none; pointer-events:none;
     background:rgba(0,0,0,.5); color:#fff; padding:6px 13px; border-radius:13px;
     font-size:14px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.25); }
@@ -495,7 +496,8 @@
     #photoBtn { top:302px; right:8px; }
     #cursorBtn { top:344px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
-    #undoBtn { top:386px; right:8px; }
+    #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
+    #btnUndoTouch { right:110px; bottom:134px; background:rgba(196,238,201,.92); }
     /* messages sit up top, clear of the controls */
     #hintBar { bottom:auto; top:104px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
@@ -1349,6 +1351,7 @@
   <button class="touchBtn" id="btnJump">⬆ JUMP</button>
   <button class="touchBtn" id="btnAction">⭐ USE</button>
   <button class="touchBtn" id="btnModeTouch">🧱 Place</button>
+  <button class="touchBtn" id="btnUndoTouch">↩️ Undo</button>
   <button class="touchBtn" id="btnShoot" style="display:none">🎯 Shoot</button>
 </div>
 
@@ -10054,6 +10057,7 @@ if (isTouch) {
     $('btnModeTouch').textContent = touch.placeMode ? '🧱 Place' : '⛏️ Break';
     Sound.click();
   }, { passive: false });
+  $('btnUndoTouch').addEventListener('touchstart', e => { e.preventDefault(); Sound.click(); undoLast(); }, { passive: false });
   $('btnShoot').addEventListener('touchstart', e => { e.preventDefault(); shootBall(); }, { passive: false });
 
   // a quick tap (barely moved) builds/breaks; a drag is movement (handled above).
