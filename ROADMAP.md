@@ -93,6 +93,27 @@ system:
   weeks" sells harder than a static badge — and avoids competitive-parent stress).
 - Map levels to grade **bands with overlap** so the claim stays defensible.
 
+### ⚠️ Handle BOTH ends (the below-grade risk)
+
+The grade reveal cuts both ways: "ahead!" delights, but "behind" is where you get
+refund requests, angry emails, and 1-star reviews. **The kid never sees grades, so
+the kid is never hurt — the entire risk lives in the *parent* dashboard framing.**
+Rules:
+- **Lead with growth (always positive).** "Grew 2 levels this month • 30 new skills •
+  9-day streak." Growth is encouraging at *any* absolute level → make it the headline,
+  grade-equivalency the small print.
+- **Only show the explicit grade reveal when flattering** (at/above grade). When the
+  kid is **below** grade, *suppress the comparison* and show progress + encouragement
+  instead. Never volunteer "your kid is behind."
+- **If below-grade is ever surfaced, frame as opportunity, not deficit.** "Building
+  strong Grade-2 foundations 💪 — here's how to help" beats "below grade level." It's
+  also the best *retention* story: the kid who's behind benefits most from practice,
+  so the dashboard becomes "look how much they're growing here."
+- **Position as practice, not assessment.** A small "a fun estimate from gameplay, not
+  a formal assessment" line defuses most disputes.
+- **Keep it parent-only & gated** (dashboard already has the code gate); consider
+  making the grade-equivalency an opt-in toggle.
+
 **Sketch of the build, when ready:** placement (sets actual grade + starting level) →
 per-subject earned levels as the source of truth → visible XP/level bar + level-up
 celebration → coins scaled by level reached → parent dashboard shows grade-equivalency
