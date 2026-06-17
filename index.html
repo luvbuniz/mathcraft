@@ -1102,7 +1102,16 @@
 
 <!-- ================= GROWN-UPS DASHBOARD ================= -->
 <div class="popup" id="grownupPopup">
-  <div class="popupCard" style="width:min(620px,95vw)">
+  <div class="popupCard" style="width:min(620px,95vw); position:relative">
+    <div id="guLock" style="display:none; position:absolute; inset:0; background:#fffef8; border-radius:22px; z-index:5; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; text-align:center">
+      <div style="font-size:46px">🔒</div>
+      <h2 style="color:#3b5d9e; margin:0">Parent PIN</h2>
+      <p style="color:#6c84a6; margin:0">Enter the PIN to open the learning dashboard.</p>
+      <input id="guPinInput" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" style="font-size:24px; text-align:center; padding:10px 14px; border:3px solid #bcd6f2; border-radius:12px; width:170px">
+      <div id="guPinMsg" style="color:#c0392b; min-height:18px; font-weight:bold"></div>
+      <button id="guPinGo" style="font-weight:bold; padding:12px 28px; border-radius:14px; color:#fff; background:#3f9d34; border:none; box-shadow:0 4px 0 #2c6f24; cursor:pointer">Unlock</button>
+      <button id="guPinCancel" style="background:none; border:none; color:#8a93a3; cursor:pointer; text-decoration:underline">Cancel</button>
+    </div>
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="grownupClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#3b5d9e; font-size:clamp(24px,4vw,32px)">🧑‍🏫 Learning Progress</h2>
     <div style="color:#6c84a6; font-size:clamp(13px,2.2vw,16px); margin-bottom:6px">For parents & teachers — saved on this device, one card per player.</div>
@@ -1135,6 +1144,11 @@
         <input type="file" id="importSavesFile" accept="application/json,.json" style="display:none">
       </div>
       <div id="ioStatus" style="color:#6c84a6; font-size:12px; margin-top:6px; min-height:14px"></div>
+    </div>
+    <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
+      <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">🔒 Parent PIN (optional)</div>
+      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Lock this dashboard so older kids can't peek at it. Turn it on or off any time.</div>
+      <div id="guPinSettings" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center"></div>
     </div>
     <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
       <span style="color:#6c84a6; font-size:13px">Full game: <b id="purchaseStatus">—</b></span>
@@ -3195,8 +3209,44 @@ function renderGrownup() {
     });
   }
 }
+/* Optional parent PIN — locks the dashboard so older kids can't peek. Device-level. */
+const PARENT_PIN_KEY = 'stackadooParentPIN';
+function parentPIN() { try { return localStorage.getItem(PARENT_PIN_KEY) || ''; } catch (e) { return ''; } }
+function setParentPINval(v) { try { if (v) localStorage.setItem(PARENT_PIN_KEY, v); else localStorage.removeItem(PARENT_PIN_KEY); } catch (e) {} }
+let parentUnlocked = false;
+function showGuLock() {
+  $('grownupList').innerHTML = '';                 // don't render any data while locked
+  const lock = $('guLock'); lock.style.display = 'flex';
+  $('guPinInput').value = ''; $('guPinMsg').textContent = '';
+  const tryPin = () => {
+    if ($('guPinInput').value === parentPIN()) { parentUnlocked = true; lock.style.display = 'none'; openGrownup(); }
+    else { $('guPinMsg').textContent = 'Wrong PIN — try again.'; $('guPinInput').value = ''; }
+  };
+  $('guPinGo').onclick = tryPin;
+  $('guPinInput').onkeydown = e => { if (e.key === 'Enter') tryPin(); };
+  $('guPinCancel').onclick = () => { lock.style.display = 'none'; closeGrownup(); };
+  setTimeout(() => { try { $('guPinInput').focus(); } catch (e) {} }, 60);
+}
+function renderPinSettings() {
+  const box = $('guPinSettings'); if (!box) return;
+  const bStyle = 'font-size:14px;border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-family:inherit;font-weight:bold';
+  if (!parentPIN()) {
+    box.innerHTML = '<input id="guSetPin" type="password" inputmode="numeric" maxlength="6" placeholder="Choose a PIN" autocomplete="off" style="font-size:15px;text-align:center;padding:8px 12px;border:2px solid #bcd6f2;border-radius:10px;width:140px">' +
+      '<button id="guSetPinBtn" style="' + bStyle + ';background:#e7f6ec;color:#2f8a52">Turn on PIN</button>';
+    $('guSetPinBtn').onclick = () => { const v = ($('guSetPin').value || '').trim(); if (v.length < 3) { toast('🔒 Pick a PIN of at least 3 digits.', 2400); return; } setParentPINval(v); parentUnlocked = true; toast('🔒 Parent PIN is on!', 2200); renderPinSettings(); };
+  } else {
+    box.innerHTML = '<span style="color:#2f8a52;font-weight:bold">PIN is ON ✓</span>' +
+      '<button id="guChangePin" style="' + bStyle + ';background:#e6f0ff;color:#3b5d9e">Change</button>' +
+      '<button id="guRemovePin" style="' + bStyle + ';background:#fdecea;color:#c0392b">Turn off</button>';
+    $('guChangePin').onclick = () => { const v = (prompt('New PIN (3–6 digits):') || '').trim(); if (v && v.length >= 3) { setParentPINval(v); toast('🔒 PIN changed.', 2000); } };
+    $('guRemovePin').onclick = () => { setParentPINval(''); toast('🔓 Parent PIN turned off.', 2200); renderPinSettings(); };
+  }
+}
 function openGrownup() {
+  if (parentPIN() && !parentUnlocked) { $('grownupPopup').style.display = 'flex'; showGuLock(); return; }
+  $('guLock').style.display = 'none';
   renderGrownup();
+  renderPinSettings();
   $('purchaseStatus').textContent = isUnlocked() ? 'Unlocked ✓' : 'Free (Math Meadow only)';
   const pol = deletePolicy();
   document.querySelectorAll('input[name="delPolicy"]').forEach(r => {
@@ -3205,7 +3255,7 @@ function openGrownup() {
   });
   $('grownupPopup').style.display = 'flex';
 }
-function closeGrownup() { $('grownupPopup').style.display = 'none'; }
+function closeGrownup() { $('grownupPopup').style.display = 'none'; parentUnlocked = false; }   // re-lock for next time
 /* A proud, parent-friendly Report Card you can pull up to show off a child's progress. */
 function openReportCard(p) {
   const score = (p.stars != null) ? p.stars : estimateStars(p);
