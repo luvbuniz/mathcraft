@@ -3892,6 +3892,16 @@ function portalSwirlTexture() {
   pc.fillStyle = '#E0C4FF'; pc.font = 'bold 22px sans-serif'; pc.fillText('Visit other worlds!', 160, 72);
   const psign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.78, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(pcv) }));
   psign.position.set(0, 2.75, 0.05); portalGroup.add(psign);
+  // a standing signpost beside the portal, at kid eye-level, explaining what it does
+  box(portalGroup, 0.14, 1.5, 0.14, 0x6d4326, 1.85, 0.75, 0.7);        // sign post
+  const scv = document.createElement('canvas'); scv.width = 300; scv.height = 150; const sc = scv.getContext('2d');
+  sc.fillStyle = '#2E7D46'; sc.fillRect(0, 0, 300, 150); sc.strokeStyle = '#FFFFFF'; sc.lineWidth = 7; sc.strokeRect(7, 7, 286, 136);
+  sc.textAlign = 'center'; sc.textBaseline = 'middle'; sc.fillStyle = '#FFFFFF';
+  sc.font = 'bold 44px sans-serif'; sc.fillText('🌀', 150, 40);
+  sc.font = 'bold 26px sans-serif'; sc.fillText('Travel to', 150, 84);
+  sc.fillStyle = '#CFF0D8'; sc.fillText('different places!', 150, 116);
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.75, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(scv) }));
+  stand.position.set(1.85, 1.35, 0.7); stand.rotation.y = -0.5; portalGroup.add(stand);
   portalGroup.position.set(PORTAL_POS.x, 0, PORTAL_POS.z);
   scene.add(portalGroup);
   portalGroup.userData = { ring, swirl, star, glowRings, sparkles };
