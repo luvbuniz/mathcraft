@@ -1425,6 +1425,27 @@ const Sound = {
     } catch (e) {}
     this.engineOsc = this.engineOsc2 = this.engineSub = this.engineLFO = this.engineLFOGain = this.engineChug = this.engineLP = this.engineGain = null;
   },
+  // 🚓 wailing police siren — a tone that sweeps up & down (started/stopped with the cruiser)
+  sirenStart() {
+    this.init();
+    if (!this.ctx || this.siren) return;
+    const ctx = this.ctx;
+    this.siren = ctx.createOscillator(); this.siren.type = 'sawtooth'; this.siren.frequency.value = 760;
+    this.sirenLFO = ctx.createOscillator(); this.sirenLFO.type = 'triangle'; this.sirenLFO.frequency.value = 0.75;  // wail speed
+    this.sirenLFOGain = ctx.createGain(); this.sirenLFOGain.gain.value = 200;     // ± sweep depth
+    this.sirenLFO.connect(this.sirenLFOGain); this.sirenLFOGain.connect(this.siren.frequency);
+    this.sirenBP = ctx.createBiquadFilter(); this.sirenBP.type = 'bandpass'; this.sirenBP.frequency.value = 950; this.sirenBP.Q.value = 1.5;
+    this.sirenGain = ctx.createGain(); this.sirenGain.gain.value = this.muted ? 0.0001 : 0.05;
+    this.siren.connect(this.sirenBP); this.sirenBP.connect(this.sirenGain); this.sirenGain.connect(this.master);
+    this.siren.start(); this.sirenLFO.start();
+  },
+  sirenSet() { if (this.sirenGain) this.sirenGain.gain.setTargetAtTime(this.muted ? 0.0001 : 0.05, this.ctx.currentTime, 0.1); },
+  sirenStop() {
+    if (!this.siren) return;
+    const t = this.ctx.currentTime;
+    try { this.sirenGain.gain.setTargetAtTime(0.0001, t, 0.05); this.siren.stop(t + 0.2); this.sirenLFO.stop(t + 0.2); } catch (e) {}
+    this.siren = this.sirenLFO = this.sirenLFOGain = this.sirenBP = this.sirenGain = null;
+  },
   toggleMute() { this.muted = !this.muted; return this.muted; }
 };
 document.addEventListener('pointerdown', function initAudioOnce() {
@@ -4105,7 +4126,11 @@ function buildPoliceShape(g, bm, bm2, gm) {        // police cruiser — sedan +
   P(gm, 0.04, 0.3, 1.3, -0.53, 0.84, -0.1); P(gm, 0.04, 0.3, 1.3, 0.53, 0.84, -0.1);
   P(mat(0xF2F2F2), 0.55, 0.34, 0.04, -0.6, 0.46, 0.2); P(mat(0xF2F2F2), 0.55, 0.34, 0.04, 0.6, 0.46, 0.2);  // white doors
   P(mat(0x222), 0.66, 0.06, 0.22, 0, 1.0, -0.1);    // light bar base
-  P(mat(0xD23A3A), 0.3, 0.12, 0.2, -0.2, 1.06, -0.1); P(mat(0x2b6cb0), 0.3, 0.12, 0.2, 0.2, 1.06, -0.1);  // red + blue lights
+  // red + blue light-bar lights — own materials so they can flash (emissive) while driving
+  const redMat = new THREE.MeshLambertMaterial({ color: 0xD23A3A, emissive: 0x300000 });
+  const blueMat = new THREE.MeshLambertMaterial({ color: 0x2b6cb0, emissive: 0x001033 });
+  P(redMat, 0.3, 0.12, 0.2, -0.2, 1.06, -0.1); P(blueMat, 0.3, 0.12, 0.2, 0.2, 1.06, -0.1);
+  g.userData.policeLights = { redMat, blueMat };
   P(mat(0xFFF6C0), 0.3, 0.08, 0.05, -0.4, 0.5, 1.5); P(mat(0xFFF6C0), 0.3, 0.08, 0.05, 0.4, 0.5, 1.5);
   P(mat(0xD23A3A), 1.0, 0.07, 0.05, 0, 0.6, -1.55);
   carWheels(g, [[-0.6, 0.95], [0.6, 0.95], [-0.6, -1.0], [0.6, -1.0]]);
@@ -4182,7 +4207,7 @@ const VEHICLES = [
   { id: 'tesla',    name: 'Electric Sedan', emoji: '🚗', price: 72, color: 0xF2F2F2, speed: 13, shape: buildTeslaShape,       worlds: ['city'] },
   { id: 'jeep',     name: 'Trail SUV',      emoji: '🚙', price: 78, color: 0x4E7B3A, speed: 10, shape: buildJeepShape,        worlds: ['meadow', 'beach'] },
   { id: 'minivan',  name: 'Family Van',     emoji: '🚐', price: 64, color: 0x8FA6BC, speed: 10, shape: buildMinivanShape,     worlds: ['meadow'] },
-  { id: 'police',   name: 'Police Cruiser', emoji: '🚓', price: 80, color: 0x1b1f27, speed: 14, shape: buildPoliceShape,      worlds: ['city'] },
+  { id: 'police',   name: 'Police Cruiser', emoji: '🚓', price: 80, color: 0x1b1f27, speed: 14, shape: buildPoliceShape,      worlds: ['city'], police: true },
   { id: 'monster',  name: 'Monster Truck',  emoji: '🦖', price: 86, color: 0x6a3fb0, speed: 12, shape: buildMonsterShape,     worlds: ['meadow'], bumpy: true },
   { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'], open: true, seat: [0, 0.62, -0.1] },
   { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape,    worlds: ['city'] },
@@ -4395,7 +4420,7 @@ function closeMotors() { $('motorsPopup').style.display = 'none'; popupOpen = fa
 function toggleDrive() {
   const a = activeCarObj();
   if (player.driving) {                                   // hop off
-    player.driving = null; Sound.engineStop();
+    player.driving = null; Sound.engineStop(); Sound.sirenStop();
     if (a) player.pos.set(a.group.position.x + 1.2, 0, a.group.position.z);
     player.vel.set(0, 0, 0);
     if (player.avatar) player.avatar.visible = !G.firstPerson;
@@ -4408,11 +4433,12 @@ function toggleDrive() {
   if (document.pointerLockElement) document.exitPointerLock();
   const prof = engineProfileFor(a.def.id);
   Sound.engineStart(prof); Sound.honk(prof);
-  toast('🚗 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
+  if (a.def.police) { Sound.sirenStart(); toast('🚓 Sirens on! 🔴🔵 Steer with the move-circle. Tap ⭐ USE to hop off.', 2800); }
+  else toast('🚗 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
 }
 // park the active car (or hide all) whenever a game starts/loads
 function syncCars() {
-  player.driving = null; Sound.engineStop();
+  player.driving = null; Sound.engineStop(); Sound.sirenStop();
   syncGarage();                                 // own every garaged vehicle here; pick up the global active car
   for (const id in cars) recolorCar(id, carDefColor(id));
   parkActiveCar();
@@ -6324,6 +6350,12 @@ function updatePlayer(dt) {
       v.group.rotation.y = v.yaw + Math.PI;             // model faces +Z; forward is -Z (same as avatars)
     }
     Sound.engineSet(Math.min(1, wsp / 11));              // engine revs with speed
+    if (v.def && v.def.police && v.group.userData.policeLights) {   // 🔴🔵 flashing light bar + siren
+      const on = Math.sin(tnow / 130) > 0, L = v.group.userData.policeLights;
+      L.redMat.emissive.setHex(on ? 0xff2a2a : 0x300000);
+      L.blueMat.emissive.setHex(on ? 0x001033 : 0x3a7bff);
+      Sound.sirenSet();
+    }
     if (v.group.userData.wheels) v.group.userData.wheels.forEach(w => w.rotation.x -= wsp * dt * 1.5);
     if (player.avatar) {                                 // show the rider on open vehicles (bikes, boats, convertible)
       if (v.def && v.def.open) {
