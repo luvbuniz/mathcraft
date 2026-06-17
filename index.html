@@ -2508,7 +2508,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach'];
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
-  meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } },
+  meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 19, z: -16 } },
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
@@ -3960,7 +3960,7 @@ function portalSwirlTexture() {
 function portalDist() { return Math.hypot(player.pos.x - PORTAL_POS.x, player.pos.z - PORTAL_POS.z); }
 
 /* ============================ 🛻 STACK MOTORS: a country dealership + a drivable pickup ============================ */
-const MOTORS_POS = { x: 12, z: -9 };
+const MOTORS_POS = { x: 19, z: -16 };
 function motorsDist() { return Math.hypot(player.pos.x - MOTORS_POS.x, player.pos.z - MOTORS_POS.z); }
 // ---- the dealership lot ----
 const motorsGroup = new THREE.Group();
