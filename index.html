@@ -889,12 +889,12 @@
       </div>
 
       <div class="field">
-        <span class="fieldLabel">Choose your level</span>
+        <span class="fieldLabel">Where should we start? (it climbs as you play — you earn your level!)</span>
         <div class="choiceGrid grades" id="gradeRow">
-          <button class="choice selected" data-grade="2"><b>Grade 2</b><small>Add &amp; subtract to 100</small></button>
-          <button class="choice" data-grade="3"><b>Grade 3</b><small>To 1,000 &amp; times tables</small></button>
-          <button class="choice" data-grade="4"><b>Grade 4</b><small>Multi-digit × and ÷</small></button>
-          <button class="choice" data-grade="5"><b>Grade 5</b><small>Fractions &amp; decimals</small></button>
+          <button class="choice selected" data-grade="2"><b>🌱 Just starting</b><small>Add &amp; subtract</small></button>
+          <button class="choice" data-grade="3"><b>🙂 Some practice</b><small>Bigger numbers &amp; times tables</small></button>
+          <button class="choice" data-grade="4"><b>💪 Confident</b><small>Multiply &amp; divide</small></button>
+          <button class="choice" data-grade="5"><b>🌟 Advanced</b><small>Fractions &amp; decimals</small></button>
         </div>
       </div>
 
@@ -2760,7 +2760,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 function freshProfile() {
   return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0,
     garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
-    pack: null, packMigrated: false };
+    pack: null, packMigrated: false, level: null, grade: null };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -2780,6 +2780,9 @@ function loadProfileFor(name) {
   profile.starsByDay = profile.starsByDay || {};
   // an existing save from before Stars existed → backfill a Math Score from what they've already solved
   if (saved && saved.stars == null) profile.stars = estimateStars(profile);
+  // baseline the Level from existing score the first time (so returning kids already HAVE a level,
+  // and we don't fire a "level up!" storm for progress they made before levels existed)
+  if (profile.level == null) profile.level = levelFromScore(profile.stars || 0);
   if (!profile.firstPlayed) profile.firstPlayed = Date.now();
 }
 /* Estimate a Math Score from a profile's solve history (for saves made before Stars were added) */
@@ -2794,6 +2797,22 @@ function estimateStars(p) {
 function starsFor(level) {
   const lv = Math.max(1, Math.min(6, level || 1));
   return 5 * lv;                                  // G1=5 ⭐, G2=10, G3=15, G4=20, G5=25, G6=30
+}
+/* ===== LEVELS: a kid earns a Level from their Learning Score (⭐). It starts easy and
+   ramps; harder questions are worth more, so you climb faster by stretching — and you
+   can't lower it. Parents see the secret grade-equivalency on their dashboard. ===== */
+function levelThreshold(L) { return 10 * (L - 1) * L; }          // total ⭐ to REACH level L (T2=20,T3=60,T4=120,T5=200,T6=300…)
+function levelFromScore(score) { let L = 1; while (levelThreshold(L + 1) <= (score || 0)) L++; return L; }
+function levelProgress(score) {
+  const L = levelFromScore(score), base = levelThreshold(L), next = levelThreshold(L + 1);
+  return { level: L, into: (score || 0) - base, span: next - base, pct: Math.round(((score || 0) - base) / (next - base) * 100) };
+}
+// The grade a player is actually WORKING at in math — the highest grade they're regularly
+// solving (≥3 right), used only for the grown-ups' grade-equivalency readout.
+function mathWorkingGrade(p) {
+  const bg = (p && p.byGrade) || {}; let g = 0, mode = 0, mc = 0;
+  for (const k in bg) { const lv = Number(k), n = bg[k] || 0; if (n >= 3 && lv > g) g = lv; if (n > mc) { mc = n; mode = lv; } }
+  return Math.max(1, Math.min(6, g || mode || 2));
 }
 const fmtNum = n => (n || 0).toLocaleString('en-US');
 /* Turn a count of correct answers into a friendly mastery stage with progress to the next */
@@ -2844,6 +2863,19 @@ function recordSolve(eq) {
     const op = eq.skill || 'other';
     profile.byOp[op] = (profile.byOp[op] || 0) + 1;
     profile.byGrade[level] = (profile.byGrade[level] || 0) + 1;
+  }
+  // ⭐ LEVEL UP — earning Stars can push you to the next Level (with a coin bonus + a side quest)
+  const newLevel = levelFromScore(profile.stars);
+  if (profile.level == null) profile.level = newLevel;
+  else if (newLevel > profile.level) {
+    profile.level = newLevel;
+    const bonus = newLevel * 5; G.coins += bonus;
+    setTimeout(() => {
+      if (Sound.fanfare) Sound.fanfare();
+      toast('🎉 LEVEL UP! You reached ⭐ Level ' + newLevel + '!  +' + bonus + ' 🪙', 4600);
+      refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+      if (typeof offerLevelQuest === 'function') offerLevelQuest(newLevel);
+    }, 1000);
   }
   // award badges from THIS subject's set, against THIS subject's solved count
   const subj = subjectOf(eq && eq.skill);
@@ -3022,6 +3054,17 @@ function renderGrownup() {
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayStars = (p.starsByDay || {})[todayStr] || 0;
     const score = (p.stars != null) ? p.stars : estimateStars(p);   // backfill older saves shown on the dashboard
+    // ⭐ LEVEL + secret grade-equivalency. Lead with positive growth; only show the
+    // "ahead of grade" line when it's flattering, and never label a kid as "behind".
+    const lvl = levelFromScore(score), wGrade = mathWorkingGrade(p), nGrade = p.grade || null;
+    let gradeLine = '📚 Working at about a <b>Grade ' + wGrade + '</b> math level';
+    if (nGrade && wGrade > nGrade) gradeLine = '🎉 Doing <b>Grade ' + wGrade + '-level</b> math — that\'s <b>ahead</b> of Grade ' + nGrade + '!';
+    else if (nGrade && wGrade >= nGrade) gradeLine = '✅ Right on track at a <b>Grade ' + wGrade + '</b> math level';
+    else gradeLine = '🌱 Building strong foundations (≈ <b>Grade ' + wGrade + '</b> math). Practice here helps them grow!';
+    html += '<div class="guScore" style="background:#EAF3FF;border-color:#bcd6f2;color:#2b5380">⭐ <b>Level ' + lvl + '</b>' +
+      '<span style="font-size:0.78em;font-weight:600;color:#5a7aa6">earned from learning</span></div>';
+    html += '<div style="font-size:clamp(13px,2.3vw,16px);color:#3b5d9e;margin:0 0 8px;padding:2px 2px">' + gradeLine +
+      '<br><span style="font-size:0.82em;color:#8a93a3">A fun estimate from gameplay — not a formal assessment.</span></div>';
     html += '<div class="guScore">⭐ Learning Score: <b>' + fmtNum(score) + '</b>' +
       (todayStars ? '<span class="today">+' + fmtNum(todayStars) + ' today</span>' : '') + '</div>';
     html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
@@ -7291,7 +7334,7 @@ function adaptiveMathLevel() {
 function bumpSkill(skill, correct) {
   if (!skill) return;
   const base = G.mathLevel || G.grade || 2;
-  const ceiling = Math.min(5, (G.grade || 2) + 1);
+  const ceiling = 5;                              // difficulty is EARNED — it climbs with skill, not capped by the picked grade
   G.skillLevel = G.skillLevel || {}; G.skillStreak = G.skillStreak || {}; G.skillMiss = G.skillMiss || {};
   const cur = G.skillLevel[skill] || base;
   if (correct) {
@@ -7531,7 +7574,7 @@ function answerPicked(btn, opt) {
     G.mathCorrectStreak++;
     if (G.mathCorrectStreak > (profile.bestStreak || 0)) { profile.bestStreak = G.mathCorrectStreak; profileDirty = true; }
     bumpSkill(currentEq.skill, true);
-    const ceiling = Math.min(5, (G.grade || 2) + 1);
+    const ceiling = 5;                            // earned difficulty — strong play climbs past the picked grade (no camping on easy)
     let levelNote = '';
     if (G.mathCorrectStreak >= 3 && G.mathLevel < ceiling) {
       G.mathLevel++;
@@ -10050,8 +10093,9 @@ function startGame() {
   syncPack();                                   // your backpack (blocks/doors/furniture) follows you here
   refreshHUD();
   G.running = true;
+  if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
-  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 Calm') + ' • Grade ' + G.grade;
+  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 Calm') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
   if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
