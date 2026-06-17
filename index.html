@@ -4934,7 +4934,7 @@ const HOME_MODELS = [
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
   const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
-  const garW = m.garage ? (m.garW || 3) : 0, garD = 4, garH = 2;
+  const garW = m.garage ? (m.garW || 4) : 0, garD = 5, garH = 2;   // 2-wide interior lane + room to pull in/out (a 1-wide garage trapped the car)
   const poolD = m.pool ? (m.poolD || 3) : 0;
   const backD = m.pool ? (poolD + 2) : 3, frontD = m.columns ? 3 : 2, margin = 1;
   const lotW = margin + hw + garW + margin, lotD = margin + backD + hd + frontD + margin;
