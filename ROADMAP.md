@@ -41,6 +41,41 @@ A living plan for where Stackadoo is going. Update freely.
 
 ---
 
+## 🎚️ Difficulty: move from grades → **levels** (planned, likely soon)
+
+**Decision leaning:** replace the player-chosen **grade** with an **earned level**
+system — ideally *before* the grade model entrenches (saves, habits, UI).
+
+**The problem with grades:** grade is a difficulty the *player picks*, so an older
+kid can choose a low grade to farm easy coins. Self-declared difficulty + flat-ish
+rewards = a gameable loop.
+
+**Why levels fix it:**
+- **You earn your level, you can't pick it** — it only goes *up*, via streaks /
+  first-try accuracy. There's no dial to turn *down* for easy money.
+- **Reward scales with level** — low levels pay little, high levels pay more. Once
+  that's true, playing below your ability gains you nothing. *(This reward curve is
+  the actual anti-gaming lever — even keeping grades, scaling pay by difficulty
+  would help; levels are just the cleaner, more motivating version.)*
+
+**Half-built already** — promote, don't rebuild: the game already has adaptive
+per-skill levels under the hood (`mathLevel`, `readLevel`, `spellLevel`) that climb
+on hot streaks and ease down on misses, and harder questions already pay a bit more.
+The work is making the level the *source of truth* and surfacing it.
+
+**Two cautions:**
+1. **Keep a light starting point.** Pure level-1-for-everyone bores a 10-yo on
+   "2+2" and overwhelms a 6-yo. Keep grade as a one-time **placement** (where you
+   *start*), then never allow it to be lowered — progression is level-only after.
+2. **Make levels visible & celebratory.** A little XP / level bar + a "Level up! 🎉"
+   moment is genuinely motivating for kids (why Minecraft/Roblox feel rewarding).
+   The level-up toasts already exist; a visible bar would do a lot.
+
+**Sketch of the build, when ready:** placement → per-subject levels as the source of
+truth → visible XP/level bar + level-up celebration → coins scaled by level reached.
+
+---
+
 ## 🔜 Next: Reading Town (was "Reading City")
 
 **Rename direction:** "Reading City" → **Reading Town** — a friendly *suburban
