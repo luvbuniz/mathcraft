@@ -41,6 +41,86 @@ A living plan for where Stackadoo is going. Update freely.
 
 ---
 
+## 🎚️ Difficulty: move from grades → **levels** (planned, likely soon)
+
+**Decision leaning:** replace the player-chosen **grade** with an **earned level**
+system — ideally *before* the grade model entrenches (saves, habits, UI).
+
+**The problem with grades:** grade is a difficulty the *player picks*, so an older
+kid can choose a low grade to farm easy coins. Self-declared difficulty + flat-ish
+rewards = a gameable loop.
+
+**Why levels fix it:**
+- **You earn your level, you can't pick it** — it only goes *up*, via streaks /
+  first-try accuracy. There's no dial to turn *down* for easy money.
+- **Reward scales with level** — low levels pay little, high levels pay more. Once
+  that's true, playing below your ability gains you nothing. *(This reward curve is
+  the actual anti-gaming lever — even keeping grades, scaling pay by difficulty
+  would help; levels are just the cleaner, more motivating version.)*
+
+**Half-built already** — promote, don't rebuild: the game already has adaptive
+per-skill levels under the hood (`mathLevel`, `readLevel`, `spellLevel`) that climb
+on hot streaks and ease down on misses, and harder questions already pay a bit more.
+The work is making the level the *source of truth* and surfacing it.
+
+**Two cautions:**
+1. **Keep a light starting point.** Pure level-1-for-everyone bores a 10-yo on
+   "2+2" and overwhelms a 6-yo. Keep grade as a one-time **placement** (where you
+   *start*), then never allow it to be lowered — progression is level-only after.
+2. **Make levels visible & celebratory.** A little XP / level bar + a "Level up! 🎉"
+   moment is genuinely motivating for kids (why Minecraft/Roblox feel rewarding).
+   The level-up toasts already exist; a visible bar would do a lot.
+
+### 🔐 Secret grade-mapping (the parent selling point)
+
+Each level **secretly maps to a grade band** behind the scenes. Two audiences, one
+system:
+- **Kid-facing = pure fun.** They only ever see "Level 12 ⭐", an XP bar, and
+  level-up confetti. **No grade labels** — a struggling kid never sees a low grade
+  stamped on them; they just watch their level climb. Healthier and more motivating.
+- **Parent-facing = the reveal.** The dashboard translates the earned level into a
+  grade-equivalency: *"working at ≈ Grade 4 level."* Because we capture the kid's
+  **actual grade at placement**, we get the killer line for free:
+  **actual grade vs current working level →** *"🎉 Your 3rd grader is doing
+  4th-grade-level math."* Aspirational, screenshot-worthy, a concrete reason to buy
+  & stay.
+
+**Guardrails:**
+- **Per-subject**, not one global number — "strong reader, building math" is itself a
+  valuable (and honest) parent insight.
+- **Frame as growth, not a scoreboard.** Use "working at ≈ Grade X level" (not a
+  guarantee) and show the line *moving up over weeks* ("grew a grade level in 6
+  weeks" sells harder than a static badge — and avoids competitive-parent stress).
+- Map levels to grade **bands with overlap** so the claim stays defensible.
+
+### ⚠️ Handle BOTH ends (the below-grade risk)
+
+The grade reveal cuts both ways: "ahead!" delights, but "behind" is where you get
+refund requests, angry emails, and 1-star reviews. **The kid never sees grades, so
+the kid is never hurt — the entire risk lives in the *parent* dashboard framing.**
+Rules:
+- **Lead with growth (always positive).** "Grew 2 levels this month • 30 new skills •
+  9-day streak." Growth is encouraging at *any* absolute level → make it the headline,
+  grade-equivalency the small print.
+- **Only show the explicit grade reveal when flattering** (at/above grade). When the
+  kid is **below** grade, *suppress the comparison* and show progress + encouragement
+  instead. Never volunteer "your kid is behind."
+- **If below-grade is ever surfaced, frame as opportunity, not deficit.** "Building
+  strong Grade-2 foundations 💪 — here's how to help" beats "below grade level." It's
+  also the best *retention* story: the kid who's behind benefits most from practice,
+  so the dashboard becomes "look how much they're growing here."
+- **Position as practice, not assessment.** A small "a fun estimate from gameplay, not
+  a formal assessment" line defuses most disputes.
+- **Keep it parent-only & gated** (dashboard already has the code gate); consider
+  making the grade-equivalency an opt-in toggle.
+
+**Sketch of the build, when ready:** placement (sets actual grade + starting level) →
+per-subject earned levels as the source of truth → visible XP/level bar + level-up
+celebration → coins scaled by level reached → parent dashboard shows grade-equivalency
+("working at ≈ Grade X") and growth over time.
+
+---
+
 ## 🔜 Next: Reading Town (was "Reading City")
 
 **Rename direction:** "Reading City" → **Reading Town** — a friendly *suburban
