@@ -1402,6 +1402,7 @@ const Sound = {
   click()   { this.tone(620, 0.06, 'square', 0.08); },
   step(alt) { this.noise(0.07, 0.06, alt ? 500 : 420); },
   pop()     { this.tone(420, 0.09, 'sine', 0.22, 0, 880); },
+  splash()  { this.noise(0.18, 0.16, 900); this.tone(680, 0.12, 'sine', 0.08, 0, 240); this.tone(420, 0.16, 'sine', 0.06, 0.05, 180); },
   place()   { this.tone(170, 0.1, 'triangle', 0.25); this.noise(0.06, 0.08, 350); },
   brk()     { this.noise(0.12, 0.18, 1200); this.tone(300, 0.08, 'square', 0.06, 0, 150); },
   correct() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.16, 'sine', 0.18, i * 0.09)); },
@@ -3333,6 +3334,7 @@ function serializeWorld() {
     else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
     else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0, b.roofStyle || 'pointed']);
     else if (b.type === 'autoroof') placed.push([x, y, z, 'autoroof', [b.roofW || 2, b.roofD || 2, b.roofCost || 1, b.roofStyle || 'pointed']]);
+    else if (b.type === 'water') placed.push([x, y, z, 'water']);
     else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind), b.rotY || 0]);
     else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant, b.rotY || 0]);
   });
@@ -3454,6 +3456,7 @@ function restoreGame(s) {
     else if (type === 'window') addWindow(x, y, z, detail);
     else if (type === 'roof') addRoof(x, y, z, detail, extra);
     else if (type === 'autoroof') { const d = detail || [2, 2, 1, 'pointed']; spawnAutoRoof(x, y, z, d[0], d[1], d[2], d[3]); }
+    else if (type === 'water') placePoolWater(x, z);
     else if (type === 'stove') {
       placeFurnitureAt('stove', x, z, null, extra);
       const st = blocks.get(key(x, 0, z));
@@ -3490,6 +3493,7 @@ function resetWorld() {
   projectiles.forEach(p => scene.remove(p.mesh)); projectiles.length = 0;
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
+  poolWater = [];                                  // pool meshes are removed with the blocks above
   pets.length = 0;
   if (typeof removeQuestGem === 'function') { removeQuestGem(); removeCarriedGem(); }
   const qh = $('questHud'); if (qh) qh.style.display = 'none';
@@ -3652,6 +3656,7 @@ function solidAt(x, y, z) {
   if (b.type === 'door' && b.state && b.state.swing > 1.0) return false;   // an open door lets you through
   if (b.type === 'garage' && b.state && b.state.lift > 0.9) return false;  // a rolled-up garage door lets the car through
   if (b.type === 'autoroof') return false;       // the big house roof never blocks movement/building
+  if (b.type === 'water') return false;          // pool water — you can wade/swim in it
   return true;
 }
 /* height of the walkable surface at a column — top of the highest solid block (0 = grass) */
@@ -3683,12 +3688,24 @@ function addBlockMesh(x, y, z, material, type, removable, customMesh) {
   blocks.set(key(x, y, z), { mesh, type, removable: !!removable });
   return mesh;
 }
+// 🏊 swimmable, animated pool water — a translucent surface that ripples; non-solid so you wade in.
+const poolWaterGeo = new THREE.BoxGeometry(1.0, 0.5, 1.0);
+const poolWaterMat = new THREE.MeshLambertMaterial({ color: 0x4fb3e8, emissive: 0x123c5a, transparent: true, opacity: 0.8 });
+let poolWater = [];
+function placePoolWater(x, z) {
+  if (blocks.has(key(x, 0, z))) return;
+  const mesh = new THREE.Mesh(poolWaterGeo, poolWaterMat);
+  mesh.position.set(x + 0.5, 0.3, z + 0.5);
+  addBlockMesh(x, 0, z, null, 'water', true, mesh);
+  poolWater.push({ mesh, x, z, baseY: 0.3 });
+}
 function removeBlockAt(x, y, z) {
   const b = blocks.get(key(x, y, z));
   if (!b) return null;
   scene.remove(b.mesh);
   // remove EVERY cell that shares this mesh (a door spans 2 cells, a garage door 4)
   for (const [k, bb] of blocks) if (bb.mesh === b.mesh) blocks.delete(k);
+  if (b.type === 'water' && poolWater.length) poolWater = poolWater.filter(w => w.mesh !== b.mesh);   // drop the animated entry
   return b;
 }
 
@@ -4846,15 +4863,16 @@ const HOME_MODELS = [
   { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard' },
   { id: 'modern',  name: '🏢 Modern Flat',      price: 300, stories: 2, garage: true, pool: false, color: 0xDDE3EA, roofStyle: 'flat',    desc: '2 stories • sleek flat roof • garage • yards' },
   { id: 'family',  name: '🏠 Family Two-Story',  price: 340, stories: 2, garage: true, pool: false, color: 0xD9C39A, roofStyle: 'pointed', desc: '2 stories + stairs • garage • yards' },
-  { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • POOL' },
-  { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
-  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, desc: 'Huge • columns • 3-car garage • POOL • the grandest of all!' }
+  { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL' },
+  { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
+  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, desc: 'Mega! columns • 3-car garage • huge POOL • the grandest of all!' }
 ];
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
   const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
   const garW = m.garage ? (m.garW || 3) : 0, garD = 4, garH = 2;
-  const backD = m.pool ? 4 : 3, frontD = m.columns ? 3 : 2, margin = 1;
+  const poolD = m.pool ? (m.poolD || 3) : 0;
+  const backD = m.pool ? (poolD + 2) : 3, frontD = m.columns ? 3 : 2, margin = 1;
   const lotW = margin + hw + garW + margin, lotD = margin + backD + hd + frontD + margin;
   const hx0 = ox + margin, hx1 = hx0 + hw - 1, hz0 = oz + margin + backD, hz1 = hz0 + hd - 1;
   const doorX = hx0 + (hw >> 1), frontZ = hz1, gx0 = hx1 + 1, gx1 = gx0 + garW - 1, gz1 = hz1, gz0 = gz1 - garD + 1;
@@ -4991,9 +5009,12 @@ function buildHome(ox, oz, m) {
     if (p[0] > lx0 && p[0] < lx1 && p[1] > lz0 && p[1] < lz1 && !blocks.has(key(p[0], 0, p[1]))) placeFurnitureAt('flower', p[0], p[1], 0, 0);
   });
   if (m.pool) {
-    const px0 = L.hx0 + 1, pz0 = oz + 1;
-    for (let x = px0 - 1; x <= px0 + 3; x++) for (let z = pz0 - 1; z <= pz0 + 2; z++) cell(x, 0, z, poolEdge);  // tile surround
-    for (let x = px0; x <= px0 + 2; x++) for (let z = pz0; z <= pz0 + 1; z++) cell(x, 0, z, poolW);             // water
+    const pw = m.poolW || 4, pd = m.poolD || 3;
+    const px0 = L.hx0 + Math.max(0, (L.hw - pw) >> 1), pz0 = oz + 1;
+    for (let x = px0 - 1; x <= px0 + pw; x++) for (let z = pz0 - 1; z <= pz0 + pd; z++) {
+      if (x === px0 - 1 || x === px0 + pw || z === pz0 - 1 || z === pz0 + pd) cell(x, 0, z, poolEdge);   // tile rim
+      else placePoolWater(x, z);                                                                          // animated, swimmable water
+    }
   }
   // remember this home's lot so it can be demolished as one unit later (no refund)
   G.homes = G.homes || [];
@@ -6685,7 +6706,7 @@ function collideAxis(axis, delta) {
   if (playerBlocked()) {
     // auto-step: when walking into a single-block ledge (a stair, a curb, your own block)
     // and you were on the ground, hop up onto it instead of stopping — easy stairs!
-    if (axis !== 'y' && player._wasGrounded && player.vel.y <= 0.2) {
+    if (axis !== 'y' && !player.driving && player._wasGrounded && player.vel.y <= 0.2) {
       player.pos.y += 1.02;
       if (!playerBlocked()) { player.onGround = true; player.vel.y = 0; return; }   // stepped up cleanly
       player.pos.y -= 1.02;                                                          // no headroom → block normally
@@ -6876,6 +6897,11 @@ function updatePlayer(dt) {
 
   let speed = G.owned.shoes ? 7 : 5;
   if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
+  // 🏊 in the pool? wade/swim — a little slower, with a splash the moment you jump in
+  const _wb = blocks.get(key(Math.floor(player.pos.x), 0, Math.floor(player.pos.z)));
+  const inWater = !!(_wb && _wb.type === 'water');
+  if (inWater) { speed *= 0.62; if (!player.inWater) { player.inWater = true; if (Sound.splash) Sound.splash(); } }
+  else player.inWater = false;
   const jumpV = G.owned.boots ? 10 : 7.5;
   if (keys['ArrowLeft']) player.yaw += 2.4 * dt;     // keyboard turn (desktop)
   if (keys['ArrowRight']) player.yaw -= 2.4 * dt;
@@ -6950,6 +6976,7 @@ function updatePlayer(dt) {
   av.visible = !G.firstPerson;
   const d = player.avatarData;
   const t = performance.now() / 1000;
+  if (player.inWater) av.position.y += 0.18 + Math.sin(t * 4) * 0.07;   // 🏊 bob at the water's surface
   if (moving) {
     const s = Math.sin(t * 9) * 0.6;
     if (d.quad) {                                                      // diagonal trot
@@ -10371,6 +10398,7 @@ function loop(now) {
 
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
+  if (poolWater.length) { const tw = performance.now() / 480; for (const w of poolWater) if (w.mesh.parent) w.mesh.position.y = w.baseY + Math.sin(tw + (w.x + w.z) * 0.7) * 0.05; }   // rippling pool water
   if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
   if (!popupOpen && !G.over) updatePets(dt, now);
   if (!G.over) updateQuest(dt, now);
