@@ -3263,6 +3263,7 @@ function saveGame() {
       placed: serializeWorld(),
       foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0]),
       quest: G.quest,
+      homes: G.homes || [],
       pos: [player.pos.x, player.pos.y, player.pos.z],
       when: Date.now()
     }));
@@ -3310,6 +3311,7 @@ function restoreGame(s) {
   G.world = WORLDS[s.world] ? s.world : 'meadow';
   G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex;
   G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
+  G.homes = s.homes || [];
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
@@ -3401,6 +3403,7 @@ function resetGameState() {
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
+  G.homes = [];
 }
 function goHome() {
   if (G.running && !G.over) saveGame();
@@ -4755,6 +4758,27 @@ function openRealty() {
     b.onclick = () => { Sound.click(); buyHome(m.id); };
     row.appendChild(b); list.appendChild(row);
   });
+  if (G.homes && G.homes.length) {            // demolish a home you own (no coins back, so the incentive stays)
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'margin-top:10px;font-weight:800;color:#8a5a3a;font-size:14px';
+    hdr.textContent = '🧹 Your homes — demolish clears the lot (no coins back):';
+    list.appendChild(hdr);
+    G.homes.forEach((h, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'background:#fdecea;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px';
+      row.innerHTML = '<div style="flex:1"><b style="color:#8e2a20">' + (h.name || '🏠 Home') + '</b></div>';
+      const db = document.createElement('button');
+      db.style.cssText = 'font-weight:bold;padding:8px 12px;border-radius:12px;color:#fff;background:#c0392b;border:none;box-shadow:0 4px 0 #8e2a20;cursor:pointer;white-space:nowrap';
+      db.textContent = '🧹 Demolish';
+      let armed = false, t = null;
+      db.onclick = () => {
+        Sound.click();
+        if (!armed) { armed = true; db.textContent = '⚠️ Tap again'; db.style.background = '#8e2a20'; t = setTimeout(() => { armed = false; db.textContent = '🧹 Demolish'; db.style.background = '#c0392b'; }, 3000); return; }
+        if (t) clearTimeout(t); demolishHome(i); openRealty();
+      };
+      row.appendChild(db); list.appendChild(row);
+    });
+  }
   $('realtyPopup').style.display = 'flex';
 }
 function closeRealty() { $('realtyPopup').style.display = 'none'; popupOpen = false; }
@@ -4840,6 +4864,17 @@ function buildHome(ox, oz, m) {
     for (let x = px0 - 1; x <= px0 + 3; x++) for (let z = pz0 - 1; z <= pz0 + 2; z++) cell(x, 0, z, poolEdge);  // tile surround
     for (let x = px0; x <= px0 + 2; x++) for (let z = pz0; z <= pz0 + 1; z++) cell(x, 0, z, poolW);             // water
   }
+  // remember this home's lot so it can be demolished as one unit later (no refund)
+  G.homes = G.homes || [];
+  G.homes.push({ x0: lx0, x1: lx1, z0: lz0, z1: lz1, y1: L.wallH + 3, name: m.name });
+}
+function demolishHome(i) {
+  const h = (G.homes || [])[i]; if (!h) return;
+  for (let x = h.x0; x <= h.x1; x++) for (let z = h.z0; z <= h.z1; z++)
+    for (let y = 0; y <= h.y1; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
+  G.homes.splice(i, 1);
+  refreshHUD();
+  toast('🧹 Home demolished — the lot is clear again. (No coins back, so keep reading & doing math to afford the next one!)', 4600);
 }
 function buyHome(id) {
   const m = HOME_MODELS.find(h => h.id === id); if (!m) return;
