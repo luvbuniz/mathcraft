@@ -2673,7 +2673,8 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0 };
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0,
+    garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -2842,8 +2843,7 @@ let roadTraveling = false;
 function travelRoad() {
   const dest = ROAD_DEST[G.world]; if (!dest || roadTraveling) return;
   roadTraveling = true;
-  if (player.driving) toggleDrive();                       // park the car (it comes with you — it's yours)
-  travelToWorld(dest);
+  travelToWorld(dest);                                     // your car comes with you (and you keep driving)
   setTimeout(() => { roadTraveling = false; }, 1500);
 }
 function travelToWorld(id) {
@@ -2851,6 +2851,10 @@ function travelToWorld(id) {
   if (worldComingSoon(id)) { closeTravel(); comingSoonNote(id); return; }   // not ready yet → tease it
   if (worldLocked(id)) { closeTravel(); openUnlock(); return; }     // locked → offer the unlock
   closeTravel();
+  // your current vehicle comes with you through the portal/road
+  const broughtCar = (G.activeCar && G.owned[G.activeCar]) ? G.activeCar : null;
+  const wasDriving = !!player.driving;
+  if (broughtCar) { profile.garage = profile.garage || {}; profile.garage[broughtCar] = true; profile.activeVehicle = broughtCar; profileDirty = true; saveProfile(); }
   saveGame();                                   // keep the world we're leaving
   const dest = loadSaveFor(G.playerName, id);
   if (dest) { restoreGame(dest); }              // resume that world's build + theme
@@ -2859,6 +2863,11 @@ function travelToWorld(id) {
     G.world = id;
     loadProfileFor(G.playerName);
     startGame();
+  }
+  // pop your vehicle out right beside you so it travelled through with you
+  if (broughtCar && cars[broughtCar] && (!cars[broughtCar].def.water || G.world === 'beach')) {
+    summonVehicle(broughtCar);
+    if (wasDriving) toggleDrive();              // keep driving if you drove through
   }
   const subj = WORLDS[id].subject;
   setTimeout(() => toast('🌀 Welcome to ' + WORLDS[id].emoji + ' ' + WORLDS[id].name + '! ' +
@@ -4150,6 +4159,40 @@ function setDealerDisplay(world) {
 }
 setDealerDisplay('meadow');
 function carDefColor(id) { return (G.carColors && G.carColors[id] != null) ? G.carColors[id] : cars[id].def.color; }
+// 🚗 Vehicles are GLOBAL — owned in every world and carried through the portal with you.
+// They live on the kid's profile (a "garage") so a car bought in one town works in all of them.
+const VEHICLE_IDS = VEHICLES.map(v => v.id);
+function syncGarage() {
+  profile.garage = profile.garage || {};
+  profile.garageColors = profile.garageColors || {};
+  let changed = false;
+  // one-time migration: pull in every vehicle owned in ANY of this player's saved worlds
+  if (!profile.garageMigrated) {
+    (typeof WORLD_ORDER !== 'undefined' ? WORLD_ORDER : Object.keys(WORLDS)).forEach(w => {
+      const s = loadSaveFor(G.playerName, w); if (!s) return;
+      if (s.owned) VEHICLE_IDS.forEach(id => { if (s.owned[id]) profile.garage[id] = true; });
+      if (s.carColors) for (const id in s.carColors) { if (cars[id]) profile.garageColors[id] = s.carColors[id]; }
+    });
+    profile.garageMigrated = true; changed = true;
+  }
+  // fold THIS world's owned vehicles + colors into the global garage
+  VEHICLE_IDS.forEach(id => { if (G.owned[id] && !profile.garage[id]) { profile.garage[id] = true; changed = true; } });
+  for (const id in (G.carColors || {})) { if (cars[id] && profile.garageColors[id] !== G.carColors[id]) { profile.garageColors[id] = G.carColors[id]; changed = true; } }
+  // apply the global garage back into THIS world (own them all, everywhere)
+  VEHICLE_IDS.forEach(id => { if (profile.garage[id]) G.owned[id] = true; });
+  for (const id in profile.garageColors) { if (G.carColors[id] == null) G.carColors[id] = profile.garageColors[id]; }
+  // a single "current vehicle" that follows you between worlds
+  if (profile.activeVehicle && G.owned[profile.activeVehicle]) G.activeCar = profile.activeVehicle;
+  else if (G.activeCar && !profile.activeVehicle) { profile.activeVehicle = G.activeCar; changed = true; }
+  if (changed) { profileDirty = true; saveProfile(); }
+}
+function saveGarageState() {                 // persist any vehicle change to the global garage
+  profile.garage = profile.garage || {}; profile.garageColors = profile.garageColors || {};
+  VEHICLE_IDS.forEach(id => { if (G.owned[id]) profile.garage[id] = true; });
+  for (const id in (G.carColors || {})) { if (cars[id]) profile.garageColors[id] = G.carColors[id]; }
+  profile.activeVehicle = G.activeCar || null;
+  profileDirty = true; saveProfile();
+}
 function recolorCar(id, c) { cars[id].bodyMat.color.setHex(c); cars[id].bodyMat2.color.setHex(shade(c, 0.8)); }
 function activeCarObj() { return G.activeCar ? cars[G.activeCar] : null; }
 function parkActiveCar() {
@@ -4161,7 +4204,7 @@ function parkActiveCar() {
   a.group.visible = true; a.spawned = true;
 }
 function carDist() { const a = activeCarObj(); return (a && a.spawned) ? Math.hypot(player.pos.x - a.group.position.x, player.pos.z - a.group.position.z) : 999; }
-function setActiveCar(id) { G.activeCar = id; recolorCar(id, carDefColor(id)); parkActiveCar(); }
+function setActiveCar(id) { G.activeCar = id; recolorCar(id, carDefColor(id)); parkActiveCar(); saveGarageState(); }
 // Take a vehicle out of the backpack right next to the player (so you can hop straight in).
 function summonVehicle(id) {
   if (player.driving) toggleDrive();
@@ -4170,13 +4213,14 @@ function summonVehicle(id) {
   const a = cars[id];
   a.group.position.set(player.pos.x + 1.6, 0, player.pos.z);   // appears beside you
   a.yaw = Math.PI; a.group.rotation.y = a.yaw + Math.PI; a.group.visible = true; a.spawned = true;
+  saveGarageState();
   toast(a.def.emoji + ' ' + a.def.name + ' is right beside you — tap ⭐ USE (E) to drive!', 3200);
 }
 // Put the current vehicle away in the backpack (clears it from the world).
 function stowVehicle() {
   if (player.driving) toggleDrive();
   const a = activeCarObj(); if (a) { a.group.visible = false; a.spawned = false; }
-  G.activeCar = null;
+  G.activeCar = null; saveGarageState();
   toast('📦 Vehicle packed away in your 🎒 — take it out any time!', 2400);
 }
 function buyCar(id) {
@@ -4184,7 +4228,7 @@ function buyCar(id) {
   if (G.owned[id]) { setActiveCar(id); return; }
   if (G.coins < def.price) { toast('🔒 The ' + def.name + ' costs ' + def.price + ' 🪙 — do math to earn more!', 3200); return; }
   G.coins -= def.price; G.owned[id] = true; Sound.coin(); refreshHUD();
-  setActiveCar(id); Sound.honk();
+  setActiveCar(id); Sound.honk();   // setActiveCar persists the new car to the global garage
   toast('🎉 You got the ' + def.name + '! It\'s parked out front — tap ⭐ USE to drive!', 4200);
 }
 // shared vehicle showroom (used by Stack Motors and the Spanish boat shop)
@@ -4210,7 +4254,7 @@ function renderVehicleMenu(opts) {
       const b = document.createElement('button');
       b.className = 'swatch' + (c === cur ? ' sel' : '');
       b.style.background = '#' + c.toString(16).padStart(6, '0');
-      b.onclick = () => { Sound.click(); G.carColors[G.activeCar] = c; recolorCar(G.activeCar, c); opts.reopen(); };
+      b.onclick = () => { Sound.click(); G.carColors[G.activeCar] = c; recolorCar(G.activeCar, c); saveGarageState(); opts.reopen(); };
       sw.appendChild(b);
     });
   }
@@ -4264,6 +4308,7 @@ function toggleDrive() {
 // park the active car (or hide all) whenever a game starts/loads
 function syncCars() {
   player.driving = null; Sound.engineStop();
+  syncGarage();                                 // own every garaged vehicle here; pick up the global active car
   for (const id in cars) recolorCar(id, carDefColor(id));
   parkActiveCar();
 }
