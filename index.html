@@ -5760,13 +5760,14 @@ function finishSpell() {
   let reward = 4; for (let i = 0; i < spell.words.length; i++) reward += 3 + lvl;   // harder levels pay more
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   let levelMsg = ''; const total = spell.words.length, fr = spell.firstRight || 0;
-  if (fr === total) {
-    G.spellSlip = 0; G.spellStreak = (G.spellStreak || 0) + 1;
+  // Climbs on STRONG rounds (most right), not just perfect — a perfect round bumps right away.
+  if (fr >= total - 1) {                              // 4/5 or 5/5
+    G.spellSlip = 0; G.spellStreak = (G.spellStreak || 0) + (fr === total ? 2 : 1);
     if (G.spellStreak >= 2 && G.spellLevel < 5) { G.spellLevel++; G.spellStreak = 0; levelMsg = '📈 Spelling Level up — now Level ' + G.spellLevel + '! 🎉'; }
-  } else if (fr <= total / 2) {
+  } else if (fr <= total / 2) {                       // 2/5 or fewer — ease back so it stays fun
     G.spellStreak = 0; G.spellSlip = (G.spellSlip || 0) + 1;
     if (G.spellSlip >= 2 && G.spellLevel > 1) { G.spellLevel--; G.spellSlip = 0; levelMsg = '✍️ Now at Spelling Level ' + G.spellLevel + ' — keep practicing!'; }
-  } else { G.spellStreak = 0; }
+  }                                                   // a so-so round (3/5) holds steady — no reset
   profile.spellLevel = G.spellLevel; profileDirty = true; saveProfile();
   $('spellTitle').innerHTML = '🏤 Spelling Bee';
   $('spellMain').innerHTML = '<div style="font-size:50px">📮⭐</div>';
