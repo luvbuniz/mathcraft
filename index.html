@@ -2984,7 +2984,7 @@ function openTravel() {
 }
 function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
 /* ---- a road out of town: drive/walk to the edge sign to travel (portal still works too) ---- */
-const ROAD_DEST = { meadow: 'city', city: 'meadow' };     // Spanish Beach is benched, so no road there yet
+const ROAD_DEST = {};     // road travel removed — the 🌀 portal is the way between worlds
 const ROAD_EXIT = { x: 21, z: 4 };
 function roadExitDist() { return (G.running && ROAD_DEST[G.world]) ? Math.hypot(player.pos.x - ROAD_EXIT.x, player.pos.z - ROAD_EXIT.z) : 999; }
 let roadTraveling = false;
@@ -6315,7 +6315,6 @@ function buildRealty(g) {                      // 🏡 Stack Realty — Reading 
   g.add(R);
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
-  buildRoad(g, 'meadow');
   buildLibrary(g);
   buildPostOffice(g);
   buildRealty(g);
@@ -6488,7 +6487,6 @@ function buildRoad(g, destId) {                // a paved road leading off the e
   g.add(R);
 }
 function buildMeadowDecor(g) {
-  buildRoad(g, 'city');
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
   // a ring of overlapping rolling hills sitting ON the far ground, their bases sunk
   // below the skirt so only the rounded tops show — a soft ridge that fades into the haze.
