@@ -2713,7 +2713,8 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
   return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0,
-    garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false };
+    garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
+    pack: null, packMigrated: false };
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -3219,6 +3220,7 @@ function saveGame() {
       when: Date.now()
     }));
   } catch (e) {}
+  persistPack();                                 // keep the global backpack in sync with what you're carrying
 }
 function listSaves() {
   const out = [];
@@ -4231,6 +4233,33 @@ function saveGarageState() {                 // persist any vehicle change to th
   for (const id in (G.carColors || {})) { if (cars[id]) profile.garageColors[id] = G.carColors[id]; }
   profile.activeVehicle = G.activeCar || null;
   profileDirty = true; saveProfile();
+}
+// 🎒 The backpack (unplaced blocks/doors/furniture) is GLOBAL too — it's YOUR stuff and
+// travels with you between worlds. Placed builds stay in the world you made them in.
+function packSnapshot() {
+  return { blocks: G.blocks || 0, powerBlocks: G.powerBlocks || 0, doors: G.doors || 0,
+    garageDoors: G.garageDoors || 0, furniture: Object.assign({}, G.furniture) };
+}
+function persistPack() {                      // mirror the live backpack into the global pack (saved to disk)
+  if (!profile.packMigrated) return;         // syncPack hasn't unified the old per-world bags yet — don't clobber
+  profile.pack = packSnapshot();
+  profileDirty = true; saveProfile();
+}
+function syncPack() {
+  // one-time: combine every world's leftover backpack into a single global one (nothing is lost)
+  if (!profile.packMigrated) {
+    const sum = { blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, furniture: {} };
+    (typeof WORLD_ORDER !== 'undefined' ? WORLD_ORDER : Object.keys(WORLDS)).forEach(w => {
+      const s = loadSaveFor(G.playerName, w); if (!s) return;
+      sum.blocks += s.blocks || 0; sum.powerBlocks += s.powerBlocks || 0; sum.doors += s.doors || 0; sum.garageDoors += s.garageDoors || 0;
+      const sf = s.furniture || {}; for (const k in sf) sum.furniture[k] = (sum.furniture[k] || 0) + (sf[k] || 0);
+    });
+    profile.pack = sum; profile.packMigrated = true; profileDirty = true; saveProfile();
+  }
+  // apply the global backpack to this world (it follows you everywhere)
+  const p = profile.pack; if (!p) return;
+  G.blocks = p.blocks || 0; G.powerBlocks = p.powerBlocks || 0; G.doors = p.doors || 0; G.garageDoors = p.garageDoors || 0;
+  if (p.furniture) for (const k in p.furniture) { if (k in G.furniture) G.furniture[k] = p.furniture[k] || 0; }
 }
 function recolorCar(id, c) { cars[id].bodyMat.color.setHex(c); cars[id].bodyMat2.color.setHex(shade(c, 0.8)); }
 function activeCarObj() { return G.activeCar ? cars[G.activeCar] : null; }
@@ -9625,6 +9654,8 @@ function startGame() {
   if (isTouch) $('btnShoot').style.display = G.gloomiesEnabled && G.doomsday ? 'block' : 'none';
   spawnBerries();
   syncCars();                                   // park the active car out front if owned (else hide all)
+  syncPack();                                   // your backpack (blocks/doors/furniture) follows you here
+  refreshHUD();
   G.running = true;
 
   $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 Calm') + ' • Grade ' + G.grade;
