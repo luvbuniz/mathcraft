@@ -1303,19 +1303,21 @@
 <div class="popup" id="unlockPopup">
   <div class="popupCard" style="text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="unlockClose" title="Close" aria-label="Close">✕</button></div>
-    <div style="font-size:46px">🔓</div>
-    <h2 style="color:#7a4ea0; font-size:clamp(24px,4vw,32px)">Unlock the Full Game</h2>
+    <div style="font-size:46px">🌟</div>
+    <h2 style="color:#7a4ea0; font-size:clamp(24px,4vw,32px)">Become a Founding Family</h2>
     <p style="color:#6b5a8a; font-size:clamp(14px,2.4vw,17px); line-height:1.5; margin:6px 4px 4px">
-      🌳 <b>Math Meadow is free, forever.</b> One small unlock opens the other worlds —
-      and any new worlds we add later.
+      🌳 <b>Math Meadow is free, forever.</b> Unlock the full game <b>once</b> and you're a
+      Founding Family — you get the early/beta version other parents don't have yet, plus
+      <b>every future update, free for life.</b>
     </p>
     <div style="display:flex; flex-direction:column; gap:8px; margin:12px 0; text-align:left">
-      <div class="unlockPerk">🏘️ <b>Reading Town</b> — reading &amp; grammar <span style="color:#2f8a52; font-weight:700">• Open now!</span></div>
-      <div class="unlockPerk">🏖️ <b>Spanish Beach</b> — beginner Spanish <span style="color:#b5832a; font-weight:700">• Coming soon</span></div>
-      <div class="unlockPerk">✨ All future worlds &amp; updates</div>
+      <div class="unlockPerk">🏘️ <b>Reading Town</b> — reading &amp; spelling <span style="color:#2f8a52; font-weight:700">• Open now!</span></div>
+      <div class="unlockPerk">🌟 <b>Early access</b> — new worlds &amp; features before everyone else</div>
+      <div class="unlockPerk">♾️ <b>All future updates, free for life</b> — buy once, never again</div>
+      <div class="unlockPerk">🏖️ Spanish Beach &amp; more <span style="color:#b5832a; font-weight:700">• Coming soon (included free)</span></div>
     </div>
-    <button id="unlockBuyBtn">Unlock everything — $4.99 once</button>
-    <div style="color:#9a86b8; font-size:12px; margin-top:8px">One-time purchase • no subscription • saved on this device</div>
+    <button id="unlockBuyBtn">Become a Founding Family — $4.99 once</button>
+    <div style="color:#9a86b8; font-size:12px; margin-top:8px">One-time purchase • no subscription • every future update included</div>
     <div style="margin-top:14px; padding-top:12px; border-top:1px solid #ece4f5">
       <div style="color:#7a6a35; font-weight:700; font-size:13px; margin-bottom:6px">🎁 Have a gift code?</div>
       <div style="display:flex; gap:8px; justify-content:center">
@@ -3036,7 +3038,7 @@ function doUnlock() {
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
-  toast('🎉 Full game unlocked! 🏘️ Reading Town is open — find a 🌀 portal to visit. 🏖️ Spanish Beach is coming soon!', 4500);
+  toast('🎉 You\'re a Founding Family! 🏘️ Reading Town is open — find a 🌀 portal to visit. Every future world & update is yours, free for life. 🏖️ Spanish Beach coming soon!', 5200);
   if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
 }
 /* reflect lock state on the homepage world picker */
