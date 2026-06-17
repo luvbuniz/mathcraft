@@ -389,6 +389,11 @@
   .guBar .num { width:62px; font-weight:bold; text-align:right; font-variant-numeric:tabular-nums; }
   .guScore { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(15px,2.6vw,19px); font-weight:bold; color:#7a5b00; background:#FFF6D8; border:1px solid #f0d98a; border-radius:10px; padding:7px 11px; margin:4px 0 8px; }
   .guScore .today { font-size:0.8em; color:#2f8a52; }
+  /* level-up side quests */
+  .sqCell { width:clamp(34px,9vw,46px); height:clamp(34px,9vw,46px); border:2px solid #b6a884; border-radius:8px; background:#f3ead6; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  .sqCell:active { transform:translateY(1px); }
+  .sqCell.found { background:#ffe9a0; border-color:#e0b94a; }
+  .sqAxis { color:#7a5c1e; font-weight:bold; font-size:13px; display:inline-flex; align-items:center; justify-content:center; }
   .guSkillSub { margin:-1px 0 6px 38%; padding-left:8px; font-size:clamp(11px,1.85vw,13px); color:#6a7b90; }
   .guEffort { color:#33507a; font-size:clamp(13px,2.2vw,15px); margin:2px 0 4px; }
   .guFocus { font-weight:bold; font-size:clamp(13px,2.2vw,15px); margin:0 0 6px; }
@@ -1068,6 +1073,17 @@
     <h2 style="color:#2f7d4f; margin:2px 0 8px">Stack Realty</h2>
     <p id="realtyDesc" style="color:#5b6b46; margin:0 0 12px; line-height:1.45">Move-in-ready homes — built and ready to decorate! Walk in and make it yours.</p>
     <div id="realtyList" style="display:flex; flex-direction:column; gap:9px; text-align:left; max-height:56vh; overflow:auto"></div>
+  </div>
+</div>
+
+<!-- ================= LEVEL-UP BONUS QUEST (treasure map / describing words) ================= -->
+<div class="popup" id="sideQuestPopup">
+  <div class="popupCard" style="width:min(480px,95vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="sqClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="sqTitle" style="color:#b5832a; margin:2px 0 6px">Bonus Quest</h2>
+    <div id="sqPrompt" style="color:#5b6b46; font-size:clamp(14px,2.5vw,18px); margin-bottom:10px; line-height:1.45"></div>
+    <div id="sqBody"></div>
+    <div id="sqMsg" style="min-height:26px; font-weight:bold; margin-top:10px"></div>
   </div>
 </div>
 
@@ -2886,7 +2902,7 @@ function recordSolve(eq) {
     const bonus = newLevel * 5; G.coins += bonus;
     setTimeout(() => {
       if (Sound.fanfare) Sound.fanfare();
-      toast('🎉 LEVEL UP! You reached ⭐ Level ' + newLevel + '!  +' + bonus + ' 🪙', 4600);
+      toast('🎉 LEVEL UP! You reached ⭐ Level ' + newLevel + '!  +' + bonus + ' 🪙 — bonus quest time!', 4600);
       refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
       if (typeof offerLevelQuest === 'function') offerLevelQuest(newLevel);
     }, 1000);
@@ -3497,6 +3513,7 @@ function resetGameState() {
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = [];
+  G.pendingLevelQuest = null;
 }
 function goHome() {
   if (G.running && !G.over) saveGame();
@@ -4980,6 +4997,112 @@ function buyHome(id) {
   if (Sound.fanfare) Sound.fanfare();
   toast('🏡 Welcome home! Your ' + m.name + ' is built — walk in and make it yours! (−' + m.price + ' 🪙)', 6000);
 }
+/* ===================== 🗺️ LEVEL-UP BONUS QUESTS =====================
+   When a kid levels up, a fun, quick, educational mini-quest pops for extra coins:
+   a Treasure Map (read X,Y coordinates) or a Describing Words hunt (adjectives). */
+const QUEST_OBJECTS = [
+  { e: '🍎', n: 'apple', adj: ['red', 'round', 'sweet'], no: ['loud', 'square', 'frozen'] },
+  { e: '☀️', n: 'sun', adj: ['bright', 'hot', 'round'], no: ['cold', 'tiny', 'wet'] },
+  { e: '🐢', n: 'turtle', adj: ['slow', 'green', 'bumpy'], no: ['speedy', 'purple', 'noisy'] },
+  { e: '🍋', n: 'lemon', adj: ['yellow', 'sour', 'bumpy'], no: ['sweet', 'fluffy', 'blue'] },
+  { e: '🐰', n: 'bunny', adj: ['fluffy', 'soft', 'quick'], no: ['scaly', 'giant', 'metal'] },
+  { e: '⚽', n: 'ball', adj: ['round', 'bouncy', 'striped'], no: ['flat', 'sticky', 'sleepy'] },
+  { e: '❄️', n: 'snowflake', adj: ['cold', 'white', 'tiny'], no: ['hot', 'heavy', 'loud'] },
+  { e: '🔥', n: 'fire', adj: ['hot', 'bright', 'crackly'], no: ['cold', 'quiet', 'soft'] },
+  { e: '🌸', n: 'flower', adj: ['pretty', 'pink', 'soft'], no: ['noisy', 'metal', 'spiky'] },
+  { e: '🐘', n: 'elephant', adj: ['big', 'gray', 'heavy'], no: ['tiny', 'red', 'speedy'] },
+  { e: '🐝', n: 'bee', adj: ['buzzy', 'yellow', 'tiny'], no: ['silent', 'huge', 'square'] },
+  { e: '🦒', n: 'giraffe', adj: ['tall', 'spotted', 'long'], no: ['short', 'round', 'wet'] }
+];
+let sideQuest = null;
+const sqBtn = (id, label, bg) => '<button id="' + id + '" style="font-weight:bold;padding:11px 22px;border-radius:14px;color:#fff;background:' + bg + ';border:none;box-shadow:0 4px 0 rgba(0,0,0,.18);cursor:pointer;margin:2px 4px">' + label + '</button>';
+function offerLevelQuest(level) {
+  if (popupOpen || G.over || !G.running) { G.pendingLevelQuest = level; return; }   // wait for a clear moment
+  const type = (level % 2 === 0) ? 'treasure' : 'adjective';
+  sideQuest = { type, level, round: 0, total: 3, right: 0, reward: 8 + level, locked: false };
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  $('sqClose').onclick = () => { Sound.click(); closeSideQuest(); };
+  $('sqTitle').textContent = '⭐ Level ' + level + ' Bonus Quest!';
+  $('sqPrompt').innerHTML = type === 'treasure'
+    ? '🗺️ A <b>Treasure Map</b> quest! Use the X (across) and Y (up) numbers to find the buried treasure.'
+    : '🔍 A <b>Describing Words</b> quest! Pick the word that describes each thing.';
+  $('sqBody').innerHTML = '<div style="font-size:54px">' + (type === 'treasure' ? '🗺️' : '🔍') + '</div>';
+  $('sqMsg').innerHTML = sqBtn('sqStart', '🚀 Let\'s go!', '#3f9d34') + sqBtn('sqSkip', 'Maybe later', '#9aa7b4');
+  $('sqStart').onclick = () => { Sound.click(); startSideQuest(); };
+  $('sqSkip').onclick = () => { Sound.click(); closeSideQuest(); };
+  $('sideQuestPopup').style.display = 'flex';
+}
+function startSideQuest() {
+  $('sqMsg').textContent = '';
+  if (sideQuest.type === 'treasure') { newTreasureTarget(); renderTreasure(); }
+  else { nextAdjective(); renderAdjective(); }
+}
+function newTreasureTarget() { sideQuest.target = { x: 1 + Math.floor(Math.random() * 5), y: 1 + Math.floor(Math.random() * 5) }; }
+function renderTreasure() {
+  const N = 5, t = sideQuest.target;
+  $('sqPrompt').innerHTML = '🗺️ Treasure ' + (sideQuest.round + 1) + ' of ' + sideQuest.total + ' is at <b>(' + t.x + ', ' + t.y + ')</b><br>' +
+    '<span style="font-size:0.86em">Count <b>' + t.x + '</b> across →, then <b>' + t.y + '</b> up ↑, and tap that square.</span>';
+  let html = '<div style="display:inline-block">';
+  for (let y = N; y >= 1; y--) {
+    html += '<div style="display:flex;align-items:center;gap:4px;justify-content:center;margin-bottom:4px"><span class="sqAxis" style="width:16px">' + y + '</span>';
+    for (let x = 1; x <= N; x++) html += '<button class="sqCell" data-x="' + x + '" data-y="' + y + '"></button>';
+    html += '</div>';
+  }
+  html += '<div style="display:flex;gap:4px;justify-content:center"><span style="width:16px"></span>';
+  for (let x = 1; x <= N; x++) html += '<span class="sqAxis" style="width:clamp(34px,9vw,46px)">' + x + '</span>';
+  html += '</div></div>';
+  const body = $('sqBody'); body.innerHTML = html;
+  body.querySelectorAll('.sqCell').forEach(c => c.onclick = () => treasureTap(+c.dataset.x, +c.dataset.y, c));
+}
+function treasureTap(x, y, cell) {
+  if (!sideQuest || sideQuest.locked) return;
+  const t = sideQuest.target;
+  if (x === t.x && y === t.y) {
+    Sound.correct(); cell.classList.add('found'); cell.textContent = '💎';
+    sideQuest.right++; sideQuest.round++; sideQuest.locked = true;
+    $('sqMsg').style.color = '#2f8a52'; $('sqMsg').textContent = '💎 Found it!';
+    setTimeout(() => { sideQuest.locked = false; if (sideQuest.round >= sideQuest.total) finishSideQuest(); else { $('sqMsg').textContent = ''; newTreasureTarget(); renderTreasure(); } }, 950);
+  } else {
+    Sound.wrong(); cell.textContent = '🕳️';
+    $('sqMsg').style.color = '#c0392b'; $('sqMsg').textContent = '🤔 Not there — count ' + t.x + ' across, then ' + t.y + ' up!';
+    setTimeout(() => { cell.textContent = ''; }, 750);
+  }
+}
+function nextAdjective() {
+  const o = pick(QUEST_OBJECTS); sideQuest.obj = o; sideQuest.answer = pick(o.adj);
+  const distract = o.no.concat(QUEST_OBJECTS.filter(x => x !== o).reduce((a, x) => a.concat(x.adj), [])).filter(w => !o.adj.includes(w));
+  sideQuest.options = fourChoices(sideQuest.answer, distract);
+}
+function renderAdjective() {
+  const o = sideQuest.obj;
+  $('sqPrompt').innerHTML = '🔍 Word ' + (sideQuest.round + 1) + ' of ' + sideQuest.total + '<br>Which word describes the <b>' + o.e + ' ' + o.n + '</b>?';
+  const body = $('sqBody'); body.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;max-width:280px;margin:0 auto';
+  sideQuest.options.forEach(opt => {
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '17px'; b.textContent = opt;
+    b.onclick = () => adjAnswer(opt, b, wrap);
+    wrap.appendChild(b);
+  });
+  body.appendChild(wrap);
+}
+function adjAnswer(opt, btn, wrap) {
+  if (!sideQuest || sideQuest.locked) return;
+  sideQuest.locked = true; disableChoices(wrap);
+  const correct = sideQuest.answer, right = opt === correct;
+  if (right) { Sound.correct(); btn.style.background = '#2f8a52'; btn.style.color = '#fff'; sideQuest.right++; $('sqMsg').style.color = '#2f8a52'; $('sqMsg').textContent = '✓ Yes!'; }
+  else { Sound.wrong(); markCorrectChoice(wrap, correct); $('sqMsg').style.color = '#c0392b'; $('sqMsg').innerHTML = '✗ A ' + sideQuest.obj.n + ' is <b>' + correct + '</b>.'; }
+  sideQuest.round++;
+  setTimeout(() => { sideQuest.locked = false; if (sideQuest.round >= sideQuest.total) finishSideQuest(); else { $('sqMsg').textContent = ''; nextAdjective(); renderAdjective(); } }, right ? 950 : 1900);
+}
+function finishSideQuest() {
+  const reward = sideQuest.reward + sideQuest.right * 2;
+  G.coins += reward; if (Sound.fanfare) Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+  $('sqPrompt').innerHTML = '🎉 Quest complete!';
+  $('sqBody').innerHTML = '<div style="font-size:56px">🏆</div><div style="font-size:18px;color:#2f8a52;font-weight:bold">You earned +' + reward + ' 🪙!</div>';
+  $('sqMsg').innerHTML = sqBtn('sqDone', 'Yay! 🎉', '#3f9d34');
+  $('sqDone').onclick = () => { Sound.click(); closeSideQuest(); };
+}
+function closeSideQuest() { $('sideQuestPopup').style.display = 'none'; popupOpen = false; sideQuest = null; }
 const MART_POS = { x: -7, z: 4 };
 function martDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - MART_POS.x, player.pos.z - MART_POS.z) : 999; }
 const BOAT_SHOP_POS = { x: 14, z: 10 };          // Stack Barcos, on the sand by the dock
@@ -10195,6 +10318,7 @@ function loop(now) {
 
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
+  if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
   if (!popupOpen && !G.over) updatePets(dt, now);
   if (!G.over) updateQuest(dt, now);
 
