@@ -2623,7 +2623,7 @@ const SHOP_ITEMS = [
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
   { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A window BLOCK — drops into a wall gap at any height.' },
-  { id: 'roof',   icon: '🔺', name: 'Roof Tiles (×4)', price: 8, kind: 'many', desc: 'Peaked roof tiles — stack them across the top of your walls.' },
+  { id: 'roof',   icon: '🔺', name: 'Roof Tiles (×4)', price: 8, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! (Bigger houses use more tiles.)' },
   { id: 'stove',  icon: '🔥', name: 'Stove & Oven', price: 12, kind: 'many', desc: 'Burners on top + a real oven. Cook pots & pans on it; bake in the oven!' },
   { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
   { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'Soup pot — set it on the stove to make it steam!' },
@@ -3182,6 +3182,7 @@ function serializeWorld() {
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
     else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
     else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0, b.roofStyle || 'pointed']);
+    else if (b.type === 'autoroof') placed.push([x, y, z, 'autoroof', [b.roofW || 2, b.roofD || 2, b.roofCost || 1, b.roofStyle || 'pointed']]);
     else if (b.type === 'stove') placed.push([x, y, z, 'stove', (b.mesh.userData.cooking || []).map(c => c.kind), b.rotY || 0]);
     else placed.push([x, y, z, b.type, b.variant == null ? null : b.variant, b.rotY || 0]);
   });
@@ -3300,6 +3301,7 @@ function restoreGame(s) {
     }
     else if (type === 'window') addWindow(x, y, z, detail);
     else if (type === 'roof') addRoof(x, y, z, detail, extra);
+    else if (type === 'autoroof') { const d = detail || [2, 2, 1, 'pointed']; spawnAutoRoof(x, y, z, d[0], d[1], d[2], d[3]); }
     else if (type === 'stove') {
       placeFurnitureAt('stove', x, z, null, extra);
       const st = blocks.get(key(x, 0, z));
@@ -3495,6 +3497,7 @@ function solidAt(x, y, z) {
   if (!b) return false;
   if (b.type === 'door' && b.state && b.state.swing > 1.0) return false;   // an open door lets you through
   if (b.type === 'garage' && b.state && b.state.lift > 0.9) return false;  // a rolled-up garage door lets the car through
+  if (b.type === 'autoroof') return false;       // the big house roof never blocks movement/building
   return true;
 }
 /* height of the walkable surface at a column — top of the highest solid block (0 = grass) */
@@ -6586,16 +6589,17 @@ function removePlacedBlock() {
   if (!bk) return false;
   const [x, y, z] = bk.split(',').map(Number);
   removeBlockAt(x, y, z);
-  refundFor(be.type);
+  refundFor(be.type, be);
   Sound.brk();
   refreshHUD();
   return true;
 }
-function refundFor(type) {
+function refundFor(type, entry) {
   if (type === 'door') G.doors += 1;
   else if (type === 'power') G.powerBlocks += 1;
   else if (type === 'window') { G.furniture.window += 1; toast('📦 Packed up your window — back in your 🎒!', 1600); }
   else if (type === 'roof') { G.furniture.roof += 1; toast('📦 Packed up a roof tile — back in your 🎒!', 1600); }
+  else if (type === 'autoroof') { const n = (entry && entry.roofCost) || 1; G.furniture.roof += n; toast('📦 Took the roof off — ' + n + ' 🔺 back in your 🎒!', 1800); }
   else if (FURNITURE_TYPES.includes(type)) { G.furniture[type] += 1; toast('📦 Packed up your ' + type + ' — back in your 🎒!', 1600); }
   else G.blocks += 1;
 }
@@ -6736,10 +6740,13 @@ function placeSelectedAt(x, z, blockY) {
     addWindow(x, y, z);
     G.furniture.window -= 1; Sound.place(); refreshHUD(); return true;
   }
-  if (slot === 'roof') {       // roof tiles stack on top of walls, like a peaked cap
+  if (slot === 'roof') {       // one roof auto-fits the whole house; a single peaked tile is the fallback
     if (G.furniture.roof < 1) { toast('🔺 No roof tiles in your 🎒 — buy some at 🏚️ Stack Barn!', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
     if (y > 8) { toast('⬆️ That roof is high enough!', 1400); return false; }
+    const r = placeAutoRoof(x, y, z);
+    if (r === 'placed') return true;
+    if (r === 'handled') return false;           // a message was shown (too big / not enough tiles)
     if (blocks.has(key(x, y, z))) return false;
     if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     addRoof(x, y, z, null, G.roofStyle);
@@ -7546,24 +7553,31 @@ function buildRoofMesh(style) {
       box(g, x ? 0.1 : 1.06, 0.14, z ? 0.1 : 1.06, trim, x * 0.99, 0.52, z * 0.99));  // low parapet edge
     return g;
   }
-  // pointed (peaked) — eaves sit right on the block below, peak on top (no floating gap)
+  // pointed (peaked) gable slice — a row of these makes ONE continuous ridge (no zigzag)
   [1, -1].forEach(s => {
-    const slope = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.1, 1.04), mat(tile));
-    slope.position.set(0, 0.02, s * 0.25);
-    slope.rotation.x = s * 1.05;                          // steep slope from eave (bottom) to ridge (top)
+    const slope = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.09, 1.16), mat(tile));
+    slope.position.set(0, 0.0, s * 0.27);
+    slope.rotation.x = s * 0.86;                          // ~49° pitch — a real gable, not a steep tent
     g.add(slope);
   });
-  box(g, 1.1, 0.13, 0.17, trim, 0, 0.46, 0);             // ridge cap
-  box(g, 1.08, 0.2, 0.12, trim, 0, -0.42, 0.49);         // eave fascia — hangs onto the block top
-  box(g, 1.08, 0.2, 0.12, trim, 0, -0.42, -0.49);
+  box(g, 1.06, 0.12, 0.16, trim, 0, 0.45, 0);            // ridge cap (runs along X so tiles join end-to-end)
+  box(g, 1.06, 0.16, 0.1, trim, 0, -0.4, 0.5);           // eave fascia — overhangs the wall front
+  box(g, 1.06, 0.16, 0.1, trim, 0, -0.4, -0.5);          // eave fascia — back
   return g;
 }
-/* roof tiles line up like windows: ridge runs along the wall you face when placing */
-function roofRotationAt(x, z) {
+/* roof tiles line up like windows: ridge follows the wall, and a new tile snaps to
+   match its neighbour so a row reads as ONE continuous roof instead of a zigzag. */
+function roofRotationAt(x, y, z) {
+  const isRoof = (cx, cz) => { const b = blocks.get(key(cx, y, cz)); return !!(b && b.type === 'roof'); };
+  const alongX = isRoof(x - 1, z) || isRoof(x + 1, z);
+  const alongZ = isRoof(x, z - 1) || isRoof(x, z + 1);
+  if (alongX && !alongZ) return 0;                        // extend a ridge running along X
+  if (alongZ && !alongX) return Math.PI / 2;              // extend a ridge running along Z
+  // first tile of a roof: ridge runs along the wall you're facing
   return Math.abs(Math.cos(player.yaw)) >= Math.abs(Math.sin(player.yaw)) ? 0 : Math.PI / 2;
 }
 function addRoof(x, y, z, rot, style) {
-  if (rot == null) rot = roofRotationAt(x, z);
+  if (rot == null) rot = roofRotationAt(x, y, z);
   style = style || 'pointed';
   const mesh = buildRoofMesh(style);
   mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
@@ -7571,6 +7585,96 @@ function addRoof(x, y, z, rot, style) {
   addBlockMesh(x, y, z, null, 'roof', true, mesh);
   const b = blocks.get(key(x, y, z)); b.rot = rot; b.roofStyle = style;
   return mesh;
+}
+/* 🏠 A single roof that auto-sizes to the whole house — one piece, not a row of tiles.
+   style 'pointed' = peaked gable, 'flat' = flat deck with a parapet. */
+function buildAutoRoof(W, D, style) {
+  const g = new THREE.Group();
+  const tile = 0xB5503C, trim = 0x8E3B2C;
+  const over = 0.4;                             // eave & gable overhang
+  if (style === 'flat') {
+    const w = W + over * 2, d = D + over * 2;
+    box(g, w, 0.22, d, tile, 0, 0.42, 0);                          // flat deck just above the eave line
+    box(g, w, 0.18, 0.16, trim, 0, 0.58, d / 2 - 0.08);           // parapet rim — front
+    box(g, w, 0.18, 0.16, trim, 0, 0.58, -d / 2 + 0.08);          // back
+    box(g, 0.16, 0.18, d, trim, w / 2 - 0.08, 0.58, 0);           // right
+    box(g, 0.16, 0.18, d, trim, -w / 2 + 0.08, 0.58, 0);          // left
+    return g;
+  }
+  const ridgeAlongX = W >= D;
+  const span = ridgeAlongX ? D : W;             // the dimension the slopes cover
+  const len = ridgeAlongX ? W : D;              // the ridge length
+  const halfSpan = span / 2 + over;
+  const h = Math.min(span * 0.55, 1.9);         // ridge height (capped so big houses aren't absurd)
+  const depth = len + over * 2;
+  const shape = new THREE.Shape();              // gable cross-section: a triangle
+  shape.moveTo(-halfSpan, 0); shape.lineTo(halfSpan, 0); shape.lineTo(0, h); shape.lineTo(-halfSpan, 0);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, steps: 1 });
+  geo.translate(0, 0, -depth / 2);
+  const roof = new THREE.Mesh(geo, mat(tile));
+  roof.rotation.y = ridgeAlongX ? Math.PI / 2 : 0;   // run the ridge along the long wall
+  g.add(roof);
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(ridgeAlongX ? len + 0.25 : 0.2, 0.16, ridgeAlongX ? 0.2 : len + 0.25), mat(trim));
+  cap.position.y = h; g.add(cap);
+  return g;
+}
+function spawnAutoRoof(minX, y, minZ, W, D, cost, style) {   // used by placement AND save-load
+  const mesh = buildAutoRoof(W, D, style);
+  mesh.position.set(minX + W / 2, y, minZ + D / 2);
+  scene.add(mesh);
+  blocks.set(key(minX, y, minZ), { mesh, type: 'autoroof', removable: true, roofW: W, roofD: D, roofCost: cost, roofStyle: style || 'pointed' });
+  return mesh;
+}
+// Detect the house footprint under the tapped spot and drop ONE roof over the whole thing.
+// Returns 'placed' (done), 'handled' (showed a message), or false (no house → place a single tile).
+function placeAutoRoof(x, y, z) {
+  const wy = y - 1;                              // the top course of the walls sits one below the roof
+  if (wy < 0) return false;
+  // a "barrier" is any wall/window/door/etc. — doors count as a closed part of the wall
+  const barrier = (cx, cz, L) => { const b = blocks.get(key(cx, L, cz)); return !!(b && b.removable && b.type !== 'autoroof' && b.type !== 'roof'); };
+  const isWall = (cx, cz) => barrier(cx, cz, wy);
+  let sx = x, sz = z;
+  if (!isWall(sx, sz)) {                         // tapped over the gap? find the nearest wall
+    let best = null, bd = 99;
+    for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++)
+      if (isWall(x + dx, z + dz)) { const d = Math.abs(dx) + Math.abs(dz); if (d < bd) { bd = d; best = [x + dx, z + dz]; } }
+    if (!best) return false;
+    sx = best[0]; sz = best[1];
+  }
+  const seen = new Set(); const stack = [[sx, sz]];
+  let minX = sx, maxX = sx, minZ = sz, maxZ = sz, count = 0;
+  while (stack.length && count < 1200) {         // flood-fill the connected walls → bounding box
+    const c = stack.pop(), cx = c[0], cz = c[1], k = cx + ',' + cz;
+    if (seen.has(k)) continue; seen.add(k);
+    if (!isWall(cx, cz)) continue; count++;
+    if (cx < minX) minX = cx; if (cx > maxX) maxX = cx; if (cz < minZ) minZ = cz; if (cz > maxZ) maxZ = cz;
+    [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(d => { const nk = (cx + d[0]) + ',' + (cz + d[1]); if (!seen.has(nk)) stack.push([cx + d[0], cz + d[1]]); });
+  }
+  const W = maxX - minX + 1, D = maxZ - minZ + 1;
+  if (W < 2 || D < 2) return false;              // not a house outline → caller drops a single tile
+  if (W > 20 || D > 20) { toast('🏠 That house is huge — roof one room at a time!', 2600); return 'handled'; }
+  // A roof only fits a real house: walls at least 2 blocks tall ALL the way around,
+  // with no gaps (a door counts as part of the wall).
+  if (wy < 1) { toast('🏠 Build your walls at least 2 blocks tall before roofing!', 3000); return 'handled'; }
+  const hasDoor = (cx, cz) => { for (let L = 0; L <= wy; L++) { const b = blocks.get(key(cx, L, cz)); if (b && b.type === 'door') return true; } return false; };
+  let gaps = 0, tooShort = 0;
+  for (let cx = minX; cx <= maxX; cx++) for (let cz = minZ; cz <= maxZ; cz++) {
+    if (cx !== minX && cx !== maxX && cz !== minZ && cz !== maxZ) continue;   // perimeter only
+    if (hasDoor(cx, cz)) continue;               // a doorway is an allowed opening, any height
+    if (!barrier(cx, cz, wy)) gaps++;            // missing top-course block → a gap
+    else if (!barrier(cx, cz, wy - 1)) tooShort++;   // wall isn't 2 tall here
+  }
+  if (gaps > 0) { toast('🧱 Close the gaps in your walls first — a door is okay, but no holes!', 3600); return 'handled'; }
+  if (tooShort > 0) { toast('🧱 Make the walls at least 2 blocks tall all the way around!', 3600); return 'handled'; }
+  // it covers the WHOLE house, so it costs about what tiling every edge would (~half the area)
+  const cost = Math.max(4, Math.ceil((W * D) / 2));
+  if (G.furniture.roof < cost) { toast('🔺 A roof for this ' + W + '×' + D + ' house needs ' + cost + ' roof tiles (you have ' + G.furniture.roof + '). Buy more at 🏚️ Stack Barn!', 4200); return 'handled'; }
+  const existing = blocks.get(key(minX, y, minZ));     // re-roofing the same house replaces the old one
+  if (existing && existing.type === 'autoroof') { G.furniture.roof += existing.roofCost || 0; removeBlockAt(minX, y, minZ); }
+  spawnAutoRoof(minX, y, minZ, W, D, cost, G.roofStyle);
+  G.furniture.roof -= cost; Sound.place(); refreshHUD();
+  toast('🏠 Roof on! Covered your ' + W + '×' + D + ' house with one ' + (G.roofStyle === 'flat' ? 'flat' : 'peaked') + ' roof. (−' + cost + ' 🔺)', 3200);
+  return 'placed';
 }
 const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
 const COUCH_STYLES = ['modern', 'classic', 'loveseat', 'chesterfield'];
@@ -8756,7 +8860,7 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
     } else {
       [bx, by, bz] = entryKey.split(',').map(Number);
       removeBlockAt(bx, by, bz);
-      refundFor(entry.type);
+      refundFor(entry.type, entry);
     }
     Sound.brk(); refreshHUD();
     return;
@@ -9002,7 +9106,7 @@ function renderInv() {
       '<div class="info"><b>' + biName(name, slot) + '</b><small>You have ' + count +
       (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
        slot === 'window' ? ' • Drops into a wall gap at any height' :
-       slot === 'roof' ? ' • Tap the top of a wall — choose a style below' :
+       slot === 'roof' ? ' • Tap the top of a finished house — ONE roof covers it all! (walls 2+ tall, no gaps but a door is fine). Pick a style below' :
        (slot === 'pot' || slot === 'pan' || slot === 'bacon') ? ' • Aim at a 🔥 stove and place it on a burner to cook' :
        slot === 'pie' ? ' • Aim at a 🔥 stove to bake it in the oven' : '') + '</small></div>';
     const place = document.createElement('button');
