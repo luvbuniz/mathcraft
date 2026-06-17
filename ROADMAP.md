@@ -243,8 +243,41 @@ Supabase also give Google auth out of the box, at the cost of more 3rd-party dat
 **Why it's low-risk to add later:** the save is already a small JSON blob, so "sync
 this blob to the cloud" is an add-on, not a rebuild of the game.
 
-**Stopgap until then:** the one-tap "Save my world" export/backup button (so a fresh
-backup is always two taps away before any update).
+**Stopgap until then:** ✅ shipped — the **🛟 Back up now** button in the grown-ups
+dashboard (native share sheet on tablets → Save to Files / email / cloud; download on
+desktop), plus a "back up your saves" nudge and **⬆️ Import** to restore on any device.
+
+### 💵 Backend cost & options (what to use, what it costs)
+
+**Save data is the cheapest kind of workload** — a few KB per kid, written only a few
+times per session. Even ~100k kids ≈ a few GB and a few hundred k writes/day, which
+sits inside or just past most **free tiers**. This won't run up a scary bill, even viral.
+
+- **The Cloudflare "$5" demystified:** Workers has a *genuinely free* tier (~100k
+  requests/**day**). The **$5/mo** is the optional paid plan (~10M req/mo, then ~30¢/M)
+  — a flat fee, not a surprise meter. Cloudflare's free tier **fails closed** (throttles
+  rather than silently billing), so no runaway invoice.
+- **The catch:** raw Cloudflare *stores* saves cheaply but **doesn't give you Google/
+  Facebook login** — you'd build auth yourself. Two services bundle social login **and**
+  storage on a free tier (less code, less money):
+
+  | Option | Free tier (rough) | Social sign-in built in? | Best for |
+  |---|---|---|---|
+  | **Firebase** (Google) | ~1 GB data, ~50k reads / 20k writes per **day** | ✅ Google, Facebook, Apple, email | Easiest "sign in + save" |
+  | **Supabase** | ~500 MB DB, 50k monthly users, auth incl. | ✅ Google, Facebook, etc. | If you ever want a real SQL DB |
+  | **Cloudflare** Worker + KV/D1 | 100k req/day, generous storage | ❌ build it yourself | Cheapest *storage*, more code |
+
+- **Leaning choice:** **Firebase free (Spark) plan** — $0 to start, Google + Facebook
+  logins included, social auth out of the box. Supabase is the close runner-up.
+  **Keep Cloudflare for hosting the game** (free, great); let Firebase/Supabase handle
+  accounts + saves.
+- **If it goes viral:** on Firebase pay-as-you-go you'd likely still be **single digits
+  a month** at thousands of active families — and you can set a **hard budget cap /
+  alert** so it can't run away. By then the $4.99 unlocks cover it many times over.
+
+**Recommended sequencing:** launch with the 🛟 backup button (free, no server) → after
+launch, build sign-in on **Firebase free tier** with a budget alert → only think about
+paid when genuinely big (revenue covers it easily).
 
 ---
 
