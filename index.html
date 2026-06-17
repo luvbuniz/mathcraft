@@ -1060,6 +1060,17 @@
   </div>
 </div>
 
+<!-- ================= STACK REALTY (move-in homes) ================= -->
+<div class="popup" id="realtyPopup">
+  <div class="popupCard" style="width:min(460px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="realtyClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="font-size:42px">🏡</div>
+    <h2 style="color:#2f7d4f; margin:2px 0 8px">Stack Realty</h2>
+    <p id="realtyDesc" style="color:#5b6b46; margin:0 0 12px; line-height:1.45">Move-in-ready homes — built and ready to decorate! Walk in and make it yours.</p>
+    <div id="realtyList" style="display:flex; flex-direction:column; gap:9px; text-align:left; max-height:56vh; overflow:auto"></div>
+  </div>
+</div>
+
 <!-- ================= DELETE-A-SAVE CONFIRM (typed code so kids can't accidentally erase a game) ================= -->
 <div class="popup" id="delPopup">
   <div class="popupCard" style="width:min(440px,94vw); text-align:center">
@@ -4711,6 +4722,136 @@ const LIBRARY_POS = { x: -8, z: -15 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
 const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
+const REALTY_POS = { x: 14, z: -15 };
+function realtyDist() { return G.world === 'city' ? Math.hypot(player.pos.x - REALTY_POS.x, player.pos.z - REALTY_POS.z) : 999; }
+/* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
+const HOME_MODELS = [
+  { id: 'ranch',  name: '🏡 Cozy Ranch',      price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, desc: '1 story • garage • front & back yard' },
+  { id: 'family', name: '🏠 Family Two-Story', price: 265, stories: 2, garage: true, pool: false, color: 0xD9C39A, desc: '2 stories + stairs • garage • yards' },
+  { id: 'deluxe', name: '🏊 Deluxe with Pool', price: 340, stories: 2, garage: true, pool: true,  color: 0xCFE0E8, desc: '2 stories + stairs • garage • yards • POOL' }
+];
+function homeLayout(ox, oz, m) {
+  const twoStory = m.stories > 1, hw = twoStory ? 6 : 5, hd = 5, sH = 3, wallH = sH * m.stories;
+  const garW = m.garage ? 3 : 0, garD = 4, garH = 2, backD = m.pool ? 4 : 3, frontD = 2, margin = 1;
+  const lotW = margin + hw + garW + margin, lotD = margin + backD + hd + frontD + margin;
+  const hx0 = ox + margin, hx1 = hx0 + hw - 1, hz0 = oz + margin + backD, hz1 = hz0 + hd - 1;
+  const doorX = hx0 + (hw >> 1), frontZ = hz1, gx0 = hx1 + 1, gx1 = gx0 + garW - 1, gz1 = hz1, gz0 = gz1 - garD + 1;
+  return { twoStory, hw, hd, sH, wallH, garW, garD, garH, backD, frontD, margin, lotW, lotD, hx0, hx1, hz0, hz1, doorX, frontZ, gx0, gx1, gz0, gz1 };
+}
+const homeLotSize = m => { const L = homeLayout(0, 0, m); return [L.lotW, L.lotD]; };
+function openRealty() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  $('realtyDesc').innerHTML = 'Move-in-ready homes — built and ready to decorate! You have <b>' + G.coins + ' 🪙</b>. Each home is yours to walk into, furnish, and add onto.';
+  const list = $('realtyList'); list.innerHTML = '';
+  HOME_MODELS.forEach(m => {
+    const can = G.coins >= m.price;
+    const row = document.createElement('div');
+    row.style.cssText = 'background:#f4f7fb;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px';
+    row.innerHTML = '<div style="flex:1"><b style="color:#34495e">' + m.name + '</b><br><small style="color:#6c84a6">' + m.desc + '</small></div>';
+    const b = document.createElement('button');
+    b.style.cssText = 'font-weight:bold;padding:10px 14px;border-radius:12px;color:#fff;white-space:nowrap;box-shadow:0 4px 0 #2c6f24;cursor:pointer;border:none;background:' + (can ? '#3f9d34' : '#9bbf95');
+    b.textContent = (can ? '' : '🔒 ') + m.price + ' 🪙'; b.disabled = !can;
+    b.onclick = () => { Sound.click(); buyHome(m.id); };
+    row.appendChild(b); list.appendChild(row);
+  });
+  $('realtyPopup').style.display = 'flex';
+}
+function closeRealty() { $('realtyPopup').style.display = 'none'; popupOpen = false; }
+function lotClear(ox, oz, W, D) {
+  for (let x = ox - 1; x <= ox + W; x++) for (let z = oz - 1; z <= oz + D; z++) {
+    if (Math.abs(x) >= WORLD_R - 1 || Math.abs(z) >= WORLD_R - 1) return false;
+    if (blocks.has(key(x, 0, z))) return false;                        // something already on the ground
+    if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) return false;  // a background house
+    if (inShopZone(x, z)) return false;                                // a shop
+  }
+  return true;
+}
+function findHomeLot(W, D) {                  // nearest clear lot, searching out from in front of the player
+  const bx = Math.round(player.pos.x - Math.sin(player.yaw) * 5);
+  const bz = Math.round(player.pos.z - Math.cos(player.yaw) * 5);
+  for (let rad = 0; rad <= 16; rad++)
+    for (let dx = -rad; dx <= rad; dx++) for (let dz = -rad; dz <= rad; dz++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== rad) continue;
+      const ox = bx + dx - (W >> 1), oz = bz + dz - (D >> 1);
+      if (lotClear(ox, oz, W, D)) return [ox, oz];
+    }
+  return null;
+}
+function buildHome(ox, oz, m) {
+  const L = homeLayout(ox, oz, m);
+  const wall = m.color, trim = shade(m.color, 0.78), woodC = 0x8a5c33, roofC = 0x9A5A4A, poolW = 0x4fb3e8, poolEdge = 0xEDE8DE;
+  const cell = (x, y, z, color, type) => {
+    if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R || blocks.has(key(x, y, z))) return;
+    const mesh = new THREE.Mesh(blockGeo, blockMat(color));
+    mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+    addBlockMesh(x, y, z, null, type || 'placed', true, mesh);
+    blocks.get(key(x, y, z)).color = color;
+  };
+  // ---- house: hollow walls, windows + a real door ----
+  const wins = [[L.hx0 + 1, 1, L.frontZ, 0], [L.hx0 + L.hw - 2, 1, L.frontZ, 0], [L.hx0, 1, L.hz0 + 2, Math.PI / 2], [L.hx1, 1, L.hz0 + 2, Math.PI / 2]];
+  if (L.twoStory) { wins.push([L.hx0 + 1, 4, L.frontZ, 0]); wins.push([L.hx0 + L.hw - 2, 4, L.frontZ, 0]); }
+  const isWin = (x, y, z) => wins.some(w => w[0] === x && w[1] === y && w[2] === z);
+  for (let y = 0; y < L.wallH; y++)
+    for (let x = L.hx0; x <= L.hx1; x++)
+      for (let z = L.hz0; z <= L.hz1; z++) {
+        if (x !== L.hx0 && x !== L.hx1 && z !== L.hz0 && z !== L.hz1) continue;  // perimeter only (hollow)
+        if (z === L.frontZ && x === L.doorX && y < 2) continue;                  // doorway
+        if (isWin(x, y, z)) continue;                                            // window holes
+        cell(x, y, z, wall);
+      }
+  wins.forEach(w => addWindow(w[0], w[1], w[2], w[3]));
+  placeDoor(L.doorX, 0, L.frontZ, 0);
+  // ---- second floor + staircase ----
+  if (L.twoStory) {
+    const stairX = L.hx0 + 1, stairZ = L.hz1 - 1;
+    for (let x = L.hx0 + 1; x < L.hx1; x++) for (let z = L.hz0 + 1; z < L.hz1; z++) {
+      if (x === stairX && (z === stairZ || z === stairZ - 1)) continue;          // stairwell opening
+      cell(x, L.sH, z, trim);                                                    // 2nd-floor deck
+    }
+    for (let s = 0; s < L.sH; s++) cell(stairX, s, stairZ - s, woodC);           // stairs up to the deck
+  }
+  // ---- roof over the house ----
+  spawnAutoRoof(L.hx0, L.wallH, L.hz0, L.hw, L.hd, Math.max(4, Math.ceil(L.hw * L.hd / 2)), 'pointed');
+  // ---- attached garage with a roll-up door ----
+  if (m.garage) {
+    for (let y = 0; y < L.garH; y++)
+      for (let x = L.gx0; x <= L.gx1; x++)
+        for (let z = L.gz0; z <= L.gz1; z++) {
+          if (x !== L.gx0 && x !== L.gx1 && z !== L.gz0 && z !== L.gz1) continue;            // perimeter
+          if (z === L.gz1 && y < 2 && (x === L.gx0 + 1 || x === L.gx0 + 2)) continue;        // 2-wide door opening
+          cell(x, y, z, wall);
+        }
+    for (let x = L.gx0; x <= L.gx1; x++) for (let z = L.gz0; z <= L.gz1; z++) cell(x, L.garH, z, roofC);  // flat garage roof
+    placeGarageDoor(L.gx0 + 1, 0, L.gz1, 0);                                     // 2-wide roll-up door
+  }
+  // ---- fenced yards (front gate), flowers, and a back-yard pool ----
+  const lx0 = ox, lx1 = ox + L.lotW - 1, lz0 = oz, lz1 = oz + L.lotD - 1;
+  for (let x = lx0; x <= lx1; x++) for (let z = lz0; z <= lz1; z++) {
+    if (x !== lx0 && x !== lx1 && z !== lz0 && z !== lz1) continue;              // fence the lot perimeter
+    if (z === lz1 && x === L.doorX) continue;                                    // front gate gap
+    if (!blocks.has(key(x, 0, z))) placeFurnitureAt('fence', x, z, 0, 0);
+  }
+  [[L.hx0, L.frontZ + 1], [L.hx1, L.frontZ + 1], [L.doorX - 1, lz1 - 1], [L.doorX + 1, lz1 - 1]].forEach(p => {
+    if (p[0] > lx0 && p[0] < lx1 && p[1] > lz0 && p[1] < lz1 && !blocks.has(key(p[0], 0, p[1]))) placeFurnitureAt('flower', p[0], p[1], 0, 0);
+  });
+  if (m.pool) {
+    const px0 = L.hx0 + 1, pz0 = oz + 1;
+    for (let x = px0 - 1; x <= px0 + 3; x++) for (let z = pz0 - 1; z <= pz0 + 2; z++) cell(x, 0, z, poolEdge);  // tile surround
+    for (let x = px0; x <= px0 + 2; x++) for (let z = pz0; z <= pz0 + 1; z++) cell(x, 0, z, poolW);             // water
+  }
+}
+function buyHome(id) {
+  const m = HOME_MODELS.find(h => h.id === id); if (!m) return;
+  if (G.coins < m.price) { toast('🏡 The ' + m.name + ' costs ' + m.price + ' 🪙 — keep reading & doing math to earn more!', 3800); return; }
+  const sz = homeLotSize(m), lot = findHomeLot(sz[0], sz[1]);
+  if (!lot) { toast('🏡 Not enough open space nearby for that home — stand in a clearer area and try again!', 4400); return; }
+  G.coins -= m.price; Sound.coin(); refreshHUD();
+  buildHome(lot[0], lot[1], m);
+  closeRealty();
+  if (Sound.fanfare) Sound.fanfare();
+  toast('🏡 Welcome home! Your ' + m.name + ' is built — walk in and make it yours! (−' + m.price + ' 🪙)', 6000);
+}
 const MART_POS = { x: -7, z: 4 };
 function martDist() { return G.world === 'beach' ? Math.hypot(player.pos.x - MART_POS.x, player.pos.z - MART_POS.z) : 999; }
 const BOAT_SHOP_POS = { x: 14, z: 10 };          // Stack Barcos, on the sand by the dock
@@ -5899,10 +6040,34 @@ function buildPostOffice(g) {                 // Reading Town's Spelling-Bee pos
   sign.position.set(0, 2.42, 1.78); P.add(sign);
   P.position.set(9, 0, -15); g.add(P);                       // east end of the high-street row, facing the street
 }
+function buildRealty(g) {                      // 🏡 Stack Realty — Reading Town's move-in homes office
+  const R = new THREE.Group();
+  const WALL = 0xCFE3F2, ROOF = 0x2f7d4f, GLASS = 0xBFE3F2, WOOD = 0x8a5c33;
+  box(R, 3.4, 0.14, 3.0, 0x9a948a, 0, 0.07, 0);                 // base pad
+  box(R, 3.2, 2.2, 0.16, WALL, 0, 1.2, -1.4);                   // back wall
+  box(R, 0.16, 2.2, 2.9, WALL, -1.55, 1.2, 0); box(R, 0.16, 2.2, 2.9, WALL, 1.55, 1.2, 0);  // side walls
+  box(R, 2.4, 1.3, 0.05, GLASS, 0.2, 1.25, 1.4);                // big listings window
+  box(R, 0.62, 1.7, 0.08, WOOD, -1.05, 0.85, 1.42);            // door
+  box(R, 0.1, 0.1, 0.16, 0xFFD23E, -0.78, 0.85, 1.46);         // door knob
+  box(R, 3.7, 0.32, 3.4, ROOF, 0, 2.5, 0);                      // roof
+  box(R, 3.8, 0.46, 0.14, ROOF, 0, 2.78, 1.45);                // sign band
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d');
+  c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, 256, 64);
+  c.fillStyle = '#2f7d4f'; c.font = 'bold 27px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('🏡 STACK REALTY', 128, 22);
+  c.fillStyle = '#7a5c00'; c.font = 'bold 14px sans-serif'; c.fillText('MOVE-IN HOMES', 128, 47);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.78, 1.52); R.add(sign);
+  box(R, 0.08, 0.62, 0.08, WOOD, 1.25, 0.31, 1.95);             // little "FOR SALE" yard sign
+  box(R, 0.52, 0.36, 0.04, 0xE3534B, 1.25, 0.64, 1.95);
+  R.position.set(REALTY_POS.x, 0, REALTY_POS.z);                // faces +Z, toward the street/play area
+  g.add(R);
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildRoad(g, 'meadow');
   buildLibrary(g);
   buildPostOffice(g);
+  buildRealty(g);
   buildHighStreetArch(g);
   const N = 26;
   for (let i = 0; i < N; i++) {
@@ -6684,7 +6849,7 @@ function inShopZone(cx, cz) {
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
   if (G.world === 'meadow' && near(BAKERY_POS, 2.5)) return true;
-  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7))) return true;
+  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   return false;
 }
@@ -8997,6 +9162,7 @@ addEventListener('keydown', e => {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+    else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
     else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
@@ -9334,6 +9500,7 @@ $('promoBtn').onclick = async () => {
 };
 $('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('promoBtn').click(); });
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
+$('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
 function freeMouse() {
@@ -9474,6 +9641,7 @@ if (isTouch) {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+    else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
     else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
