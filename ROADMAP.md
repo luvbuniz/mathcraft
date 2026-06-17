@@ -179,6 +179,17 @@ Deferred on purpose — Spanish needs to be **done right**:
 
 Park it until Reading Town proves the "walk-in building + learning quest" model.
 
+> **Rethink (Jun 2026):** the old Spanish was too text/translate-heavy — overwhelmed
+> Leo (he just mashed the speak button). When revived, **redesign it pictorial &
+> young-kid-first**: picture + native audio + tap-to-match, almost no text, greetings
+> (Hola, ¿Cómo estás?), lots of repetition/praise (Duolingo ABC / Gus on the Go model).
+> Start tiny, not a "language school." **Bigger open question:** is Spanish even the
+> right 3rd world? Math + Reading already cover the required subjects, so a 3rd world is
+> optional — and **Science/STEM may be a stronger, funner fit** (build a rocket/volcano/
+> ecosystem; kids love it; parents value enrichment). Don't decide pre-launch — ship
+> math+reading, tease "coming soon" world(s), and let parent demand pick the next build.
+
+
 ---
 
 ## 🧰 Tech / ops notes
