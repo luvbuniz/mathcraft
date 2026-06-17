@@ -1153,7 +1153,8 @@
     </div>
     <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
       <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">💾 Backup &amp; move builds</div>
-      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Saves live on this device. <b>Export</b> them to a file to back up or move to another device or tablet, then <b>Import</b> there.</div>
+      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Saves live <b>on this device</b> (no cloud account). <b>Export</b> a backup file now and then — it protects against a lost/cleared device, and lets you move a child&rsquo;s game to another tablet (then <b>Import</b> there).</div>
+      <div id="backupNudge" style="display:none; background:#FFF3D6; border:1px solid #ECD89A; color:#7a5c1e; border-radius:10px; padding:8px 11px; margin:0 0 8px; font-size:clamp(12px,2.1vw,14px); line-height:1.4"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap">
         <button id="exportSavesBtn" style="font-size:14px; background:#e7f6ec; color:#2f8a52; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">⬇️ Export all saves</button>
         <button id="importSavesBtn" style="font-size:14px; background:#e6f0ff; color:#3b5d9e; border:none; border-radius:10px; padding:8px 14px; cursor:pointer; font-family:inherit; font-weight:bold">⬆️ Import saves</button>
@@ -3265,6 +3266,7 @@ function openGrownup() {
   $('guLock').style.display = 'none';
   renderGrownup();
   renderPinSettings();
+  renderBackupNudge();
   $('purchaseStatus').textContent = isUnlocked() ? 'Unlocked ✓' : 'Free (Math Meadow only)';
   const pol = deletePolicy();
   document.querySelectorAll('input[name="delPolicy"]').forEach(r => {
@@ -10178,7 +10180,29 @@ function exportSaves() {
   a.href = url; a.download = 'stackadoo-saves-' + stamp + '.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+  try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {}
   $('ioStatus').textContent = '✅ Exported ' + count + ' build' + (count === 1 ? '' : 's') + ' + progress. Keep the file safe!';
+  renderBackupNudge();
+}
+const BACKUP_KEY = 'stackadooLastBackup';
+function renderBackupNudge() {
+  const el = $('backupNudge'); if (!el) return;
+  // only nudge if there's actually something to lose
+  let hasSaves = false;
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf(SAVE_PREFIX) === 0) { hasSaves = true; break; } } } catch (e) {}
+  if (!hasSaves) { el.style.display = 'none'; return; }
+  let last = 0; try { last = +(localStorage.getItem(BACKUP_KEY) || 0); } catch (e) {}
+  const days = last ? Math.floor((Date.now() - last) / 86400000) : 999;
+  if (last && days < 14) {
+    el.style.display = 'block';
+    el.style.background = '#E7F6EC'; el.style.borderColor = '#bfe3c8'; el.style.color = '#2f7d4f';
+    el.innerHTML = '🛟 Backed up ' + (days === 0 ? 'today' : days + ' day' + (days === 1 ? '' : 's') + ' ago') + ' — nicely protected!';
+  } else {
+    el.style.display = 'block';
+    el.style.background = '#FFF3D6'; el.style.borderColor = '#ECD89A'; el.style.color = '#7a5c1e';
+    el.innerHTML = (last ? '🛟 It&rsquo;s been a while since your last backup.' : '🛟 You haven&rsquo;t backed up yet.') +
+      ' Tap <b>⬇️ Export all saves</b> below to save a copy of every child&rsquo;s game — so a lost or cleared device can&rsquo;t erase it.';
+  }
 }
 function importSaves(file) {
   const reader = new FileReader();
