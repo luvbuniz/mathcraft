@@ -2612,13 +2612,14 @@ const SHOP_ITEMS = [
   { id: 'hat',    icon: '🎉', name: 'Party Hat', price: 4,    kind: 'own',   desc: 'A snazzy hat for your hero.' },
   { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.', hidden: true }
 ];
-/* Two stores: 🛒 Stack Mart (general) and 🏚️ Stack Barn (furniture & home), each with departments */
-const MART_CATS = [['food', '🍎 Food'], ['july4', '🎆 July 4th'], ['pets', '🐾 Pets'], ['build', '🧱 Building'], ['gear', '⭐ Gear']];
-const BARN_CATS = [['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden']];
+/* Two stores: 🛒 Stack Mart (general goods) and 🏚️ Stack Barn (build + home: everything you build a house with). */
+const MART_CATS = [['food', '🍎 Food'], ['july4', '🎆 July 4th'], ['pets', '🐾 Pets'], ['gear', '⭐ Gear']];
+const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden']];
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
-  // 🛒 Stack Mart — the general store
+  // 🏚️ Stack Barn — Building dept (blocks, doors, garage doors, windows, roof — all the build materials)
   blocks: 'build', powerBlocks: 'build', door: 'build', garagedoor: 'build', window: 'build', roof: 'build',
+  // 🛒 Stack Mart — the general store
   ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',   // treasuremap removed: gemstone quests are paused for now
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
   petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets',
@@ -6477,13 +6478,13 @@ function placeSelectedAt(x, z, blockY) {
   if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { toast('🏠 That\'s a neighbor\'s house — build a bit closer in!', 2000); return false; }
   const slot = G.selectedSlot;
   if (slot === 'door') {
-    if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🛒 Stack Mart (press B)!', 2400); return false; }
+    if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🏚️ Stack Barn (Building tab)!', 2400); return false; }
     if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
     if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
   }
   if (slot === 'garagedoor') {
-    if (G.garageDoors < 1) { toast('🚙 No garage doors in your 🎒! Buy one at 🛒 Stack Mart!', 2400); return false; }
+    if (G.garageDoors < 1) { toast('🚙 No garage doors in your 🎒! Buy one at 🏚️ Stack Barn (Building tab)!', 2400); return false; }
     const rot = fixtureRotationAt(x, z);
     const dx = Math.round(Math.cos(rot)), dz = Math.round(-Math.sin(rot));
     const cells = [[x, 0, z], [x, 1, z], [x + dx, 0, z + dz], [x + dx, 1, z + dz]];
@@ -6564,7 +6565,7 @@ function placeSelectedAt(x, z, blockY) {
     toast(onTable ? '🍎 Snack on the table — yum!' : '🍎 Apple placed!', 1400); return true;
   }
   if (slot === 'power') {
-    if (G.powerBlocks < 1) { toast('⚡ No Power Blocks! Solve math or buy some at 🛒 Stack Mart.', 2200); return false; }
+    if (G.powerBlocks < 1) { toast('⚡ No Power Blocks! Solve math or buy some at 🏚️ Stack Barn.', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
     if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
@@ -6575,7 +6576,7 @@ function placeSelectedAt(x, z, blockY) {
     G.powerBlocks -= 1; Sound.powerZap(); refreshHUD(); return true;
   }
   if (slot === 'window') {     // window is a wall block — drops into a gap at any height
-    if (G.furniture.window < 1) { toast('🪟 No windows in your 🎒 — buy one at 🛒 Stack Mart!', 2200); return false; }
+    if (G.furniture.window < 1) { toast('🪟 No windows in your 🎒 — buy one at 🏚️ Stack Barn!', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
     if (y > 8) { toast('⬆️ That stack is tall enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
@@ -6584,7 +6585,7 @@ function placeSelectedAt(x, z, blockY) {
     G.furniture.window -= 1; Sound.place(); refreshHUD(); return true;
   }
   if (slot === 'roof') {       // roof tiles stack on top of walls, like a peaked cap
-    if (G.furniture.roof < 1) { toast('🔺 No roof tiles in your 🎒 — buy some at 🛒 Stack Mart!', 2200); return false; }
+    if (G.furniture.roof < 1) { toast('🔺 No roof tiles in your 🎒 — buy some at 🏚️ Stack Barn!', 2200); return false; }
     const y = blockY == null ? 0 : blockY;
     if (y > 8) { toast('⬆️ That roof is high enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
@@ -6593,7 +6594,7 @@ function placeSelectedAt(x, z, blockY) {
     G.furniture.roof -= 1; Sound.place(); refreshHUD(); return true;
   }
   // plain building block
-  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or 🛒 Stack Mart!', 2000); return false; }
+  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or 🏚️ Stack Barn!', 2000); return false; }
   const y = blockY == null ? 0 : blockY;
   if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
   if (blocks.has(key(x, y, z))) return false;
@@ -9690,6 +9691,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
       hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
+      hint.style.display = 'block';
+    } else if (barnDist() < 3.7) {
+      hint.textContent = isTouch ? '🏚️ Tap ⭐ USE — Stack Barn: doors, blocks & furniture!' : '🏚️ Press E — Stack Barn: doors, blocks & furniture!';
       hint.style.display = 'block';
     } else if (portalDist() < 2.8) {
       hint.textContent = isTouch ? '🌀 Tap ⭐ USE (or tap the portal) to travel!' : '🌀 Press E (or click the portal) to travel to another world!';
