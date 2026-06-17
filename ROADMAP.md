@@ -183,13 +183,20 @@ Park it until Reading Town proves the "walk-in building + learning quest" model.
 
 ## 🧰 Tech / ops notes
 
-- **Hosting:** GitHub Pages currently deploys the branch
-  `claude/serene-maxwell-pvjoce`. When convenient (desktop), switch
-  **Settings → Pages → Source** to **`main`** for a clean setup. Until then,
-  deploys go out by merging `main` → that branch.
+- **⚠️ Hosting — MUST move off GitHub Pages before commercial launch.** GitHub
+  Pages' terms forbid sites "primarily directed at facilitating commercial
+  transactions." Stackadoo sells a $4.99 unlock → commercial → not allowed on
+  Pages long-term. **Move to a host that permits commercial use.** The site is a
+  single static `index.html` (no build step), so migration is quick:
+  - **Recommended: Cloudflare Pages** — generous free tier, explicitly allows
+    commercial, fast global CDN, easy custom-domain + auto HTTPS. (Netlify or
+    Vercel also work; mind their bandwidth limits.)
+  - Steps: connect this repo (deploy `main`) **or** drag-drop the file → set the
+    custom domain `www.stackadoo.com` → point DNS at the new host → enable HTTPS.
+  - Payments are unaffected (the Stripe link is external and works anywhere).
+  - This also retires the `main → serene-maxwell-pvjoce` deploy workaround.
 - **Domain:** `stackadoo.com` (Squarespace). Quick path: a "Play Free" button →
-  the game URL. Cleaner later: `play.stackadoo.com` → Pages (needs a DNS CNAME +
-  a `CNAME` file in the repo).
+  the game URL. Cleaner later: `play.stackadoo.com` → the host (DNS CNAME).
 - **Payments:** Stripe (Buni LLC, Managed Payments) — test link wired, live link
   saved in a comment. Set the redirect to `…/?unlocked=1`. Switch worlds from
   `comingSoon` → paid when ready.
