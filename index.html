@@ -2660,7 +2660,7 @@ const SHOP_ITEMS = [
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
   { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A window BLOCK — drops into a wall gap at any height.' },
-  { id: 'roof',   icon: '🔺', name: 'Roof Tiles (×4)', price: 8, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! (Bigger houses use more tiles.)' },
+  { id: 'roof',   icon: '🔺', name: 'Roof', price: 18, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! Each pack is 12 tiles (bigger houses use more).' },
   { id: 'stove',  icon: '🔥', name: 'Stove & Oven', price: 12, kind: 'many', desc: 'Burners on top + a real oven. Cook pots & pans on it; bake in the oven!' },
   { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
   { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'Soup pot — set it on the stove to make it steam!' },
@@ -7705,11 +7705,11 @@ function renderShop() {
     if (item.id === 'roof' && G.furniture.roof > 0) {
       const sb = document.createElement('button');
       sb.className = 'buyBtn owned';
-      sb.textContent = 'Refund 1 (+2 🪙)';
+      sb.textContent = 'Refund 1 (+1 🪙)';
       sb.onclick = () => {
         if (G.furniture.roof < 1) return;
-        G.furniture.roof -= 1; G.coins += 2; Sound.coin();
-        toast('🔺 Refunded a roof tile for 2 🪙!', 1800);
+        G.furniture.roof -= 1; G.coins += 1; Sound.coin();
+        toast('🔺 Refunded a roof tile for 1 🪙!', 1800);
         refreshHUD(); renderShop();
       };
       row.appendChild(sb);
@@ -7741,7 +7741,7 @@ function buyItem(id) {
     else if (id === 'powerBlocks') { G.powerBlocks += 3; toast('⚡ +3 rare Power Blocks — place them carefully!', 2800); }
     else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
     else if (id === 'garagedoor') { G.garageDoors++; toast('🚙 Garage door in your 🎒! Place it across a 2-wide gap in a wall.', 3400); }
-    else if (id === 'roof') { G.furniture.roof += 4; toast('🔺 +4 roof tiles in your 🎒! Stack them on top of your walls.', 3200); }
+    else if (id === 'roof') { G.furniture.roof += 12; toast('🔺 +12 roof tiles in your 🎒 — enough to roof a house! Tap the top of your walls.', 3200); }
     else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
     if (G.owned[id] || G.coins < item.price) return;
