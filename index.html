@@ -342,6 +342,7 @@
   #cursorBtn { top:426px; font-size:16px; font-weight:bold; }
   #modeBtn { top:478px; font-size:14px; font-weight:bold; }
   #modeBtn.remove { background:#ffd2cc; box-shadow:0 3px 0 #d98b80; }
+  #undoBtn { top:530px; font-size:14px; font-weight:bold; }
   #mouseLegend { position:absolute; left:12px; bottom:12px; display:none; pointer-events:none;
     background:rgba(0,0,0,.5); color:#fff; padding:6px 13px; border-radius:13px;
     font-size:14px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.25); }
@@ -494,6 +495,7 @@
     #photoBtn { top:302px; right:8px; }
     #cursorBtn { top:344px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
+    #undoBtn { top:386px; right:8px; }
     /* messages sit up top, clear of the controls */
     #hintBar { bottom:auto; top:104px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
@@ -1011,6 +1013,7 @@
   <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
+  <button id="undoBtn" class="hudBtn" title="Undo — put back the last thing you removed (Z key)">↩️ Undo</button>
   <div id="crosshair">＋</div>
   <div id="mouseLegend">🖱️ Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️</div>
   <div id="hintBar"></div>
@@ -3495,6 +3498,7 @@ function resetWorld() {
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   poolWater = [];                                  // pool meshes are removed with the blocks above
+  undoStack = [];                                  // fresh undo history per world
   pets.length = 0;
   if (typeof removeQuestGem === 'function') { removeQuestGem(); removeCarriedGem(); }
   const qh = $('questHud'); if (qh) qh.style.display = 'none';
@@ -3717,6 +3721,47 @@ function placePoolAt(x, z) {
   }
   Sound.place(); toast('🏊 Splash! Your pool is ready — jump in and swim!', 2600);
   return true;
+}
+/* ↩️ Undo — put back the last thing you took apart. Snapshots a block before it's
+   removed; undo re-creates it exactly (color, rotation, style, all types). */
+let undoStack = [];
+function captureCell(x, y, z) {
+  const b = blocks.get(key(x, y, z)); if (!b || !b.removable) return null;
+  const t = b.type, s = { t, x, y, z };
+  if (t === 'placed') s.color = b.color || 0xC9B79A;
+  else if (t === 'window') s.rot = b.rot || 0;
+  else if (t === 'roof') { s.rot = b.rot || 0; s.style = b.roofStyle || 'pointed'; }
+  else if (t === 'autoroof') { s.W = b.roofW; s.D = b.roofD; s.cost = b.roofCost; s.style = b.roofStyle; }
+  else if (t === 'garage') { if (!b.garageAnchor) return null; s.rot = b.rot || 0; }
+  else if (t === 'door') s.rot = b.rot || 0;
+  else if (t === 'stove') { s.cooking = (b.mesh.userData.cooking || []).map(c => c.kind); s.rotY = b.rotY || 0; }
+  else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) { s.variant = b.variant; s.rotY = b.rotY || 0; }
+  return s;
+}
+function recreateFromSnap(s) {
+  if (!s || blocks.has(key(s.x, s.y, s.z))) return false;
+  const t = s.t;
+  if (t === 'door') placeDoor(s.x, s.y, s.z, s.rot);
+  else if (t === 'garage') placeGarageDoor(s.x, s.y, s.z, s.rot);
+  else if (t === 'autoroof') spawnAutoRoof(s.x, s.y, s.z, s.W, s.D, s.cost, s.style);
+  else if (t === 'window') addWindow(s.x, s.y, s.z, s.rot);
+  else if (t === 'roof') addRoof(s.x, s.y, s.z, s.rot, s.style);
+  else if (t === 'water') placePoolWater(s.x, s.z);
+  else if (t === 'power') { const mesh = new THREE.Mesh(blockGeo, powerMat); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'power', true, mesh); }
+  else if (t === 'stove') { placeFurnitureAt('stove', s.x, s.z, null, s.rotY); const st = blocks.get(key(s.x, 0, s.z)); if (st && s.cooking) s.cooking.forEach(k => attachCookware(st, k)); }
+  else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) placeFurnitureAt(t, s.x, s.z, s.variant, s.rotY);
+  else if (t === 'placed') { const col = s.color, isPlain = col === 0xC9B79A; const mesh = new THREE.Mesh(blockGeo, isPlain ? ((s.x + s.y + s.z) % 2 ? placedMat : placedMatEdge) : blockMat(col)); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'placed', true, mesh); blocks.get(key(s.x, s.y, s.z)).color = col; }
+  else return false;
+  return true;
+}
+function pushUndo(snap) { if (snap) { undoStack.push(snap); if (undoStack.length > 60) undoStack.shift(); } }
+function undoLast() {
+  if (!G.running || G.over || popupOpen) return;
+  let tries = 0;
+  while (undoStack.length && tries++ < 25) {
+    if (recreateFromSnap(undoStack.pop())) { Sound.place(); refreshHUD(); toast('↩️ Put it back!', 1200); return; }
+  }
+  toast('↩️ Nothing to put back!', 1600);
 }
 function removeBlockAt(x, y, z) {
   const b = blocks.get(key(x, y, z));
@@ -7156,6 +7201,7 @@ function removePlacedBlock() {
   });
   if (!bk) return false;
   const [x, y, z] = bk.split(',').map(Number);
+  pushUndo(captureCell(x, y, z));
   removeBlockAt(x, y, z);
   refundFor(be.type, be);
   Sound.brk();
@@ -9429,10 +9475,12 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
       const partner = blocks.get(entry.partner);
       const baseY = partner ? Math.min(y, Number(entry.partner.split(',')[1])) : y;
       bx = x; by = baseY; bz = z;
+      pushUndo(captureCell(bx, by, bz));
       removeBlockAt(bx, by, bz);
       G.doors += 1;
     } else {
       [bx, by, bz] = entryKey.split(',').map(Number);
+      pushUndo(captureCell(bx, by, bz));
       removeBlockAt(bx, by, bz);
       refundFor(entry.type, entry);
     }
@@ -9496,6 +9544,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyX') { Sound.click(); setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
+  if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
   if (e.code === 'KeyE') {
     if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
     else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
@@ -9864,6 +9913,7 @@ function setRemoveMode(on) {
 }
 $('modeBtn').onclick = () => { Sound.click(); setRemoveMode(!G.removeMode);
   toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click a spot to place a block.', 2600); };
+$('undoBtn').onclick = () => { Sound.click(); undoLast(); };
 function takePhoto() {
   renderer.render(scene, camera);                 // fresh frame in the buffer
   // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
