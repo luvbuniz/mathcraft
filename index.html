@@ -1466,9 +1466,12 @@ function fourChoices(answer, distractors) {
 }
 function makeReadingQuestion(level) {
   const kind = pick(level >= 3
-    ? ['rhyme', 'opposite', 'synonym', 'beginsound', 'grammar', 'grammar']
-    : ['rhyme', 'opposite', 'beginsound', 'grammar', 'grammar']);
+    ? ['rhyme', 'opposite', 'synonym', 'beginsound', 'category', 'compound', 'article', 'grammar']
+    : ['rhyme', 'opposite', 'beginsound', 'category', 'article', 'grammar']);
   if (kind === 'grammar') return makeGrammarQuestion(level);
+  if (kind === 'category') return makeCategoryQuestion(level);
+  if (kind === 'compound') return makeCompoundQuestion(level);
+  if (kind === 'article') return makeArticleQuestion(level);
   if (kind === 'rhyme') {
     const fam = pick(RHYME_FAMILIES), target = pick(fam);
     const answer = pick(fam.filter(w => w !== target));
@@ -1546,6 +1549,42 @@ function makeGrammarQuestion(level) {
   return { text: 'Which one is written correctly', options: fourChoices(correct, [s + '.', cap, s]),
     answer: correct, reward: langReward(level), skill: 'reading',
     hint: 'A sentence starts with a CAPITAL letter and ends with a period (.)' };
+}
+
+/* ---- More reading variety: word categories, compound words, a/an ---- */
+const WORD_CATEGORIES = {
+  animal: ['dog', 'cat', 'cow', 'horse', 'duck', 'pig', 'bird', 'fish', 'frog', 'lion', 'bear', 'goat', 'sheep', 'mouse'],
+  food: ['apple', 'cake', 'bread', 'milk', 'egg', 'rice', 'soup', 'pear', 'corn', 'jam', 'pizza', 'banana'],
+  color: ['red', 'blue', 'green', 'pink', 'black', 'white', 'brown', 'gray', 'purple', 'orange'],
+  thing: ['ball', 'book', 'cup', 'chair', 'box', 'shoe', 'sock', 'door', 'bed', 'star', 'hat', 'spoon']
+};
+function makeCategoryQuestion(level) {
+  const cats = Object.keys(WORD_CATEGORIES), which = pick(cats);
+  const answer = pick(WORD_CATEGORIES[which]);
+  const distractors = cats.filter(c => c !== which).reduce((a, c) => a.concat(WORD_CATEGORIES[c]), []);
+  const label = { animal: 'an ANIMAL', food: 'a FOOD', color: 'a COLOR', thing: 'a THING you can touch' }[which];
+  return { text: 'Which word is ' + label, options: fourChoices(answer, distractors),
+    answer, reward: langReward(level), skill: 'reading',
+    hint: 'Think about what each word is. Which one is ' + label + '?' };
+}
+const COMPOUND_WORDS = ['sunflower', 'rainbow', 'cupcake', 'football', 'starfish', 'pancake', 'butterfly', 'snowman', 'toothbrush', 'ladybug', 'popcorn', 'bedroom', 'cowboy', 'sandbox', 'doghouse', 'mailbox'];
+const NONCOMPOUND_WORDS = ['apple', 'happy', 'jump', 'flower', 'animal', 'pretty', 'garden', 'purple', 'little', 'yellow', 'monkey', 'water', 'pencil', 'window'];
+function makeCompoundQuestion(level) {
+  const answer = pick(COMPOUND_WORDS);
+  return { text: 'Which one is a COMPOUND word (two words joined together)', options: fourChoices(answer, NONCOMPOUND_WORDS),
+    answer, reward: langReward(level), skill: 'reading',
+    hint: 'A compound word is two little words stuck together — like sun + flower = sunflower.' };
+}
+const AN_WORDS = ['apple', 'egg', 'orange', 'umbrella', 'igloo', 'ant', 'elephant', 'owl', 'octopus', 'olive', 'acorn', 'envelope', 'igloo', 'inch'];
+const A_WORDS = ['ball', 'dog', 'cat', 'cup', 'book', 'sun', 'tree', 'car', 'hat', 'frog', 'star', 'box', 'kite', 'rock'];
+function makeArticleQuestion(level) {
+  const useAn = Math.random() < 0.5;
+  const word = pick(useAn ? AN_WORDS : A_WORDS);
+  const answer = (useAn ? 'an ' : 'a ') + word;
+  const wrong = (useAn ? 'a ' : 'an ') + word;
+  return { text: 'Which is correct?', options: shuffle([answer, wrong]),
+    answer, reward: langReward(level), skill: 'reading',
+    hint: 'Use “an” before a word that starts with a vowel sound (a, e, i, o, u). Use “a” before the rest.' };
 }
 
 /* ===================== SPANISH BEACH (basic vocabulary) =====================
@@ -4485,6 +4524,7 @@ function closeBakery() { $('bakePopup').style.display = 'none'; popupOpen = fals
 function treatName() { return (bake.flavor && bake.treat.ice && bake.flavor[1] !== 'Vanilla' ? bake.flavor[1] + ' ' : '') + bake.treat.n; }
 function renderBake() {
   if (!bake) return;
+  bake.locked = false;                              // fresh step — one answer allowed
   const wrap = $('bakeChoices'); wrap.innerHTML = ''; $('bakeMsg').textContent = '';
   if (bake.phase === 'menu') {
     $('bakeTitle').innerHTML = '🧁 Stack Sweets'; $('bakeTray').innerHTML = '';
@@ -4538,18 +4578,21 @@ function renderBake() {
   lockChoices(wrap, 800);            // read the measuring step first — no mashing
 }
 function bakeAnswer(opt, btn) {
-  if (!bake) return;
+  if (!bake || bake.locked) return;                 // one answer per step — no mashing
+  bake.locked = true;
+  disableChoices($('bakeChoices'));
   const s = bake.steps[bake.step];
-  if (opt === s.answer) {
+  const right = opt === s.answer;
+  bake.step++;
+  if (right) {
     Sound.correct(); G.solved++; recordSolve({ skill: 'measure', level: G.grade }); refreshHUD(); bumpHud('solvedCount');
-    bake.step++;
-    if (bake.step >= bake.steps.length) { finishBake(); return; }
     $('bakeMsg').style.color = '#2f8a52'; $('bakeMsg').textContent = '✓ Perfect!';
-    setTimeout(renderBake, 350);
+    setTimeout(() => { if (bake.step >= bake.steps.length) finishBake(); else renderBake(); }, 450);
   } else {
-    Sound.wrong(); btn.classList.add('flop'); lockChoices($('bakeChoices'), 800);
-    $('bakeMsg').style.color = '#c0392b'; $('bakeMsg').textContent = '😅 Not quite — measure it again!';
-    setTimeout(() => { s.options = shuffle(s.options.slice()); renderBake(); }, 700);
+    Sound.wrong(); btn.classList.add('flop');
+    markCorrectChoice($('bakeChoices'), s.answer);
+    $('bakeMsg').style.color = '#c0392b'; $('bakeMsg').innerHTML = '✗ The right measure was: <b>' + s.answer + '</b>';
+    setTimeout(() => { if (bake.step >= bake.steps.length) finishBake(); else renderBake(); }, 2400);
   }
 }
 function finishBake() {
@@ -4984,6 +5027,12 @@ function lockChoices(wrap, ms) {
   btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
   setTimeout(() => { btns.forEach(b => { b.disabled = false; b.style.opacity = ''; }); }, ms || 800);
 }
+// One answer per question: permanently disable the choices, and green-light the right one.
+function disableChoices(wrap) { if (wrap) wrap.querySelectorAll('button').forEach(b => { b.disabled = true; b.style.opacity = ''; }); }
+function markCorrectChoice(wrap, correctText) {
+  if (!wrap) return;
+  wrap.querySelectorAll('button').forEach(b => { if (b.textContent === correctText) { b.style.background = '#2f8a52'; b.style.color = '#fff'; b.style.boxShadow = 'none'; } });
+}
 function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
   // each reader has their own reading level that gently adapts (Fiona may run ahead of Leo)
@@ -5047,27 +5096,27 @@ function renderLib() {
   lockChoices(wrap, 1000);            // read first — no instant mashing
 }
 function libAnswer(opt, q, btn) {
-  if (!lib) return;
-  const firstAttempt = !lib.attempted;             // only the FIRST answer to a question is rated for comprehension
+  if (!lib || lib.attempted) return;               // one answer per question — no mashing to the right one
   lib.attempted = true;
-  if (firstAttempt) {
-    profile.readFirstTotal = (profile.readFirstTotal || 0) + 1;
-    profile.readFirstByGrade = profile.readFirstByGrade || {};
-    const bg = profile.readFirstByGrade; bg[q.g] = bg[q.g] || { right: 0, total: 0 }; bg[q.g].total++;
-    if (opt === q.a) { profile.readFirstRight = (profile.readFirstRight || 0) + 1; bg[q.g].right++; lib.firstRight = (lib.firstRight || 0) + 1; }
-    else { recordWrong({ skill: 'reading', level: q.g }); }   // a missed first try counts against comprehension
-    profileDirty = true; saveProfile();
-  }
-  if (opt === q.a) {
+  disableChoices($('libChoices'));
+  // this is the only attempt, so it's what counts toward comprehension
+  profile.readFirstTotal = (profile.readFirstTotal || 0) + 1;
+  profile.readFirstByGrade = profile.readFirstByGrade || {};
+  const bg = profile.readFirstByGrade; bg[q.g] = bg[q.g] || { right: 0, total: 0 }; bg[q.g].total++;
+  const right = opt === q.a;
+  if (right) { profile.readFirstRight = (profile.readFirstRight || 0) + 1; bg[q.g].right++; lib.firstRight = (lib.firstRight || 0) + 1; }
+  else recordWrong({ skill: 'reading', level: q.g });
+  profileDirty = true; saveProfile();
+  lib.qi++;
+  if (right) {
     Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++;
-    lib.qi++;
-    if (lib.qi >= lib.qs.length) { finishLib(); return; }
-    $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = firstAttempt ? '✓ Nice reading!' : '✓ Got it!';
-    setTimeout(renderLib, 400);
+    $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
+    setTimeout(() => { if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, 750);
   } else {
     Sound.wrong(); btn.classList.add('flop'); lib.wrong = (lib.wrong || 0) + 1;
-    lockChoices($('libChoices'), 900);   // brief cooldown so a wrong tap can't be mashed straight through
-    $('libMsg').style.color = '#c0392b'; $('libMsg').textContent = '🤔 Look back at the story and try again!';
+    markCorrectChoice($('libChoices'), q.a);
+    $('libMsg').style.color = '#c0392b'; $('libMsg').innerHTML = '✗ The answer was: <b>' + q.a + '</b>';
+    setTimeout(() => { if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, 2400);
   }
 }
 function finishLib() {
@@ -5193,29 +5242,29 @@ function renderSpell() {
   }
 }
 function spellAnswer(ans, w, btn) {
-  if (!spell) return;
+  if (!spell || spell.attempted) return;            // one answer per word — no mashing
+  spell.attempted = true;
+  disableChoices($('spellChoices'));
   const norm = s => (s || '').trim().toLowerCase();
   const correct = norm(ans) === norm(w);
-  const firstAttempt = !spell.attempted; spell.attempted = true;
-  if (firstAttempt) {
-    profile.spellFirstTotal = (profile.spellFirstTotal || 0) + 1;
-    profile.spellFirstByGrade = profile.spellFirstByGrade || {};
-    const bg = profile.spellFirstByGrade; bg[spell.level] = bg[spell.level] || { right: 0, total: 0 }; bg[spell.level].total++;
-    if (correct) { profile.spellFirstRight = (profile.spellFirstRight || 0) + 1; bg[spell.level].right++; spell.firstRight++; }
-    else recordWrong({ skill: 'spelling', level: spell.level });
-    profileDirty = true; saveProfile();
-  }
+  // the only attempt, so it counts toward the spelling score
+  profile.spellFirstTotal = (profile.spellFirstTotal || 0) + 1;
+  profile.spellFirstByGrade = profile.spellFirstByGrade || {};
+  const bg = profile.spellFirstByGrade; bg[spell.level] = bg[spell.level] || { right: 0, total: 0 }; bg[spell.level].total++;
+  if (correct) { profile.spellFirstRight = (profile.spellFirstRight || 0) + 1; bg[spell.level].right++; spell.firstRight++; }
+  else recordWrong({ skill: 'spelling', level: spell.level });
+  profileDirty = true; saveProfile();
+  spell.qi++;
   if (correct) {
     Sound.correct(); G.solved++; recordSolve({ skill: 'spelling', level: spell.level }); refreshHUD(); bumpHud('solvedCount'); spell.right++;
-    spell.qi++;
-    if (spell.qi >= spell.words.length) { finishSpell(); return; }
-    $('spellMsg').style.color = '#2f8a52'; $('spellMsg').textContent = firstAttempt ? '✓ Spelled it!' : '✓ Got it!';
-    setTimeout(renderSpell, 550);
+    $('spellMsg').style.color = '#2f8a52'; $('spellMsg').textContent = '✓ Spelled it!';
+    setTimeout(() => { if (spell.qi >= spell.words.length) finishSpell(); else renderSpell(); }, 650);
   } else {
     Sound.wrong(); if (btn && btn.classList) btn.classList.add('flop');
-    if (!spell.typed) lockChoices($('spellChoices'), 900);
-    $('spellMsg').style.color = '#c0392b'; $('spellMsg').textContent = '🤔 Not quite — listen again and try!';
+    if (!spell.typed) markCorrectChoice($('spellChoices'), w);
+    $('spellMsg').style.color = '#c0392b'; $('spellMsg').innerHTML = '✗ It\'s spelled: <b>' + w + '</b>';
     speakWord(w);
+    setTimeout(() => { if (spell.qi >= spell.words.length) finishSpell(); else renderSpell(); }, 2600);
   }
 }
 function finishSpell() {
