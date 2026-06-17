@@ -342,6 +342,7 @@
   #cursorBtn { top:426px; font-size:16px; font-weight:bold; }
   #modeBtn { top:478px; font-size:14px; font-weight:bold; }
   #modeBtn.remove { background:#ffd2cc; box-shadow:0 3px 0 #d98b80; }
+  #undoBtn { top:530px; font-size:14px; font-weight:bold; }
   #mouseLegend { position:absolute; left:12px; bottom:12px; display:none; pointer-events:none;
     background:rgba(0,0,0,.5); color:#fff; padding:6px 13px; border-radius:13px;
     font-size:14px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.25); }
@@ -494,6 +495,7 @@
     #photoBtn { top:302px; right:8px; }
     #cursorBtn { top:344px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
+    #undoBtn { top:386px; right:8px; }
     /* messages sit up top, clear of the controls */
     #hintBar { bottom:auto; top:104px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
@@ -1011,6 +1013,7 @@
   <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
+  <button id="undoBtn" class="hudBtn" title="Undo — put back the last thing you removed (Z key)">↩️ Undo</button>
   <div id="crosshair">＋</div>
   <div id="mouseLegend">🖱️ Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️</div>
   <div id="hintBar"></div>
@@ -2558,7 +2561,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -2705,6 +2708,7 @@ const SHOP_ITEMS = [
   { id: 'bathtub',icon: '🛁', name: 'Bathtub', price: 14,      kind: 'many',  desc: 'A cozy bathtub for the bathroom.' },
   { id: 'shower', icon: '🚿', name: 'Shower', price: 12,       kind: 'many',  desc: 'A shower for the bathroom.' },
   { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
+  { id: 'pool',   icon: '🏊', name: 'Swimming Pool', price: 30, kind: 'many', desc: 'A swimmable pool with rippling water — drop it in any open yard and dive in!' },
   { id: 'bush',   icon: '🌳', name: 'Leafy Bush', price: 4,    kind: 'many',  desc: 'A round green bush for the garden.' },
   { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
   { id: 'petfood',  icon: '🥫', name: 'Pet Food', price: 4,   kind: 'many',  desc: 'Cat & dog food. Pour it into a food bowl, then a hungry pet will come eat!' },
@@ -2749,7 +2753,7 @@ const ITEM_CAT = {
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
-  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor'
+  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
@@ -3494,6 +3498,7 @@ function resetWorld() {
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   poolWater = [];                                  // pool meshes are removed with the blocks above
+  undoStack = [];                                  // fresh undo history per world
   pets.length = 0;
   if (typeof removeQuestGem === 'function') { removeQuestGem(); removeCarriedGem(); }
   const qh = $('questHud'); if (qh) qh.style.display = 'none';
@@ -3508,7 +3513,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -3698,6 +3703,65 @@ function placePoolWater(x, z) {
   mesh.position.set(x + 0.5, 0.3, z + 0.5);
   addBlockMesh(x, 0, z, null, 'water', true, mesh);
   poolWater.push({ mesh, x, z, baseY: 0.3 });
+}
+// drop a standalone swimming pool (a tile rim + animated water) at the tapped spot
+function placePoolAt(x, z) {
+  const pw = 3, pd = 2;
+  for (let cx = x - 1; cx <= x + pw; cx++) for (let cz = z - 1; cz <= z + pd; cz++) {
+    if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) { toast('🌍 Too close to the edge for a pool!', 2000); return false; }
+    if (blocks.has(key(cx, 0, cz))) { toast('🏊 A pool needs a clear open patch — find a bigger empty spot!', 2800); return false; }
+    if (inShopZone(cx, cz) || (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz))) { toast('🏊 Too close to a building — pick an open yard!', 2400); return false; }
+    if (cellOverlapsPlayer(cx, 0, cz)) { toast('🙂 Step back a little first!', 1500); return false; }
+  }
+  for (let cx = x - 1; cx <= x + pw; cx++) for (let cz = z - 1; cz <= z + pd; cz++) {
+    if (cx === x - 1 || cx === x + pw || cz === z - 1 || cz === z + pd) {
+      const mesh = new THREE.Mesh(blockGeo, blockMat(0xEDE8DE)); mesh.position.set(cx + 0.5, 0.5, cz + 0.5);
+      addBlockMesh(cx, 0, cz, null, 'placed', true, mesh); blocks.get(key(cx, 0, cz)).color = 0xEDE8DE;   // tile rim
+    } else placePoolWater(cx, cz);                                                                          // animated, swimmable water
+  }
+  Sound.place(); toast('🏊 Splash! Your pool is ready — jump in and swim!', 2600);
+  return true;
+}
+/* ↩️ Undo — put back the last thing you took apart. Snapshots a block before it's
+   removed; undo re-creates it exactly (color, rotation, style, all types). */
+let undoStack = [];
+function captureCell(x, y, z) {
+  const b = blocks.get(key(x, y, z)); if (!b || !b.removable) return null;
+  const t = b.type, s = { t, x, y, z };
+  if (t === 'placed') s.color = b.color || 0xC9B79A;
+  else if (t === 'window') s.rot = b.rot || 0;
+  else if (t === 'roof') { s.rot = b.rot || 0; s.style = b.roofStyle || 'pointed'; }
+  else if (t === 'autoroof') { s.W = b.roofW; s.D = b.roofD; s.cost = b.roofCost; s.style = b.roofStyle; }
+  else if (t === 'garage') { if (!b.garageAnchor) return null; s.rot = b.rot || 0; }
+  else if (t === 'door') s.rot = b.rot || 0;
+  else if (t === 'stove') { s.cooking = (b.mesh.userData.cooking || []).map(c => c.kind); s.rotY = b.rotY || 0; }
+  else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) { s.variant = b.variant; s.rotY = b.rotY || 0; }
+  return s;
+}
+function recreateFromSnap(s) {
+  if (!s || blocks.has(key(s.x, s.y, s.z))) return false;
+  const t = s.t;
+  if (t === 'door') placeDoor(s.x, s.y, s.z, s.rot);
+  else if (t === 'garage') placeGarageDoor(s.x, s.y, s.z, s.rot);
+  else if (t === 'autoroof') spawnAutoRoof(s.x, s.y, s.z, s.W, s.D, s.cost, s.style);
+  else if (t === 'window') addWindow(s.x, s.y, s.z, s.rot);
+  else if (t === 'roof') addRoof(s.x, s.y, s.z, s.rot, s.style);
+  else if (t === 'water') placePoolWater(s.x, s.z);
+  else if (t === 'power') { const mesh = new THREE.Mesh(blockGeo, powerMat); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'power', true, mesh); }
+  else if (t === 'stove') { placeFurnitureAt('stove', s.x, s.z, null, s.rotY); const st = blocks.get(key(s.x, 0, s.z)); if (st && s.cooking) s.cooking.forEach(k => attachCookware(st, k)); }
+  else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) placeFurnitureAt(t, s.x, s.z, s.variant, s.rotY);
+  else if (t === 'placed') { const col = s.color, isPlain = col === 0xC9B79A; const mesh = new THREE.Mesh(blockGeo, isPlain ? ((s.x + s.y + s.z) % 2 ? placedMat : placedMatEdge) : blockMat(col)); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'placed', true, mesh); blocks.get(key(s.x, s.y, s.z)).color = col; }
+  else return false;
+  return true;
+}
+function pushUndo(snap) { if (snap) { undoStack.push(snap); if (undoStack.length > 60) undoStack.shift(); } }
+function undoLast() {
+  if (!G.running || G.over || popupOpen) return;
+  let tries = 0;
+  while (undoStack.length && tries++ < 25) {
+    if (recreateFromSnap(undoStack.pop())) { Sound.place(); refreshHUD(); toast('↩️ Put it back!', 1200); return; }
+  }
+  toast('↩️ Nothing to put back!', 1600);
 }
 function removeBlockAt(x, y, z) {
   const b = blocks.get(key(x, y, z));
@@ -4865,7 +4929,7 @@ const HOME_MODELS = [
   { id: 'family',  name: '🏠 Family Two-Story',  price: 340, stories: 2, garage: true, pool: false, color: 0xD9C39A, roofStyle: 'pointed', desc: '2 stories + stairs • garage • yards' },
   { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL' },
   { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
-  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, desc: 'Mega! columns • 3-car garage • huge POOL • the grandest of all!' }
+  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!' }
 ];
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
@@ -5015,6 +5079,19 @@ function buildHome(ox, oz, m) {
       if (x === px0 - 1 || x === px0 + pw || z === pz0 - 1 || z === pz0 + pd) cell(x, 0, z, poolEdge);   // tile rim
       else placePoolWater(x, z);                                                                          // animated, swimmable water
     }
+  }
+  // ---- starter furniture (the grandest home moves in fully furnished) ----
+  if (m.furnished) {
+    const cx0 = L.hx0 + 1, cz0 = L.hz0 + 1;   // interior corner (ground floor)
+    const put = (type, ix, iz, rot) => { if (!blocks.has(key(ix, 0, iz)) && !blocks.has(key(ix, 1, iz))) placeFurnitureAt(type, ix, iz, 0, rot || 0); };
+    put('couch', cx0 + 1, cz0 + 0, 0);
+    put('coffeetable', cx0 + 1, cz0 + 1, 0);
+    put('tv', cx0 + 1, cz0 + 3, Math.PI);
+    put('rug', cx0 + 2, cz0 + 2, 0);
+    put('bookshelf', cx0 + L.hw - 4, cz0 + 0, 0);
+    put('lamp', cx0 + L.hw - 4, cz0 + L.hd - 3, 0);
+    put('bed', cx0 + L.hw - 4, cz0 + L.hd - 4, 0);
+    put('plant', cx0 + 0, cz0 + L.hd - 3, 0);
   }
   // remember this home's lot so it can be demolished as one unit later (no refund)
   G.homes = G.homes || [];
@@ -7124,6 +7201,7 @@ function removePlacedBlock() {
   });
   if (!bk) return false;
   const [x, y, z] = bk.split(',').map(Number);
+  pushUndo(captureCell(x, y, z));
   removeBlockAt(x, y, z);
   refundFor(be.type, be);
   Sound.brk();
@@ -7174,6 +7252,11 @@ function placeSelectedAt(x, z, blockY) {
     if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
     if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
+  }
+  if (slot === 'pool') {
+    if (G.furniture.pool < 1) { toast('🏊 No pools in your 🎒 — buy one at 🏚️ Stack Barn (🌳 Garden)!', 2400); return false; }
+    if (placePoolAt(x, z)) { G.furniture.pool -= 1; refreshHUD(); return true; }
+    return false;
   }
   if (slot === 'garagedoor') {
     if (G.garageDoors < 1) { toast('🚙 No garage doors in your 🎒! Buy one at 🏚️ Stack Barn (Building tab)!', 2400); return false; }
@@ -8016,6 +8099,7 @@ function buyItem(id) {
     else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
     else if (id === 'garagedoor') { G.garageDoors++; toast('🚙 Garage door in your 🎒! Place it across a 2-wide gap in a wall.', 3400); }
     else if (id === 'roof') { G.furniture.roof += 12; toast('🔺 +12 roof tiles in your 🎒 — enough to roof a house! Tap the top of your walls.', 3200); }
+    else if (id === 'pool') { G.furniture.pool++; toast('🏊 Swimming Pool in your 🎒! Open it (press I), Place it in an open yard, and dive in!', 3600); }
     else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
   } else {
     if (G.owned[id] || G.coins < item.price) return;
@@ -9391,10 +9475,12 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
       const partner = blocks.get(entry.partner);
       const baseY = partner ? Math.min(y, Number(entry.partner.split(',')[1])) : y;
       bx = x; by = baseY; bz = z;
+      pushUndo(captureCell(bx, by, bz));
       removeBlockAt(bx, by, bz);
       G.doors += 1;
     } else {
       [bx, by, bz] = entryKey.split(',').map(Number);
+      pushUndo(captureCell(bx, by, bz));
       removeBlockAt(bx, by, bz);
       refundFor(entry.type, entry);
     }
@@ -9458,6 +9544,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyX') { Sound.click(); setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
+  if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
   if (e.code === 'KeyE') {
     if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
     else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
@@ -9506,7 +9593,7 @@ function toggleSelfie() {
   toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸!' : '🧍 Back to normal view', 1400);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -9632,6 +9719,7 @@ function renderInv() {
     ['🛁', 'Bathtubs', G.furniture.bathtub, 'bathtub'],
     ['🚿', 'Showers', G.furniture.shower, 'shower'],
     ['🌱', 'Garden Planters', G.furniture.garden, 'garden'],
+    ['🏊', 'Swimming Pools', G.furniture.pool, 'pool'],
     ['🌳', 'Bushes', G.furniture.bush, 'bush'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
@@ -9825,6 +9913,7 @@ function setRemoveMode(on) {
 }
 $('modeBtn').onclick = () => { Sound.click(); setRemoveMode(!G.removeMode);
   toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click a spot to place a block.', 2600); };
+$('undoBtn').onclick = () => { Sound.click(); undoLast(); };
 function takePhoto() {
   renderer.render(scene, camera);                 // fresh frame in the buffer
   // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
