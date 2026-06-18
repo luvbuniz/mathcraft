@@ -3263,25 +3263,26 @@ function renderGrownup() {
     // per-skill mastery — MATH skills only (reading, spelling & grammar have their own section below)
     const ops = p.byOp || {}, wrongs = p.byOpWrong || {};
     const opKeys = Object.keys(ops).filter(k => subjectOf(k) === 'math').sort((a, b) => ops[b] - ops[a]);
+    // Per-skill bar = ACCURACY out of 100 (green/amber/red), with the % shown so it's a real
+    // metric, not decoration. Count + mastery stage go on the line below.
+    // (We only claim accuracy when misses are actually tracked — old imported saves aren't.)
+    const tracksWrong = (p.totalWrong || 0) === 0 || Object.keys(wrongs).length > 0;
     opKeys.forEach(k => {
-      const c = ops[k], w = wrongs[k] || 0;
-      const ms = masteryStage(c);
+      const c = ops[k], w = wrongs[k] || 0, ms = masteryStage(c), attempts = c + w;
+      const acc = (tracksWrong && attempts >= 4) ? Math.round(c / attempts * 100) : null;
+      let pct, col, label;
+      if (acc != null) {
+        pct = acc; label = acc + '%';
+        col = acc >= 85 ? 'linear-gradient(90deg,#69d05c,#3f9d34)'
+            : acc >= 60 ? 'linear-gradient(90deg,#f3cc63,#e0a21c)'
+            : 'linear-gradient(90deg,#ef9183,#d9534f)';
+      } else { pct = 0; label = '—'; col = '#cbd5e1'; }
       html += '<div class="guBar"><span class="lab">' + (SKILL_LABELS[k] || k) + '</span>' +
-        '<span class="track"><span class="fill" style="width:' + ms.fill + '%;background:' + ms.col + '"></span></span>' +
-        '<span class="num">' + c + ' ✓</span></div>';
-      // sub-line: stage, how far to the next stage, and a careful-vs-guessing read.
-      // Only show the read when we actually have mistake data for this skill (older imported
-      // saves didn't track per-skill misses, so we don't pretend to know the accuracy).
-      let tag = '';
-      const haveMissData = w > 0 || (p.totalWrong || 0) === 0;
-      if (haveMissData && c + w >= 4) {
-        const a = Math.round(c / (c + w) * 100);
-        tag = a >= 85 ? ' · <span style="color:#2f8a52">✅ careful</span>'
-          : a >= 60 ? ' · <span style="color:#b07d00">🟡 some guessing</span>'
-          : ' · <span style="color:#c0392b">🔴 lots of guessing</span>';
-      }
-      const prog = ms.mastered ? '🌟 mastered!' : ms.label + ' · ' + ms.toNext + ' more to ' + ms.nextLabel;
-      html += '<div class="guSkillSub">' + prog + tag + '</div>';
+        '<span class="track"><span class="fill" style="width:' + pct + '%;background:' + col + '"></span></span>' +
+        '<span class="num">' + label + '</span></div>';
+      const prog = ms.mastered ? '🌟 Mastered' : ms.label + ' · ' + ms.toNext + ' more to ' + ms.nextLabel;
+      html += '<div class="guSkillSub">' + c + ' solved · ' + prog +
+        (acc != null ? '' : ' · <span style="color:#9aa6b5">accuracy after a few more</span>') + '</div>';
     });
     if (!opKeys.length) html += '<div class="guEmpty">No math problems solved yet — visit a ❓ station in Math Meadow.</div>';
 
