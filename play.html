@@ -797,6 +797,31 @@
     #setupCard #avatarGrid { grid-template-columns:repeat(3,1fr); }
     #setupCard .stepNav { position:sticky; bottom:0; background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%); padding-top:10px; }
   }
+  /* Touch phones in LANDSCAPE (short height): the right-side utility buttons would stack
+     down into the gameplay buttons. Lay them in two compact rows across the top-right,
+     leaving the lower-right clear for JUMP / USE / Place. (pointer:coarse = touch only,
+     so desktop short windows are unaffected.) */
+  @media (orientation:landscape) and (max-height:520px) and (pointer:coarse) {
+    #soundBtn,#camBtn,#homeBtn,#saveBtn,#invBtn,#questBtn,#selfieBtn,#photoBtn,#cursorBtn {
+      font-size:14px; padding:5px 7px;
+    }
+    #soundBtn  { top:6px; right:8px; }
+    #camBtn    { top:6px; right:52px; }
+    #homeBtn   { top:6px; right:96px; }
+    #saveBtn   { top:6px; right:140px; }
+    #invBtn    { top:6px; right:184px; }
+    #questBtn  { top:48px; right:8px; }
+    #selfieBtn { top:48px; right:52px; }
+    #photoBtn  { top:48px; right:96px; }
+    #cursorBtn { top:48px; right:140px; }
+    #modeBtn, #undoBtn { display:none; }
+    .touchBtn { font-size:13px; padding:10px 12px; }
+    #btnAction    { right:14px;  bottom:116px; }
+    #btnJump      { right:14px;  bottom:58px; }
+    #btnModeTouch { right:104px; bottom:58px; }
+    #btnShoot     { right:104px; bottom:116px; }
+    #btnUndoTouch { right:194px; bottom:58px; }
+  }
 </style>
 </head>
 <body>
