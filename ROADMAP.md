@@ -185,9 +185,21 @@ A walk-in **🏦 Bank**: **coin-counting** (make a target amount), **making chan
 (pay, count the change), and **interest** for older kids only (higher levels: "deposit
 100 at 5% — how much now?" so it stays hidden from little ones, surfaces as they level).
 
-### 🔤 Word games (lighter add-on, after the Cinema)
-**Anagrams** (unscramble a themed word — easy) + **word search** (small grid UI). Natural
-pair; put in the Post Office or a small arcade.
+### 🔤 Level-up bonus mini-games (earned by leveling up — strong retention hook)
+Leveling up grants a bonus quest that **rotates through mini-games**, length/difficulty
+**auto-scaled by level** (younger kids get easier ones — no manual age setting). Pool so far:
+- ✅ **Treasure Map** (read X,Y coordinates), **Describing Words** (adjectives),
+  **Unscramble** (anagram, picture hint, 3–6 letters by level). *Shipped.*
+- 🔜 **Word Search** — small grid (e.g. 7×7), find 3–4 themed words; tap start+end cell
+  (easier than drag on touch). Gate to higher levels (~older kids). Medium build.
+- 🤔 **Mini Crossword** — *older kids only* (younger won't get it, per parent). A 5×5 with
+  picture/short clues is doable but a **bigger build**; do it after word search.
+- ⏭️ **Sudoku** — honest take: the "too hard for little kids" worry is right, and even a
+  4×4 picture-sudoku is a **logic** puzzle, not math-fact *learning* — weaker educational
+  ROI than the word games. **Skip unless** demand shows up; word search + crossword are the
+  better use of the slot.
+
+Keep them **level-up-only** (a celebration of real progress) so they're never farmable.
 
 ### 🛋️ Room kits
 One-tap furnished rooms in two styles: **Post-Modern** and **Ultra-Trendy**.
