@@ -5300,19 +5300,30 @@ const QUEST_OBJECTS = [
   { e: '🐝', n: 'bee', adj: ['buzzy', 'yellow', 'tiny'], no: ['silent', 'huge', 'square'] },
   { e: '🦒', n: 'giraffe', adj: ['tall', 'spotted', 'long'], no: ['short', 'round', 'wet'] }
 ];
+// 🔤 unscramble words — picture-hint anagrams, length scaled by level (younger = shorter)
+const ANAGRAM_WORDS = [
+  { w: 'cat', e: '🐱' }, { w: 'dog', e: '🐶' }, { w: 'sun', e: '☀️' }, { w: 'hat', e: '🎩' }, { w: 'bug', e: '🐛' }, { w: 'cup', e: '☕' }, { w: 'bee', e: '🐝' }, { w: 'pig', e: '🐷' },
+  { w: 'fish', e: '🐠' }, { w: 'star', e: '⭐' }, { w: 'tree', e: '🌳' }, { w: 'frog', e: '🐸' }, { w: 'cake', e: '🍰' }, { w: 'moon', e: '🌙' }, { w: 'bird', e: '🐦' }, { w: 'ball', e: '⚽' }, { w: 'boat', e: '⛵' }, { w: 'leaf', e: '🍃' },
+  { w: 'apple', e: '🍎' }, { w: 'tiger', e: '🐯' }, { w: 'snake', e: '🐍' }, { w: 'house', e: '🏠' }, { w: 'train', e: '🚂' }, { w: 'robot', e: '🤖' }, { w: 'lemon', e: '🍋' }, { w: 'mouse', e: '🐭' },
+  { w: 'rocket', e: '🚀' }, { w: 'flower', e: '🌸' }, { w: 'turtle', e: '🐢' }, { w: 'pencil', e: '✏️' }, { w: 'guitar', e: '🎸' }, { w: 'rabbit', e: '🐰' }, { w: 'monkey', e: '🐵' }, { w: 'castle', e: '🏰' },
+];
 let sideQuest = null;
 const sqBtn = (id, label, bg) => '<button id="' + id + '" style="font-weight:bold;padding:11px 22px;border-radius:14px;color:#fff;background:' + bg + ';border:none;box-shadow:0 4px 0 rgba(0,0,0,.18);cursor:pointer;margin:2px 4px">' + label + '</button>';
 function offerLevelQuest(level) {
   if (popupOpen || G.over || !G.running) { G.pendingLevelQuest = level; return; }   // wait for a clear moment
-  const type = (level % 2 === 0) ? 'treasure' : 'adjective';
+  const types = ['treasure', 'adjective', 'anagram'];   // rotate the level-up bonus games
+  const type = types[level % types.length];
   sideQuest = { type, level, round: 0, total: 3, right: 0, reward: 8 + level, locked: false };
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   $('sqClose').onclick = () => { Sound.click(); closeSideQuest(); };
   $('sqTitle').textContent = '⭐ Level ' + level + ' Bonus Quest!';
-  $('sqPrompt').innerHTML = type === 'treasure'
-    ? '🗺️ A <b>Treasure Map</b> quest! Use the X (across) and Y (up) numbers to find the buried treasure.'
-    : '🔍 A <b>Describing Words</b> quest! Pick the word that describes each thing.';
-  $('sqBody').innerHTML = '<div style="font-size:54px">' + (type === 'treasure' ? '🗺️' : '🔍') + '</div>';
+  const sqMeta = {
+    treasure: { e: '🗺️', p: '🗺️ A <b>Treasure Map</b> quest! Use the X (across) and Y (up) numbers to find the buried treasure.' },
+    adjective: { e: '🔍', p: '🔍 A <b>Describing Words</b> quest! Pick the word that describes each thing.' },
+    anagram: { e: '🔤', p: '🔤 An <b>Unscramble</b> quest! Tap the jumbled letters in order to spell each word.' },
+  };
+  $('sqPrompt').innerHTML = sqMeta[type].p;
+  $('sqBody').innerHTML = '<div style="font-size:54px">' + sqMeta[type].e + '</div>';
   $('sqMsg').innerHTML = sqBtn('sqStart', '🚀 Let\'s go!', '#3f9d34') + sqBtn('sqSkip', 'Maybe later', '#9aa7b4');
   $('sqStart').onclick = () => { Sound.click(); startSideQuest(); };
   $('sqSkip').onclick = () => { Sound.click(); closeSideQuest(); };
@@ -5321,6 +5332,7 @@ function offerLevelQuest(level) {
 function startSideQuest() {
   $('sqMsg').textContent = '';
   if (sideQuest.type === 'treasure') { newTreasureTarget(); renderTreasure(); }
+  else if (sideQuest.type === 'anagram') { newAnagram(); renderAnagram(); }
   else { nextAdjective(); renderAdjective(); }
 }
 function newTreasureTarget() { sideQuest.target = { x: 1 + Math.floor(Math.random() * 5), y: 1 + Math.floor(Math.random() * 5) }; }
@@ -5379,6 +5391,63 @@ function adjAnswer(opt, btn, wrap) {
   else { Sound.wrong(); markCorrectChoice(wrap, correct); $('sqMsg').style.color = '#c0392b'; $('sqMsg').innerHTML = '✗ A ' + sideQuest.obj.n + ' is <b>' + correct + '</b>.'; }
   sideQuest.round++;
   setTimeout(() => { sideQuest.locked = false; if (sideQuest.round >= sideQuest.total) finishSideQuest(); else { $('sqMsg').textContent = ''; nextAdjective(); renderAdjective(); } }, right ? 950 : 1900);
+}
+function newAnagram() {
+  const lvl = sideQuest.level || 2;
+  const minLen = lvl <= 2 ? 3 : 4, maxLen = lvl <= 2 ? 4 : lvl <= 4 ? 5 : 6;
+  let pool = ANAGRAM_WORDS.filter(x => x.w.length >= minLen && x.w.length <= maxLen);
+  if (sideQuest._used) { const fresh = pool.filter(x => !sideQuest._used.includes(x.w)); if (fresh.length) pool = fresh; }
+  if (!pool.length) pool = ANAGRAM_WORDS;
+  const item = pick(pool);
+  sideQuest._used = (sideQuest._used || []).concat(item.w);
+  const letters = item.w.split('');
+  let scr; do { scr = letters.slice().sort(() => Math.random() - 0.5); } while (scr.join('') === item.w && item.w.length > 1);
+  sideQuest.ana = { word: item.w, emoji: item.e, tiles: scr.map((ch, i) => ({ ch, id: i, used: false })), placed: [] };
+}
+function renderAnagram() {
+  const a = sideQuest.ana; if (!a) return;
+  $('sqPrompt').innerHTML = '🔤 Word ' + (sideQuest.round + 1) + ' of ' + sideQuest.total + ' — spell the ' + a.emoji + '!' +
+    '<br><span style="font-size:0.84em">Tap the letters in order. Tap a placed letter to take it back.</span>';
+  const body = $('sqBody'); body.innerHTML = '';
+  const slots = document.createElement('div'); slots.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap';
+  for (let i = 0; i < a.word.length; i++) {
+    const s = document.createElement('div');
+    s.style.cssText = 'width:40px;height:48px;border:3px solid #B8D2EC;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#2E5E8C;background:#EAF2FB';
+    if (a.placed[i]) { s.textContent = a.placed[i].ch.toUpperCase(); s.style.cursor = 'pointer'; s.onclick = () => unplaceAnagram(i); }
+    slots.appendChild(s);
+  }
+  body.appendChild(slots);
+  const tiles = document.createElement('div'); tiles.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap';
+  a.tiles.forEach(t => {
+    if (t.used) return;
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.cssText = 'min-width:44px;font-size:24px;font-weight:800;padding:8px 12px';
+    b.textContent = t.ch.toUpperCase();
+    b.onclick = () => placeAnagram(t);
+    tiles.appendChild(b);
+  });
+  body.appendChild(tiles);
+}
+function placeAnagram(t) {
+  if (!sideQuest || sideQuest.locked || !sideQuest.ana) return;
+  const a = sideQuest.ana; if (t.used || a.placed.length >= a.word.length) return;
+  t.used = true; a.placed.push(t); if (Sound.click) Sound.click();
+  if (a.placed.length === a.word.length) checkAnagram(); else renderAnagram();
+}
+function unplaceAnagram(i) {
+  if (!sideQuest || sideQuest.locked || !sideQuest.ana) return;
+  const a = sideQuest.ana, t = a.placed[i]; if (!t) return;
+  a.placed.splice(i, 1); t.used = false; $('sqMsg').textContent = ''; renderAnagram();
+}
+function checkAnagram() {
+  const a = sideQuest.ana;
+  if (a.placed.map(t => t.ch).join('') === a.word) {
+    sideQuest.locked = true; Sound.correct(); sideQuest.right++; sideQuest.round++;
+    $('sqMsg').style.color = '#2f8a52'; $('sqMsg').textContent = '✓ ' + a.word.toUpperCase() + '! 🎉';
+    setTimeout(() => { sideQuest.locked = false; if (sideQuest.round >= sideQuest.total) finishSideQuest(); else { $('sqMsg').textContent = ''; newAnagram(); renderAnagram(); } }, 1100);
+  } else {
+    Sound.wrong();
+    $('sqMsg').style.color = '#c0392b'; $('sqMsg').textContent = '🤔 Not quite — tap a letter to take it back and try again.';
+  }
 }
 function finishSideQuest() {
   const reward = sideQuest.reward + sideQuest.right * 2;
