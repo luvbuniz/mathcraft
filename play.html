@@ -170,6 +170,18 @@
   #mathFeedback { min-height:28px; font-size:clamp(16px,2.6vw,21px); font-weight:bold; margin-top:8px; color:#2f7d27; }
   #hintBtn { margin-top:8px; background:#FFE9A0; color:#7a5c00; font-weight:bold; font-size:clamp(13px,2.2vw,17px);
     padding:8px 16px; border-radius:12px; box-shadow:0 3px 0 #d4b44a; }
+  /* Landscape phones (short height): compact the math popup so the WHOLE question + all four
+     answers fit without scrolling. Landscape has plenty of width, so put the answers in ONE row. */
+  @media (orientation:landscape) and (max-height:560px) {
+    #mathPopup .popupCard { width:min(96vw,1000px); padding:8px 18px 10px; }
+    #mathEquation { font-size:clamp(16px,4.4vh,23px); padding:5px 12px; margin:2px 0 4px; border-width:3px; }
+    #mathEquation.wordy { font-size:clamp(13px,3.4vh,19px); }
+    #mathPrompt { font-size:12px; margin-bottom:3px; }
+    #mathNote, #paperTip { font-size:11px; padding:3px 9px; margin:0 0 4px; }
+    #mathChoices { grid-template-columns:repeat(4,1fr); gap:7px; }
+    .answerBlock { padding:11px 4px; font-size:clamp(16px,4.4vh,24px); }
+    #hintBtn { margin-top:5px; font-size:13px; padding:6px 14px; }
+  }
   #hintBox { display:none; margin-top:8px; background:#E9F5FF; color:#22456b; border-radius:14px; padding:11px 14px;
     font-size:clamp(13px,2.2vw,17px); font-weight:bold; text-align:left; line-height:1.4; }
   #hintBox .hintLead, #fixBody .hintLead { font-size:1.05em; color:#1f6fb2; margin-bottom:6px; }
