@@ -31,6 +31,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- ☁️ Firebase (optional accounts + cloud save). Compat builds expose a global `firebase`.
+     Auth + Firestore only — NO analytics, to keep the "no data collection" promise. -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
   :root { color-scheme: light; }   /* keep the bright kid palette — opt out of browser auto-dark-mode */
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -1157,6 +1162,11 @@
       </label>
     </div>
     <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
+      <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">☁️ Account &amp; sync</div>
+      <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">Sign in (Google or email) so your <b>purchase &amp; every kid&rsquo;s worlds follow you to any device</b> — automatically. Optional; the game works fine without it.</div>
+      <button id="authEntryGrown" style="font-size:14px; background:#e8f0fb; color:#2E5E8C; border:none; border-radius:10px; padding:9px 16px; cursor:pointer; font-family:inherit; font-weight:bold">☁️ Sign in to sync &amp; restore</button>
+    </div>
+    <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0; text-align:left">
       <div style="color:#33507a; font-weight:bold; font-size:clamp(14px,2.4vw,16px)">💾 Backup &amp; move builds</div>
       <div style="color:#6c84a6; font-size:clamp(12px,2.1vw,14px); margin:3px 0 8px">The game <b>auto-saves</b> on this device as you play (and when you leave) — no need to think about it. <b>Export</b> a backup file now and then for extra safety: it protects against a lost/cleared device, and lets you move a child&rsquo;s game to another tablet (then <b>Import</b> there).</div>
       <div id="backupNudge" style="display:none; background:#FFF3D6; border:1px solid #ECD89A; color:#7a5c1e; border-radius:10px; padding:8px 11px; margin:0 0 8px; font-size:clamp(12px,2.1vw,14px); line-height:1.4"></div>
@@ -1345,6 +1355,37 @@
       </div>
       <div id="promoMsg" style="font-size:12px; margin-top:6px; min-height:14px"></div>
     </div>
+    <div style="margin-top:12px; padding-top:10px; border-top:1px solid #ece4f5">
+      <div style="color:#6b5a8a; font-size:13px">Already a Founding Family on another device?</div>
+      <button id="authEntryUnlock" style="margin-top:6px; border:none; border-radius:12px; padding:9px 16px; background:#2E5E8C; color:#fff; font-weight:bold; font-family:inherit; cursor:pointer">☁️ Sign in to unlock here</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ☁️ SIGN-IN / ACCOUNT POPUP ================= -->
+<div class="popup" id="authPopup" style="z-index:67">
+  <div class="popupCard" style="width:min(440px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="authClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="font-size:40px">☁️</div>
+    <h2 style="color:#2E5E8C; margin:2px 0 4px; font-size:clamp(20px,4vw,26px)">Sign in to sync</h2>
+    <p style="color:#6c84a6; font-size:13px; margin:0 0 10px; line-height:1.4">A grown-up sign-in. Your <b>purchase &amp; every kid's worlds follow you to any device</b>. Kids stay nicknames — no child data is collected.</p>
+    <div id="authUnavailable" style="display:none; color:#b5832a; font-size:14px; line-height:1.4">Sign-in needs an internet connection. The game still saves on this device — try again when you're online.</div>
+    <div id="authSignedOut" style="display:none">
+      <button id="authGoogleBtn" class="libBtn" style="background:#fff;border:2px solid #dadce0;color:#3c4043;font-weight:bold">Continue with Google</button>
+      <div style="color:#aab; font-size:12px; margin:10px 0 6px">— or with email &amp; password —</div>
+      <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email" style="width:90%;padding:10px;border:2px solid #cdd8ec;border-radius:10px;margin:3px 0;font-family:inherit;font-size:15px">
+      <input id="authPass" type="password" placeholder="password (6+ characters)" autocomplete="current-password" style="width:90%;padding:10px;border:2px solid #cdd8ec;border-radius:10px;margin:3px 0;font-family:inherit;font-size:15px">
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:6px">
+        <button id="authInBtn" class="libBtn" style="background:#3f9d34;color:#fff">Sign in</button>
+        <button id="authUpBtn" class="libBtn" style="background:#e6f0ff;color:#3b5d9e">Create account</button>
+      </div>
+    </div>
+    <div id="authSignedIn" style="display:none">
+      <div style="color:#2f8a52; font-weight:700; margin:6px 0">✓ Signed in as <span id="authWho"></span></div>
+      <div style="color:#6c84a6; font-size:13px; margin-bottom:8px">Your worlds &amp; your unlock sync automatically on every device.</div>
+      <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
+    </div>
+    <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
   </div>
 </div>
 
@@ -2894,6 +2935,7 @@ function masteryStage(correct) {
 function saveProfile() {
   profile.lastPlayed = Date.now();
   try { localStorage.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) {}
+  try { cloudSyncUp(); } catch (e) {}                       // mirror to the cloud account if signed in
 }
 
 const SKILL_LABELS = {
@@ -3064,6 +3106,7 @@ function closeUnlock() { $('unlockPopup').style.display = 'none'; if (G.running)
 function doUnlock() {
   // TODO: wire to a real payment (Stripe Checkout / RevenueCat). For now this flips the local flag.
   try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {}
+  try { cloudSyncUp(); } catch (e) {}            // push the unlock to the account → follows to other devices
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
@@ -3413,6 +3456,7 @@ function saveGame() {
     }));
   } catch (e) {}
   persistPack();                                 // keep the global backpack in sync with what you're carrying
+  try { cloudSyncUp(); } catch (e) {}            // mirror to the cloud account if signed in
 }
 function listSaves() {
   const out = [];
@@ -10813,6 +10857,112 @@ function importSaves(file) {
 $('exportSavesBtn').onclick = () => { Sound.click(); exportSaves(); };
 $('importSavesBtn').onclick = () => { Sound.click(); $('importSavesFile').click(); };
 $('importSavesFile').onchange = e => { const f = e.target.files && e.target.files[0]; if (f) importSaves(f); e.target.value = ''; };
+
+/* ============================ ☁️ ACCOUNTS & CLOUD SAVE (Firebase) ============================
+   Optional. A PARENT signs in (Google or email/password) so their purchase + every kid's
+   worlds follow them to any device. Local-FIRST: if signed out or offline, nothing changes.
+   Kids stay nicknames under the parent account — no child data is collected. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBNOgrfPBOKg2-J0N82g9sdJn6IHtcYJMU",
+  authDomain: "stackadoo.firebaseapp.com",
+  projectId: "stackadoo",
+  storageBucket: "stackadoo.firebasestorage.app",
+  messagingSenderId: "587953023716",
+  appId: "1:587953023716:web:376cd1fc01e8ea8dcb9af1"
+};
+let fbAuth = null, fbDb = null, fbUser = null, _cloudUpTimer = null;
+function cloudReady() { return !!(fbAuth && fbDb); }
+(function initFirebase() {
+  try {
+    if (typeof firebase === 'undefined' || !firebase.initializeApp) return;   // SDK didn't load → stay local-only
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fbAuth = firebase.auth(); fbDb = firebase.firestore();
+    fbAuth.getRedirectResult().catch(() => {});                                // finish any pending mobile redirect sign-in
+    fbAuth.onAuthStateChanged(u => { fbUser = u; renderAuthUI(); if (u) cloudSyncDown().catch(() => {}); });
+  } catch (e) { console.warn('Cloud sign-in unavailable:', e && e.message); }
+})();
+// merge two {key: jsonString} maps, newest-wins (saves carry .when, profiles carry .lastPlayed)
+function mergeSaveMaps(a, b) {
+  a = a || {}; b = b || {};
+  const out = {}, keys = new Set(Object.keys(a).concat(Object.keys(b)));
+  const ts = s => { try { const o = JSON.parse(s); return o.when || o.lastPlayed || 1; } catch (e) { return 1; } };
+  keys.forEach(k => { const av = a[k], bv = b[k]; out[k] = (av == null) ? bv : (bv == null) ? av : (ts(bv) > ts(av) ? bv : av); });
+  return out;
+}
+async function cloudWrite(map, unlocked) {
+  if (!cloudReady() || !fbUser) return;
+  try {
+    await fbDb.collection('users').doc(fbUser.uid).set({
+      blob: JSON.stringify(map || gatherSaveData()), unlocked: !!unlocked,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (e) { console.warn('cloud write failed', e && e.message); }
+}
+// pull cloud → merge into local (newest wins) → push merged back → reload if local changed
+async function cloudSyncDown() {
+  if (!cloudReady() || !fbUser) return;
+  let snap; try { snap = await fbDb.collection('users').doc(fbUser.uid).get(); } catch (e) { return; }
+  const cloud = (snap && snap.exists) ? (snap.data() || {}) : {};
+  let cloudMap = {}; try { cloudMap = cloud.blob ? JSON.parse(cloud.blob) : {}; } catch (e) {}
+  const merged = mergeSaveMaps(gatherSaveData(), cloudMap);
+  const unlocked = !!cloud.unlocked || isUnlocked();
+  let changed = false;
+  for (const k in merged) { if (localStorage.getItem(k) !== merged[k]) { try { localStorage.setItem(k, merged[k]); changed = true; } catch (e) {} } }
+  if (unlocked && !isUnlocked()) { try { localStorage.setItem(UNLOCK_KEY, '1'); changed = true; } catch (e) {} }
+  await cloudWrite(merged, unlocked);
+  if (changed) { try { sessionStorage.setItem('stackadooJustSynced', '1'); } catch (e) {} location.reload(); }
+}
+// debounced push — called by the game's save hooks
+function cloudSyncUp() {
+  if (!cloudReady() || !fbUser) return;
+  clearTimeout(_cloudUpTimer);
+  _cloudUpTimer = setTimeout(() => cloudWrite(gatherSaveData(), isUnlocked()), 3000);
+}
+function friendlyAuthErr(e) {
+  const c = (e && e.code) || '';
+  if (c.indexOf('email-already-in-use') >= 0) return 'That email already has an account — try Sign in instead.';
+  if (c.indexOf('wrong-password') >= 0 || c.indexOf('invalid-credential') >= 0) return 'Wrong email or password.';
+  if (c.indexOf('weak-password') >= 0) return 'Pick a password with at least 6 characters.';
+  if (c.indexOf('invalid-email') >= 0) return 'That doesn\'t look like an email address.';
+  if (c.indexOf('popup') >= 0 || c.indexOf('cancel') >= 0) return 'Sign-in was cancelled.';
+  if (c.indexOf('network') >= 0) return 'Network problem — check your connection.';
+  return 'Hmm, that didn\'t work. Please try again.';
+}
+function authGoogle() {
+  if (!cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
+  const p = new firebase.auth.GoogleAuthProvider();
+  fbAuth.signInWithPopup(p).then(() => authMsg('Signed in! Syncing your worlds…')).catch(e => {
+    if (((e && e.code) || '').indexOf('popup') >= 0) { try { fbAuth.signInWithRedirect(p); return; } catch (_) {} }   // mobile fallback
+    authMsg(friendlyAuthErr(e), true);
+  });
+}
+function authEmail(create) {
+  if (!cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
+  const email = ($('authEmail').value || '').trim(), pw = $('authPass').value || '';
+  if (!email || !pw) { authMsg('Enter your email and a password.', true); return; }
+  const fn = create ? 'createUserWithEmailAndPassword' : 'signInWithEmailAndPassword';
+  fbAuth[fn](email, pw).then(() => authMsg(create ? 'Account created! Syncing…' : 'Signed in! Syncing…')).catch(e => authMsg(friendlyAuthErr(e), true));
+}
+function authSignOut() { if (cloudReady()) fbAuth.signOut().then(() => authMsg('Signed out — this device still has its local saves.')); }
+function authMsg(t, bad) { const el = $('authMsg'); if (el) { el.textContent = t; el.style.color = bad ? '#c0392b' : '#2f8a52'; } }
+function openAuth() { if (typeof document.exitPointerLock === 'function') document.exitPointerLock(); $('authPopup').style.display = 'flex'; authMsg(''); renderAuthUI(); }
+function closeAuth() { $('authPopup').style.display = 'none'; }
+function renderAuthUI() {
+  const signed = $('authSignedIn'), out = $('authSignedOut'), un = $('authUnavailable');
+  if (!signed || !out || !un) return;
+  if (!cloudReady()) { un.style.display = 'block'; signed.style.display = 'none'; out.style.display = 'none'; }
+  else if (fbUser) { un.style.display = 'none'; signed.style.display = 'block'; out.style.display = 'none'; const w = $('authWho'); if (w) w.textContent = fbUser.email || 'your account'; }
+  else { un.style.display = 'none'; signed.style.display = 'none'; out.style.display = 'block'; }
+  const g = $('authEntryGrown'); if (g) g.textContent = fbUser ? '☁️ Account — synced ✓' : '☁️ Sign in to sync & restore';
+}
+$('authClose').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); closeAuth(); };
+$('authGoogleBtn').onclick = () => authGoogle();
+$('authInBtn').onclick = () => authEmail(false);
+$('authUpBtn').onclick = () => authEmail(true);
+$('authOutBtn').onclick = () => authSignOut();
+$('authEntryGrown').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
+$('authEntryUnlock').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
+try { if (sessionStorage.getItem('stackadooJustSynced')) { sessionStorage.removeItem('stackadooJustSynced'); setTimeout(() => { if (typeof toast === 'function') toast('☁️ Synced! Your worlds & unlock are up to date on this device.', 3600); }, 900); } } catch (e) {}
 
 $('resetPurchaseBtn').onclick = () => {
   Sound.click();
