@@ -2573,7 +2573,7 @@ const G = {
   world: 'meadow',
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
-  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, bike: false, speedboat: false, sailboat: false },
+  owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false },
   activeCar: null, carColors: {},
   quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
@@ -3540,7 +3540,7 @@ function resetGameState() {
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.blockColor = 0xC9B79A; G.furnFinish = 0;
-  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, bike: false, speedboat: false, sailboat: false };
+  G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = [];
@@ -4427,6 +4427,68 @@ function buildPoliceShape(g, bm, bm2, gm) {        // police cruiser — sedan +
   P(mat(0xD23A3A), 1.0, 0.07, 0.05, 0, 0.6, -1.55);
   carWheels(g, [[-0.6, 0.95], [0.6, 0.95], [-0.6, -1.0], [0.6, -1.0]]);
 }
+function emergencyBar(g, P, x, y, z) {             // shared red+blue flashing light bar
+  P(mat(0x222), 0.7, 0.06, 0.2, x, y - 0.06, z);
+  const redMat = new THREE.MeshLambertMaterial({ color: 0xD23A3A, emissive: 0x300000 });
+  const blueMat = new THREE.MeshLambertMaterial({ color: 0x2b6cb0, emissive: 0x001033 });
+  P(redMat, 0.3, 0.12, 0.2, x - 0.2, y, z); P(blueMat, 0.3, 0.12, 0.2, x + 0.2, y, z);
+  g.userData.policeLights = { redMat, blueMat };
+}
+function buildFireTruckShape(g, bm, bm2, gm) {     // 🚒 big city fire engine + ladder
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.42, 0.7, 3.5, 0, 0.62, 0);                // long body
+  P(bm, 1.36, 0.62, 1.2, 0, 1.2, 0.95);             // cab
+  P(gm, 1.2, 0.4, 0.05, 0, 1.24, 1.56);             // windshield
+  P(gm, 0.05, 0.36, 1.0, -0.67, 1.24, 0.95); P(gm, 0.05, 0.36, 1.0, 0.67, 1.24, 0.95);
+  P(bm2, 1.44, 0.5, 2.0, 0, 1.0, -0.7);             // tall rear equipment body
+  P(mat(0xF2F2F2), 1.46, 0.18, 1.9, 0, 0.52, -0.7); // white lower stripe
+  P(mat(0xC8CDD4), 0.12, 0.08, 2.7, -0.3, 1.36, -0.5); P(mat(0xC8CDD4), 0.12, 0.08, 2.7, 0.3, 1.36, -0.5);  // ladder rails
+  [-1.6, -1.1, -0.6, -0.1, 0.4].forEach(rz => P(mat(0xC8CDD4), 0.66, 0.06, 0.08, 0, 1.36, rz));            // ladder rungs
+  P(mat(0x2a2a2a), 0.8, 0.3, 0.06, 0, 0.8, 1.78);   // grille
+  P(mat(0xFFF6C0), 0.24, 0.16, 0.05, -0.5, 0.95, 1.78); P(mat(0xFFF6C0), 0.24, 0.16, 0.05, 0.5, 0.95, 1.78);  // headlights
+  P(mat(0x111114), 1.42, 0.16, 0.28, 0, 0.34, 1.7); P(mat(0x111114), 1.44, 0.16, 0.28, 0, 0.34, -1.7);        // bumpers
+  P(mat(0xD23A3A), 1.2, 0.08, 0.05, 0, 0.7, -1.74); // tail
+  emergencyBar(g, P, 0, 1.62, 0.95);
+  carWheels(g, [[-0.66, 1.2, 0.4], [0.66, 1.2, 0.4], [-0.66, -1.1, 0.4], [0.66, -1.1, 0.4]]);
+}
+function buildAmbulanceShape(g, bm, bm2, gm) {     // 🚑 boxy city ambulance with a red cross
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.3, 0.5, 1.3, 0, 0.5, 1.2);                // cab (lower, front)
+  P(bm, 1.38, 1.0, 2.1, 0, 0.82, -0.45);            // tall box (rear)
+  P(gm, 1.18, 0.36, 0.05, 0, 0.78, 1.82);           // windshield
+  P(gm, 0.05, 0.32, 0.9, -0.65, 0.78, 1.2); P(gm, 0.05, 0.32, 0.9, 0.65, 0.78, 1.2);
+  P(mat(0xD2261F), 1.38, 0.16, 2.1, 0, 0.5, -0.45); // red stripe
+  // red cross on each side
+  [-0.7, 0.7].forEach(sx => { P(mat(0xD2261F), 0.06, 0.36, 0.12, sx, 1.0, -0.45); P(mat(0xD2261F), 0.06, 0.12, 0.36, sx, 1.0, -0.45); });
+  P(mat(0x2a2a2a), 0.7, 0.26, 0.06, 0, 0.62, 1.83); // grille
+  P(mat(0xFFF6C0), 0.22, 0.14, 0.05, -0.46, 0.78, 1.83); P(mat(0xFFF6C0), 0.22, 0.14, 0.05, 0.46, 0.78, 1.83);
+  emergencyBar(g, P, 0, 1.4, 0.65);
+  carWheels(g, [[-0.62, 1.15], [0.62, 1.15], [-0.62, -1.1], [0.62, -1.1]]);
+}
+function buildTaxiShape(g, bm, bm2, gm) {          // 🚕 city taxi with a roof sign
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.22, 0.42, 3.0, 0, 0.44, 0);               // body
+  P(bm, 1.04, 0.36, 1.5, 0, 0.82, -0.1);            // cabin
+  P(gm, 1.0, 0.32, 0.06, 0, 0.84, 0.62); P(gm, 1.0, 0.32, 0.06, 0, 0.86, -0.86);
+  P(gm, 0.04, 0.3, 1.3, -0.53, 0.84, -0.1); P(gm, 0.04, 0.3, 1.3, 0.53, 0.84, -0.1);
+  P(mat(0x222), 0.36, 0.16, 0.18, 0, 1.06, -0.1); P(mat(0xFFF6C0), 0.34, 0.1, 0.06, 0, 1.06, 0.0);  // TAXI sign
+  P(mat(0x222), 1.24, 0.12, 0.34, 0, 0.46, -0.1);   // checker band accent
+  P(mat(0xFFF6C0), 0.3, 0.08, 0.05, -0.4, 0.5, 1.5); P(mat(0xFFF6C0), 0.3, 0.08, 0.05, 0.4, 0.5, 1.5);
+  P(mat(0xD23A3A), 1.0, 0.07, 0.05, 0, 0.6, -1.55);
+  carWheels(g, [[-0.6, 0.95], [0.6, 0.95], [-0.6, -1.0], [0.6, -1.0]]);
+}
+function buildBusShape(g, bm, bm2, gm) {           // 🚌 long city bus
+  const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
+  P(bm, 1.4, 1.1, 3.9, 0, 0.85, 0);                 // big long box
+  P(bm2, 1.42, 0.16, 4.0, 0, 1.42, 0);              // roof cap
+  P(gm, 1.22, 0.42, 0.05, 0, 1.02, 1.96);           // windshield
+  [-1.25, -0.6, 0.05, 0.7, 1.35].forEach(wz => { P(gm, 0.04, 0.34, 0.5, -0.71, 1.06, wz); P(gm, 0.04, 0.34, 0.5, 0.71, 1.06, wz); });  // window row
+  P(mat(0x2a2a2a), 0.8, 0.3, 0.06, 0, 0.66, 1.96);  // bumper
+  P(mat(0xFFF6C0), 0.22, 0.14, 0.05, -0.5, 0.95, 1.96); P(mat(0xFFF6C0), 0.22, 0.14, 0.05, 0.5, 0.95, 1.96);
+  P(mat(0xD23A3A), 1.3, 0.1, 0.05, 0, 0.8, -1.96);  // tail
+  P(mat(0x1c1c1f), 0.5, 0.74, 0.04, 0.69, 0.72, 1.15);  // front door
+  carWheels(g, [[-0.64, 1.35], [0.64, 1.35], [-0.64, -1.35], [0.64, -1.35]]);
+}
 function buildRaceShape(g, bm, bm2, gm) {           // open-wheel race car with wings
   const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
   P(bm, 0.5, 0.3, 3.2, 0, 0.34, 0);                 // slim nose-to-tail body
@@ -4504,6 +4566,10 @@ const VEHICLES = [
   { id: 'convertible', name: 'Luxury Convertible', emoji: '🚘', price: 99, color: 0xE0A92B, speed: 15, shape: buildConvertibleShape, worlds: ['city', 'beach'], open: true, seat: [0, 0.62, -0.1] },
   { id: 'corvette', name: 'Sports Car',     emoji: '🏎️', price: 95, color: 0xC0392B, speed: 16, shape: buildCorvetteShape,    worlds: ['city'] },
   { id: 'race',     name: 'Race Car',       emoji: '🏁', price: 110, color: 0xE5392F, speed: 18, shape: buildRaceShape,       worlds: ['city'] },
+  { id: 'firetruck', name: 'Fire Truck',    emoji: '🚒', price: 92, color: 0xD2261F, speed: 11, shape: buildFireTruckShape,   worlds: ['city'], emergency: true },
+  { id: 'ambulance', name: 'Ambulance',     emoji: '🚑', price: 84, color: 0xF4F4F4, speed: 13, shape: buildAmbulanceShape,   worlds: ['city'], emergency: true },
+  { id: 'taxi',     name: 'City Taxi',      emoji: '🚕', price: 66, color: 0xF2C037, speed: 13, shape: buildTaxiShape,        worlds: ['city'] },
+  { id: 'bus',      name: 'City Bus',       emoji: '🚌', price: 70, color: 0x3B82C4, speed: 9,  shape: buildBusShape,         worlds: ['city'] },
   { id: 'bike',     name: 'Beach Cruiser',  emoji: '🚲', price: 40, color: 0x2b9fb0, speed: 9, shape: buildBikeShape,         worlds: [], shop: 'boats', bike: true, open: true, seat: [0, 0.78, -0.45] },
   { id: 'speedboat', name: 'Speedboat',     emoji: '🚤', price: 135, color: 0xF2F2F2, speed: 17, shape: buildSpeedboatShape,  worlds: [], shop: 'boats', water: true, open: true, seat: [0, 0.66, -0.45] },
   { id: 'sailboat', name: 'Sailboat',       emoji: '⛵', price: 150, color: 0xEDE3CF, speed: 12, shape: buildSailboatShape,   worlds: [], shop: 'boats', water: true, open: true, seat: [0, 0.7, -0.7] }
@@ -4522,6 +4588,10 @@ const ENGINE_PROFILES = {
   corvette:    { wave: 'sawtooth', f0: 66, fSpan: 250, chug: 17, chugDepth: 0.2,  lp0: 640, lpSpan: 2300, gain: 1.0,  horn: 400 }, // revvy sports car
   convertible: { wave: 'sawtooth', f0: 60, fSpan: 210, chug: 14, chugDepth: 0.18, lp0: 600, lpSpan: 2100, gain: 0.85, horn: 380 }, // smooth cruiser
   race:        { wave: 'sawtooth', f0: 84, fSpan: 320, chug: 22, chugDepth: 0.16, lp0: 720, lpSpan: 2700, gain: 1.05, horn: 520 }, // screaming racer
+  firetruck:   { wave: 'sawtooth', f0: 36, fSpan: 105, chug: 5,  chugDepth: 0.6,  lp0: 310, lpSpan: 1020, gain: 1.15, horn: 220 }, // big diesel engine
+  ambulance:   { wave: 'sawtooth', f0: 50, fSpan: 150, chug: 10, chugDepth: 0.3,  lp0: 480, lpSpan: 1600, gain: 0.95, horn: 400 }, // van
+  taxi:        { wave: 'sawtooth', f0: 56, fSpan: 175, chug: 12, chugDepth: 0.28, lp0: 530, lpSpan: 1850, gain: 0.85, horn: 430 }, // peppy sedan
+  bus:         { wave: 'sawtooth', f0: 34, fSpan: 98,  chug: 5,  chugDepth: 0.5,  lp0: 300, lpSpan: 980,  gain: 1.15, horn: 205 }, // big transit diesel
   speedboat:   { wave: 'sawtooth', f0: 46, fSpan: 150, chug: 8,  chugDepth: 0.4,  lp0: 420, lpSpan: 1400, gain: 0.95, horn: 300 }, // outboard motor
   bike:        { silent: true, horn: 700 },         // pedal power — just a bell
   sailboat:    { silent: true, horn: 300 }          // wind power — quiet
@@ -4537,7 +4607,7 @@ VEHICLES.forEach(def => {
   cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false };
 });
 // display cars on the lot — each town shows off two of ITS OWN vehicles
-const DEALER_DISPLAY = { meadow: ['monster', 'pickup'], city: ['corvette', 'tesla'], beach: ['convertible', 'jeep'] };
+const DEALER_DISPLAY = { meadow: ['monster', 'pickup'], city: ['firetruck', 'corvette'], beach: ['convertible', 'jeep'] };
 let dealerDisplay = [];
 function setDealerDisplay(world) {
   dealerDisplay.forEach(d => motorsGroup.remove(d)); dealerDisplay = [];
@@ -4725,7 +4795,7 @@ function toggleDrive() {
   if (document.pointerLockElement) document.exitPointerLock();
   const prof = engineProfileFor(a.def.id);
   Sound.engineStart(prof); Sound.honk(prof);
-  if (a.def.police) { Sound.sirenStart(); toast('🚓 Sirens on! 🔴🔵 Steer with the move-circle. Tap ⭐ USE to hop off.', 2800); }
+  if (a.def.police || a.def.emergency) { Sound.sirenStart(); toast(a.def.emoji + ' Sirens on! 🔴🔵 Steer with the move-circle. Tap ⭐ USE to hop off.', 2800); }
   else toast('🚗 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
 }
 // park the active car (or hide all) whenever a game starts/loads
@@ -6983,7 +7053,7 @@ function updatePlayer(dt) {
       v.group.rotation.y = v.yaw + Math.PI;             // model faces +Z; forward is -Z (same as avatars)
     }
     Sound.engineSet(Math.min(1, wsp / 11));              // engine revs with speed
-    if (v.def && v.def.police && v.group.userData.policeLights) {   // 🔴🔵 flashing light bar + siren
+    if (v.def && (v.def.police || v.def.emergency) && v.group.userData.policeLights) {   // 🔴🔵 flashing light bar + siren
       const on = Math.sin(tnow / 130) > 0, L = v.group.userData.policeLights;
       L.redMat.emissive.setHex(on ? 0xff2a2a : 0x300000);
       L.blueMat.emissive.setHex(on ? 0x001033 : 0x3a7bff);
