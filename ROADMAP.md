@@ -253,6 +253,45 @@ spiral K-5, in **four pillars** — build to touch all four:
 - **🌋 Build-It Challenges** (Engineering) — bridge/tower that holds, boat that floats,
   **erupt a volcano** (earth science + everyone's favorite).
 
+### 🎢 Design: a SCIENCE THEME PARK with themed lands (Jun 2026)
+
+Instead of one generic "lab," **Science World = a theme park** the kid explores — themed
+**lands**, each wrapping a science domain in an immersive setting, each with a signature
+**ride** as the reward. Stronger hook, better marketing, and the rides mostly **reskin
+mechanics we already have**.
+
+- **🌴 Rainforest / Costa Rica** *(Life Science + Earth Science)* — greenhouse + jungle:
+  grow plants and learn **cause-and-effect** (overwater → droops, too little sun → wilts,
+  just right → flowers). The **volcano lives here** (erupt it; lava/rock). Animals,
+  habitats, food chains. **Ride:** zipline / river-raft through the canopy.
+- **🚀 Future World** *(Space + Physical: magnets/energy)* — space center: **build & launch
+  a rocket**, day/night, planets, moon phases. **Maglev train** = the magnet lesson
+  (attract/repel → levitation). **Ride:** Leo's **spaceship flight** (first-person launch —
+  reuses the water-slide POV).
+- **🤠 Frontier / Cowboy West** *(Engineering + Physical: steam/forces)* — **Build-It
+  challenges** (bridge across a canyon, a tower that stands), **steam trains** (water→steam
+  →power; states of matter + simple machines). **Ride:** a **steam train** loop.
+
+Pillars covered: **Life 🌴 · Earth 🌴/🤠 · Physical 🚀🤠 · Engineering 🤠🚀**.
+
+**Two things that make it buildable (not scary):**
+1. **Rides are reskins of existing mechanics** — spaceship launch = the slide's
+   first-person ride; maglev & steam train = drivable vehicles on a path. Reuse, not invent.
+2. **Build challenges need NO real physics** — a bridge "passes" when the kid fills the
+   span so a little **test-cart rolls across** (a connect-A→B check); a tower passes at a
+   target height. Forgiving, kid-friendly, no engine.
+
+**Guardrail:** learning is the point, theme is the wrapper — each land stays mapped to real
+NGSS content (still "touches what schools teach").
+
+**Sequencing:** big build → **one land first as a vertical slice.** Start with **🌴
+Rainforest** (extends existing plants + includes the crowd-pleaser volcano), prove the
+theme-park model, then drip **Future World** and **West** as Founding-Family updates (each
+its own launch moment).
+
+**Marketing line:** *"a science theme park your kid explores — launch a rocket, ride a
+maglev, erupt a volcano."* Rides = Reels/TikTok gold.
+
 **Headline "wow" shots:** the **rocket launch** and the **volcano** — both scream STEM,
 both very kid-appealing, both great Reels/TikTok.
 
