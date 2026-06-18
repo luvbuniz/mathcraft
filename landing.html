@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>Stackadoo — Build Worlds. Solve Math. The math game kids actually ask to play.</title>
-<meta name="description" content="Stackadoo is an educational building game for kids in grades 2–5. They earn blocks by solving math, reading, and Spanish — then build whole worlds. No ads, no chat, kid-safe. Free to play.">
+<meta name="description" content="Stackadoo is an educational building game for kids in grades 2–5. They earn blocks by solving math, reading, spelling & grammar — then build whole worlds. No ads, no chat, kid-safe. Free to play.">
 <meta name="theme-color" content="#3CA45C">
 <!-- Open Graph (nice link previews when shared) -->
 <meta property="og:title" content="Stackadoo — Build Worlds. Solve Math.">
-<meta property="og:description" content="The math game kids actually ask to play. Earn blocks by solving math, reading & Spanish — then build worlds. No ads, no chat, kid-safe.">
+<meta property="og:description" content="The math game kids actually ask to play. Earn blocks by solving math, reading, spelling & grammar — then build worlds. No ads, no chat, kid-safe.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,8 +23,8 @@
     --ink:#1f2d35; --slate:#5d7280; --line:#e3ebe5; --cloud:#f6faf6;
     --display:'Fredoka',system-ui,sans-serif; --body:'Nunito',system-ui,sans-serif;
     --shadow:0 18px 44px rgba(28,72,46,.16); --shadow-sm:0 4px 14px rgba(28,72,46,.10);
-    /* >>> CHANGE THIS to your final game URL (e.g. https://play.stackadoo.com/) <<< */
-    --game:'https://luvbuniz.github.io/mathcraft/';
+    /* The game lives at index.html on this same domain — relative link works on any host. */
+    --game:'index.html';
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -129,6 +129,7 @@
       <a href="#worlds">Worlds</a>
       <a href="#price">Pricing</a>
       <a href="#parents">For parents</a>
+      <a id="navSignin" href="index.html">☁️ Sign in</a>
     </nav>
     <a class="btn btn-play" id="navPlay">▶ Play Free</a>
   </div>
@@ -140,7 +141,7 @@
     <div class="wrap">
       <h1>The math game kids<br>actually <em style="font-style:normal;color:var(--green-600)">ask</em> to play.</h1>
       <div class="tag">Build worlds. Solve math.</div>
-      <p class="sub">In Stackadoo, kids earn building blocks by solving math, reading, and Spanish —
+      <p class="sub">In Stackadoo, kids earn building blocks by solving math, reading, spelling &amp; grammar —
         then use them to build whole worlds. The learning is the fuel; the building is the fun.
         Grades 2–5. No ads. No chat. Kid-safe.</p>
       <div class="ctas">
@@ -195,9 +196,9 @@
         <div class="card worldcard meadow"><div class="ic">🌳</div><h3>Math Meadow</h3>
           <p>Addition, subtraction, times tables, fractions &amp; more — tuned to grades 2–5.</p><span class="pill free">Free forever</span></div>
         <div class="card worldcard city"><div class="ic">🏘️</div><h3>Reading Town</h3>
-          <p>Rhymes, opposites, synonyms, parts of speech, plurals, past tense &amp; sentences.</p><span class="pill lock">🔜 Coming soon</span></div>
-        <div class="card worldcard beach"><div class="ic">🏖️</div><h3>Spanish Beach</h3>
-          <p>Beginner Spanish — colors, numbers, animals &amp; everyday words.</p><span class="pill lock">🔜 Coming soon</span></div>
+          <p>A walk-in <b>Library</b> (reading), a spoken <b>Spelling Bee</b>, and a <b>Grammar Cinema</b> — plus city cars to drive and homes to buy.</p><span class="pill free" style="background:#FCEFD2;color:#8a6a14">⭐ Open now — unlock once</span></div>
+        <div class="card worldcard beach"><div class="ic">🔬</div><h3>Science Park</h3>
+          <p>A science theme park — grow a rainforest, launch a rocket, erupt a volcano. (Free for Founding Families.)</p><span class="pill lock">🔜 Coming soon</span></div>
       </div>
     </div>
   </section>
@@ -220,19 +221,19 @@
   <section id="price" class="price-band">
     <div class="wrap">
       <div class="eyebrow">Free to play — and growing</div>
-      <h2 class="h2">Play the whole math game, free.</h2>
-      <p class="lead">No account, no ads, no subscription. Two more learning worlds are on the way.</p>
+      <h2 class="h2">The math game is free. Forever.</h2>
+      <p class="lead">No account, no ads, no subscription. Unlock the rest once and you’re a Founding Family for life.</p>
       <div class="price">
         <div class="amt">FREE<small> to play</small></div>
-        <div class="founder">🔜 Coming soon: 🏘️ <b>Reading Town</b> (reading &amp; grammar) and 🏖️ <b>Spanish Beach</b> (beginner Spanish).</div>
+        <div class="founder">⭐ Become a <b>Founding Family</b> for <b>$4.99 once</b>: open 🏘️ <b>Reading Town</b> today, plus <b>every future world &amp; update — free for life</b> (🔬 Science Park coming soon).</div>
         <ul>
           <li>🌳 Math Meadow — the full math game, free</li>
-          <li>Adapts to grades 2–5</li>
-          <li>Build, decorate &amp; explore</li>
-          <li>No ads • no chat • kid-safe</li>
+          <li>🏘️ Reading Town — Library, Spelling Bee &amp; Grammar Cinema (with the unlock)</li>
+          <li>📊 A grown-ups dashboard that shows real progress</li>
+          <li>No ads • no chat • no data collection • kid-safe</li>
         </ul>
         <a class="btn btn-amber" id="priceBuy" style="width:100%;justify-content:center">▶ Play Free Now</a>
-        <div class="muted" style="color:#8a7a55;margin-top:12px">Play now and you’ll be first to know when the new worlds drop.</div>
+        <div class="muted" style="color:#8a7a55;margin-top:12px">Start free — the Founding Family unlock is one optional tap inside the game.</div>
       </div>
     </div>
   </section>
@@ -245,9 +246,9 @@
       <details open><summary>Do I need to download anything?</summary><p>No. Stackadoo runs right in your browser. On a tablet or phone you can “Add to Home Screen” for an app-like icon that even works offline.</p></details>
       <details><summary>Is it really safe for kids?</summary><p>Yes. There’s no advertising, no chat, no contact with strangers, and no purchasable in-game currency. The only purchase is one optional unlock, made by a parent.</p></details>
       <details><summary>What ages is it for?</summary><p>It’s tuned for grades 2–5 (roughly ages 7–11), with difficulty that adapts up and down to fit your child.</p></details>
-      <details><summary>What does the $4.99 include?</summary><p>It makes you a <strong>Founding Family</strong>: you get the early/beta version other parents don’t have yet, the paid worlds (Reading Town now; Spanish Beach coming soon, included), and <strong>every world and update we add later — free, for life.</strong> One payment, no subscription, never again.</p></details>
-      <details><summary>Can my kids play on more than one device?</summary><p>Yes — your purchase is good for your family for life. The unlock saves on the device you bought it on; to use it on another tablet, email us and we’ll send a quick restore code: <a href="mailto:support@stackadoo.com">support@stackadoo.com</a>.</p></details>
-      <details><summary>I paid but a world is still locked — help!</summary><p>The unlock saves on the device you bought it on. Make sure you returned to the game after paying. Still stuck? Email us and we’ll get you unlocked right away: <a href="mailto:support@stackadoo.com">support@stackadoo.com</a>.</p></details>
+      <details><summary>What does the $4.99 include?</summary><p>It makes you a <strong>Founding Family</strong>: you get the early/beta version other parents don’t have yet, the paid worlds (Reading Town now; Science Park coming soon, included), and <strong>every world and update we add later — free, for life.</strong> One payment, no subscription, never again.</p></details>
+      <details><summary>Can my kids play on more than one device?</summary><p>Yes. Tap <b>☁️ Sign in</b> on the home screen (Google or email) and your purchase and every child’s worlds <b>follow you to any device</b> automatically — buy once, sign in anywhere. (A grown-up signs in; kids stay nicknames — no child data is collected.)</p></details>
+      <details><summary>I paid but a world is still locked on another device — help!</summary><p>Tap <b>☁️ Sign in</b> on that device with the same account and it’ll unlock automatically. Still stuck? Email us and we’ll sort it right away: <a href="mailto:support@stackadoo.com">support@stackadoo.com</a>.</p></details>
     </div>
   </section>
 
