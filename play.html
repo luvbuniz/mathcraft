@@ -4926,13 +4926,14 @@ function toggleDrive() {
   }
   if (!a || !a.spawned) return;
   player.driving = a;
+  player.driveStart = performance.now();
   player.pos.set(a.group.position.x, 0, a.group.position.z);
   player.yaw = a.yaw; player.vel.set(0, 0, 0);
   if (document.pointerLockElement) document.exitPointerLock();
   const prof = engineProfileFor(a.def.id);
   Sound.engineStart(prof); Sound.honk(prof);
-  if (a.def.police || a.def.emergency) { Sound.sirenStart(); toast(a.def.emoji + ' Sirens on! 🔴🔵 Steer with the move-circle. Tap ⭐ USE to hop off.', 2800); }
-  else toast('🚗 Vroom! Steer with the move-circle. Tap ⭐ USE to hop off.', 2800);
+  if (a.def.police || a.def.emergency) { Sound.sirenStart(); toast(a.def.emoji + ' Sirens on! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800); }
+  else toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
 }
 // park the active car (or hide all) whenever a game starts/loads
 function syncCars() {
@@ -7416,7 +7417,7 @@ function updatePlayer(dt) {
     }
     if (v.group.userData.wheels) v.group.userData.wheels.forEach(w => w.rotation.x -= wsp * dt * 1.5);
     if (player.avatar) {                                 // show the rider on open vehicles (bikes, boats, convertible)
-      if (v.def && v.def.open) {
+      if (v.def && v.def.open && !G.firstPerson) {
         player.avatar.visible = true;
         const seat = v.def.seat || [0, 0.55, -0.1], ang = v.yaw + Math.PI;
         const wx = Math.cos(ang) * seat[0] + Math.sin(ang) * seat[2];
@@ -7426,10 +7427,17 @@ function updatePlayer(dt) {
         player.avatar.rotation.set(0, ang, 0);
       } else player.avatar.visible = false;
     }
-    const headY = player.pos.y + 1.55, dist = 6.6;
-    const cx = player.pos.x + Math.sin(v.yaw) * dist, cz = player.pos.z + Math.cos(v.yaw) * dist;
-    camera.position.lerp(new THREE.Vector3(cx, Math.max(0.7, headY + 1.6), cz), 0.16);
-    camera.lookAt(player.pos.x, player.pos.y + 0.8, player.pos.z);
+    if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
+      const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
+      const eyeH = player.pos.y + 1.4;
+      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.6, eyeH, player.pos.z + fwdz * 0.6), 0.4);
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 0.3, player.pos.z + fwdz * 14);
+    } else {
+      const headY = player.pos.y + 1.55, dist = 6.6;
+      const cx = player.pos.x + Math.sin(v.yaw) * dist, cz = player.pos.z + Math.cos(v.yaw) * dist;
+      camera.position.lerp(new THREE.Vector3(cx, Math.max(0.7, headY + 1.6), cz), 0.16);
+      camera.lookAt(player.pos.x, player.pos.y + 0.8, player.pos.z);
+    }
     return;
   }
   if (bedProps && !player.restingBed) bedProps.visible = false;
@@ -11248,8 +11256,10 @@ function loop(now) {
       hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ Press E — take the road to ') + (dest ? dest.name : 'the next town') + '!';
       hint.style.display = 'block';
     } else if (player.driving) {
-      hint.textContent = isTouch ? '🛻 Steer with the move-circle • Tap ⭐ USE to hop off' : '🛻 Drive with WASD/arrows • Press E to hop off';
-      hint.style.display = 'block';
+      if (performance.now() - (player.driveStart || 0) < 4500) {   // show briefly, then get out of the way
+        hint.textContent = isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • ⭐ USE to hop off' : '🛻 Drive with WASD/arrows • 👁️ first-person • Press E to hop off';
+        hint.style.display = 'block';
+      } else hint.style.display = 'none';
     } else if (ns.dist < 2.6) {
       const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
       hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ Press E to ' + verb + ' and pick a reward!');
