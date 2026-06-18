@@ -822,6 +822,12 @@
     #btnShoot     { right:104px; bottom:116px; }
     #btnUndoTouch { right:194px; bottom:58px; }
   }
+  /* Short screens (landscape phones): the start/setup screen vertically centers the card,
+     which clips the top and traps scrolling when the card is taller than the viewport.
+     Top-align it and force vertical scroll so every step (avatars, Back/Next) is reachable. */
+  @media (max-height:600px) {
+    #startScreen { overflow-y:auto !important; align-items:flex-start !important; }
+  }
 </style>
 </head>
 <body>
