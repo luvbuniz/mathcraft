@@ -1270,6 +1270,18 @@
   </div>
 </div>
 
+<!-- ================= GRAMMAR CINEMA POPUP ================= -->
+<div class="popup" id="cinemaPopup">
+  <div class="popupCard" style="width:min(560px,95vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="cinemaClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="cinemaTitle" style="color:#7a4ea0; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🎬 Grammar Cinema</h2>
+    <div id="cinemaScene" style="margin:6px 0 10px"></div>
+    <div id="cinemaPrompt" style="font-size:clamp(15px,2.6vw,19px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35"></div>
+    <div id="cinemaChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
+    <div id="cinemaMsg" style="min-height:18px; font-weight:700; margin-top:8px; line-height:1.4"></div>
+  </div>
+</div>
+
 <!-- ================= MI VOCABULARIO POPUP ================= -->
 <div class="popup" id="vocabPopup" style="z-index:66">
   <div class="popupCard" style="width:min(460px,94vw); text-align:center">
@@ -2792,7 +2804,7 @@ const BADGE_SETS = {
 };
 const BADGE_SUBJECTS = [['math', '🌳 Math Meadow'], ['reading', '🏘️ Reading Town'], ['spanish', '🏖️ Spanish Beach']];
 const BADGES = BADGE_SETS.math;               // back-compat: HUD next-goal + math wearables
-const subjectOf = op => (op === 'reading' || op === 'spelling' ? 'reading' : op === 'spanish' ? 'spanish' : 'math');
+const subjectOf = op => (op === 'reading' || op === 'spelling' || op === 'grammar' ? 'reading' : op === 'spanish' ? 'spanish' : 'math');
 function subjectSolved(subj, p) {             // how many problems solved in a given town
   p = p || profile; const byOp = p.byOp || {};
   const readN = (byOp.reading || 0) + (byOp.spelling || 0), spanN = byOp.spanish || 0;   // Reading Town = stories + spelling bee
@@ -2802,7 +2814,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, questsDone: {}, questsBaselined: false, bestStreak: 0,
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
     garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
     pack: null, packMigrated: false, level: null, grade: null };
 }
@@ -5075,6 +5087,8 @@ const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 const REALTY_POS = { x: 14, z: -15 };
 function realtyDist() { return G.world === 'city' ? Math.hypot(player.pos.x - REALTY_POS.x, player.pos.z - REALTY_POS.z) : 999; }
+const CINEMA_POS = { x: -15, z: -15 };
+function cinemaDist() { return G.world === 'city' ? Math.hypot(player.pos.x - CINEMA_POS.x, player.pos.z - CINEMA_POS.z) : 999; }
 /* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
 const HOME_MODELS = [
   { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard' },
@@ -5955,6 +5969,127 @@ function makeMisspellings(word) {
   shuffle(arr);
   return arr.slice(0, 3);
 }
+/* ============================ 🎬 GRAMMAR CINEMA ============================
+   Reading Town's grammar game: pick a "movie," fix every line of the script (each
+   scene shows 4 versions of a line — exactly ONE is written correctly), then it
+   premieres. Every scene has a single unambiguous correct fix + 3 clearly-wrong ones. */
+const GRAMMAR_MOVIES = [
+  { id: 'dino', title: 'Dino Day Out', emoji: '🦖', scenes: [
+    { correct: 'The big dinosaur stomped through the forest.', bad: ['the big dinosaur stomped through the forest.', 'The big dinosaur stomped through the forest', 'The big dinosaur stomp through the forest.'], why: 'A sentence starts with a capital letter and ends with a period.' },
+    { correct: 'Rex and I found a giant egg.', bad: ['Rex and i found a giant egg.', 'rex and I found a giant egg.', 'Rex and I found a giant egg'], why: 'The word "I" is always a capital letter.' },
+    { correct: 'We saw eggs, nests, and feathers.', bad: ['We saw eggs nests, and feathers.', 'we saw eggs, nests, and feathers.', 'We saw eggs, nests, and feathers'], why: 'Use commas to separate things in a list.' },
+    { correct: 'Did you hear that loud roar?', bad: ['Did you hear that loud roar.', 'did you hear that loud roar?', 'Did you hear that loud roar'], why: 'A question ends with a question mark.' },
+    { correct: 'Yesterday the dinosaurs went home.', bad: ['Yesterday the dinosaurs goed home.', 'Yesterday the dinosaurs go home.', 'yesterday the dinosaurs went home.'], why: 'The past tense of "go" is "went."' },
+  ] },
+  { id: 'rocket', title: 'Rocket to the Moon', emoji: '🚀', scenes: [
+    { correct: 'Captain Mia flew the rocket.', bad: ['captain Mia flew the rocket.', 'Captain mia flew the rocket.', 'Captain Mia flew the rocket'], why: 'Names of people start with capital letters.' },
+    { correct: 'The rocket is very fast.', bad: ['The rocket are very fast.', 'the rocket is very fast.', 'The rocket is very fast'], why: 'Use "is" for one thing — the rocket is fast.' },
+    { correct: 'We will land on the moon tomorrow.', bad: ['We will landed on the moon tomorrow.', 'we will land on the moon tomorrow.', 'We will land on the moon tomorrow'], why: 'After "will," use the plain verb: will land.' },
+    { correct: 'Are the stars bright tonight?', bad: ['Are the stars bright tonight.', 'are the stars bright tonight?', 'Is the stars bright tonight?'], why: 'A question ends with a question mark, and "stars" uses "are."' },
+    { correct: 'The astronauts ate their lunch.', bad: ['The astronauts ate they\'re lunch.', 'The astronauts ate there lunch.', 'the astronauts ate their lunch.'], why: '"Their" means it belongs to them.' },
+  ] },
+  { id: 'puppy', title: 'The Puppy Detective', emoji: '🐶', scenes: [
+    { correct: 'The puppy sniffed for clues.', bad: ['the puppy sniffed for clues.', 'The puppy sniffed for clues', 'The puppy sniff for clues.'], why: 'Start with a capital letter and end with a period.' },
+    { correct: 'Where did the bone go?', bad: ['Where did the bone go.', 'where did the bone go?', 'Where did the bone go'], why: 'A question ends with a question mark.' },
+    { correct: 'Sam and I looked under the bed.', bad: ['Sam and i looked under the bed.', 'sam and I looked under the bed.', 'Sam and I looked under the bed'], why: '"I" is always capital, and names start with capitals.' },
+    { correct: 'The puppy has two spots.', bad: ['The puppy have two spots.', 'the puppy has two spots.', 'The puppy has two spots'], why: 'Use "has" for one puppy.' },
+    { correct: 'We found the bone, the ball, and the sock.', bad: ['We found the bone the ball, and the sock.', 'we found the bone, the ball, and the sock.', 'We found the bone, the ball, and the sock'], why: 'Use commas to separate things in a list.' },
+  ] },
+  { id: 'knight', title: 'The Brave Knight', emoji: '🏰', scenes: [
+    { correct: 'The knight rode to the castle.', bad: ['the knight rode to the castle.', 'The knight rode to the castle', 'The knight ride to the castle.'], why: 'Start with a capital, end with a period; the past tense of "ride" is "rode."' },
+    { correct: 'The feast was on Friday.', bad: ['The feast was on friday.', 'the feast was on Friday.', 'The feast was on Friday'], why: 'Days of the week start with a capital letter.' },
+    { correct: 'The dragon was big and green.', bad: ['The dragon were big and green.', 'the dragon was big and green.', 'The dragon was big and green'], why: 'Use "was" for one dragon.' },
+    { correct: 'Will the knight win the battle?', bad: ['Will the knight win the battle.', 'will the knight win the battle?', 'Will the knight wins the battle?'], why: 'A question ends with a question mark; after "will," use "win."' },
+    { correct: 'The knight and the dragon became friends.', bad: ['The knight and the dragon becomed friends.', 'the knight and the dragon became friends.', 'The knight and the dragon became friends'], why: 'The past tense of "become" is "became."' },
+  ] },
+];
+let cinema = null;
+function openCinema() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  cinema = null;
+  $('cinemaPopup').style.display = 'flex';
+  showMoviePicker();
+}
+function closeCinema() { $('cinemaPopup').style.display = 'none'; popupOpen = false; cinema = null; }
+function showMoviePicker() {
+  cinema = null;
+  $('cinemaTitle').innerHTML = '🎬 Grammar Cinema';
+  $('cinemaScene').innerHTML = '<div style="font-size:46px">🍿🎞️</div>';
+  $('cinemaPrompt').textContent = 'Pick a movie — fix every line of the script, and it premieres!';
+  $('cinemaMsg').textContent = '';
+  const wrap = $('cinemaChoices'); wrap.innerHTML = '';
+  GRAMMAR_MOVIES.forEach(m => {
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '18px';
+    b.innerHTML = m.emoji + ' <b>' + m.title + '</b>';
+    b.onclick = () => { Sound.click(); startMovie(m); };
+    wrap.appendChild(b);
+  });
+}
+function startMovie(m) { cinema = { movie: m, qi: 0, firstRight: 0, attempted: false }; renderScene(); }
+function renderScene() {
+  if (!cinema) return;
+  const m = cinema.movie;
+  if (cinema.qi >= m.scenes.length) { finishCinema(); return; }
+  cinema.attempted = false;
+  const sc = m.scenes[cinema.qi];
+  $('cinemaTitle').innerHTML = m.emoji + ' ' + m.title + ' — Scene ' + (cinema.qi + 1) + '/' + m.scenes.length;
+  $('cinemaScene').innerHTML = '<div style="font-size:34px">🎬</div>';
+  $('cinemaPrompt').textContent = '🎟️ Tap the line that is written correctly!';
+  $('cinemaMsg').textContent = '';
+  const opts = [sc.correct].concat(sc.bad); shuffle(opts);
+  const wrap = $('cinemaChoices'); wrap.innerHTML = '';
+  opts.forEach(opt => {
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.style.textAlign = 'left'; b.textContent = opt;
+    b.onclick = () => cinemaAnswer(opt, sc, b);
+    wrap.appendChild(b);
+  });
+  lockChoices(wrap, 700);
+}
+function cinemaAnswer(ans, sc, btn) {
+  if (!cinema || cinema.attempted) return;
+  cinema.attempted = true;
+  disableChoices($('cinemaChoices'));
+  const correct = ans === sc.correct;
+  profile.grammarFirstTotal = (profile.grammarFirstTotal || 0) + 1;
+  if (correct) {
+    profile.grammarFirstRight = (profile.grammarFirstRight || 0) + 1; cinema.firstRight++;
+    G.solved++; recordSolve({ skill: 'grammar', level: Math.max(1, Math.min(5, profile.readLevel || G.grade || 2)) }); bumpHud('solvedCount');
+  } else recordWrong({ skill: 'grammar' });
+  profileDirty = true; saveProfile(); refreshHUD();
+  cinema.qi++;
+  markCorrectChoice($('cinemaChoices'), sc.correct);
+  const done = () => { if (cinema && cinema.qi >= cinema.movie.scenes.length) finishCinema(); else renderScene(); };
+  if (correct) {
+    Sound.correct();
+    $('cinemaMsg').style.color = '#2f8a52'; $('cinemaMsg').innerHTML = '✓ ' + sc.why;
+    setTimeout(done, 1600);
+  } else {
+    Sound.wrong(); if (btn && btn.classList) btn.classList.add('flop');
+    $('cinemaMsg').style.color = '#c0392b'; $('cinemaMsg').innerHTML = '✗ It should be: <b>' + sc.correct + '</b><br><span style="color:#7a5a9a">' + sc.why + '</span>';
+    setTimeout(done, 2900);
+  }
+}
+function finishCinema() {
+  const mv = cinema.movie, total = mv.scenes.length, fr = cinema.firstRight || 0;
+  const reward = 4 + fr * 3;   // pay for lines fixed right on the first try (no farming)
+  G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
+  $('cinemaTitle').innerHTML = '🎬 Premiere!';
+  $('cinemaScene').innerHTML = '<div style="font-size:26px;letter-spacing:1px;color:#7a4ea0;font-weight:800">✨ NOW SHOWING ✨</div>' +
+    '<div style="font-size:46px;margin:6px 0">' + mv.emoji + '</div>' +
+    '<div style="font-weight:800;color:#7a4ea0;font-size:22px">' + mv.title + '</div>';
+  $('cinemaPrompt').innerHTML = '🍿 You fixed the whole script — the movie premieres!' +
+    '<br><span style="color:#2f8a52;font-weight:800">✍️ Grammar score: ' + fr + '/' + total + '</span>' +
+    '<br><span style="color:#e0a21c;font-weight:800">🪙 +' + reward + ' coins!</span>';
+  $('cinemaMsg').textContent = '';
+  const wrap = $('cinemaChoices'); wrap.innerHTML = '';
+  const again = document.createElement('button'); again.className = 'libBtn'; again.style.background = '#7a4ea0'; again.style.color = '#fff'; again.textContent = '🎬 Watch another';
+  again.onclick = () => { Sound.click(); showMoviePicker(); };
+  const fin = document.createElement('button'); fin.className = 'libBtn'; fin.textContent = '👍 Done';
+  fin.onclick = () => { Sound.click(); closeCinema(); };
+  wrap.appendChild(again); wrap.appendChild(fin);
+  cinema = null;
+}
 function openPost() {
   if (popupOpen || G.over || !G.running) return;
   if (G.spellLevel == null) G.spellLevel = Math.max(1, Math.min(5, profile.spellLevel || G.grade));
@@ -6593,10 +6728,35 @@ function buildRealty(g) {                      // 🏡 Stack Realty — Reading 
   R.position.set(REALTY_POS.x, 0, REALTY_POS.z);                // faces +Z, toward the street/play area
   g.add(R);
 }
+function buildCinema(g) {                     // 🎬 Stack Cinema — Reading Town's grammar movie house
+  const WALL = 0x6E4E8C, ROOF = 0x3a2a52, RED = 0xC0392B, GOLD = 0xF2C037, DARK = 0x2a2238;
+  const C = new THREE.Group();
+  box(C, 4.2, 0.16, 3.0, 0x9a948a, 0, 0.08, 0);            // base pad
+  box(C, 3.8, 2.6, 0.16, WALL, 0, 1.4, -1.4);              // back wall
+  box(C, 0.16, 2.6, 2.9, WALL, -1.88, 1.4, 0);             // left wall
+  box(C, 0.16, 2.6, 2.9, WALL, 1.88, 1.4, 0);              // right wall
+  box(C, 1.4, 2.0, 0.1, DARK, 0, 1.1, 1.4);                // glass entrance doors
+  box(C, 0.1, 2.0, 0.12, GOLD, -0.72, 1.1, 1.46); box(C, 0.1, 2.0, 0.12, GOLD, 0.72, 1.1, 1.46);  // gold door posts
+  box(C, 4.5, 0.4, 3.3, ROOF, 0, 2.82, 0);                 // roof
+  box(C, 4.1, 0.5, 1.0, RED, 0, 2.2, 1.55);                // marquee canopy
+  for (let i = -3; i <= 3; i++) box(C, 0.1, 0.1, 0.1, GOLD, i * 0.55, 1.92, 2.08);   // marquee bulbs
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 96; const c = cv.getContext('2d');
+  c.fillStyle = '#1c1430'; c.fillRect(0, 0, 320, 96); c.strokeStyle = '#F2C037'; c.lineWidth = 6; c.strokeRect(5, 5, 310, 86);
+  c.fillStyle = '#F2D24A'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 29px Georgia, serif';
+  c.fillText('🎬 STACK CINEMA', 160, 34);
+  c.fillStyle = '#FFFFFF'; c.font = 'bold 18px Georgia, serif'; c.fillText('Grammar Movies', 160, 68);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.96, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.2, 2.1); C.add(sign);
+  box(C, 0.42, 0.5, 0.42, 0xF6F2E8, -1.55, 0.41, 1.75);    // popcorn box
+  box(C, 0.5, 0.28, 0.5, RED, -1.55, 0.78, 1.75);          // popcorn top
+  C.position.set(CINEMA_POS.x, 0, CINEMA_POS.z);            // west end of the high street, facing the play area
+  g.add(C);
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
   buildPostOffice(g);
   buildRealty(g);
+  buildCinema(g);
   buildHighStreetArch(g);
   const N = 26;
   for (let i = 0; i < N; i++) {
@@ -7409,7 +7569,7 @@ function inShopZone(cx, cz) {
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
   if (G.world === 'meadow' && near(BAKERY_POS, 2.5)) return true;
-  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6))) return true;
+  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   return false;
 }
@@ -9732,6 +9892,7 @@ addEventListener('keydown', e => {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+    else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
     else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
@@ -10050,6 +10211,7 @@ $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
+$('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
 $('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else if (school) closeSchool(); else closeMart(); };
 $('vocabBtn').onclick = () => { Sound.click(); openVocab(); };
 $('vocabClose').onclick = () => { Sound.click(); closeVocab(); };
@@ -10215,6 +10377,7 @@ if (isTouch) {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+    else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
     else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
@@ -10803,6 +10966,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (postDist() < 3.8) {
       hint.textContent = isTouch ? '🏤 Tap ⭐ USE — Spelling Bee at the Post Office!' : '🏤 Press E — Spelling Bee at the Post Office!';
+      hint.style.display = 'block';
+    } else if (cinemaDist() < 4.0) {
+      hint.textContent = isTouch ? '🎬 Tap ⭐ USE — fix the grammar at the Cinema!' : '🎬 Press E — fix the grammar at the Cinema!';
       hint.style.display = 'block';
     } else if (martDist() < 3.8) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 Press E — order in Spanish at El Mercadito!';
