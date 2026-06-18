@@ -5809,8 +5809,12 @@ function finishLib() {
   const lvl = (lib.level != null) ? lib.level : readLevelNow();
   // harder questions pay more, and a stretch "challenge" question pays double —
   // so even an easier reader is rewarded for tackling the tougher ones.
-  let reward = 3, hadChallenge = false;
-  for (const q of lib.qs) { let w = 1 + q.g; if (q.g > lvl) { w *= 2; hadChallenge = true; } reward += w; }
+  // The Library is the harder activity, so it pays the MOST — but scaled by how much you
+  // actually got right on the first try (a stretch "challenge" question still pays double).
+  let base = 5, hadChallenge = false;
+  for (const q of lib.qs) { let w = 2 + q.g; if (q.g > lvl) { w *= 2; hadChallenge = true; } base += w; }
+  const accT = lib.qs.length || 1, accFr = lib.firstRight || 0;
+  let reward = Math.round(base * (0.4 + 0.6 * (accFr / accT)));
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   // gently adapt the reading level using FIRST-attempt accuracy: perfect runs move up,
   // repeated struggles ease back down
@@ -5955,7 +5959,9 @@ function spellAnswer(ans, w, btn) {
 }
 function finishSpell() {
   const lvl = spell.level;
-  let reward = 4; for (let i = 0; i < spell.words.length; i++) reward += 3 + lvl;   // harder levels pay more
+  // Pay for words spelled right on the FIRST try (not just for showing up) — stops the
+  // bee being a coin farm, and it pays less than the harder Library on purpose.
+  let reward = 2 + (spell.firstRight || 0) * (1 + lvl);
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   let levelMsg = ''; const total = spell.words.length, fr = spell.firstRight || 0;
   // Climbs on STRONG rounds (most right), not just perfect — a perfect round bumps right away.

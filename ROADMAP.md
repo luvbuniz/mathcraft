@@ -279,6 +279,27 @@ sits inside or just past most **free tiers**. This won't run up a scary bill, ev
 launch, build sign-in on **Firebase free tier** with a budget alert → only think about
 paid when genuinely big (revenue covers it easily).
 
+### 📧 Free-tier sign-up = email capture (soft-launch growth lever)
+
+The free game stays **playable with no login** (local auto-save covers one device). Login
+is the *upgrade*: **"Sign in (Google or password) to save your worlds & keep them on any
+device."** That's the natural, willing email-capture moment — build a list of interested
+parents now, pitch Reading Town to them later.
+
+- **User count ≠ marketing consent.** *Every* sign-up is a counted user, with or without
+  marketing opt-in — so you get the "how many are playing free" headcount from
+  registrations alone. The marketing checkbox only governs whether you may *email* them.
+- **Use an UNchecked opt-in box** ("✉️ Send me updates & tips"), not a pre-checked opt-out:
+  pre-checked is banned under GDPR/CASL, and an actively-ticked list has far better open
+  rates & deliverability. You still count everyone who signs up either way.
+- **COPPA guardrails (firm):** collect a **parent email only — never a kid's**; kids stay
+  nicknames under the parent account (no child PII). Keeps the "kid-safe, no kid data"
+  promise true even with email capture.
+- **Before flipping it on:** update `support.html` privacy policy to disclose parent-email
+  collection (for saving + optional updates), the unsubscribe, and "no child data."
+  Marketing emails need a working **unsubscribe link + mailing address** (CAN-SPAM) —
+  any provider (Mailchimp / Resend / ConvertKit) handles this.
+
 ---
 
 ## 🏪 Two stores (when there are enough items)
