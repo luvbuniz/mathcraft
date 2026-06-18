@@ -2866,7 +2866,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, wrongByDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
     garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
     pack: null, packMigrated: false, level: null, grade: null };
 }
@@ -2885,6 +2885,7 @@ function loadProfileFor(name) {
   profile.byOpWrong = profile.byOpWrong || {};
   profile.byGrade = profile.byGrade || {};
   profile.byDay = profile.byDay || {};
+  profile.wrongByDay = profile.wrongByDay || {};
   profile.starsByDay = profile.starsByDay || {};
   // an existing save from before Stars existed → backfill a Math Score from what they've already solved
   if (saved && saved.stars == null) profile.stars = estimateStars(profile);
@@ -2954,6 +2955,9 @@ const SKILL_LABELS = {
 function recordWrong(eq, fast) {
   if (typeof player !== 'undefined' && player) player.sadUntil = performance.now() + 1400;   // a quick frown
   profile.totalWrong = (profile.totalWrong || 0) + 1;
+  const today = new Date().toISOString().slice(0, 10);
+  profile.wrongByDay = profile.wrongByDay || {};
+  profile.wrongByDay[today] = (profile.wrongByDay[today] || 0) + 1;
   if (eq) { const op = eq.skill || 'other'; profile.byOpWrong[op] = (profile.byOpWrong[op] || 0) + 1; }
   if (fast) profile.fastWrong = (profile.fastWrong || 0) + 1;   // a quick wrong tap = a likely guess
   profileDirty = true;
@@ -3181,14 +3185,17 @@ function renderGrownup() {
     html += '<div class="guStats"><span>✅ Solved: ' + solved + '</span><span>🎯 Accuracy: ' + acc + '%</span>' +
       '<span>🏅 Badges: ' + ((p.badges && p.badges.length) || 0) + '</span><span>⏱️ ' + fmtPlayTime(p.secondsPlayed) + '</span></div>';
 
-    // effort over time — today & this week
-    const byDay = p.byDay || {};
+    // effort over time — questions answered & correct, today and this week
+    const byDay = p.byDay || {}, wrongByDay = p.wrongByDay || {};
     const dayKey = d => { const t = new Date(); t.setDate(t.getDate() - d); return t.toISOString().slice(0, 10); };
-    const todayN = byDay[dayKey(0)] || 0;
-    let weekN = 0; for (let d = 0; d < 7; d++) weekN += byDay[dayKey(d)] || 0;
-    let activeDays = 0; for (let d = 0; d < 7; d++) if (byDay[dayKey(d)]) activeDays++;
-    html += '<div class="guEffort">💪 <b>Effort</b> — Today: <b>' + todayN + '</b> · This week: <b>' + weekN +
-      '</b> across <b>' + activeDays + '</b> day' + (activeDays === 1 ? '' : 's') + '</div>';
+    const pct = (c, t) => t ? Math.round(c / t * 100) : 0;
+    const cToday = byDay[dayKey(0)] || 0, wToday = wrongByDay[dayKey(0)] || 0, aToday = cToday + wToday;
+    let cWeek = 0, wWeek = 0, activeDays = 0;
+    for (let d = 0; d < 7; d++) { const c = byDay[dayKey(d)] || 0, w = wrongByDay[dayKey(d)] || 0; cWeek += c; wWeek += w; if (c + w) activeDays++; }
+    const aWeek = cWeek + wWeek;
+    html += '<div class="guEffort">💪 <b>This week</b> — <b>' + aWeek + '</b> question' + (aWeek === 1 ? '' : 's') + ' answered · <b>' + cWeek + '</b> correct' +
+      (aWeek ? ' (' + pct(cWeek, aWeek) + '%)' : '') + ' · across <b>' + activeDays + '</b> day' + (activeDays === 1 ? '' : 's') +
+      '<br><span style="font-weight:600;color:#6c84a6">Today — ' + aToday + ' answered · ' + cToday + ' correct' + (aToday ? ' (' + pct(cToday, aToday) + '%)' : '') + '</span></div>';
 
     // focus / guessing read (helps spot button-mashing)
     const attempts = solved + wrong, fastWrong = p.fastWrong || 0;
