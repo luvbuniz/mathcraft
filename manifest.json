@@ -2,7 +2,7 @@
   "name": "Stackadoo — Build with Math!",
   "short_name": "Stackadoo",
   "description": "A 3D voxel math game for kids (grades 2–5): solve math, earn blocks, and build worlds.",
-  "start_url": "./",
+  "start_url": "play.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
