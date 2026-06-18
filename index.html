@@ -97,9 +97,18 @@
   .pill.lock{background:#fff;color:#7a5c1e;border:1px solid #ecd89a}
 
   /* screenshot gallery (drop real images into /shots/ — placeholders show until then) */
-  .shots{display:grid;gap:18px;margin-top:40px;grid-template-columns:repeat(3,1fr)}
-  @media(max-width:820px){.shots{grid-template-columns:1fr 1fr}}
-  @media(max-width:520px){.shots{grid-template-columns:1fr}}
+  .shotsWrap{position:relative;margin-top:40px}
+  .shots{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 16px;-webkit-overflow-scrolling:touch}
+  .shots::-webkit-scrollbar{height:8px}
+  .shots::-webkit-scrollbar-thumb{background:#cfe0d3;border-radius:5px}
+  .shots::-webkit-scrollbar-track{background:transparent}
+  .shot{flex:0 0 min(440px,84%);scroll-snap-align:center}
+  .shotArrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:46px;height:46px;border-radius:50%;
+    border:none;cursor:pointer;background:rgba(255,255,255,.96);color:var(--green-600);font-size:26px;font-weight:700;
+    box-shadow:var(--shadow-sm);display:grid;place-items:center;line-height:1}
+  .shotArrow.prev{left:-4px}.shotArrow.next{right:-4px}
+  .shotArrow:active{transform:translateY(-50%) scale(.94)}
+  @media(max-width:700px){.shotArrow{display:none}}   /* phones swipe instead */
   .shot{position:relative;aspect-ratio:16/10;border-radius:20px;overflow:hidden;border:3px solid #fff;
     box-shadow:var(--shadow);background:linear-gradient(160deg,#8FD3F4,#CBEAB6);display:grid;place-items:center}
   .shot .ph{font-size:clamp(40px,7vw,58px);opacity:.92;z-index:0}
@@ -185,13 +194,17 @@
       <div class="eyebrow">See it in action</div>
       <h2 class="h2">A real 3D world your kid builds — by doing the work</h2>
       <p class="lead">Solve math, reading, spelling &amp; grammar to earn blocks and coins — then drive, build, and decorate.</p>
-      <div class="shots">
+      <div class="shotsWrap">
+      <button class="shotArrow prev" id="shotPrev" aria-label="Previous">&#8249;</button>
+      <div class="shots" id="shots">
         <figure class="shot"><span class="ph">🌍</span><img src="shots/world.jpg" alt="The bright 3D Stackadoo world" loading="lazy" onerror="this.remove()"><figcaption>Explore a bright 3D world</figcaption></figure>
         <figure class="shot"><span class="ph">➗</span><img src="shots/math.jpg" alt="A math problem with chunky answer blocks" loading="lazy" onerror="this.remove()"><figcaption>Solve math → earn blocks</figcaption></figure>
         <figure class="shot"><span class="ph">🚒</span><img src="shots/drive.jpg" alt="Driving the fire truck with sirens and lights" loading="lazy" onerror="this.remove()"><figcaption>Drive the fire truck — sirens &amp; lights</figcaption></figure>
         <figure class="shot"><span class="ph">🏠</span><img src="shots/build.jpg" alt="A decorated house the child built" loading="lazy" onerror="this.remove()"><figcaption>Build &amp; decorate your own house</figcaption></figure>
         <figure class="shot"><span class="ph">🎬</span><img src="shots/cinema.jpg" alt="The Grammar Cinema mini-game" loading="lazy" onerror="this.remove()"><figcaption>Grammar Cinema: fix the script</figcaption></figure>
         <figure class="shot"><span class="ph">📊</span><img src="shots/dashboard.jpg" alt="The grown-ups progress dashboard" loading="lazy" onerror="this.remove()"><figcaption>Parents see real progress</figcaption></figure>
+      </div>
+      <button class="shotArrow next" id="shotNext" aria-label="Next">&#8250;</button>
       </div>
       <div style="text-align:center;margin-top:26px"><a class="btn btn-play" id="seePlay">▶ Play Free Now</a></div>
     </div>
@@ -320,6 +333,14 @@
     var el = document.getElementById(id); if (el) el.href = GAME_URL;
   });
   document.getElementById('yr').textContent = new Date().getFullYear();
+  // Screenshot carousel arrows (desktop) — scroll one tile per click.
+  (function(){
+    var sh = document.getElementById('shots'); if (!sh) return;
+    function step(){ var t = sh.querySelector('.shot'); return (t ? t.getBoundingClientRect().width : 300) + 16; }
+    var p = document.getElementById('shotPrev'), n = document.getElementById('shotNext');
+    if (p) p.onclick = function(){ sh.scrollBy({ left: -step(), behavior: 'smooth' }); };
+    if (n) n.onclick = function(){ sh.scrollBy({ left:  step(), behavior: 'smooth' }); };
+  })();
 </script>
 </body>
 </html>
