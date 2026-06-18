@@ -3207,15 +3207,18 @@ function renderGrownup() {
     if (attempts >= 8 && fastWrong / attempts > 0.3) focus += ' · ⚡ answering very fast';
     html += '<div class="guFocus" style="color:' + fcol + '">' + focus + '</div>';
 
+    const sectionHead = (t) => '<div style="font-weight:800;color:#5b6b80;margin:11px 0 3px;border-top:1px solid #ececec;padding-top:7px">' + t + '</div>';
+    // ===== 🔢 MATH =====
+    html += sectionHead('🔢 Math');
     // grade breakdown
     const grades = p.byGrade || {};
     const gKeys = Object.keys(grades).sort();
     if (gKeys.length) html += '<div style="font-weight:bold;color:#5b6b80;margin:6px 0 2px">By grade: ' +
       gKeys.map(g => 'G' + g + ' (' + grades[g] + ')').join(' · ') + '</div>';
 
-    // per-skill mastery — each skill grows through stages as they get answers right
+    // per-skill mastery — MATH skills only (reading, spelling & grammar have their own section below)
     const ops = p.byOp || {}, wrongs = p.byOpWrong || {};
-    const opKeys = Object.keys(ops).sort((a, b) => ops[b] - ops[a]);
+    const opKeys = Object.keys(ops).filter(k => subjectOf(k) === 'math').sort((a, b) => ops[b] - ops[a]);
     opKeys.forEach(k => {
       const c = ops[k], w = wrongs[k] || 0;
       const ms = masteryStage(c);
@@ -3236,11 +3239,11 @@ function renderGrownup() {
       const prog = ms.mastered ? '🌟 mastered!' : ms.label + ' · ' + ms.toNext + ' more to ' + ms.nextLabel;
       html += '<div class="guSkillSub">' + prog + tag + '</div>';
     });
-    if (!opKeys.length) html += '<div class="guEmpty">No problems solved yet.</div>';
+    if (!opKeys.length) html += '<div class="guEmpty">No math problems solved yet — visit a ❓ station in Math Meadow.</div>';
 
-    const sectionHead = (t) => '<div style="font-weight:800;color:#5b6b80;margin:11px 0 3px;border-top:1px solid #ececec;padding-top:7px">' + t + '</div>';
-    // 📖 Reading — comprehension is rated on the FIRST answer to each question (not after retries)
-    html += sectionHead('📖 Reading');
+    // ===== 📖 READING & LANGUAGE (reading, spelling, grammar) =====
+    html += sectionHead('📖 Reading &amp; Language');
+    // Reading comprehension — rated on the FIRST answer to each question (not after retries)
     const rTotal = p.readFirstTotal || 0, rRight = p.readFirstRight || 0;
     if (rTotal > 0) {
       const comp = Math.round(rRight / rTotal * 100);
@@ -3273,7 +3276,21 @@ function renderGrownup() {
     } else {
       html += '<div class="guSkillSub">No spelling yet — try the 🏤 Post Office Spelling Bee.</div>';
     }
-    // 🇪🇸 Spanish — rated on the first answer at El Mercadito (Spanish Beach)
+    // 🎬 Grammar — rated on the first answer at the Grammar Cinema (Reading Town)
+    const grTotal = p.grammarFirstTotal || 0, grRight = p.grammarFirstRight || 0;
+    if (grTotal > 0) {
+      const grp = Math.round(grRight / grTotal * 100);
+      let grrate, grcol;
+      if (grTotal < 6) { grrate = '🌱 Just getting started'; grcol = '#6c84a6'; }
+      else if (grp >= 80) { grrate = '✅ Strong grammar'; grcol = '#2f8a52'; }
+      else if (grp >= 55) { grrate = '🟡 Developing — review the trickier lines together'; grcol = '#b07d00'; }
+      else { grrate = '🔴 Needs support — go through them together'; grcol = '#c0392b'; }
+      html += '<div class="guStats"><span>🎬 Grammar: ' + grp + '% (first try)</span><span>🎟️ ' + grRight + '/' + grTotal + '</span></div>';
+      html += '<div class="guFocus" style="color:' + grcol + '">' + grrate + '</div>';
+    } else {
+      html += '<div class="guSkillSub">No grammar yet — try the 🎬 Grammar Cinema.</div>';
+    }
+    // ===== 🇪🇸 SPANISH =====
     html += sectionHead('🇪🇸 Spanish');
     const spTotal = p.spanFirstTotal || 0, spRight = p.spanFirstRight || 0;
     if (spTotal > 0) {
