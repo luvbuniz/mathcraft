@@ -854,6 +854,10 @@
         </div>
       </div>
 
+      <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 12px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
+        ☁️ Sign in — keep your worlds &amp; unlock on any device
+      </button>
+
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
         <div id="savedList"></div>
@@ -10954,6 +10958,7 @@ function renderAuthUI() {
   else if (fbUser) { un.style.display = 'none'; signed.style.display = 'block'; out.style.display = 'none'; const w = $('authWho'); if (w) w.textContent = fbUser.email || 'your account'; }
   else { un.style.display = 'none'; signed.style.display = 'none'; out.style.display = 'block'; }
   const g = $('authEntryGrown'); if (g) g.textContent = fbUser ? '☁️ Account — synced ✓' : '☁️ Sign in to sync & restore';
+  const h = $('authEntryHome'); if (h) h.textContent = fbUser ? '☁️ Signed in ✓ — worlds sync on every device' : '☁️ Sign in — keep your worlds & unlock on any device';
 }
 $('authClose').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); closeAuth(); };
 $('authGoogleBtn').onclick = () => authGoogle();
@@ -10962,6 +10967,7 @@ $('authUpBtn').onclick = () => authEmail(true);
 $('authOutBtn').onclick = () => authSignOut();
 $('authEntryGrown').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
 $('authEntryUnlock').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
+$('authEntryHome').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
 try { if (sessionStorage.getItem('stackadooJustSynced')) { sessionStorage.removeItem('stackadooJustSynced'); setTimeout(() => { if (typeof toast === 'function') toast('☁️ Synced! Your worlds & unlock are up to date on this device.', 3600); }, 900); } } catch (e) {}
 
 $('resetPurchaseBtn').onclick = () => {
