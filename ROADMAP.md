@@ -154,6 +154,51 @@ unlock.
 
 ---
 
+## 💎 Premium content plan (the $5 "Founding Family" value)
+
+At $5 one-time + *lifetime updates*, the value is **a deep second world + a steady
+drip of updates**, not a mountain on day one. Depth > breadth — a few rich shops beat
+many empty ones. Most of this is **cheap (data: items/shops/vehicles)**; spend the real
+build budget on one or two "wow" features.
+
+### ✅ Shipped toward premium
+- Coin rebalance (Library pays most; spelling bee no longer farmable).
+- 4 Reading Town **city vehicles**: fire truck 🚒, ambulance 🚑 (both siren+lights), taxi 🚕, bus 🚌.
+- Whole-item **pools** (3 sizes) + **Mega Pool water slide** (first-person ride).
+
+### 🎬 Grammar Cinema (Reading Town) — HIGH value, build next-ish
+Grammar is an underserved gap and rounds Reading Town into three pillars:
+**Library = comprehension, Post Office = spelling, Cinema = grammar.**
+- Walk-in **🎬 Cinema**; pick a "movie" (story); each scene = a sentence with one
+  grammar problem, **4 choices to fix** (capitalization / missing comma / past-future
+  tense / subject-verb). Single-attempt → reveal flow (consistent with other games).
+- Fix all scenes → the movie **"premieres"**: marquee *"NOW SHOWING: [title] 🎬"*,
+  confetti, applause, coins. (A *celebration*, not a produced animation — 90% of the
+  delight, 10% of the work. Real animation = later, don't block on it.)
+- **⚠️ Grammar QA is critical** — easy to write *ambiguous* items, and parents pounce
+  on a wrong "correction" faster than a math error. Rule: **exactly one unambiguously
+  correct fix** per item, 3 clearly-wrong options; tight, well-defined grammar types;
+  QA like the 35k math questions (zero ambiguous items).
+
+### 🏦 Bank (Math Meadow) — money math
+A walk-in **🏦 Bank**: **coin-counting** (make a target amount), **making change**
+(pay, count the change), and **interest** for older kids only (higher levels: "deposit
+100 at 5% — how much now?" so it stays hidden from little ones, surfaces as they level).
+
+### 🔤 Word games (lighter add-on, after the Cinema)
+**Anagrams** (unscramble a themed word — easy) + **word search** (small grid UI). Natural
+pair; put in the Post Office or a small arcade.
+
+### 🛋️ Room kits
+One-tap furnished rooms in two styles: **Post-Modern** and **Ultra-Trendy**.
+
+### 🔁 Drip as "lifetime updates" (marketing beats after launch)
+Seasonal/holiday packs, more books/quests/pets/vehicles, a Tier-2 headliner
+(racetrack / science corner / trophy room). Don't ship it all at once — each release =
+its own announcement and proof the "updates for life" promise is real.
+
+---
+
 ## 🌳 Math Meadow → countryside polish (small, soon)
 
 Give the Meadow a **countryside** feel to contrast with the town:
