@@ -1,8 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- full-bleed background so the icon looks good when a launcher masks it to a circle/squircle -->
-  <rect width="512" height="512" fill="#EAF8E3"/>
-  <!-- stacked blocks logo, kept inside the ~80% maskable safe area -->
-  <g transform="translate(256 264) scale(5.6) translate(-30.5 -32)">
+  <!-- full-bleed sky background so the icon looks good when a launcher masks it to a circle/squircle -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#CFF0FF"/>
+      <stop offset="100%" stop-color="#86C8F2"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <!-- soft ground shadow under the tower -->
+  <ellipse cx="256" cy="404" rx="132" ry="26" fill="#000000" opacity="0.10"/>
+  <!-- bold stacked blocks, kept inside the ~80% maskable safe area (scale 6.8) -->
+  <g transform="translate(256 256) scale(6.8) translate(-30.5 -32)">
     <polygon points="21,11 34,18 34,32 21,25" fill="#D9762E"/>
     <polygon points="47,11 34,18 34,32 47,25" fill="#F59A4E"/>
     <polygon points="34,4 47,11 34,18 21,11" fill="#FFC089"/>
