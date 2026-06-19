@@ -7352,31 +7352,55 @@ function ensureBedProps() {
   bedProps = g; scene.add(g); g.visible = false;
   return g;
 }
-/* 🚒 first-person cockpit — a steering wheel, a dashboard with gauge tiles, and a
-   passenger seat. One shared interior, shown only when driving in first-person. */
+/* 🚒 first-person cockpit — an instrument panel with real dials (speed/fuel/temp), a
+   steering wheel, and a passenger seat. One shared interior, shown only in first-person. */
 let cockpit = null;
+function dashTexture() {
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 132;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#14171c'; c.fillRect(0, 0, 320, 132);
+  c.strokeStyle = '#2c313a'; c.lineWidth = 6; c.strokeRect(3, 3, 314, 126);
+  const dial = (cx, cy, r, frac, label, col) => {
+    c.fillStyle = '#0a0c10'; c.beginPath(); c.arc(cx, cy, r, 0, 6.3); c.fill();
+    c.strokeStyle = '#3a414c'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, r, 0, 6.3); c.stroke();
+    c.strokeStyle = '#737c88'; c.lineWidth = 2;
+    for (let i = 0; i <= 8; i++) { const a = Math.PI * 0.75 + i / 8 * Math.PI * 1.5; c.beginPath(); c.moveTo(cx + Math.cos(a) * (r - 2), cy + Math.sin(a) * (r - 2)); c.lineTo(cx + Math.cos(a) * (r - 8), cy + Math.sin(a) * (r - 8)); c.stroke(); }
+    const na = Math.PI * 0.75 + frac * Math.PI * 1.5;
+    c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(na) * (r - 5), cy + Math.sin(na) * (r - 5)); c.stroke();
+    c.fillStyle = col; c.beginPath(); c.arc(cx, cy, 4, 0, 6.3); c.fill();
+    c.fillStyle = '#b6bdc8'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(label, cx, cy + r + 14);
+  };
+  dial(82, 58, 46, 0.6, 'SPEED', '#37c3ff');
+  dial(200, 52, 32, 0.82, 'FUEL', '#ffd60a');
+  dial(268, 52, 24, 0.42, 'TEMP', '#ff5a4d');
+  c.fillStyle = '#ff453a'; c.beginPath(); c.arc(176, 112, 5, 0, 6.3); c.fill();
+  c.fillStyle = '#32d74b'; c.beginPath(); c.arc(198, 112, 5, 0, 6.3); c.fill();
+  c.fillStyle = '#ffd60a'; c.beginPath(); c.arc(220, 112, 5, 0, 6.3); c.fill();
+  c.fillStyle = '#0c0e12'; c.fillRect(244, 100, 64, 22); c.fillStyle = '#37c3ff'; c.font = 'bold 14px monospace'; c.textAlign = 'center'; c.fillText('128', 276, 115);
+  return new THREE.CanvasTexture(cv);
+}
 function buildCockpit() {
   const g = new THREE.Group();
   const M = c => new THREE.MeshLambertMaterial({ color: c });
   const box = (w, h, d, x, y, z, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); return m; };
-  const DASH = 0x2b2f36, TRIM = 0x3a4049;
-  box(2.5, 0.1, 1.7, 0, 0.34, 0.8, 0x20242a);                 // floor
-  box(2.4, 0.5, 0.45, 0, 0.92, 1.34, DASH);                   // dashboard
-  box(2.4, 0.12, 0.5, 0, 1.2, 1.32, TRIM);                    // binnacle lip
-  const tile = (x, c) => { box(0.2, 0.2, 0.04, x, 1.0, 1.57, 0x14171b); box(0.15, 0.15, 0.05, x, 1.0, 1.585, c); };
-  tile(-0.55, 0xff453a); tile(-0.25, 0x32d74b); tile(0.05, 0xffd60a);   // red / green / yellow gauges
-  box(0.62, 0.22, 0.05, 0.55, 1.0, 1.57, 0x0c0f12); box(0.56, 0.15, 0.06, 0.55, 1.0, 1.585, 0x37c3ff);   // little screen
+  const DASH = 0x23272e, TRIM = 0x2e333b;
+  box(2.6, 0.1, 1.8, 0, 0.3, 0.7, 0x1b1e24);                  // floor
+  box(2.4, 0.58, 0.5, 0, 0.78, 1.26, DASH);                   // dashboard body
+  box(2.4, 0.14, 0.55, 0, 1.12, 1.18, TRIM);                  // cowl/hood over the gauges
+  // instrument panel with real dials, facing the driver
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.66), new THREE.MeshBasicMaterial({ map: dashTexture() }));
+  panel.position.set(0, 0.93, 1.0); panel.rotation.y = Math.PI; panel.rotation.x = 0.34; g.add(panel);   // tilt up toward the driver
   // steering wheel (driver on the left)
-  const wg = new THREE.Group(); wg.position.set(-0.42, 0.86, 1.0); wg.rotation.x = 1.15; g.add(wg);
-  wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.05, 10, 24), M(0x15171b)));
-  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.05, 0.04), M(0x15171b)));
-  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.48, 0.04), M(0x15171b)));
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 14), M(0xcc2b2b)); hub.rotation.x = Math.PI / 2; wg.add(hub);
-  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), M(0x1c1f24)); col.rotation.x = 1.15; col.position.set(-0.42, 0.68, 1.2); g.add(col);
-  // passenger seat (right) + driver seat under the camera
-  box(0.56, 0.16, 0.56, 0.6, 0.46, 0.5, 0x6e2a2a); box(0.56, 0.64, 0.16, 0.6, 0.83, 0.27, 0x6e2a2a); box(0.4, 0.16, 0.16, 0.6, 1.17, 0.27, 0x6e2a2a);  // passenger cushion/back/headrest
-  box(0.56, 0.16, 0.56, -0.42, 0.46, 0.5, 0x4a4f57);          // driver seat hint
-  box(0.12, 0.8, 1.6, 1.14, 0.72, 0.85, TRIM); box(0.12, 0.8, 1.6, -1.14, 0.72, 0.85, TRIM);  // door interiors
+  const wg = new THREE.Group(); wg.position.set(-0.45, 0.86, 0.72); wg.rotation.x = 1.2; g.add(wg);
+  wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.055, 12, 28), M(0x14161a)));
+  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.055, 0.04), M(0x14161a)));
+  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.54, 0.04), M(0x14161a)));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16), M(0xcc2b2b)); hub.rotation.x = Math.PI / 2; wg.add(hub);
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), M(0x1c1f24)); col.rotation.x = 1.2; col.position.set(-0.45, 0.66, 0.92); g.add(col);
+  // passenger seat (right) + driver seat hint (left)
+  box(0.58, 0.16, 0.58, 0.62, 0.42, 0.35, 0x6e2a2a); box(0.58, 0.66, 0.16, 0.62, 0.78, 0.1, 0x6e2a2a); box(0.42, 0.16, 0.16, 0.62, 1.12, 0.1, 0x6e2a2a);
+  box(0.58, 0.16, 0.58, -0.45, 0.42, 0.35, 0x44494f);
+  box(0.12, 0.85, 1.7, 1.16, 0.68, 0.7, TRIM); box(0.12, 0.85, 1.7, -1.16, 0.68, 0.7, TRIM);   // door interiors
   g.visible = false; scene.add(g);
   return g;
 }
@@ -7458,9 +7482,9 @@ function updatePlayer(dt) {
     }
     if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
       const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
-      const eyeH = player.pos.y + 1.25;
-      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.35, eyeH, player.pos.z + fwdz * 0.35), 0.4);
-      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 2.2, player.pos.z + fwdz * 14);   // look down a bit so the cockpit shows
+      const eyeH = player.pos.y + 1.2;
+      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.42, eyeH, player.pos.z + fwdz * 0.42), 0.4);
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 2.0, player.pos.z + fwdz * 14);   // look down so the dashboard/dials show
       if (!cockpit) cockpit = buildCockpit();
       cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
       cockpit.rotation.y = v.yaw + Math.PI;
