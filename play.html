@@ -1715,8 +1715,9 @@ function makeGrammarQuestion(level) {
     const answer = pick(lists[which]);
     const distractors = Object.keys(lists).filter(k => k !== which).reduce((a, k) => a.concat(lists[k]), []);
     const desc = which === 'noun' ? 'a person, place, or thing' : which === 'verb' ? 'an action word' : 'a describing word';
-    return { text: 'Which word is a ' + which.toUpperCase() + ' (' + desc + ')', options: fourChoices(answer, distractors),
-      answer, reward: langReward(level), skill: 'reading', hint: 'A ' + which + ' is ' + desc + '. Which word fits?' };
+    const art = /^[aeiou]/i.test(which) ? 'an' : 'a';
+    return { text: 'Which word is ' + art + ' ' + which.toUpperCase() + ' (' + desc + ')', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading', hint: art.charAt(0).toUpperCase() + art.slice(1) + ' ' + which + ' is ' + desc + '. Which word fits?' };
   }
   if (t === 'plural') {
     const [sing, plur] = pick(PLURALS), naive = sing + 's';
@@ -8480,7 +8481,7 @@ function updateMathNote() {
   if (!G.gloomiesEnabled) { note.style.display = 'none'; return; }
   const prog = (G.shieldStreak || 0) % 3;
   note.style.display = 'block';
-  note.innerHTML = '💜 The Gloomies <b>freeze</b> while you do math!<br>' +
+  note.innerHTML = '💜 The Gloomies <b>freeze</b> while you <b>answer questions</b>!<br>' +
     '🛡️ Every <b>3 correct</b> earns a shield — ' + prog + '/3 so far.';
 }
 function answerPicked(btn, opt) {
