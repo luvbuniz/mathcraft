@@ -113,6 +113,10 @@
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   #camBtn { position:absolute; top:62px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  /* 🚨 siren toggle — only shown while driving an emergency vehicle (set in JS) */
+  #sirenBtn { position:absolute; top:114px; right:10px; pointer-events:auto; font-size:20px;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
+  #sirenBtn.off { opacity:.5; filter:grayscale(.8); }
   #hotbar { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
     display:flex; gap:8px; pointer-events:auto; }
   .hotSlot { width:74px; padding:6px 4px; text-align:center; background:rgba(255,255,255,.85);
@@ -512,6 +516,7 @@
     #selfieBtn { top:260px; right:8px; }
     #photoBtn { top:302px; right:8px; }
     #cursorBtn { top:344px; right:8px; }
+    #sirenBtn { font-size:17px; padding:5px 8px; top:386px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
     #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
     #btnUndoTouch { right:110px; bottom:134px; background:rgba(196,238,201,.92); }
@@ -826,6 +831,7 @@
     #selfieBtn { top:48px; right:52px; }
     #photoBtn  { top:48px; right:96px; }
     #cursorBtn { top:48px; right:140px; }
+    #sirenBtn  { font-size:14px; padding:5px 7px; top:48px; right:184px; }
     #modeBtn, #undoBtn { display:none; }
     .touchBtn { font-size:13px; padding:10px 12px; }
     #btnAction    { right:14px;  bottom:116px; }
@@ -1063,6 +1069,7 @@
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes">🧍</button>
+  <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
   <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
@@ -4921,6 +4928,7 @@ function toggleDrive() {
   const a = activeCarObj();
   if (player.driving) {                                   // hop off
     player.driving = null; Sound.engineStop(); Sound.sirenStop();
+    const sb = $('sirenBtn'); if (sb) sb.style.display = 'none';
     if (a) { a.group.visible = true; player.pos.set(a.group.position.x + 1.2, 0, a.group.position.z); }   // re-show the parked car
     player.vel.set(0, 0, 0);
     if (cockpit) cockpit.visible = false;
@@ -4935,8 +4943,24 @@ function toggleDrive() {
   if (document.pointerLockElement) document.exitPointerLock();
   const prof = engineProfileFor(a.def.id);
   Sound.engineStart(prof); Sound.honk(prof);
-  if (a.def.police || a.def.emergency) { Sound.sirenStart(); toast(a.def.emoji + ' Sirens on! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800); }
-  else toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
+  const sb = $('sirenBtn');
+  if (a.def.police || a.def.emergency) {
+    player.sirenOn = true; Sound.sirenStart();
+    if (sb) { sb.style.display = 'block'; sb.classList.remove('off'); }
+    toast(a.def.emoji + ' Sirens on! Tap 🚨 to switch them off • 👁️ first-person • ⭐ USE to hop off.', 3800);
+  } else {
+    if (sb) sb.style.display = 'none';
+    toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
+  }
+}
+// 🚨 flip the siren on/off from inside the truck (separate from the main sound button)
+function toggleSiren() {
+  if (!player.driving) return;
+  const d = player.driving.def; if (!(d && (d.police || d.emergency))) return;
+  player.sirenOn = !player.sirenOn;
+  const sb = $('sirenBtn');
+  if (player.sirenOn) { Sound.sirenStart(); if (sb) sb.classList.remove('off'); toast('🚨 Siren on', 900); }
+  else { Sound.sirenStop(); if (sb) sb.classList.add('off'); toast('🔇 Siren off', 900); }
 }
 // park the active car (or hide all) whenever a game starts/loads
 function syncCars() {
@@ -10196,6 +10220,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
+$('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
 function toggleSelfie() {
   G.selfie = !G.selfie;
   if (G.selfie && G.firstPerson) { G.firstPerson = false; $('camBtn').textContent = '🧍'; }   // selfie needs to see the character
