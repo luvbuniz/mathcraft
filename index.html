@@ -189,6 +189,10 @@
         <span>🚫 No ads</span><span>💬 No chat</span><span>🔒 Kid-safe</span>
         <span>📱 Any device</span><span>🆓 Free to start</span>
       </div>
+      <div id="installWrap" style="display:none;margin-top:22px">
+        <button class="btn btn-amber" id="installBtn">📲 Install as an app</button>
+        <div style="font-size:13px;color:#5a7480;margin-top:7px;font-weight:600">Free • no app store • works offline</div>
+      </div>
     </div>
   </section>
 
@@ -344,6 +348,26 @@
     var p = document.getElementById('shotPrev'), n = document.getElementById('shotNext');
     if (p) p.onclick = function(){ sh.scrollBy({ left: -step(), behavior: 'smooth' }); };
     if (n) n.onclick = function(){ sh.scrollBy({ left:  step(), behavior: 'smooth' }); };
+  })();
+  // 📲 "Install as app" button — only show on phones/tablets that aren't already installed.
+  (function(){
+    var wrap = document.getElementById('installWrap'), btn = document.getElementById('installBtn');
+    if (!wrap || !btn) return;
+    var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    var isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+    if (standalone || !isTouch) return;                       // desktop or already-installed → stay hidden
+    wrap.style.display = '';
+    var isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    btn.onclick = function(){
+      if (window._installPrompt) {                            // Android Chrome/Brave/Edge → real one-tap install
+        window._installPrompt.prompt();
+        window._installPrompt.userChoice.then(function(){ window._installPrompt = null; wrap.style.display = 'none'; });
+      } else if (isiOS) {
+        alert('To install on iPhone/iPad:\n\n1) Tap the Share button (the square with an up-arrow).\n2) Scroll down and tap “Add to Home Screen.”');
+      } else {
+        alert('To install:\n\nOpen your browser menu (⋮ in the corner) and tap “Install app” or “Add to Home Screen.”');
+      }
+    };
   })();
 </script>
 </body>
