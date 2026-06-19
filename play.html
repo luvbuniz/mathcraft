@@ -7458,9 +7458,9 @@ function updatePlayer(dt) {
     }
     if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
       const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
-      const eyeH = player.pos.y + 1.4;
-      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.6, eyeH, player.pos.z + fwdz * 0.6), 0.4);
-      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 0.3, player.pos.z + fwdz * 14);
+      const eyeH = player.pos.y + 1.25;
+      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.35, eyeH, player.pos.z + fwdz * 0.35), 0.4);
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 2.2, player.pos.z + fwdz * 14);   // look down a bit so the cockpit shows
       if (!cockpit) cockpit = buildCockpit();
       cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
       cockpit.rotation.y = v.yaw + Math.PI;
