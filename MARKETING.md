@@ -95,6 +95,11 @@ vehicles, pets, photos/selfies, level-ups with bonus mini-games.
   taxi, city bus — plus the police car, monster truck, sports cars.
 
 **Crowd-pleasers across worlds:**
+- **🚒 First-person driving (Leo's killer feature):** hop in and switch to first-person
+  to drive *from inside the cab* — steering wheel, **your hands on the wheel**, and a
+  **real fire-truck dashboard** (gauges + a PUMP/LADDER/SIREN control panel). There's a
+  **siren on/off switch** right in the truck. The cab even changes per vehicle (fire vs
+  police). *(new)*
 - **🏊 Swimming pools** (3 sizes) incl. the **Mega Pool with a water slide** you ride
   **in first-person**, then splash. *(new)*
 - **🔤 Level-up bonus games** — earn a mini-game when you level up: treasure-map (X,Y),
@@ -113,8 +118,9 @@ for X/FB. Real kid hands + good light = authentic and converts.**
    Caption: *"She does math to earn blocks. She has no idea she's learning."*
 2. **Driving montage (likely your best performer):** the **fire truck & ambulance**
    (siren + flashing lights), the **police car**, the **monster truck** bouncing —
-   drive through town. Caption: *"Built my son a math game. He just wants to drive the
-   fire truck."*
+   drive through town, then flip to **first-person from the cab** (hands on the wheel,
+   real fire-truck dashboard). Caption: *"Built my son a math game. He just wants to
+   drive the fire truck."*
 3. **Water slide (huge):** climb the **Mega Pool** slide → ride down in **first-person**
    → splash. Caption: *"He did 10 math problems to afford the water slide."*
 4. **Grammar Cinema premiere:** fix the script → *"NOW SHOWING"* marquee + confetti.
@@ -134,7 +140,8 @@ for X/FB. Real kid hands + good light = authentic and converts.**
 1. Bright 3D world with the avatar — the "whoa, it's 3D" shot.
 2. A math problem with the chunky answer blocks.
 3. A kid's decorated house (e.g., the pink house) — creativity.
-4. The vehicle lineup — **fire truck/ambulance/police car** together.
+4. The vehicle lineup — **fire truck/ambulance/police car** together; and a
+   **first-person cab shot** (hands on the wheel + the fire-truck dashboard).
 5. The **Mega Pool + water slide** (or mid-slide first-person frame).
 6. The **🎬 Grammar Cinema** marquee / a movie-pick screen.
 7. **The parent dashboard** (grade-equivalency) — the buyer hook.
