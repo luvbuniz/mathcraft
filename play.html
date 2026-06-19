@@ -10636,7 +10636,7 @@ function takePhoto() {
         const file = new File([blob], name, { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
           try {
-            await navigator.share({ files: [file], title: 'My Stackadoo build!', text: 'I built this in Stackadoo! 🧱🚗 Play free at stackadoo.com #Stackadoo', url: 'https://stackadoo.com/' });
+            await navigator.share({ files: [file], title: 'My Stackadoo build!', text: 'Look what I built in Stackadoo — and I earned it by doing math! 🧱🚒 Play free at stackadoo.com #Stackadoo', url: 'https://stackadoo.com/' });
             toast('📸 Shared your build!', 2200);
             return;
           } catch (e) { if (e && e.name === 'AbortError') return; }   // user cancelled the share sheet
@@ -10993,7 +10993,7 @@ $('startBtn').onclick = () => {
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 function shareGame() {
-  const data = { title: 'Stackadoo', text: 'My kids learn math, reading & Spanish by building & driving in Stackadoo — and they think it\'s just a game! 🧱🚗 Free to start:', url: 'https://stackadoo.com/' };
+  const data = { title: 'Stackadoo', text: 'My kids beg to play this 😂 They build worlds, drive fire trucks & ride water slides — by doing math, reading, spelling & grammar. No ads, kid-safe, free to start:', url: 'https://stackadoo.com/' };
   if (navigator.share) { navigator.share(data).catch(() => {}); return; }
   const link = 'https://stackadoo.com/';
   if (navigator.clipboard) { navigator.clipboard.writeText(link).then(() => toast('🔗 Link copied! Paste it anywhere to share Stackadoo.', 3000), () => toast('Share: ' + link, 4000)); }
