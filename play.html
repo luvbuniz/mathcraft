@@ -4945,7 +4945,7 @@ function toggleDrive() {
   Sound.engineStart(prof); Sound.honk(prof);
   const sb = $('sirenBtn');
   if (a.def.police || a.def.emergency) {
-    player.sirenOn = true; Sound.sirenStart();
+    player.sirenOn = true; Sound.sirenStart(); player._dashHintPending = true;
     if (sb) { sb.style.display = 'block'; sb.classList.remove('off'); }
     toast(a.def.emoji + ' Sirens on! Tap 🚨 to switch them off • 👁️ first-person • ⭐ USE to hop off.', 3800);
   } else {
@@ -7603,6 +7603,10 @@ function updatePlayer(dt) {
         const emV = dashStyleFor(v.def) !== 'default';
         if (cockpit.userData.emSwitch) cockpit.userData.emSwitch.visible = emV;
         setCockpitDash(dashStyleFor(v.def), player.sirenOn !== false);
+        if (emV && player._dashHintPending) {           // first time you look at the dash: explain the tappable panel
+          player._dashHintPending = false;
+          toast('🚨 Tap the TRUCK CONTROL panel to switch the lights & siren on/off!', 4200);
+        }
         cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
