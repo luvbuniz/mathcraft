@@ -5522,8 +5522,10 @@ function treasureTap(x, y, cell) {
 }
 function nextAdjective() {
   const o = pick(QUEST_OBJECTS); sideQuest.obj = o; sideQuest.answer = pick(o.adj);
-  const distract = o.no.concat(QUEST_OBJECTS.filter(x => x !== o).reduce((a, x) => a.concat(x.adj), [])).filter(w => !o.adj.includes(w));
-  sideQuest.options = fourChoices(sideQuest.answer, distract);
+  // Distractors come ONLY from this object's curated "clearly wrong" list (scaly/giant/metal for a bunny).
+  // Pulling adjectives from other objects backfired: words like "pretty" or "bright" also describe a bunny,
+  // so the question had more than one defensible answer.
+  sideQuest.options = fourChoices(sideQuest.answer, o.no);
 }
 function renderAdjective() {
   const o = sideQuest.obj;
