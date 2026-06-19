@@ -26,7 +26,7 @@
 <meta name="twitter:description" content="Kids build & drive by solving math, reading & Spanish. Free to start!">
 <meta name="twitter:image" content="https://stackadoo.com/og.png">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -113,6 +113,10 @@
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   #camBtn { position:absolute; top:62px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  /* 🚨 siren toggle — only shown while driving an emergency vehicle (set in JS) */
+  #sirenBtn { position:absolute; top:114px; right:10px; pointer-events:auto; font-size:20px;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
+  #sirenBtn.off { opacity:.5; filter:grayscale(.8); }
   #hotbar { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
     display:flex; gap:8px; pointer-events:auto; }
   .hotSlot { width:74px; padding:6px 4px; text-align:center; background:rgba(255,255,255,.85);
@@ -512,6 +516,7 @@
     #selfieBtn { top:260px; right:8px; }
     #photoBtn { top:302px; right:8px; }
     #cursorBtn { top:344px; right:8px; }
+    #sirenBtn { font-size:17px; padding:5px 8px; top:386px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
     #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
     #btnUndoTouch { right:110px; bottom:134px; background:rgba(196,238,201,.92); }
@@ -826,6 +831,7 @@
     #selfieBtn { top:48px; right:52px; }
     #photoBtn  { top:48px; right:96px; }
     #cursorBtn { top:48px; right:140px; }
+    #sirenBtn  { font-size:14px; padding:5px 7px; top:48px; right:184px; }
     #modeBtn, #undoBtn { display:none; }
     .touchBtn { font-size:13px; padding:10px 12px; }
     #btnAction    { right:14px;  bottom:116px; }
@@ -1063,6 +1069,7 @@
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes">🧍</button>
+  <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
   <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
@@ -4921,6 +4928,7 @@ function toggleDrive() {
   const a = activeCarObj();
   if (player.driving) {                                   // hop off
     player.driving = null; Sound.engineStop(); Sound.sirenStop();
+    const sb = $('sirenBtn'); if (sb) sb.style.display = 'none';
     if (a) { a.group.visible = true; player.pos.set(a.group.position.x + 1.2, 0, a.group.position.z); }   // re-show the parked car
     player.vel.set(0, 0, 0);
     if (cockpit) cockpit.visible = false;
@@ -4935,8 +4943,24 @@ function toggleDrive() {
   if (document.pointerLockElement) document.exitPointerLock();
   const prof = engineProfileFor(a.def.id);
   Sound.engineStart(prof); Sound.honk(prof);
-  if (a.def.police || a.def.emergency) { Sound.sirenStart(); toast(a.def.emoji + ' Sirens on! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800); }
-  else toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
+  const sb = $('sirenBtn');
+  if (a.def.police || a.def.emergency) {
+    player.sirenOn = true; Sound.sirenStart();
+    if (sb) { sb.style.display = 'block'; sb.classList.remove('off'); }
+    toast(a.def.emoji + ' Sirens on! Tap 🚨 to switch them off • 👁️ first-person • ⭐ USE to hop off.', 3800);
+  } else {
+    if (sb) sb.style.display = 'none';
+    toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
+  }
+}
+// 🚨 flip the siren on/off from inside the truck (separate from the main sound button)
+function toggleSiren() {
+  if (!player.driving) return;
+  const d = player.driving.def; if (!(d && (d.police || d.emergency))) return;
+  player.sirenOn = !player.sirenOn;
+  const sb = $('sirenBtn');
+  if (player.sirenOn) { Sound.sirenStart(); if (sb) sb.classList.remove('off'); toast('🚨 Siren on', 900); }
+  else { Sound.sirenStop(); if (sb) sb.classList.add('off'); toast('🔇 Siren off', 900); }
 }
 // park the active car (or hide all) whenever a game starts/loads
 function syncCars() {
@@ -7357,29 +7381,61 @@ function ensureBedProps() {
 /* 🚒 first-person cockpit — an instrument panel with real dials (speed/fuel/temp), a
    steering wheel, and a passenger seat. One shared interior, shown only in first-person. */
 let cockpit = null;
-function dashTexture() {
-  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 132;
+// Dashboard art for the first-person cockpit. `style` tailors it per vehicle:
+//   'fire'  → real fire-truck cab: full gauge cluster + PUMP/LADDER/BEACON switch panel (red trim)
+//   'police'→ cruiser: gauge cluster + LIGHTS/SIREN/RADIO switch panel (blue trim)
+//   default → a clean car gauge cluster + simple radio
+function dashTexture(style) {
+  const W = 528, H = 200, fire = style === 'fire', police = style === 'police', emerg = fire || police;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
-  c.fillStyle = '#14171c'; c.fillRect(0, 0, 320, 132);
-  c.strokeStyle = '#2c313a'; c.lineWidth = 6; c.strokeRect(3, 3, 314, 126);
-  const dial = (cx, cy, r, frac, label, col) => {
-    c.fillStyle = '#0a0c10'; c.beginPath(); c.arc(cx, cy, r, 0, 6.3); c.fill();
-    c.strokeStyle = '#3a414c'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, r, 0, 6.3); c.stroke();
-    c.strokeStyle = '#737c88'; c.lineWidth = 2;
+  const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+  // moulded dash + colour-coded top accent bar (red fire / blue police)
+  const grad = c.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, '#22262d'); grad.addColorStop(1, '#0f1216');
+  c.fillStyle = grad; c.fillRect(0, 0, W, H);
+  if (emerg) { c.fillStyle = fire ? '#c4231d' : '#1c4fb0'; c.fillRect(0, 0, W, 12); }
+  c.strokeStyle = '#2c313a'; c.lineWidth = 8; c.strokeRect(5, 5, W - 10, H - 10);
+  // a round gauge with ticks, redline and needle
+  const dial = (cx, cy, r, frac, label, col, redline) => {
+    c.fillStyle = '#080a0d'; c.beginPath(); c.arc(cx, cy, r, 0, 6.3); c.fill();
+    c.strokeStyle = '#454c57'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, r, 0, 6.3); c.stroke();
+    if (redline) { c.strokeStyle = '#e0352b'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, r - 4, Math.PI * 0.75 + 0.78 * Math.PI * 1.5, Math.PI * 0.75 + Math.PI * 1.5); c.stroke(); }
+    c.strokeStyle = '#7c8592'; c.lineWidth = 2;
     for (let i = 0; i <= 8; i++) { const a = Math.PI * 0.75 + i / 8 * Math.PI * 1.5; c.beginPath(); c.moveTo(cx + Math.cos(a) * (r - 2), cy + Math.sin(a) * (r - 2)); c.lineTo(cx + Math.cos(a) * (r - 8), cy + Math.sin(a) * (r - 8)); c.stroke(); }
     const na = Math.PI * 0.75 + frac * Math.PI * 1.5;
-    c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(na) * (r - 5), cy + Math.sin(na) * (r - 5)); c.stroke();
-    c.fillStyle = col; c.beginPath(); c.arc(cx, cy, 4, 0, 6.3); c.fill();
-    c.fillStyle = '#b6bdc8'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(label, cx, cy + r + 14);
+    c.strokeStyle = col; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(na) * (r - 5), cy + Math.sin(na) * (r - 5)); c.stroke(); c.lineCap = 'butt';
+    c.fillStyle = '#e8edf3'; c.beginPath(); c.arc(cx, cy, 4, 0, 6.3); c.fill();
+    if (label) { c.fillStyle = '#aeb6c2'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(label, cx, cy + r + 13); }
   };
-  dial(82, 58, 46, 0.6, 'SPEED', '#37c3ff');
-  dial(200, 52, 32, 0.82, 'FUEL', '#ffd60a');
-  dial(268, 52, 24, 0.42, 'TEMP', '#ff5a4d');
-  c.fillStyle = '#ff453a'; c.beginPath(); c.arc(176, 112, 5, 0, 6.3); c.fill();
-  c.fillStyle = '#32d74b'; c.beginPath(); c.arc(198, 112, 5, 0, 6.3); c.fill();
-  c.fillStyle = '#ffd60a'; c.beginPath(); c.arc(220, 112, 5, 0, 6.3); c.fill();
-  c.fillStyle = '#0c0e12'; c.fillRect(244, 100, 64, 22); c.fillStyle = '#37c3ff'; c.font = 'bold 14px monospace'; c.textAlign = 'center'; c.fillText('128', 276, 115);
-  return new THREE.CanvasTexture(cv);
+  // LEFT: instrument cluster — two big dials + a row of small gauges (like the real cab)
+  dial(96, 76, 52, 0.62, 'SPEED', '#37c3ff', true);
+  dial(212, 76, 44, emerg ? 0.7 : 0.5, emerg ? 'PSI' : 'RPM', '#9be36b', true);
+  const small = [['FUEL', 0.8, '#ffd60a'], ['TEMP', 0.45, '#ff7a4d'], ['AIR', 0.66, '#37c3ff'], ['OIL', 0.55, '#c9d1dc']];
+  small.forEach((s, i) => dial(72 + i * 56, 158, 21, s[1], s[0], s[2]));
+  // RIGHT: switch panel — the signature fire-truck control bank (or a simple radio on a normal car)
+  if (emerg) {
+    c.fillStyle = '#181c22'; rr(300, 26, 214, 150, 8); c.fill(); c.strokeStyle = '#373d47'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = fire ? '#ff7a5a' : '#7aa6ff'; c.font = 'bold 12px sans-serif'; c.textAlign = 'left'; c.fillText(fire ? 'TRUCK CONTROL' : 'PATROL CONTROL', 312, 44);
+    const sw = (x, y, label, led, on) => {
+      c.fillStyle = '#0a0c10'; rr(x, y, 24, 15, 4); c.fill(); c.strokeStyle = '#3a414c'; c.lineWidth = 1.5; c.stroke();
+      c.fillStyle = on ? '#d3dae4' : '#596270'; rr(x + (on ? 13 : 2), y + 2, 9, 11, 3); c.fill();
+      if (on) { c.shadowColor = led; c.shadowBlur = 7; } c.fillStyle = led; c.beginPath(); c.arc(x + 33, y + 7, 4, 0, 6.3); c.fill(); c.shadowBlur = 0;
+      c.fillStyle = '#b7bfca'; c.font = 'bold 11px sans-serif'; c.textAlign = 'left'; c.fillText(label, x + 44, y + 11);
+    };
+    const rows = fire
+      ? [['PUMP', '#ff3b30', 1], ['LADDER', '#ffd60a', 0], ['BEACON', '#ff3b30', 1], ['SIREN', '#ff3b30', 1], ['FLOOD', '#32d74b', 1], ['HORN', '#ffd60a', 0]]
+      : [['LIGHTS', '#ff3b30', 1], ['SIREN', '#ff3b30', 1], ['RADIO', '#32d74b', 1], ['SPOT', '#ffd60a', 0], ['PA', '#32d74b', 0], ['CAM', '#32d74b', 1]];
+    rows.forEach((r, i) => sw(312 + (i % 2) * 102, 56 + ((i / 2) | 0) * 30, r[0], r[1], r[2]));
+    // green LCD water/pressure readout
+    c.fillStyle = '#06120a'; rr(312, 150, 190, 20, 3); c.fill();
+    c.fillStyle = '#39e06a'; c.font = 'bold 13px monospace'; c.textAlign = 'left'; c.fillText(fire ? 'WATER 80%   PSI 120' : 'UNIT 12   CODE 3', 320, 165);
+  } else {
+    c.fillStyle = '#181c22'; rr(330, 60, 168, 80, 8); c.fill(); c.strokeStyle = '#373d47'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#0c1810'; rr(342, 74, 144, 24, 3); c.fill();
+    c.fillStyle = '#39e06a'; c.font = 'bold 14px monospace'; c.textAlign = 'left'; c.fillText('FM 98.5', 352, 91);
+    for (let i = 0; i < 4; i++) { c.fillStyle = '#2a2f37'; rr(346 + i * 36, 110, 28, 18, 4); c.fill(); }
+  }
+  const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; return t;
 }
 function buildCockpit() {
   const g = new THREE.Group();
@@ -7389,8 +7445,9 @@ function buildCockpit() {
   box(2.8, 0.1, 1.9, 0, 0.28, 0.55, 0x1b1e24);                // floor
   box(2.6, 0.42, 0.5, 0, 0.6, 1.18, DASH);                    // low dashboard body (keeps the windscreen big)
   // instrument panel with real dials, facing the driver
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.72), new THREE.MeshBasicMaterial({ map: dashTexture() }));
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.74), new THREE.MeshBasicMaterial({ map: dashTexture('default') }));
   panel.position.set(0, 0.84, 0.98); panel.rotation.y = Math.PI; panel.rotation.x = 0.42; g.add(panel);
+  g.userData.panel = panel; g.userData.dashStyle = 'default';
   // steering wheel (driver on the left) — top arc sits in the lower view
   const wg = new THREE.Group(); wg.position.set(-0.5, 0.7, 0.8); wg.rotation.x = 1.25; g.add(wg);
   wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 12, 30), M(0x14161a)));
@@ -7403,6 +7460,20 @@ function buildCockpit() {
   box(0.12, 0.9, 1.9, 1.2, 0.66, 0.55, TRIM); box(0.12, 0.9, 1.9, -1.2, 0.66, 0.55, TRIM);   // door interiors
   g.visible = false; scene.add(g);
   return g;
+}
+// swap the dashboard art to match the vehicle you're driving (fire truck cab vs cruiser vs car)
+function setCockpitDash(style) {
+  if (!cockpit || cockpit.userData.dashStyle === style) return;   // only rebuild when it actually changes
+  const p = cockpit.userData.panel; if (!p) return;
+  if (p.material.map) p.material.map.dispose();
+  p.material.map = dashTexture(style); p.material.needsUpdate = true;
+  cockpit.userData.dashStyle = style;
+}
+function dashStyleFor(def) {
+  if (!def) return 'default';
+  if (def.id === 'firetruck' || def.id === 'ambulance' || def.emergency) return 'fire';
+  if (def.police) return 'police';
+  return 'default';
 }
 function updatePlayer(dt) {
   if (player.driving) {                                   // 🛻 driving a vehicle
@@ -7489,6 +7560,7 @@ function updatePlayer(dt) {
       v.group.visible = !closed;
       if (closed) {
         if (!cockpit) cockpit = buildCockpit();
+        setCockpitDash(dashStyleFor(v.def));
         cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
@@ -10196,6 +10268,7 @@ function toggleCamera() {
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
+$('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
 function toggleSelfie() {
   G.selfie = !G.selfie;
   if (G.selfie && G.firstPerson) { G.firstPerson = false; $('camBtn').textContent = '🧍'; }   // selfie needs to see the character
