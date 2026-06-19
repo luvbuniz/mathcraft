@@ -2589,33 +2589,27 @@ const AVATARS = [
     }
   },
   {
-    id: 'mermaid', name: 'Mermaid 🧜‍♀️',
+    id: 'fairy', name: 'Fairy 🧚',
     build() {
-      const skin = 0xFFD9B3, tl = 0x2EC4B6, tlD = 0x179b8f, tlL = 0x5fe0d2, hair = 0xE0533B;
-      const g = new THREE.Group();
-      box(g, 0.44, 0.3, 0.32, tl, 0, 0.52, 0);                        // tail — top
-      box(g, 0.36, 0.26, 0.28, tl, 0, 0.28, -0.03);                  // tail — middle
-      box(g, 0.26, 0.22, 0.22, tlD, 0, 0.08, -0.06);                 // tail — narrow base
-      [0.5, 0.34, 0.18].forEach(yy => box(g, 0.45, 0.04, 0.02, tlL, 0, yy, 0.15));   // scale highlight rows
-      const fL = box(g, 0.36, 0.06, 0.32, tlL, -0.17, 0.02, -0.16); fL.rotation.z = 0.6;   // fan fluke
-      const fR = box(g, 0.36, 0.06, 0.32, tlL, 0.17, 0.02, -0.16); fR.rotation.z = -0.6;
-      box(g, 0.44, 0.42, 0.26, skin, 0, 0.86, 0);                    // torso
-      box(g, 0.16, 0.15, 0.1, 0xC2185B, -0.12, 0.93, 0.13);          // shell bra
-      box(g, 0.16, 0.15, 0.1, 0xC2185B, 0.12, 0.93, 0.13);
-      box(g, 0.05, 0.04, 0.04, 0xFFE680, -0.12, 0.93, 0.18);         // pearls
-      box(g, 0.05, 0.04, 0.04, 0xFFE680, 0.12, 0.93, 0.18);
-      const arms = [limb(g, 0.13, 0.46, 0.13, skin, -0.31, 1.06, 0), limb(g, 0.13, 0.46, 0.13, skin, 0.31, 1.06, 0)];
-      arms.forEach(A => box(A, 0.15, 0.14, 0.15, skin, 0, -0.46, 0));  // hands
-      const head = new THREE.Group(); head.position.set(0, 1.4, 0); g.add(head);
-      box(head, 0.48, 0.48, 0.48, skin, 0, 0, 0);
-      addEyes(head, 0x35506e, 0.25);
-      box(head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.25);          // smile
-      box(head, 0.54, 0.22, 0.54, hair, 0, 0.19, -0.02);            // hair crown
-      box(head, 0.18, 0.62, 0.16, hair, -0.3, -0.16, -0.03);        // long flowing locks
-      box(head, 0.18, 0.62, 0.16, hair, 0.3, -0.16, -0.03);
-      box(head, 0.5, 0.34, 0.14, hair, 0, -0.12, -0.26);           // back hair
-      box(head, 0.09, 0.09, 0.05, 0xFFB703, 0.25, 0.13, 0.16);     // starfish clip
-      return { group: g, legs: [], arms, head };
+      const dress = 0x57C9B0, dressD = 0x3CAE97, skin = 0xFFD9B3, hair = 0xF6C544;   // mint gown, golden hair
+      const a = buildBiped(dress, skin, dress, skin);                  // proper biped → walks like the rest
+      addEyes(a.head, 0x35506e, 0.26);
+      box(a.head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.26);          // smile
+      box(a.head, 0.54, 0.2, 0.54, hair, 0, 0.2, 0);                   // hair top
+      box(a.head, 0.2, 0.52, 0.16, hair, -0.3, -0.12, -0.02);          // side locks
+      box(a.head, 0.2, 0.52, 0.16, hair, 0.3, -0.12, -0.02);
+      box(a.head, 0.12, 0.12, 0.05, 0xFF7AAE, 0.27, 0.16, 0.12);       // flower hair clip
+      box(a.head, 0.05, 0.05, 0.05, 0xFFE680, 0.27, 0.16, 0.16);       // flower center
+      box(a.group, 0.62, 0.34, 0.42, dress, 0, 0.45, 0);               // gown skirt
+      box(a.group, 0.74, 0.14, 0.5, dressD, 0, 0.24, 0);               // gown hem
+      box(a.group, 0.1, 0.1, 0.06, 0xFFE680, 0, 0.95, 0.16);           // sparkle brooch
+      // 🦋 translucent fairy wings on the back (angled out so they read in profile)
+      const wing = (x, y, w, h, col, ry, rz) => { const m = box(a.group, w, h, 0.03, col, x, y, -0.22); m.rotation.y = ry; m.rotation.z = rz; };
+      wing(-0.28, 0.98, 0.34, 0.5, 0xCDEBFF, 0.5, 0.25);
+      wing(0.28, 0.98, 0.34, 0.5, 0xCDEBFF, -0.5, -0.25);
+      wing(-0.32, 0.6, 0.26, 0.34, 0xE6D6FF, 0.5, 0.35);
+      wing(0.32, 0.6, 0.26, 0.34, 0xE6D6FF, -0.5, -0.35);
+      return a;
     }
   },
   {
