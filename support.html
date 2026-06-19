@@ -8,6 +8,11 @@
 <meta name="description" content="Support, privacy policy, and terms for Stackadoo, the kid-safe educational building game by Buni LLC. No ads, no chat, no data collection.">
 <meta name="theme-color" content="#3CA45C">
 <link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+// Capture (and suppress) the browser's auto install prompt so our own "Install" button can offer it.
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window._installPrompt = e; });</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -94,7 +99,7 @@
   <!-- FAQ -->
   <section id="faq">
     <h2 class="sec">Frequently asked</h2>
-    <details open><summary>Do I need to download anything?</summary><p>No. Stackadoo runs right in your browser. On a tablet or phone you can &ldquo;Add to Home Screen&rdquo; for an app-like icon that even works offline.</p></details>
+    <details open><summary>Do I need to download anything?</summary><p>No. Stackadoo runs right in your browser. On a tablet or phone you can &ldquo;Add to Home Screen&rdquo; for an app-like icon that even works offline.</p><p id="installWrap" style="display:none"><button id="installBtn" style="font-family:var(--display);font-weight:600;font-size:16px;color:#fff;background:var(--green);border:none;border-radius:12px;padding:11px 18px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)">📲 Install Stackadoo as an app</button></p></details>
     <details><summary>Is it really safe for kids?</summary><p>Yes. There&rsquo;s no advertising, no chat, no contact with strangers, and no purchasable in-game currency. The only purchase is one optional unlock, made by a parent.</p></details>
     <details><summary>What ages is it for?</summary><p>It&rsquo;s tuned for grades 2&ndash;5 (roughly ages 7&ndash;11), with difficulty that adapts up and down to fit your child.</p></details>
     <details><summary>What do I get when I unlock?</summary><p>Math Meadow is free forever. The one-time unlock makes you a <strong>Founding Family</strong>: you get the early/beta version other parents don&rsquo;t have yet, the paid worlds (Reading Town today), <strong>and every world and update we add later &mdash; free, for life.</strong> One payment, never again, no subscription.</p></details>
@@ -170,5 +175,27 @@
   </div>
 </footer>
 <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+<script>
+  // 📲 "Install as app" button — only on phones/tablets that aren't already installed.
+  (function(){
+    var wrap = document.getElementById('installWrap'), btn = document.getElementById('installBtn');
+    if (!wrap || !btn) return;
+    var standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    var isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+    if (standalone || !isTouch) return;
+    wrap.style.display = '';
+    var isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    btn.onclick = function(){
+      if (window._installPrompt) {
+        window._installPrompt.prompt();
+        window._installPrompt.userChoice.then(function(){ window._installPrompt = null; wrap.style.display = 'none'; });
+      } else if (isiOS) {
+        alert('To install on iPhone/iPad:\n\n1) Tap the Share button (the square with an up-arrow).\n2) Scroll down and tap “Add to Home Screen.”');
+      } else {
+        alert('To install:\n\nOpen your browser menu (⋮ in the corner) and tap “Install app” or “Add to Home Screen.”');
+      }
+    };
+  })();
+</script>
 </body>
 </html>
