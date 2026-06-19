@@ -7607,6 +7607,15 @@ function updatePlayer(dt) {
   player.pos.z = Math.max(-lim, Math.min(lim, player.pos.z));
   if (player.pos.y < -5) { player.pos.copy(SPAWN); player.vel.set(0, 0, 0); }
 
+  // 🆘 anti-stuck: if you're pushing to move but wedged in place, hop to pop free
+  if (moving && player.onGround) {
+    const moved = Math.hypot(player.pos.x - (player._lastX != null ? player._lastX : player.pos.x),
+                             player.pos.z - (player._lastZ != null ? player._lastZ : player.pos.z));
+    player._stuckT = moved < 0.025 ? (player._stuckT || 0) + dt : 0;
+    if (player._stuckT > 0.8) { player.vel.y = jumpV; player.onGround = false; player._stuckT = 0; }
+  } else player._stuckT = 0;
+  player._lastX = player.pos.x; player._lastZ = player.pos.z;
+
   // footsteps
   if (moving && player.onGround) {
     player.stepTimer -= dt;
