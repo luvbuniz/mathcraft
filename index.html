@@ -17,6 +17,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script>
+<!-- Don't greet newcomers with the browser's automatic "Install app?" pop-up — it's off-putting on a
+     first visit. Suppress it; install stays available via the browser menu (⋮ → Install). -->
+<script>window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window._installPrompt = e; });</script>
 <title>Stackadoo — Build Worlds. Solve Math. The math game kids actually ask to play.</title>
 <meta name="description" content="Stackadoo is an educational building game for kids in grades 2–5. They earn blocks by solving math, reading, spelling & grammar — then build whole worlds. No ads, no chat, kid-safe. Free to play.">
 <meta name="theme-color" content="#3CA45C">

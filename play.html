@@ -11547,6 +11547,10 @@ addEventListener('resize', () => {
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+// Don't nag newcomers with the browser's automatic "Install app?" pop-up. Suppress it and stash
+// the event so we *could* offer install from a button later. Install is still available any time
+// via the browser menu (⋮ → Install / Add to Home Screen).
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window._installPrompt = e; });
 
 /* ===================== ANONYMOUS USAGE PINGS (for the Admin page) =====================
    No names, emails, or personal data — just a random per-device tag so the private
