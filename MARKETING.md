@@ -26,6 +26,31 @@ actually loves.
    *"your 3rd grader is doing 4th-grade-level math."* Aspirational, screenshot-worthy.
    (Framed as growth, never "behind.")
 
+## Positioning — the gap we fill
+The two apps every parent already knows leave a hole right in the middle:
+- **IXL** = genuinely educational, but it *feels like grunt work*. Kids see it as
+  homework. (My own son dodges it by playing the baby first-grade levels so he can
+  "win" without effort.)
+- **ClassDojo / Dojo Island** = genuinely *fun*, but parents and schools don't count
+  it as learning — it's the Friday reward, not the work.
+
+**Stackadoo bridges both: the learning IS the fuel.** You answer math/reading/spelling/
+grammar to earn the coins that let you drive the fire truck, build the house, ride the
+water slide. It's not "do your work, *then* you may play" — the work and the play are
+the same loop. That's the line: *"The fun isn't the reward for the learning — the
+learning is how you unlock the fun."*
+
+### Two learning styles, one game
+This is the most honest, relatable hook I have — and it's true:
+- **The reluctant kid (my Leo):** needs a push. Pulled in by the driving and building;
+  kept honest by levels that actually require ~10 questions, so he can't coast on baby
+  problems. The game gives him a reason to try harder than he wants to.
+- **The motivated kid (my Fiona):** all about levels, mastery, getting ahead. The
+  star/level system and the grown-ups dashboard feed exactly that drive.
+
+One game that works for *both* kinds of kid in the same house is a parent's dream —
+lead with this in the founder story.
+
 ## The offer (free → paid)
 - **Math Meadow is free forever.** Lead with this — it's polished and the math is
   verified correct at every level.
