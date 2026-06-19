@@ -5522,8 +5522,10 @@ function treasureTap(x, y, cell) {
 }
 function nextAdjective() {
   const o = pick(QUEST_OBJECTS); sideQuest.obj = o; sideQuest.answer = pick(o.adj);
-  const distract = o.no.concat(QUEST_OBJECTS.filter(x => x !== o).reduce((a, x) => a.concat(x.adj), [])).filter(w => !o.adj.includes(w));
-  sideQuest.options = fourChoices(sideQuest.answer, distract);
+  // Distractors come ONLY from this object's curated "clearly wrong" list (scaly/giant/metal for a bunny).
+  // Pulling adjectives from other objects backfired: words like "pretty" or "bright" also describe a bunny,
+  // so the question had more than one defensible answer.
+  sideQuest.options = fourChoices(sideQuest.answer, o.no);
 }
 function renderAdjective() {
   const o = sideQuest.obj;
@@ -7454,6 +7456,13 @@ function buildCockpit() {
   wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.04), M(0x14161a)));
   wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.04), M(0x14161a)));
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 16), M(0xcc2b2b)); hub.rotation.x = Math.PI / 2; wg.add(hub);
+  // 🙌 driver's hands gripping the wheel at 9 & 3 — the thing that makes first-person read as "I'm driving"
+  const SKIN = (player.skin || 0xF0C9A0), hand = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(SKIN)); m.position.set(x, y, z); wg.add(m); return m; };
+  [-1, 1].forEach(s => {
+    hand(0.13, 0.24, 0.15, s * 0.33, 0, 0.03);        // palm wrapping the rim
+    hand(0.12, 0.24, 0.08, s * 0.285, 0, 0.11);       // fingers curling toward the driver
+    hand(0.08, 0.09, 0.12, s * 0.30, 0.13, 0.06);     // thumb on top of the rim
+  });
   // passenger seat (right) + driver seat hint (left)
   box(0.6, 0.16, 0.6, 0.66, 0.4, 0.2, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.05, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.05, 0x6e2a2a);
   box(0.6, 0.16, 0.6, -0.5, 0.4, 0.2, 0x44494f);
