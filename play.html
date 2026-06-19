@@ -4953,15 +4953,27 @@ function toggleDrive() {
     toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
   }
 }
-// 🚨 flip the siren on/off from inside the truck (separate from the main sound button)
-function toggleSiren() {
+// 🚨 emergency lights + siren — one shared state (player.sirenOn), controlled by BOTH the
+// dashboard switch (tap it in first-person) and the HUD button. `false` = switched off.
+function applyEmVisual(on) {                          // reflect the state on the 3D dash switch
+  if (!cockpit) return;
+  if (cockpit.userData.emLever) cockpit.userData.emLever.rotation.x = on ? 0 : 0.7;   // lever flips down when off
+  if (cockpit.userData.emLed) cockpit.userData.emLed.material.color.setHex(on ? 0xff3b30 : 0x3a1010);
+}
+function setEmergency(on) {
+  player.sirenOn = on;
+  if (on) Sound.sirenStart(); else Sound.sirenStop();   // lights are gated on player.sirenOn in the drive loop
+  applyEmVisual(on);
+  const sb = $('sirenBtn'); if (sb) sb.classList.toggle('off', !on);
+  if (cockpit) cockpit.userData.emSync = on;
+}
+function toggleEmergency() {
   if (!player.driving) return;
   const d = player.driving.def; if (!(d && (d.police || d.emergency))) return;
-  player.sirenOn = !player.sirenOn;
-  const sb = $('sirenBtn');
-  if (player.sirenOn) { Sound.sirenStart(); if (sb) sb.classList.remove('off'); toast('🚨 Siren on', 900); }
-  else { Sound.sirenStop(); if (sb) sb.classList.add('off'); toast('🔇 Siren off', 900); }
+  setEmergency(player.sirenOn === false);            // flip (default/undefined counts as ON)
+  toast(player.sirenOn ? '🚨 Lights & siren ON' : '🔕 Lights & siren OFF', 1000);
 }
+function toggleSiren() { toggleEmergency(); }        // HUD 🚨 button shares the same control
 // park the active car (or hide all) whenever a game starts/loads
 function syncCars() {
   player.driving = null; Sound.engineStop(); Sound.sirenStop();
@@ -7454,6 +7466,15 @@ function buildCockpit() {
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.74), new THREE.MeshBasicMaterial({ map: dashTexture('default') }));
   panel.position.set(0, 0.84, 0.98); panel.rotation.y = Math.PI; panel.rotation.x = 0.42; g.add(panel);
   g.userData.panel = panel; g.userData.dashStyle = 'default';
+  // 🚨 physical emergency switch on the dash — tap it in first-person to kill lights + siren
+  const swG = new THREE.Group(); swG.position.set(0.62, 0.9, 1.0); swG.rotation.x = 0.42; g.add(swG);
+  swG.add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.17, 0.06), M(0x300f0f)));      // red mount plate
+  const emLever = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.06), M(0xd23a2a)); // the toggle lever
+  emLever.position.set(-0.035, 0.015, 0.05); swG.add(emLever);
+  const emLed = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3b30 }));
+  emLed.position.set(0.06, 0.045, 0.05); swG.add(emLed);
+  swG.add(new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.32, 0.18), new THREE.MeshBasicMaterial({ visible: false })));  // generous tap pad
+  g.userData.emSwitch = swG; g.userData.emLever = emLever; g.userData.emLed = emLed;
   // steering wheel (driver on the left) — top arc sits in the lower view
   const wg = new THREE.Group(); wg.position.set(-0.5, 0.7, 0.8); wg.rotation.x = 1.25; g.add(wg);
   wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 12, 30), M(0x14161a)));
@@ -7547,10 +7568,16 @@ function updatePlayer(dt) {
     }
     Sound.engineSet(Math.min(1, wsp / 11));              // engine revs with speed
     if (v.def && (v.def.police || v.def.emergency) && v.group.userData.policeLights) {   // 🔴🔵 flashing light bar + siren
-      const on = Math.sin(tnow / 130) > 0, L = v.group.userData.policeLights;
-      L.redMat.emissive.setHex(on ? 0xff2a2a : 0x300000);
-      L.blueMat.emissive.setHex(on ? 0x001033 : 0x3a7bff);
-      Sound.sirenSet();
+      const L = v.group.userData.policeLights;
+      if (player.sirenOn === false) {                    // switched off at the dash → go dark, no wail
+        L.redMat.emissive.setHex(0x180000);
+        L.blueMat.emissive.setHex(0x000820);
+      } else {
+        const on = Math.sin(tnow / 130) > 0;
+        L.redMat.emissive.setHex(on ? 0xff2a2a : 0x300000);
+        L.blueMat.emissive.setHex(on ? 0x001033 : 0x3a7bff);
+        Sound.sirenSet();
+      }
     }
     if (v.group.userData.wheels) v.group.userData.wheels.forEach(w => w.rotation.x -= wsp * dt * 1.5);
     if (player.avatar) {                                 // show the rider on open vehicles (bikes, boats, convertible)
@@ -7574,6 +7601,10 @@ function updatePlayer(dt) {
       if (closed) {
         if (!cockpit) cockpit = buildCockpit();
         setCockpitDash(dashStyleFor(v.def));
+        // the dash emergency switch only exists on fire/police rigs; keep its lever/LED in sync
+        const emV = dashStyleFor(v.def) !== 'default';
+        if (cockpit.userData.emSwitch) cockpit.userData.emSwitch.visible = emV;
+        if (emV && cockpit.userData.emSync !== player.sirenOn) { applyEmVisual(player.sirenOn !== false); cockpit.userData.emSync = player.sirenOn; }
         cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
@@ -10096,6 +10127,11 @@ $('shopPopup').addEventListener('click', e => { if (e.target === $('shopPopup'))
 /* ============================ BUILD / INTERACT ============================ */
 const raycaster = new THREE.Raycaster();
 function interact(ndcX, ndcY, action) {  // action: 'place' | 'break'
+  // 🚨 first-person fire-truck/cruiser: tap the physical dash switch to toggle lights + siren
+  if (player.driving && G.firstPerson && cockpit && cockpit.visible && cockpit.userData.emSwitch && cockpit.userData.emSwitch.visible) {
+    raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera); raycaster.far = 6;
+    if (raycaster.intersectObject(cockpit.userData.emSwitch, true)[0]) { Sound.click(); toggleEmergency(); return; }
+  }
   raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
   // Generous reach so kids can TAP a faraway/high spot to build or remove —
   // no need to walk the avatar over or jump up to reach roof tiles & sky blocks.
