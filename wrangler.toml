@@ -1,0 +1,9 @@
+name = "stackadoo"
+compatibility_date = "2025-01-01"
+
+# Stackadoo is a plain static site (HTML/JS/images, no build step). This tells
+# Cloudflare Workers Builds to just serve the files in the repo root as static
+# assets — no Worker script needed. This is what stops the "Workers Builds
+# failed" emails: without it, the build has nothing to deploy and errors out.
+[assets]
+directory = "./"

@@ -1,0 +1,4 @@
+# Files in the repo that should NOT be published to the public website.
+# (Code still lives on GitHub; this only controls what Cloudflare serves.)
+admin.html
+*.md

@@ -1,7 +1,7 @@
 # 📣 Stackadoo — Marketing Brief
 
 Paste this into a fresh "marketing" Claude chat so it starts with full context.
-Keep code work in the other chat. *(Last refreshed: 18 Jun 2026.)*
+Keep code work in the other chat. *(Last refreshed: 19 Jun 2026 — launch week.)*
 
 ## What it is
 **Stackadoo** (stackadoo.com) — a free 3D voxel game where kids do **math, reading,
@@ -40,6 +40,15 @@ water slide. It's not "do your work, *then* you may play" — the work and the p
 the same loop. That's the line: *"The fun isn't the reward for the learning — the
 learning is how you unlock the fun."*
 
+### Nobody owns "educational block games" yet — so let's claim it
+Searched **"educational block games" on the Play Store** and what actually ranks is:
+Ball Sort, Water Sort, Block Puzzle, Block Puzzle, Block Puzzle, Block Crush — i.e.
+**Tetris-style puzzles that just have "block" in the name.** They're not educational at
+all. The one true building game (Block Craft 3D, 500M+ installs) has **zero learning.**
+So the exact phrase parents type is *starving for a real answer.* Use those words
+everywhere — store listing, homepage, captions: **"the educational block game that's
+actually a game."** It's a true, ownable category line.
+
 ### Two learning styles, one game
 This is the most honest, relatable hook I have — and it's true:
 - **The reluctant kid (my Leo):** needs a push. Pulled in by the driving and building;
@@ -61,6 +70,13 @@ lead with this in the founder story.
 ## Trust signals to mention
 Kid-safe: **no ads, no chat, no data collection** (COPPA-friendly, all local),
 made by a mom, 30-day no-questions refund.
+
+## No app store needed (a feature, not a limitation)
+It's a website that **installs like an app**: open stackadoo.com on a phone or tablet →
+**Add to Home Screen** → it runs full-screen with its own icon, even offline. Frame this
+as a *plus*: **no app store, no download, nothing to approve, works on any device, and
+your purchase stays yours** (no 30% store tax baked into the price). Great line for
+parents wary of app-store junk: *"No download. Just open it and play."*
 
 ---
 
