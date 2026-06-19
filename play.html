@@ -5439,18 +5439,22 @@ function buyHome(id) {
    When a kid levels up, a fun, quick, educational mini-quest pops for extra coins:
    a Treasure Map (read X,Y coordinates) or a Describing Words hunt (adjectives). */
 const QUEST_OBJECTS = [
-  { e: '🍎', n: 'apple', adj: ['red', 'round', 'sweet'], no: ['loud', 'square', 'frozen'] },
-  { e: '☀️', n: 'sun', adj: ['bright', 'hot', 'round'], no: ['cold', 'tiny', 'wet'] },
-  { e: '🐢', n: 'turtle', adj: ['slow', 'green', 'bumpy'], no: ['speedy', 'purple', 'noisy'] },
-  { e: '🍋', n: 'lemon', adj: ['yellow', 'sour', 'bumpy'], no: ['sweet', 'fluffy', 'blue'] },
-  { e: '🐰', n: 'bunny', adj: ['fluffy', 'soft', 'quick'], no: ['scaly', 'giant', 'metal'] },
-  { e: '⚽', n: 'ball', adj: ['round', 'bouncy', 'striped'], no: ['flat', 'sticky', 'sleepy'] },
-  { e: '❄️', n: 'snowflake', adj: ['cold', 'white', 'tiny'], no: ['hot', 'heavy', 'loud'] },
-  { e: '🔥', n: 'fire', adj: ['hot', 'bright', 'crackly'], no: ['cold', 'quiet', 'soft'] },
-  { e: '🌸', n: 'flower', adj: ['pretty', 'pink', 'soft'], no: ['noisy', 'metal', 'spiky'] },
-  { e: '🐘', n: 'elephant', adj: ['big', 'gray', 'heavy'], no: ['tiny', 'red', 'speedy'] },
-  { e: '🐝', n: 'bee', adj: ['buzzy', 'yellow', 'tiny'], no: ['silent', 'huge', 'square'] },
-  { e: '🦒', n: 'giraffe', adj: ['tall', 'spotted', 'long'], no: ['short', 'round', 'wet'] }
+  { e: '🍌', n: 'banana',    adj: ['yellow', 'curved', 'sweet'],   no: ['scaly', 'square', 'noisy'] },
+  { e: '🍎', n: 'apple',     adj: ['red', 'round', 'crunchy'],     no: ['furry', 'square', 'loud'] },
+  { e: '☀️', n: 'sun',       adj: ['bright', 'hot', 'round'],      no: ['cold', 'furry', 'tiny'] },
+  { e: '🐢', n: 'turtle',    adj: ['slow', 'green', 'bumpy'],      no: ['speedy', 'fiery', 'square'] },
+  { e: '🍋', n: 'lemon',     adj: ['yellow', 'sour', 'bumpy'],     no: ['furry', 'square', 'fluffy'] },
+  { e: '🐰', n: 'bunny',     adj: ['fluffy', 'soft', 'quick'],     no: ['scaly', 'metal', 'square'] },
+  { e: '⚽', n: 'ball',       adj: ['round', 'bouncy', 'striped'],  no: ['square', 'furry', 'sleepy'] },
+  { e: '❄️', n: 'snowflake', adj: ['cold', 'white', 'tiny'],       no: ['hot', 'furry', 'huge'] },
+  { e: '🔥', n: 'fire',      adj: ['hot', 'bright', 'crackly'],    no: ['cold', 'wet', 'fluffy'] },
+  { e: '🌸', n: 'flower',    adj: ['pretty', 'pink', 'soft'],      no: ['metal', 'loud', 'square'] },
+  { e: '🐘', n: 'elephant',  adj: ['big', 'gray', 'heavy'],        no: ['tiny', 'fluffy', 'square'] },
+  { e: '🐝', n: 'bee',       adj: ['buzzy', 'yellow', 'tiny'],     no: ['silent', 'huge', 'square'] },
+  { e: '🦒', n: 'giraffe',   adj: ['tall', 'spotted', 'long'],     no: ['short', 'square', 'metal'] },
+  { e: '🐱', n: 'cat',       adj: ['furry', 'soft', 'sneaky'],     no: ['scaly', 'metal', 'square'] },
+  { e: '🌳', n: 'tree',      adj: ['tall', 'green', 'leafy'],      no: ['tiny', 'metal', 'squeaky'] },
+  { e: '🐸', n: 'frog',      adj: ['green', 'jumpy', 'slimy'],     no: ['furry', 'metal', 'square'] }
 ];
 // 🔤 unscramble words — picture-hint anagrams, length scaled by level (younger = shorter)
 const ANAGRAM_WORDS = [
