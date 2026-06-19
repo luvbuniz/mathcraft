@@ -4955,10 +4955,8 @@ function toggleDrive() {
 }
 // 🚨 emergency lights + siren — one shared state (player.sirenOn), controlled by BOTH the
 // dashboard switch (tap it in first-person) and the HUD button. `false` = switched off.
-function applyEmVisual(on) {                          // reflect the state on the 3D dash switch
-  if (!cockpit) return;
-  if (cockpit.userData.emLever) cockpit.userData.emLever.rotation.x = on ? 0 : 0.7;   // lever flips down when off
-  if (cockpit.userData.emLed) cockpit.userData.emLed.material.color.setHex(on ? 0xff3b30 : 0x3a1010);
+function applyEmVisual(on) {                          // redraw the panel art so SIREN/BEACON show the state
+  if (cockpit && cockpit.userData.dashStyle) setCockpitDash(cockpit.userData.dashStyle, on);
 }
 function setEmergency(on) {
   player.sirenOn = on;
@@ -7403,7 +7401,8 @@ let cockpit = null;
 //   'fire'  → real fire-truck cab: full gauge cluster + PUMP/LADDER/BEACON switch panel (red trim)
 //   'police'→ cruiser: gauge cluster + LIGHTS/SIREN/RADIO switch panel (blue trim)
 //   default → a clean car gauge cluster + simple radio
-function dashTexture(style) {
+function dashTexture(style, emOn) {
+  if (emOn === undefined) emOn = true;                 // emergency lights+siren state, drawn on the SIREN/BEACON switches
   const W = 528, H = 200, fire = style === 'fire', police = style === 'police', emerg = fire || police;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
@@ -7441,12 +7440,13 @@ function dashTexture(style) {
       c.fillStyle = '#b7bfca'; c.font = 'bold 11px sans-serif'; c.textAlign = 'left'; c.fillText(label, x + 44, y + 11);
     };
     const rows = fire
-      ? [['PUMP', '#ff3b30', 1], ['LADDER', '#ffd60a', 0], ['BEACON', '#ff3b30', 1], ['SIREN', '#ff3b30', 1], ['FLOOD', '#32d74b', 1], ['HORN', '#ffd60a', 0]]
-      : [['LIGHTS', '#ff3b30', 1], ['SIREN', '#ff3b30', 1], ['RADIO', '#32d74b', 1], ['SPOT', '#ffd60a', 0], ['PA', '#32d74b', 0], ['CAM', '#32d74b', 1]];
+      ? [['PUMP', '#ff3b30', 1], ['LADDER', '#ffd60a', 0], ['BEACON', '#ff3b30', emOn ? 1 : 0], ['SIREN', '#ff3b30', emOn ? 1 : 0], ['FLOOD', '#32d74b', 1], ['HORN', '#ffd60a', 0]]
+      : [['LIGHTS', '#ff3b30', emOn ? 1 : 0], ['SIREN', '#ff3b30', emOn ? 1 : 0], ['RADIO', '#32d74b', 1], ['SPOT', '#ffd60a', 0], ['PA', '#32d74b', 0], ['CAM', '#32d74b', 1]];
     rows.forEach((r, i) => sw(312 + (i % 2) * 102, 56 + ((i / 2) | 0) * 30, r[0], r[1], r[2]));
-    // green LCD water/pressure readout
-    c.fillStyle = '#06120a'; rr(312, 150, 190, 20, 3); c.fill();
-    c.fillStyle = '#39e06a'; c.font = 'bold 13px monospace'; c.textAlign = 'left'; c.fillText(fire ? 'WATER 80%   PSI 120' : 'UNIT 12   CODE 3', 320, 165);
+    // green LCD readout — flips to a clear OFF message when the lights & siren are switched off
+    c.fillStyle = emOn ? '#06120a' : '#1a1206'; rr(312, 150, 190, 20, 3); c.fill();
+    c.fillStyle = emOn ? '#39e06a' : '#ffb340'; c.font = 'bold 13px monospace'; c.textAlign = 'left';
+    c.fillText(emOn ? (fire ? 'WATER 80%   PSI 120' : 'UNIT 12   CODE 3') : 'LIGHTS + SIREN  OFF', 320, 165);
   } else {
     c.fillStyle = '#181c22'; rr(330, 60, 168, 80, 8); c.fill(); c.strokeStyle = '#373d47'; c.lineWidth = 2; c.stroke();
     c.fillStyle = '#0c1810'; rr(342, 74, 144, 24, 3); c.fill();
@@ -7466,15 +7466,12 @@ function buildCockpit() {
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.74), new THREE.MeshBasicMaterial({ map: dashTexture('default') }));
   panel.position.set(0, 0.84, 0.98); panel.rotation.y = Math.PI; panel.rotation.x = 0.42; g.add(panel);
   g.userData.panel = panel; g.userData.dashStyle = 'default';
-  // 🚨 physical emergency switch on the dash — tap it in first-person to kill lights + siren
-  const swG = new THREE.Group(); swG.position.set(0.62, 0.9, 1.0); swG.rotation.x = 0.42; g.add(swG);
-  swG.add(new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.17, 0.06), M(0x300f0f)));      // red mount plate
-  const emLever = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.06), M(0xd23a2a)); // the toggle lever
-  emLever.position.set(-0.035, 0.015, 0.05); swG.add(emLever);
-  const emLed = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3b30 }));
-  emLed.position.set(0.06, 0.045, 0.05); swG.add(emLed);
-  swG.add(new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.32, 0.18), new THREE.MeshBasicMaterial({ visible: false })));  // generous tap pad
-  g.userData.emSwitch = swG; g.userData.emLever = emLever; g.userData.emLed = emLed;
+  // 🚨 Invisible tap zone over the painted TRUCK CONTROL panel (it renders on the RIGHT in view,
+  // which is cockpit-local -X). Tapping it flips the SIREN/BEACON switches in the art and kills
+  // the lights + siren — no separate button needed.
+  const emHit = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.62, 0.2), new THREE.MeshBasicMaterial({ visible: false }));
+  emHit.position.set(-0.55, 0.85, 0.99); emHit.rotation.x = 0.42; g.add(emHit);
+  g.userData.emSwitch = emHit;
   // steering wheel (driver on the left) — top arc sits in the lower view
   const wg = new THREE.Group(); wg.position.set(-0.5, 0.7, 0.8); wg.rotation.x = 1.25; g.add(wg);
   wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 12, 30), M(0x14161a)));
@@ -7495,13 +7492,15 @@ function buildCockpit() {
   g.visible = false; scene.add(g);
   return g;
 }
-// swap the dashboard art to match the vehicle you're driving (fire truck cab vs cruiser vs car)
-function setCockpitDash(style) {
-  if (!cockpit || cockpit.userData.dashStyle === style) return;   // only rebuild when it actually changes
+// swap the dashboard art to match the vehicle (fire/police/car) AND the lights+siren on/off state
+function setCockpitDash(style, emOn) {
+  if (emOn === undefined) emOn = (player.sirenOn !== false);
+  const key = style + (emOn ? '1' : '0');
+  if (!cockpit || cockpit.userData.dashKey === key) return;        // only rebuild when style/state changes
   const p = cockpit.userData.panel; if (!p) return;
   if (p.material.map) p.material.map.dispose();
-  p.material.map = dashTexture(style); p.material.needsUpdate = true;
-  cockpit.userData.dashStyle = style;
+  p.material.map = dashTexture(style, emOn); p.material.needsUpdate = true;
+  cockpit.userData.dashKey = key; cockpit.userData.dashStyle = style;
 }
 function dashStyleFor(def) {
   if (!def) return 'default';
@@ -7600,11 +7599,10 @@ function updatePlayer(dt) {
       v.group.visible = !closed;
       if (closed) {
         if (!cockpit) cockpit = buildCockpit();
-        setCockpitDash(dashStyleFor(v.def));
-        // the dash emergency switch only exists on fire/police rigs; keep its lever/LED in sync
+        // the TRUCK CONTROL tap-zone only applies to fire/police rigs; art shows the on/off state
         const emV = dashStyleFor(v.def) !== 'default';
         if (cockpit.userData.emSwitch) cockpit.userData.emSwitch.visible = emV;
-        if (emV && cockpit.userData.emSync !== player.sirenOn) { applyEmVisual(player.sirenOn !== false); cockpit.userData.emSync = player.sirenOn; }
+        setCockpitDash(dashStyleFor(v.def), player.sirenOn !== false);
         cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
