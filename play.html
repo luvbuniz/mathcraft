@@ -4920,8 +4920,9 @@ function toggleDrive() {
   const a = activeCarObj();
   if (player.driving) {                                   // hop off
     player.driving = null; Sound.engineStop(); Sound.sirenStop();
-    if (a) player.pos.set(a.group.position.x + 1.2, 0, a.group.position.z);
+    if (a) { a.group.visible = true; player.pos.set(a.group.position.x + 1.2, 0, a.group.position.z); }   // re-show the parked car
     player.vel.set(0, 0, 0);
+    if (cockpit) cockpit.visible = false;
     if (player.avatar) player.avatar.visible = !G.firstPerson;
     toast('🧍 Off you hop!', 1100); return;
   }
@@ -7384,23 +7385,21 @@ function buildCockpit() {
   const M = c => new THREE.MeshLambertMaterial({ color: c });
   const box = (w, h, d, x, y, z, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); return m; };
   const DASH = 0x23272e, TRIM = 0x2e333b;
-  box(2.6, 0.1, 1.8, 0, 0.3, 0.7, 0x1b1e24);                  // floor
-  box(2.4, 0.58, 0.5, 0, 0.78, 1.26, DASH);                   // dashboard body
-  box(2.4, 0.14, 0.55, 0, 1.12, 1.18, TRIM);                  // cowl/hood over the gauges
+  box(2.8, 0.1, 1.9, 0, 0.28, 0.55, 0x1b1e24);                // floor
+  box(2.6, 0.42, 0.5, 0, 0.6, 1.18, DASH);                    // low dashboard body (keeps the windscreen big)
   // instrument panel with real dials, facing the driver
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.66), new THREE.MeshBasicMaterial({ map: dashTexture() }));
-  panel.position.set(0, 0.93, 1.0); panel.rotation.y = Math.PI; panel.rotation.x = 0.34; g.add(panel);   // tilt up toward the driver
-  // steering wheel (driver on the left)
-  const wg = new THREE.Group(); wg.position.set(-0.45, 0.86, 0.72); wg.rotation.x = 1.2; g.add(wg);
-  wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.055, 12, 28), M(0x14161a)));
-  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.055, 0.04), M(0x14161a)));
-  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.54, 0.04), M(0x14161a)));
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16), M(0xcc2b2b)); hub.rotation.x = Math.PI / 2; wg.add(hub);
-  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 10), M(0x1c1f24)); col.rotation.x = 1.2; col.position.set(-0.45, 0.66, 0.92); g.add(col);
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.72), new THREE.MeshBasicMaterial({ map: dashTexture() }));
+  panel.position.set(0, 0.84, 0.98); panel.rotation.y = Math.PI; panel.rotation.x = 0.42; g.add(panel);
+  // steering wheel (driver on the left) — top arc sits in the lower view
+  const wg = new THREE.Group(); wg.position.set(-0.5, 0.7, 0.8); wg.rotation.x = 1.25; g.add(wg);
+  wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 12, 30), M(0x14161a)));
+  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.04), M(0x14161a)));
+  wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.04), M(0x14161a)));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 16), M(0xcc2b2b)); hub.rotation.x = Math.PI / 2; wg.add(hub);
   // passenger seat (right) + driver seat hint (left)
-  box(0.58, 0.16, 0.58, 0.62, 0.42, 0.35, 0x6e2a2a); box(0.58, 0.66, 0.16, 0.62, 0.78, 0.1, 0x6e2a2a); box(0.42, 0.16, 0.16, 0.62, 1.12, 0.1, 0x6e2a2a);
-  box(0.58, 0.16, 0.58, -0.45, 0.42, 0.35, 0x44494f);
-  box(0.12, 0.85, 1.7, 1.16, 0.68, 0.7, TRIM); box(0.12, 0.85, 1.7, -1.16, 0.68, 0.7, TRIM);   // door interiors
+  box(0.6, 0.16, 0.6, 0.66, 0.4, 0.2, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.05, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.05, 0x6e2a2a);
+  box(0.6, 0.16, 0.6, -0.5, 0.4, 0.2, 0x44494f);
+  box(0.12, 0.9, 1.9, 1.2, 0.66, 0.55, TRIM); box(0.12, 0.9, 1.9, -1.2, 0.66, 0.55, TRIM);   // door interiors
   g.visible = false; scene.add(g);
   return g;
 }
@@ -7483,13 +7482,18 @@ function updatePlayer(dt) {
     if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
       const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
       const eyeH = player.pos.y + 1.2;
-      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.42, eyeH, player.pos.z + fwdz * 0.42), 0.4);
-      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 2.0, player.pos.z + fwdz * 14);   // look down so the dashboard/dials show
-      if (!cockpit) cockpit = buildCockpit();
-      cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
-      cockpit.rotation.y = v.yaw + Math.PI;
-      cockpit.visible = true;
+      camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.45, eyeH, player.pos.z + fwdz * 0.45), 0.4);
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 1.7, player.pos.z + fwdz * 14);   // look down so the dashboard/dials show
+      const closed = !(v.def && v.def.open);               // closed car → hide its body, show a clean cockpit; open (bike/boat) keep its body
+      v.group.visible = !closed;
+      if (closed) {
+        if (!cockpit) cockpit = buildCockpit();
+        cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
+        cockpit.rotation.y = v.yaw + Math.PI;
+        cockpit.visible = true;
+      } else if (cockpit) cockpit.visible = false;
     } else {
+      v.group.visible = true;
       if (cockpit) cockpit.visible = false;
       const headY = player.pos.y + 1.55, dist = 6.6;
       const cx = player.pos.x + Math.sin(v.yaw) * dist, cz = player.pos.z + Math.cos(v.yaw) * dist;
