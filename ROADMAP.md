@@ -450,3 +450,14 @@ as the real thing (a couch that looks like a couch, not a square).
   badge?)?
 - Pricing when worlds go live: keep **$4.99 one-time** with a founder/early-bird
   promise, or revisit.
+
+## 🎵 Far-future polish (parked — not for launch)
+
+- **Working car radio** — click the dashboard radio to flip between stations.
+  Music: commission a Suno track (e.g. a country song about solving math in a
+  pickup truck 🤠), or — cheaper — use **royalty-free / commercial-free** music so
+  there are no licensing issues. *Don't spend on this pre-revenue.*
+- **Animate every avatar** (not just the Fairy's wings) — give each a little idle
+  "life": fox/tiger tail sway, ear twitches, the dragon's wings, etc. Makes the
+  whole avatar picker feel premium. Some avatars may need a visual pass — flag any
+  that look "rough."
