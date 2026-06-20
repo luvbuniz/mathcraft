@@ -6436,7 +6436,7 @@ function finishCinema() {
     '<div class="theatre">' +
       '<div class="valance"></div><div class="curtain l"></div><div class="curtain r"></div>' +
       '<div class="screen">' +
-        '<video class="cvid" src="shots/cinema-' + mv.id + '.mp4" muted autoplay loop playsinline onerror="this.remove()"></video>' +
+        '<video class="cvid" src="shots/cinema-' + mv.id + '.mp4" autoplay playsinline onerror="this.remove()" onclick="this.muted=false;this.play()"></video>' +
         '<div class="fallback">' +
           '<div class="ns">✨ NOW SHOWING ✨</div>' +
           '<div class="em">' + mv.emoji + '</div>' +

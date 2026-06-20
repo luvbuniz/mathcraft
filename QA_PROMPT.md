@@ -8,7 +8,7 @@ ideas. *(Last updated: 19 Jun 2026.)*
 
 ```
 # Mission
-You're playtesting Stackadoo (https://stackadoo.com), a 3D game where kids solve math,
+You're playtesting Stackadoo (https://stackadoo.com/play.html), a 3D game where kids solve math,
 reading, spelling, and grammar to earn coins, then build, drive, and decorate. Play it
 for 5–10 minutes at the HIGHEST difficulty (5th grade) and have a genuinely good time —
 explore, build, buy things, drive, mess around — while noting any bugs, content errors,
@@ -40,7 +40,8 @@ difficulty, so don't ace everything.
 
 # Setup
 - On the start screen choose the HIGHEST grade (Grade 5) and Adventure mode.
-- Pick a hero name and an avatar — please specifically try the **Fairy** (newly redone:
+- Give yourself a FUN hero name (don't keep the default "Player One" — past testers
+  went with PixelFairy and StarKid 🎉) and pick an avatar — please specifically try the **Fairy** (newly redone:
   does she look pretty? do her wings + walk look right?).
 - Don't enter payment info. If a world (Reading Town) is locked behind a paywall, note
   it and keep playing free Math Meadow. (The owner may have unlocked it for you — if so,
@@ -74,7 +75,7 @@ difficulty, so don't ace everything.
 - **Controls:** how well does the mouse Click-to-move work? How hard is driving?
 
 # Hard rules
-- Stay on stackadoo.com. Do NOT complete a purchase or enter real payment/sign-in info.
+- Stay on stackadoo.com (the game is at /play.html). Do NOT complete a purchase or enter real payment/sign-in info.
 - It's a kids' game — keep everything wholesome.
 
 # Report
@@ -107,13 +108,14 @@ exactly what a language model is best at. Paste the block below.
 ```
 # Mission
 You're a sharp content editor proofreading the learning content in Stackadoo's READING
-TOWN (https://stackadoo.com). Play through every reading/spelling/grammar activity at
+TOWN (https://stackadoo.com/play.html). Play through every reading/spelling/grammar activity at
 the HIGHEST difficulty (Grade 5) and scrutinize EVERY question for correctness. Your job
 is to catch bad questions, wrong answers, ambiguous choices, typos, and anything a
 teacher or parent would object to. Be rigorous and a little ruthless.
 
 # Setup & controls
-- Start screen: choose Grade 5, Adventure mode, any name/avatar.
+- Start screen: choose Grade 5, Adventure mode, your own avatar, and a FUN name of
+  your choosing (replace the default "Player One").
 - Reading Town must be unlocked (the owner set this up). If it's locked, stop and say so.
 - Mouse controls: click the "🚶 Click-to-move" button (bottom-left) to turn it ON, then
   LEFT-CLICK the ground to walk and LEFT-CLICK a building to enter it. Drag to look around.
@@ -147,7 +149,7 @@ game against your judgment. Flag any of these:
 - **Repetition:** same story/word/question repeating too often.
 
 # Hard rules
-- Stay on stackadoo.com. Don't enter payment or sign-in info. Keep it wholesome.
+- Stay on stackadoo.com (the game is at /play.html). Don't enter payment or sign-in info. Keep it wholesome.
 
 # Report
 For EVERY issue, quote it EXACTLY so it can be found and fixed:
@@ -163,3 +165,63 @@ Group the report as:
 5. **Overall** — is this content a parent would trust as "real" 5th-grade learning?
 ```
 
+
+---
+
+# 🏡 GPT agent — Reading Town & Houses (focused pass)
+
+A focused run for a second agent (e.g. GPT/Operator): explore Reading Town, concentrate
+on buying and/or building + decorating a house. Paste the block below.
+
+```
+# Mission (you have ~15 MINUTES)
+You're playtesting Stackadoo (https://stackadoo.com/play.html). Start fresh, head to READING
+TOWN, and focus your time on the HOUSE experience — buying a move-in home AND/OR
+building & decorating one. Have fun, but watch for bugs and report at the end.
+
+# Setup
+- Open the game directly at **https://stackadoo.com/play.html** (this IS the game — do
+  NOT use the homepage / "Play Free Now" button; just load that URL).
+- New game: Grade 5 (highest) + Adventure mode, any avatar, a FUN name (replace the
+  default "Player One"). On the world picker, select **🏘️ Reading Town** (NOT Math
+  Meadow) so you start right in Reading Town and save time. It's already unlocked.
+
+# Controls (mouse-driven, no arrow keys)
+- MOVE: click "🚶 Click-to-move" (bottom-left) ON, then LEFT-CLICK the ground to walk.
+  DRAG to look around.
+- USE: click a building to enter, or click "⭐ USE" when next to it. Click "❓" blocks
+  to answer questions.
+- BUILD: toggle "🚶 Click-to-move" OFF → left-click places a block, right-click removes;
+  a color strip lets you pick colors.
+
+# Focus: HOUSES
+1. You start in READING TOWN. (Each world has its OWN coin jar — earn coins HERE to spend
+   here. You begin with 0 coins in Reading Town.)
+2. Earn coins in Reading Town: 📚 Library, 🏤 Post Office Spelling Bee, 🎬 Grammar Cinema
+   (floating signs mark each).
+3. BUY a house at 🏡 Stack Realty — browse the homes, buy one you can afford, place it,
+   walk in.
+4. DECORATE/BUILD: furnish it (Stack Barn/Mart furniture), build rooms with colored
+   blocks, add decorations/a pool. Make it yours.
+5. If you can't afford a house in time, BUILD one from blocks instead and report how that
+   felt.
+
+# Watch for
+- Can you AFFORD a house in ~15 min of Reading Town play? Which, and how many questions?
+- Is buying/placing/entering a home clear? Is decorating intuitive? Anything broken
+  (furniture won't place, camera clips walls, stuck, purchase doesn't apply)?
+- Verify any question you answer is correct (flag wrong/ambiguous).
+- Anything a 10-year-old couldn't figure out.
+
+# Screenshots: ONLY things that need fixing, each as a SEPARATE PNG/JPEG (no GIFs).
+# Rules: stay on stackadoo.com, no real purchase/sign-in, keep it wholesome.
+
+# Final report (REQUIRED)
+1. Header: name, what you ended with (coins, level, house owned/built, items placed).
+2. HOUSE experience: could you afford one? how long? was buying + decorating clear & fun?
+3. Bugs — severity, what happened vs expected, repro, timestamp.
+4. Content issues — wrong/ambiguous questions, typos (quoted).
+5. Suggestions — prioritized.
+6. Overall — would a 5th grader enjoy the house/decorating loop? best & worst moments;
+   what you didn't reach.
+```
