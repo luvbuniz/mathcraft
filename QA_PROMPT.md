@@ -181,7 +181,8 @@ building & decorating one. Have fun, but watch for bugs and report at the end.
 
 # Setup
 - New game: Grade 5 (highest) + Adventure mode, any avatar, a FUN name (replace the
-  default "Player One"). Reading Town is unlocked.
+  default "Player One"). On the world picker, select **🏘️ Reading Town** (NOT Math
+  Meadow) so you start right in Reading Town and save time. It's already unlocked.
 
 # Controls (mouse-driven, no arrow keys)
 - MOVE: click "🚶 Click-to-move" (bottom-left) ON, then LEFT-CLICK the ground to walk.
@@ -192,8 +193,8 @@ building & decorating one. Have fun, but watch for bugs and report at the end.
   a color strip lets you pick colors.
 
 # Focus: HOUSES
-1. Take the "🌀 TRAVEL" portal to Reading Town. (Each world has its OWN coin jar — earn
-   coins here to spend here.)
+1. You start in READING TOWN. (Each world has its OWN coin jar — earn coins HERE to spend
+   here. You begin with 0 coins in Reading Town.)
 2. Earn coins in Reading Town: 📚 Library, 🏤 Post Office Spelling Bee, 🎬 Grammar Cinema
    (floating signs mark each).
 3. BUY a house at 🏡 Stack Realty — browse the homes, buy one you can afford, place it,
