@@ -377,6 +377,10 @@
     font-weight:bold; font-size:17px; color:#7a5c00; background:rgba(255,233,150,.94); border:none;
     border-radius:14px; padding:12px 22px; box-shadow:0 4px 0 rgba(0,0,0,.2); }
   #useBtnDesk:active { transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.2); }
+  /* selfie camera angle toggle (shown only in selfie mode) */
+  #selfieAngleBtn { position:absolute; left:50%; bottom:56px; transform:translateX(-50%); display:none; pointer-events:auto;
+    cursor:pointer; font-weight:bold; font-size:15px; color:#7a3a66; background:rgba(255,214,236,.96); border:none;
+    border-radius:13px; padding:9px 18px; box-shadow:0 3px 0 rgba(0,0,0,.2); }
   /* on-screen block-color swatches (shown while building, so kids don't have to dig in the backpack) */
   #blockPaints { position:absolute; left:50%; bottom:54px; transform:translateX(-50%); display:none; gap:5px;
     flex-wrap:wrap; justify-content:center; max-width:92vw; pointer-events:auto;
@@ -1097,6 +1101,7 @@
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
   <button id="undoBtn" class="hudBtn" title="Undo — put back the last thing you removed (Z key)">↩️ Undo</button>
   <button id="useBtnDesk" title="Use what's in front of you — open a shop, hop in a car, sit (E key)">⭐ USE</button>
+  <button id="selfieAngleBtn" title="Turn the selfie camera for a side profile">📷 Front</button>
   <div id="crosshair">＋</div>
   <div id="mouseLegend"><button id="walkBtn" title="Toggle mouse movement">🚶 Click-to-move: OFF</button> <span id="legendText">🖱️ Drag to look • Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️</span></div>
   <div id="blockPaints" title="Pick a block color"></div>
@@ -2128,9 +2133,12 @@ function addCrown(parent, y, color) {
   box(parent, 0.07, 0.16, 0.07, color, 0, y + 0.11, 0);
   box(parent, 0.07, 0.12, 0.07, color, 0.12, y + 0.09, 0);
 }
+const BLUSH = 0xFFB0D4;   // 🌸 soft pink cheeks, shared by every avatar (via addEyes)
 function addEyes(head, color, z) {
   box(head, 0.08, 0.08, 0.03, color || 0x222222, -0.11, 0.05, z);
   box(head, 0.08, 0.08, 0.03, color || 0x222222, 0.11, 0.05, z);
+  box(head, 0.08, 0.055, 0.022, BLUSH, -0.155, -0.07, z);
+  box(head, 0.08, 0.055, 0.022, BLUSH, 0.155, -0.07, z);
 }
 /* A bendy mouth + brows on the head front, so the avatar can smile, grin or frown.
    Returns the pieces so the animation loop can switch expressions (great for selfies). */
@@ -2232,13 +2240,11 @@ const AVATARS = [
     build() {
       const gown = 0xEC5BA6, gownD = 0xCC3F8A, skin = 0xFFD9B3, hair = 0x7A4A24;   // rich pink gown, chestnut hair
       const a = buildBiped(gown, skin, gownD, skin);
-      // 😊 sweet face — soft eyes, rosy cheeks, an upturned smile
+      // 😊 sweet face — soft eyes (blush comes from addEyes), a small cute smile
       addEyes(a.head, 0x35506e, 0.26);
-      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, -0.17, -0.05, 0.25);     // rosy cheeks
-      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, 0.17, -0.05, 0.25);
-      box(a.head, 0.13, 0.035, 0.03, 0xC2185B, 0, -0.15, 0.26);        // smile
-      box(a.head, 0.05, 0.035, 0.03, 0xC2185B, -0.085, -0.13, 0.26);   // corners turn up
-      box(a.head, 0.05, 0.035, 0.03, 0xC2185B, 0.085, -0.13, 0.26);
+      box(a.head, 0.08, 0.03, 0.03, 0xD06A92, 0, -0.15, 0.26);         // small smile
+      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, -0.052, -0.135, 0.26);  // tiny upturned corners
+      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
       // 💇 flowing hair: crown + soft bangs + long princess locks
       box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // crown of hair
       box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // soft bangs
@@ -2517,15 +2523,18 @@ const AVATARS = [
   {
     id: 'panda', name: 'Panda 🐼',
     build() {
-      const a = buildQuad(0xF4F4F4, 0xF4F4F4, 0x2b2b2b);
-      addEyes(a.head, 0x222222, 0.22);
-      box(a.head, 0.14, 0.16, 0.05, 0x222222, -0.12, 0.05, 0.205);     // black eye patches
-      box(a.head, 0.14, 0.16, 0.05, 0x222222, 0.12, 0.05, 0.205);
-      box(a.head, 0.16, 0.12, 0.12, 0xF4F4F4, 0, -0.12, 0.22);         // muzzle
-      box(a.head, 0.08, 0.06, 0.05, 0x222222, 0, -0.1, 0.3);           // nose
-      box(a.head, 0.14, 0.14, 0.08, 0x222222, -0.16, 0.26, -0.02);     // black ears
-      box(a.head, 0.14, 0.14, 0.08, 0x222222, 0.16, 0.26, -0.02);
-      box(a.group, 0.48, 0.22, 0.34, 0x222222, 0, 0.72, 0);            // black shoulders
+      const wht = 0xF4F4F4, blk = 0x262626;
+      const a = buildBiped(wht, wht, blk, blk);                        // upright bear: white body/head, black arms & legs
+      addEyes(a.head, 0x222222, 0.26);
+      box(a.head, 0.15, 0.17, 0.05, blk, -0.12, 0.05, 0.24);           // black eye patches
+      box(a.head, 0.15, 0.17, 0.05, blk, 0.12, 0.05, 0.24);
+      box(a.head, 0.18, 0.13, 0.12, wht, 0, -0.13, 0.22);             // white muzzle
+      box(a.head, 0.09, 0.07, 0.05, blk, 0, -0.11, 0.3);              // black nose
+      box(a.head, 0.17, 0.17, 0.1, blk, -0.18, 0.26, -0.02);          // big round black ears
+      box(a.head, 0.17, 0.17, 0.1, blk, 0.18, 0.26, -0.02);
+      box(a.group, 0.58, 0.34, 0.36, blk, 0, 1.0, 0);                 // black shoulder band (panda's bear chest)
+      box(a.group, 0.46, 0.36, 0.16, wht, 0, 0.74, 0.14);            // round white belly
+      a.bear = true;                                                  // unlocks the "rear up like a bear" idle
       return a;
     }
   },
@@ -2627,13 +2636,11 @@ const AVATARS = [
     build() {
       const dress = 0x6FD9C2, dressD = 0x46C2A8, skin = 0xFFD9B3, hair = 0xF7CE5A;   // mint gown, golden hair
       const a = buildBiped(dress, skin, dress, skin);                  // proper biped → walks like the rest
-      // 😊 sweet face — soft eyes, rosy cheeks, an upturned smile
+      // 😊 sweet face — soft eyes (blush comes from addEyes), a small cute smile
       addEyes(a.head, 0x3a5f8a, 0.26);
-      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, -0.17, -0.05, 0.25);     // rosy cheeks
-      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, 0.17, -0.05, 0.25);
-      box(a.head, 0.13, 0.035, 0.03, 0xD24A7E, 0, -0.15, 0.26);        // smile centre
-      box(a.head, 0.05, 0.035, 0.03, 0xD24A7E, -0.085, -0.13, 0.26);   // corners turn up
-      box(a.head, 0.05, 0.035, 0.03, 0xD24A7E, 0.085, -0.13, 0.26);
+      box(a.head, 0.08, 0.03, 0.03, 0xD24A7E, 0, -0.15, 0.26);         // small smile
+      box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, -0.052, -0.135, 0.26);  // tiny upturned corners
+      box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, 0.052, -0.135, 0.26);
       // 💛 framing hair: crown + soft bangs + long flowing locks
       box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // crown of hair
       box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // soft bangs across the forehead
@@ -2691,13 +2698,14 @@ const AVATARS = [
       box(g, 0.5, 0.5, 0.72, grn, 0, 0.78, 0.05);                     // bulky body leaning forward
       box(g, 0.42, 0.32, 0.5, belly, 0, 0.66, 0.2);                  // pale belly
       for (let i = 0; i < 4; i++) box(g, 0.1, 0.13, 0.1, grnD, 0, 1.02 - i * 0.015, 0.22 - i * 0.18);  // spine ridges
-      const arms = [                                                   // tiny T-Rex arms
-        limb(g, 0.08, 0.26, 0.08, grnL, -0.27, 0.92, 0.22),
-        limb(g, 0.08, 0.26, 0.08, grnL, 0.27, 0.92, 0.22)
+      const arms = [                                                   // short T-Rex arms — bigger so they actually read
+        limb(g, 0.11, 0.34, 0.11, grnL, -0.29, 0.96, 0.27),
+        limb(g, 0.11, 0.34, 0.11, grnL, 0.29, 0.96, 0.27)
       ];
-      arms.forEach(A => box(A, 0.06, 0.06, 0.11, 0xF0F0F0, 0, -0.26, 0.06));   // little claws
+      arms.forEach(A => { box(A, 0.14, 0.14, 0.14, grn, 0, -0.02, 0); box(A, 0.09, 0.09, 0.15, 0xF0F0F0, 0, -0.34, 0.07); });   // shoulder + 2-claw hand
       const head = new THREE.Group(); head.position.set(0, 1.12, 0.5); g.add(head);   // big head, forward
-      box(head, 0.4, 0.4, 0.5, grn, 0, 0, 0);                         // skull
+      box(head, 0.42, 0.42, 0.46, grn, 0, 0, 0);                      // skull
+      box(head, 0.36, 0.26, 0.4, grn, 0, -0.04, 0.34);               // long protruding muzzle (more dino)
       box(head, 0.38, 0.18, 0.32, grn, 0, -0.17, 0.26);              // lower snout/jaw
       for (let i = -1; i <= 1; i++) {                                  // teeth, upper & lower
         box(head, 0.05, 0.09, 0.04, 0xFFFFFF, i * 0.12, -0.05, 0.49);
@@ -2711,10 +2719,11 @@ const AVATARS = [
       box(head, 0.09, 0.08, 0.07, grnD, 0.15, 0.23, 0.02);
       box(head, 0.06, 0.05, 0.05, grnD, -0.07, 0.07, 0.49);           // nostrils
       box(head, 0.06, 0.05, 0.05, grnD, 0.07, 0.07, 0.49);
-      box(g, 0.32, 0.3, 0.4, grn, 0, 0.72, -0.42);                    // heavy tail base
-      box(g, 0.22, 0.22, 0.4, grn, 0, 0.62, -0.72);                  // tail mid
-      box(g, 0.12, 0.14, 0.4, grnD, 0, 0.52, -0.98);                 // tail tip
-      return { group: g, legs, arms, head };
+      const tail = new THREE.Group(); tail.position.set(0, 0.72, -0.3); g.add(tail);   // pivot near the body so it can swish
+      box(tail, 0.32, 0.3, 0.4, grn, 0, 0, -0.12);                    // heavy tail base
+      box(tail, 0.22, 0.22, 0.4, grn, 0, -0.1, -0.42);               // tail mid
+      box(tail, 0.12, 0.14, 0.4, grnD, 0, -0.2, -0.68);              // tail tip
+      return { group: g, legs, arms, head, tail };
     }
   }
 ];
@@ -7876,6 +7885,8 @@ function updatePlayer(dt) {
   }
   // 🦋 fairy wings flutter (a touch faster when moving)
   if (d.wings) { const f = Math.sin(t * (moving ? 16 : 11)) * 0.26; d.wings.forEach(w => { w.rotation.y = w.userData.baseRY + (w.userData.baseRY >= 0 ? f : -f); }); }
+  // 🦖 T-Rex tail swishes side to side (faster when walking)
+  if (d.tail) d.tail.rotation.y = Math.sin(t * (moving ? 6 : 3)) * 0.4;
   // expression: happy by default, a big grin for selfies/celebrations, a frown when something went wrong
   const nowMs = performance.now();
   let expr = 'smile';
@@ -7906,10 +7917,17 @@ function updatePlayer(dt) {
       else if (player._fl === 'look' && d.head) d.head.rotation.y = Math.sin(p * Math.PI * 2) * 0.5;   // glance left & right
       else if (player._fl === 'nod' && d.head) d.head.rotation.x = Math.sin(p * Math.PI * 2) * 0.28;   // bob the head
       else if (player._fl === 'wave' && d.arms && d.arms.length >= 2) { d.arms[1].rotation.x = -0.1; d.arms[1].rotation.z = 1.7 + Math.sin(t * 9) * 0.3; }
+      else if (player._fl === 'rear' && d.arms && d.arms.length >= 2) {   // 🐻 rear up like a bear
+        d.arms[0].rotation.z = -1.3 * e; d.arms[1].rotation.z = 1.3 * e;
+        d.arms[0].rotation.x = -0.5 * e; d.arms[1].rotation.x = -0.5 * e;
+        if (d.head) d.head.rotation.x = -0.22 * e;                      // chin up
+        av.position.y += e * 0.12;                                      // stretch tall
+      }
       if (p >= 1) { player._fl = null; player._flNext = t + 4 + Math.random() * 5; if (d.head) { d.head.rotation.y = 0; d.head.rotation.x = 0; } }
     } else if (t > player._flNext) {                                   // kick off a new one
       const opts = ['look', 'nod', 'hop', 'spin'];
       if (d.arms && d.arms.length >= 2) opts.push('wave');
+      if (d.bear) { opts.push('rear'); opts.push('rear'); }            // pandas/bears rear up more often
       player._fl = opts[(Math.random() * opts.length) | 0];
       player._flStart = t; player._flDur = player._fl === 'spin' ? 1.2 : player._fl === 'wave' ? 1.1 : 0.85;
     }
@@ -7921,10 +7939,11 @@ function updatePlayer(dt) {
     camera.position.set(player.pos.x, headY, player.pos.z);
   } else {
     const selfie = G.selfie;
-    const side = selfie ? -1 : 1;              // selfie: camera swings around to the FRONT, facing the character
     const dist = selfie ? 3.4 : 4.6;
-    const cx = player.pos.x + side * Math.sin(player.yaw) * dist * Math.cos(player.pitch);
-    const cz = player.pos.z + side * Math.cos(player.yaw) * dist * Math.cos(player.pitch);
+    // selfie: camera swings to the FRONT; G.selfieAngle orbits it around for side profiles
+    const ang = selfie ? (player.yaw + Math.PI + (G.selfieAngle || 0)) : player.yaw;
+    const cx = player.pos.x + Math.sin(ang) * dist * Math.cos(player.pitch);
+    const cz = player.pos.z + Math.cos(ang) * dist * Math.cos(player.pitch);
     const cy = headY + dist * Math.sin(-player.pitch) * 0.8 + (selfie ? 0.15 : 0.9);
     // Only pull the camera in a little if a wall/roof sits behind you, so it stays
     // mostly zoomed OUT inside a house instead of snapping right up to your face.
@@ -10448,9 +10467,19 @@ function toggleSelfie() {
   if (G.selfie && G.firstPerson) { G.firstPerson = false; $('camBtn').textContent = '🧍'; }   // selfie needs to see the character
   $('selfieBtn').classList.toggle('on', G.selfie);
   $('crosshair').style.display = G.selfie ? 'none' : '';   // hide the aiming + in selfie mode (clean photos)
-  toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸!' : '🧍 Back to normal view', 1400);
+  G.selfieAngle = 0;                                        // reset to a front-on selfie each time
+  const ab = $('selfieAngleBtn'); if (ab) { ab.style.display = G.selfie ? 'block' : 'none'; ab.textContent = '📷 Front'; }
+  toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸! (📷 to turn for a side view)' : '🧍 Back to normal view', 1600);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
+// 🤳 cycle the selfie camera: front → left profile → right profile
+$('selfieAngleBtn').onclick = () => {
+  Sound.click();
+  const seq = [{ a: 0, l: '📷 Front' }, { a: 1.45, l: '👈 Left side' }, { a: -1.45, l: '👉 Right side' }];
+  let i = seq.findIndex(s => Math.abs((G.selfieAngle || 0) - s.a) < 0.01);
+  i = (i + 1) % seq.length;
+  G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
+};
 const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
