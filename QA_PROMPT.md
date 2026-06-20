@@ -31,11 +31,10 @@ difficulty, so don't ace everything.
   move and build whenever you like (also a 🧱 Build / ⛏️ Remove button).
 - To BUY: walk up to a shop and click it. Stores include Stack Mart (items, pets,
   power-ups), Stack Motors (vehicles), Stack Realty (houses), and more. Spend your coins!
-- To DRIVE: buy/own a vehicle, walk to it, and click the "⭐ USE" button to hop in.
-  Click "👁️" for first-person. NOTE: steering a vehicle currently uses the keyboard
-  (WASD/arrows) or the on-screen move-circle, so driving may be awkward with a mouse —
-  try it anyway and report how hard it is. In the FIRE TRUCK, tap the "TRUCK CONTROL"
-  panel on the dashboard to toggle the lights & siren.
+- To DRIVE: own a vehicle, walk to it, and click the "⭐ USE" button to hop in. With
+  Click-to-move ON, just LEFT-CLICK the road ahead and the vehicle steers/drives there
+  (it arcs toward your click). Click "👁️" for first-person. In the FIRE TRUCK, tap the
+  "TRUCK CONTROL" panel on the dashboard to toggle the lights & siren.
 - "⭐ USE" = context action (sit, hop in/out, enter a building). "↑ JUMP" = jump.
 - If you ever get stuck, drag to look around and click a new spot to walk to.
 
@@ -94,7 +93,5 @@ End with:
 ## Notes
 - The **math-verification** line is the single most valuable instruction — a capable
   agent checking every answer catches bad questions instantly.
-- Driving is still keyboard-steered, so the agent will likely struggle to drive — that's
-  useful signal, but if you want the agent (and mouse players) to drive well, ask Claude
-  to add **mouse steering for vehicles** too.
+- Both walking AND driving now work with the mouse (Click-to-move) — no keyboard needed.
 - Run it 2–3 times; agents take different paths each run and surface more.
