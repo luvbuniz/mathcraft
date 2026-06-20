@@ -381,6 +381,25 @@
   #selfieAngleBtn { position:absolute; left:50%; bottom:56px; transform:translateX(-50%); display:none; pointer-events:auto;
     cursor:pointer; font-weight:bold; font-size:15px; color:#7a3a66; background:rgba(255,214,236,.96); border:none;
     border-radius:13px; padding:9px 18px; box-shadow:0 3px 0 rgba(0,0,0,.2); }
+  /* 🎬 Grammar Cinema premiere — a little theatre: curtains, glowing screen, audience silhouettes */
+  #cinemaScene .theatre { position:relative; height:228px; border-radius:12px; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 28%, #2a1640, #120a1d 72%); box-shadow:inset 0 0 44px rgba(0,0,0,.65); }
+  #cinemaScene .valance { position:absolute; top:0; left:0; right:0; height:26px; z-index:3;
+    background:repeating-linear-gradient(90deg,#7c1728,#b3243c 9px,#7c1728 18px); border-bottom:3px solid #5e0f1e; box-shadow:0 4px 10px rgba(0,0,0,.5); }
+  #cinemaScene .curtain { position:absolute; top:0; bottom:0; width:19%; z-index:2;
+    background:repeating-linear-gradient(90deg,#8e1b2e,#b3243c 8px,#7c1728 16px); box-shadow:inset -14px 0 26px rgba(0,0,0,.55); }
+  #cinemaScene .curtain.l { left:0; border-right:3px solid #5e0f1e; }
+  #cinemaScene .curtain.r { right:0; transform:scaleX(-1); border-right:3px solid #5e0f1e; }
+  #cinemaScene .screen { position:absolute; top:38px; left:50%; transform:translateX(-50%); width:58%; height:118px; z-index:1;
+    background:linear-gradient(#fffefb,#e8edf6); border:4px solid #14202d; border-radius:6px;
+    box-shadow:0 0 28px 7px rgba(170,205,255,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; overflow:hidden; }
+  #cinemaScene .screen .cvid { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  #cinemaScene .screen .fallback { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+  #cinemaScene .screen .ns { font-size:11px; letter-spacing:2px; color:#9b59b6; font-weight:800; }
+  #cinemaScene .screen .em { font-size:42px; line-height:1; }
+  #cinemaScene .screen .ti { font-weight:800; color:#5b3a86; font-size:14px; padding:0 8px; }
+  #cinemaScene .audience { position:absolute; left:0; right:0; bottom:0; height:64px; z-index:2; }
+  #cinemaScene .head { position:absolute; bottom:-20px; border-radius:50% 50% 42% 42%; background:#0b0712; box-shadow:0 -2px 8px rgba(0,0,0,.4); }
   /* on-screen block-color swatches (shown while building, so kids don't have to dig in the backpack) */
   #blockPaints { position:absolute; left:50%; bottom:54px; transform:translateX(-50%); display:none; gap:5px;
     flex-wrap:wrap; justify-content:center; max-width:92vw; pointer-events:auto;
@@ -6289,6 +6308,8 @@ const GRAMMAR_MOVIES = [
     { correct: 'We saw eggs, nests, and feathers.', bad: ['We saw eggs nests, and feathers.', 'we saw eggs, nests, and feathers.', 'We saw eggs, nests, and feathers'], why: 'Use commas to separate things in a list.' },
     { correct: 'Did you hear that loud roar?', bad: ['Did you hear that loud roar.', 'did you hear that loud roar?', 'Did you hear that loud roar'], why: 'A question ends with a question mark.' },
     { correct: 'Yesterday the dinosaurs went home.', bad: ['Yesterday the dinosaurs goed home.', 'Yesterday the dinosaurs go home.', 'yesterday the dinosaurs went home.'], why: 'The past tense of "go" is "went."' },
+    { correct: 'Rex found an enormous bone.', bad: ['Rex found a enormous bone.', 'rex found an enormous bone.', 'Rex found an enormous bone'], why: 'Use "an" before a vowel sound: an enormous.' },
+    { correct: 'The dinosaurs have sharp teeth.', bad: ['The dinosaurs has sharp teeth.', 'the dinosaurs have sharp teeth.', 'The dinosaurs have sharp teeth'], why: 'Use "have" for more than one dinosaur.' },
   ] },
   { id: 'rocket', title: 'Rocket to the Moon', emoji: '🚀', scenes: [
     { correct: 'Captain Mia flew the rocket.', bad: ['captain Mia flew the rocket.', 'Captain mia flew the rocket.', 'Captain Mia flew the rocket'], why: 'Names of people start with capital letters.' },
@@ -6296,6 +6317,8 @@ const GRAMMAR_MOVIES = [
     { correct: 'We will land on the moon tomorrow.', bad: ['We will landed on the moon tomorrow.', 'we will land on the moon tomorrow.', 'We will land on the moon tomorrow'], why: 'After "will," use the plain verb: will land.' },
     { correct: 'Are the stars bright tonight?', bad: ['Are the stars bright tonight.', 'are the stars bright tonight?', 'Is the stars bright tonight?'], why: 'A question ends with a question mark, and "stars" uses "are."' },
     { correct: 'The astronauts ate their lunch.', bad: ['The astronauts ate they\'re lunch.', 'The astronauts ate there lunch.', 'the astronauts ate their lunch.'], why: '"Their" means it belongs to them.' },
+    { correct: 'This is Mia\'s helmet.', bad: ['This is Mias helmet.', 'this is Mia\'s helmet.', 'This is Mia\'s helmet'], why: 'Use an apostrophe to show the helmet belongs to Mia.' },
+    { correct: 'We packed a snack and an apple.', bad: ['We packed a snack and a apple.', 'we packed a snack and an apple.', 'We packed a snack and an apple'], why: 'Use "an" before a vowel sound: an apple.' },
   ] },
   { id: 'puppy', title: 'The Puppy Detective', emoji: '🐶', scenes: [
     { correct: 'The puppy sniffed for clues.', bad: ['the puppy sniffed for clues.', 'The puppy sniffed for clues', 'The puppy sniff for clues.'], why: 'Start with a capital letter and end with a period.' },
@@ -6303,6 +6326,8 @@ const GRAMMAR_MOVIES = [
     { correct: 'Sam and I looked under the bed.', bad: ['Sam and i looked under the bed.', 'sam and I looked under the bed.', 'Sam and I looked under the bed'], why: '"I" is always capital, and names start with capitals.' },
     { correct: 'The puppy has two spots.', bad: ['The puppy have two spots.', 'the puppy has two spots.', 'The puppy has two spots'], why: 'Use "has" for one puppy.' },
     { correct: 'We found the bone, the ball, and the sock.', bad: ['We found the bone the ball, and the sock.', 'we found the bone, the ball, and the sock.', 'We found the bone, the ball, and the sock'], why: 'Use commas to separate things in a list.' },
+    { correct: 'The kittens lost their toy.', bad: ['The kittens lost there toy.', 'the kittens lost their toy.', 'The kittens lost their toy'], why: '"Their" shows the toy belongs to them.' },
+    { correct: 'The puppy ran to the door.', bad: ['The puppy runned to the door.', 'the puppy ran to the door.', 'The puppy ran to the door'], why: 'The past tense of "run" is "ran."' },
   ] },
   { id: 'knight', title: 'The Brave Knight', emoji: '🏰', scenes: [
     { correct: 'The knight rode to the castle.', bad: ['the knight rode to the castle.', 'The knight rode to the castle', 'The knight ride to the castle.'], why: 'Start with a capital, end with a period; the past tense of "ride" is "rode."' },
@@ -6310,6 +6335,8 @@ const GRAMMAR_MOVIES = [
     { correct: 'The dragon was big and green.', bad: ['The dragon were big and green.', 'the dragon was big and green.', 'The dragon was big and green'], why: 'Use "was" for one dragon.' },
     { correct: 'Will the knight win the battle?', bad: ['Will the knight win the battle.', 'will the knight win the battle?', 'Will the knight wins the battle?'], why: 'A question ends with a question mark; after "will," use "win."' },
     { correct: 'The knight and the dragon became friends.', bad: ['The knight and the dragon becomed friends.', 'the knight and the dragon became friends.', 'The knight and the dragon became friends'], why: 'The past tense of "become" is "became."' },
+    { correct: 'The knight ate an apple.', bad: ['The knight ate a apple.', 'the knight ate an apple.', 'The knight ate an apple'], why: 'Use "an" before a vowel sound: an apple.' },
+    { correct: 'We polished the knight\'s shield.', bad: ['We polished the knights shield.', 'we polished the knight\'s shield.', 'We polished the knight\'s shield'], why: 'The apostrophe shows the shield belongs to the knight.' },
   ] },
   { id: 'unicorn', title: 'Fiona and the Unicorns', emoji: '🦄', scenes: [
     { correct: 'Fiona painted a bright rainbow.', bad: ['fiona painted a bright rainbow.', 'Fiona painted a bright rainbow', 'Fiona paint a bright rainbow.'], why: 'Names start with a capital letter, and a sentence ends with a period.' },
@@ -6317,6 +6344,8 @@ const GRAMMAR_MOVIES = [
     { correct: 'We saw pink, purple, and gold sparkles.', bad: ['We saw pink purple, and gold sparkles.', 'we saw pink, purple, and gold sparkles.', 'We saw pink, purple, and gold sparkles'], why: 'Use commas to separate things in a list.' },
     { correct: 'Where did the magic horn go?', bad: ['Where did the magic horn go.', 'where did the magic horn go?', 'Where did the magic horn go'], why: 'A question ends with a question mark.' },
     { correct: 'The unicorns flew back to Rainbow Land.', bad: ['The unicorns flewed back to Rainbow Land.', 'the unicorns flew back to Rainbow Land.', 'The unicorns flew back to rainbow land.'], why: 'The past tense of "fly" is "flew," and place names are capitalized.' },
+    { correct: 'The unicorns shook their manes.', bad: ['The unicorns shook there manes.', 'the unicorns shook their manes.', 'The unicorns shook their manes'], why: '"Their" shows the manes belong to them.' },
+    { correct: 'Fiona made an icy potion.', bad: ['Fiona made a icy potion.', 'fiona made an icy potion.', 'Fiona made an icy potion'], why: 'Use "an" before a vowel sound: an icy.' },
   ] },
   { id: 'pony', title: 'Clumsy Cassie the Pony', emoji: '🐴', scenes: [
     { correct: 'Cassie the pony loved to dance.', bad: ['cassie the pony loved to dance.', 'Cassie the pony loved to dance', 'Cassie the pony love to dance.'], why: 'Names start with a capital, and the past tense of "love" is "loved."' },
@@ -6324,6 +6353,8 @@ const GRAMMAR_MOVIES = [
     { correct: 'Cassie and I braided her hair.', bad: ['Cassie and i braided her hair.', 'cassie and I braided her hair.', 'Cassie and I braided her hair'], why: 'The word "I" is always a capital letter.' },
     { correct: 'Will Cassie win the ribbon?', bad: ['Will Cassie win the ribbon.', 'will Cassie win the ribbon?', 'Will Cassie wins the ribbon?'], why: 'A question ends with a question mark, and after "will" you use "win."' },
     { correct: 'The ponies ran across the meadow.', bad: ['The ponies runned across the meadow.', 'the ponies ran across the meadow.', 'The ponies ran across the meadow'], why: 'The past tense of "run" is "ran."' },
+    { correct: 'We brushed Cassie\'s tail.', bad: ['We brushed Cassies tail.', 'we brushed Cassie\'s tail.', 'We brushed Cassie\'s tail'], why: 'The apostrophe shows the tail belongs to Cassie.' },
+    { correct: 'The ponies were very fast.', bad: ['The ponies was very fast.', 'the ponies were very fast.', 'The ponies were very fast'], why: 'Use "were" for more than one pony.' },
   ] },
 ];
 let cinema = null;
@@ -6398,9 +6429,25 @@ function finishCinema() {
   const reward = 4 + fr * 3;   // pay for lines fixed right on the first try (no farming)
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   $('cinemaTitle').innerHTML = '🎬 Premiere!';
-  $('cinemaScene').innerHTML = '<div style="font-size:26px;letter-spacing:1px;color:#7a4ea0;font-weight:800">✨ NOW SHOWING ✨</div>' +
-    '<div style="font-size:46px;margin:6px 0">' + mv.emoji + '</div>' +
-    '<div style="font-weight:800;color:#7a4ea0;font-size:22px">' + mv.title + '</div>';
+  // a little theatre: red curtains, a glowing screen up front, and the audience watching from the back.
+  // The .screen shows the title now; when a movie clip exists (shots/cinema-<id>.mp4) it plays there instead.
+  $('cinemaScene').innerHTML =
+    '<div class="theatre">' +
+      '<div class="valance"></div><div class="curtain l"></div><div class="curtain r"></div>' +
+      '<div class="screen">' +
+        '<video class="cvid" src="shots/cinema-' + mv.id + '.mp4" muted autoplay loop playsinline onerror="this.remove()"></video>' +
+        '<div class="fallback">' +
+          '<div class="ns">✨ NOW SHOWING ✨</div>' +
+          '<div class="em">' + mv.emoji + '</div>' +
+          '<div class="ti">' + mv.title + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="audience">' +
+        '<div class="head" style="width:42px;height:46px;left:16%"></div>' +
+        '<div class="head" style="width:42px;height:46px;right:16%"></div>' +
+        '<div class="head" style="width:66px;height:72px;left:50%;transform:translateX(-50%);background:#16091f"></div>' +
+      '</div>' +
+    '</div>';
   $('cinemaPrompt').innerHTML = '🍿 You fixed the whole script — the movie premieres!' +
     '<br><span style="color:#2f8a52;font-weight:800">✍️ Grammar score: ' + fr + '/' + total + '</span>' +
     '<br><span style="color:#e0a21c;font-weight:800">🪙 +' + reward + ' coins!</span>';
