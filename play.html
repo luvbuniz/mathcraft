@@ -2236,9 +2236,10 @@ const AVATARS = [
       box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, 0.13, 0.26, 0.02);
       addCrown(a.head, 0.25, 0xFFD23E);
       box(a.group, 0.32, 0.24, 0.2, 0xFFF4E0, 0, 0.78, 0.45);           // white chest
-      const tail = box(a.group, 0.22, 0.22, 0.6, 0xE8762C, 0, 0.85, -0.65); // bushy tail, raised
-      tail.rotation.x = 0.5;
-      box(a.group, 0.18, 0.18, 0.2, 0xFFF4E0, 0, 1.0, -0.92);           // white tail tip
+      const tail = new THREE.Group(); tail.position.set(0, 0.85, -0.45); a.group.add(tail);   // 🦊 swishing bushy tail
+      const tfx = box(tail, 0.22, 0.22, 0.6, 0xE8762C, 0, 0, -0.2); tfx.rotation.x = 0.5;
+      box(tail, 0.18, 0.18, 0.2, 0xFFF4E0, 0, 0.15, -0.47);             // white tail tip
+      a.tail = tail;
       return a;
     }
   },
@@ -2309,7 +2310,9 @@ const AVATARS = [
       const maneColors = [0xFFB3D9, 0xB3D9FF, 0xD9B3FF, 0xB3FFD1];      // pastel mane down the neck
       maneColors.forEach((c, i) => box(a.group, 0.14, 0.16, 0.15, c, 0, 1.22 - i * 0.08, 0.36 - i * 0.16));
       box(a.group, 0.62, 0.1, 0.62, 0xFFE1F2, 0, 0.62, -0.02);          // a little tutu
-      box(a.group, 0.14, 0.16, 0.14, 0xFFB3D9, 0, 0.82, -0.56);         // pastel tail
+      const utail = new THREE.Group(); utail.position.set(0, 0.82, -0.4); a.group.add(utail);   // 🦄 swishing tail
+      box(utail, 0.14, 0.16, 0.14, 0xFFB3D9, 0, 0, -0.16);              // pastel tail
+      a.tail = utail;
       box(a.group, 0.13, 0.16, 0.13, 0xD9B3FF, 0, 0.68, -0.62);
       box(a.group, 0.12, 0.16, 0.12, 0xB3D9FF, 0, 0.54, -0.66);
       a.dancer = true;                                                  // prances & twirls when idle
@@ -2331,9 +2334,10 @@ const AVATARS = [
       for (let i = 0; i < 4; i++)                                       // stripes across the back (raised to avoid flicker)
         box(a.group, 0.52, 0.14, 0.1, 0x222222, 0, 0.9, 0.33 - i * 0.22);
       box(a.group, 0.5, 0.18, 0.52, 0xFFF4E0, 0, 0.5, 0.08);            // white belly underneath
-      const tail = box(a.group, 0.12, 0.12, 0.55, 0xF28C28, 0, 0.78, -0.68);
-      tail.rotation.x = 0.35;
-      box(a.group, 0.13, 0.13, 0.13, 0x222222, 0, 0.88, -0.94);         // black tail tip
+      const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.42); a.group.add(tail);   // 🐯 swishing tail
+      const ttg = box(tail, 0.12, 0.12, 0.55, 0xF28C28, 0, -0.04, -0.26); ttg.rotation.x = 0.35;
+      box(tail, 0.13, 0.13, 0.13, 0x222222, 0, 0.06, -0.52);            // black tail tip
+      a.tail = tail;
       return a;
     }
   },
@@ -2369,11 +2373,11 @@ const AVATARS = [
       wingL.position.set(-0.12, 0.98, -0.12); wingL.rotation.y = -0.6; wingL.rotation.z = 0.12;
       const wingR = makeWing(1); a.group.add(wingR);
       wingR.position.set(0.12, 0.98, -0.12); wingR.rotation.y = 0.6; wingR.rotation.z = -0.12;
-      const tail = box(a.group, 0.15, 0.15, 0.7, 0x3CA13C, 0, 0.82, -0.78);     // long tail
-      tail.rotation.x = 0.5;
-      box(a.group, 0.09, 0.14, 0.09, 0xD8342C, 0, 0.92, -0.85);         // spike along the tail
-      const tailTip = box(a.group, 0.22, 0.22, 0.22, 0xD8342C, 0, 1.02, -1.1);  // red arrow tip
-      tailTip.rotation.x = Math.PI / 4;
+      const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.45); a.group.add(tail);    // 🐉 swishing tail
+      const dtg = box(tail, 0.15, 0.15, 0.7, 0x3CA13C, 0, 0, -0.33); dtg.rotation.x = 0.5;
+      box(tail, 0.09, 0.14, 0.09, 0xD8342C, 0, 0.1, -0.4);              // spike along the tail
+      const tailTip = box(tail, 0.22, 0.22, 0.22, 0xD8342C, 0, 0.2, -0.65); tailTip.rotation.x = Math.PI / 4;  // red arrow tip
+      a.tail = tail;
       return a;
     }
   },
@@ -2398,7 +2402,9 @@ const AVATARS = [
       box(a.group, 0.06, 0.1, 0.16, 0xFFFFFF, -0.27, 0.86, -0.06);      // number "1" on the side
       [[-0.25, 0.78, -0.28], [0.25, 0.74, -0.32], [-0.25, 0.7, 0.18], [0.25, 0.8, 0.1]].forEach(p =>
         box(a.group, 0.06, 0.06, 0.06, 0xFFF4E0, p[0], p[1], p[2]));    // white fawn spots
-      box(a.group, 0.13, 0.18, 0.12, 0xFFF4E0, 0, 0.8, -0.52);          // white stubby tail
+      const dtail = new THREE.Group(); dtail.position.set(0, 0.8, -0.4); a.group.add(dtail);   // 🦌 flicking tail
+      box(dtail, 0.13, 0.18, 0.12, 0xFFF4E0, 0, 0, -0.12);              // white stubby tail
+      a.tail = dtail;
       return a;
     }
   },
@@ -2416,9 +2422,10 @@ const AVATARS = [
       box(a.head, 0.1, 0.1, 0.07, 0xE9B84A, -0.15, 0.24, -0.02);        // round ears
       box(a.head, 0.1, 0.1, 0.07, 0xE9B84A, 0.15, 0.24, -0.02);
       addCrown(a.head, 0.3, 0xFFD23E);
-      const tail = box(a.group, 0.1, 0.1, 0.5, 0xE3A93C, 0, 0.8, -0.66);
-      tail.rotation.x = 0.4;
-      box(a.group, 0.17, 0.17, 0.17, mane, 0, 0.92, -0.92);             // tufted tail tip
+      const tail = new THREE.Group(); tail.position.set(0, 0.8, -0.42); a.group.add(tail);   // 🦁 swishing tail
+      const ltg = box(tail, 0.1, 0.1, 0.5, 0xE3A93C, 0, 0, -0.24); ltg.rotation.x = 0.4;
+      box(tail, 0.17, 0.17, 0.17, mane, 0, 0.12, -0.5);                 // tufted tail tip
+      a.tail = tail;
       return a;
     }
   },
@@ -2473,8 +2480,9 @@ const AVATARS = [
       box(kat, 0.045, 0.62, 0.045, 0x2a2f36, 0, 0.16, 0);             // sheath
       box(kat, 0.05, 0.16, 0.05, 0x5a3a1e, 0, -0.18, 0);             // handle
       box(kat, 0.12, 0.04, 0.06, 0xFFD23E, 0, -0.07, 0);            // gold guard
-      const tail = box(a.group, 0.12, 0.12, 0.5, 0x2b2f35, 0, 0.78, -0.66);
-      tail.rotation.x = 0.4;
+      const tail = new THREE.Group(); tail.position.set(0, 0.8, -0.42); a.group.add(tail);   // 🐶 swishing tail
+      const ndg = box(tail, 0.12, 0.12, 0.5, 0x2b2f35, 0, -0.02, -0.24); ndg.rotation.x = 0.4;
+      a.tail = tail;
       return a;
     }
   },
