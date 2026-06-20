@@ -2230,15 +2230,30 @@ const AVATARS = [
   {
     id: 'princess', name: 'Princess 👸',
     build() {
-      const a = buildBiped(0xE066A6, 0xFFD9B3, 0xF2A7CC, 0xFFD9B3);
+      const gown = 0xEC5BA6, gownD = 0xCC3F8A, skin = 0xFFD9B3, hair = 0x7A4A24;   // rich pink gown, chestnut hair
+      const a = buildBiped(gown, skin, gownD, skin);
+      // 😊 sweet face — soft eyes, rosy cheeks, an upturned smile
       addEyes(a.head, 0x35506e, 0.26);
-      box(a.head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.26);           // smile
-      box(a.head, 0.54, 0.18, 0.54, 0x6B4226, 0, 0.2, 0);               // hair
-      box(a.head, 0.54, 0.4, 0.12, 0x6B4226, 0, -0.05, -0.24);          // hair back
+      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, -0.17, -0.05, 0.25);     // rosy cheeks
+      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, 0.17, -0.05, 0.25);
+      box(a.head, 0.13, 0.035, 0.03, 0xC2185B, 0, -0.15, 0.26);        // smile
+      box(a.head, 0.05, 0.035, 0.03, 0xC2185B, -0.085, -0.13, 0.26);   // corners turn up
+      box(a.head, 0.05, 0.035, 0.03, 0xC2185B, 0.085, -0.13, 0.26);
+      // 💇 flowing hair: crown + soft bangs + long princess locks
+      box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // crown of hair
+      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // soft bangs
+      box(a.head, 0.16, 0.68, 0.16, hair, -0.31, -0.15, -0.02);        // long locks
+      box(a.head, 0.16, 0.68, 0.16, hair, 0.31, -0.15, -0.02);
+      box(a.head, 0.5, 0.6, 0.14, hair, 0, -0.12, -0.26);            // back hair
+      // 👑 tiara — gold crown with a pink jewel
       addCrown(a.head, 0.33, 0xFFD23E);
-      box(a.group, 0.62, 0.34, 0.42, 0xE066A6, 0, 0.45, 0);             // gown skirt
-      box(a.group, 0.74, 0.16, 0.5, 0xC8488C, 0, 0.24, 0);              // gown hem
-      box(a.group, 0.1, 0.1, 0.06, 0xFFE680, 0, 0.95, 0.16);            // gem brooch
+      box(a.head, 0.06, 0.06, 0.05, 0xFF5BA0, 0, 0.4, 0.16);
+      // 👗 fuller gown with a gold sash + jewel brooch
+      box(a.group, 0.66, 0.4, 0.46, gown, 0, 0.44, 0);               // skirt
+      box(a.group, 0.82, 0.16, 0.56, gownD, 0, 0.22, 0);             // hem
+      box(a.group, 0.56, 0.06, 0.32, 0xFFE07A, 0, 0.6, 0.01);         // gold sash
+      box(a.group, 0.1, 0.1, 0.06, 0xFFE680, 0, 0.95, 0.16);         // jewel brooch
+      box(a.group, 0.05, 0.05, 0.04, 0xFF5BA0, 0, 0.95, 0.19);       // pink gem
       return a;
     }
   },
