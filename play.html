@@ -7896,6 +7896,25 @@ function updatePlayer(dt) {
     d.head.rotation.z *= 0.8;
   }
 
+  // ✨ idle flourishes — every few seconds a standing avatar does something cute (look around, nod, hop, spin, wave)
+  if (!moving && !G.selfie && !player.driving && !player.sittingChair && !player.restingBed) {
+    if (player._flNext == null) player._flNext = t + 2 + Math.random() * 4;
+    if (player._fl) {                                                  // a flourish is playing out
+      const p = (t - player._flStart) / player._flDur, e = Math.sin(Math.min(1, p) * Math.PI);
+      if (player._fl === 'spin') av.rotation.y += p * Math.PI * 2;     // a full twirl
+      else if (player._fl === 'hop') av.position.y += e * 0.28;        // a happy little hop
+      else if (player._fl === 'look' && d.head) d.head.rotation.y = Math.sin(p * Math.PI * 2) * 0.5;   // glance left & right
+      else if (player._fl === 'nod' && d.head) d.head.rotation.x = Math.sin(p * Math.PI * 2) * 0.28;   // bob the head
+      else if (player._fl === 'wave' && d.arms && d.arms.length >= 2) { d.arms[1].rotation.x = -0.1; d.arms[1].rotation.z = 1.7 + Math.sin(t * 9) * 0.3; }
+      if (p >= 1) { player._fl = null; player._flNext = t + 4 + Math.random() * 5; if (d.head) { d.head.rotation.y = 0; d.head.rotation.x = 0; } }
+    } else if (t > player._flNext) {                                   // kick off a new one
+      const opts = ['look', 'nod', 'hop', 'spin'];
+      if (d.arms && d.arms.length >= 2) opts.push('wave');
+      player._fl = opts[(Math.random() * opts.length) | 0];
+      player._flStart = t; player._flDur = player._fl === 'spin' ? 1.2 : player._fl === 'wave' ? 1.1 : 0.85;
+    }
+  } else { player._fl = null; player._flNext = t + 2 + Math.random() * 3; }
+
   // camera
   const headY = player.pos.y + 1.55;
   if (G.firstPerson) {
