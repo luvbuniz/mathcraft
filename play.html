@@ -2133,7 +2133,7 @@ function addCrown(parent, y, color) {
   box(parent, 0.07, 0.16, 0.07, color, 0, y + 0.11, 0);
   box(parent, 0.07, 0.12, 0.07, color, 0.12, y + 0.09, 0);
 }
-const BLUSH = 0xFFB0D4;   // 🌸 soft pink cheeks, shared by every avatar (via addEyes)
+const blushMat = new THREE.MeshBasicMaterial({ color: 0xFF9ECB });   // 🌸 unlit → always a flat soft pink, never dark red edges
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
 // layers never z-fight (the flicker the Ninja Dog had). `color` becomes the pupil/iris colour.
 function addEyes(head, color, z) {
@@ -2142,8 +2142,10 @@ function addEyes(head, color, z) {
   box(head, 0.09, 0.095, 0.03, 0xF7F7F7, 0.11, 0.05, z);
   box(head, 0.045, 0.062, 0.03, pupil, -0.105, 0.04, z + 0.022);   // pupil (offset forward → no flicker)
   box(head, 0.045, 0.062, 0.03, pupil, 0.105, 0.04, z + 0.022);
-  box(head, 0.08, 0.055, 0.022, BLUSH, -0.155, -0.07, z);          // 🌸 pink blush
-  box(head, 0.08, 0.055, 0.022, BLUSH, 0.155, -0.07, z);
+  for (const sx of [-1, 1]) {                                       // 🌸 flat unlit pink blush
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.05, 0.014), blushMat);
+    m.position.set(sx * 0.155, -0.07, z + 0.004); head.add(m);
+  }
 }
 /* A bendy mouth + brows on the head front, so the avatar can smile, grin or frown.
    Returns the pieces so the animation loop can switch expressions (great for selfies). */
