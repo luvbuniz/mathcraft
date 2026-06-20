@@ -377,6 +377,13 @@
     font-weight:bold; font-size:17px; color:#7a5c00; background:rgba(255,233,150,.94); border:none;
     border-radius:14px; padding:12px 22px; box-shadow:0 4px 0 rgba(0,0,0,.2); }
   #useBtnDesk:active { transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.2); }
+  /* on-screen block-color swatches (shown while building, so kids don't have to dig in the backpack) */
+  #blockPaints { position:absolute; left:50%; bottom:54px; transform:translateX(-50%); display:none; gap:5px;
+    flex-wrap:wrap; justify-content:center; max-width:92vw; pointer-events:auto;
+    background:rgba(0,0,0,.42); padding:6px 9px; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  #blockPaints .pswatch { width:26px; height:26px; border-radius:7px; border:2px solid rgba(255,255,255,.55);
+    cursor:pointer; padding:0; }
+  #blockPaints .pswatch.sel { border-color:#fff; box-shadow:0 0 0 2px #ffd23e; transform:scale(1.14); }
   #selfieBtn.on { background:#ffd0e4; box-shadow:0 3px 0 #d98bb0; }
   #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
     padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
@@ -1092,6 +1099,7 @@
   <button id="useBtnDesk" title="Use what's in front of you — open a shop, hop in a car, sit (E key)">⭐ USE</button>
   <div id="crosshair">＋</div>
   <div id="mouseLegend"><button id="walkBtn" title="Toggle mouse movement">🚶 Click-to-move: OFF</button> <span id="legendText">🖱️ Drag to look • Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️</span></div>
+  <div id="blockPaints" title="Pick a block color"></div>
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
@@ -10421,6 +10429,22 @@ function selectSlot(slot, quiet) {
     placingTagTimer = setTimeout(() => { tag.style.display = 'none'; }, 4000);   // fade the hint so it doesn't clutter
   } else tag.style.display = 'none';
   if (!quiet) Sound.click();
+  refreshPaintStrip();
+}
+// the on-screen block-color swatch strip (built once, highlight follows G.blockColor)
+function refreshPaintStrip() {
+  const el = $('blockPaints'); if (!el) return;
+  if (!el._built) {
+    PAINTS.forEach(pc => {
+      const sw = document.createElement('button');
+      sw.className = 'pswatch'; sw.title = pc.name;
+      sw.style.background = '#' + pc.color.toString(16).padStart(6, '0');
+      sw.onclick = () => { Sound.click(); G.blockColor = pc.color; selectSlot('block', true); toast('🎨 ' + pc.name + ' blocks!', 1300); };
+      el.appendChild(sw);
+    });
+    el._built = true;
+  }
+  [...el.children].forEach((sw, i) => sw.classList.toggle('sel', PAINTS[i] && PAINTS[i].color === G.blockColor));
 }
 
 /* ---------- Inventory (backpack) ---------- */
@@ -11538,6 +11562,11 @@ function loop(now) {
       if (b.alive) b.mesh.rotation.y = now / 800;
     }
   }
+
+  // show the block-color swatches only while you're actually building on foot
+  const _showPaints = !isTouch && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
+  if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
+  $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 
   // hints
   if (!popupOpen && !G.over) {
