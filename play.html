@@ -2429,26 +2429,28 @@ const AVATARS = [
       const a = buildQuad(gin, gin, dk);
       for (let i = 0; i < 4; i++) box(a.group, 0.5, 0.13, 0.08, dk, 0, 0.92, 0.33 - i * 0.22);  // tabby stripes
       box(a.group, 0.5, 0.18, 0.5, cream, 0, 0.5, 0.08);               // cream belly
-      addEyes(a.head, 0x2e9e4f, 0.22);                                 // green cat eyes
+      addEyes(a.head, 0x4A2E18, 0.22);                                 // dark brown eyes
       box(a.head, 0.2, 0.14, 0.14, cream, 0, -0.12, 0.24);            // muzzle
       box(a.head, 0.07, 0.06, 0.05, 0xE8A0B0, 0, -0.09, 0.32);        // pink nose
       box(a.head, 0.12, 0.14, 0.07, gin, -0.15, 0.24, -0.02);         // pointy ears
       box(a.head, 0.12, 0.14, 0.07, gin, 0.15, 0.24, -0.02);
       box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, -0.15, 0.22, 0.02);     // inner ears
       box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, 0.15, 0.22, 0.02);
-      box(a.head, 0.13, 0.13, 0.04, 0x111111, 0.12, 0.05, 0.235);     // black eye patch
+      box(a.head, 0.15, 0.15, 0.04, 0x111111, 0.12, 0.05, 0.27);      // black eye patch (over the eye)
       box(a.head, 0.46, 0.04, 0.04, 0x111111, 0, 0.12, 0.05);         // patch strap
       box(a.head, 0.05, 0.05, 0.03, 0xFFD23E, -0.23, -0.04, 0.1);     // gold hoop earring
-      box(a.head, 0.58, 0.07, 0.48, 0x161616, 0, 0.32, 0);            // tricorn brim
-      box(a.head, 0.32, 0.18, 0.32, 0x161616, 0, 0.43, 0);            // tricorn crown
-      box(a.head, 0.12, 0.13, 0.48, 0x161616, 0, 0.4, 0);             // up-turned front/back peaks
-      box(a.head, 0.58, 0.13, 0.1, 0x161616, 0, 0.4, 0);              // up-turned side peaks
-      box(a.head, 0.13, 0.11, 0.04, 0xF0F0F0, 0, 0.43, 0.17);         // white skull badge
-      box(a.head, 0.04, 0.04, 0.03, 0x161616, -0.03, 0.45, 0.19);     // skull eyes
-      box(a.head, 0.04, 0.04, 0.03, 0x161616, 0.03, 0.45, 0.19);
-      const tail = box(a.group, 0.12, 0.12, 0.55, gin, 0, 0.78, -0.68);
-      tail.rotation.x = 0.35;
-      box(a.group, 0.13, 0.13, 0.13, cream, 0, 0.88, -0.94);          // cream tail tip
+      box(a.head, 0.58, 0.07, 0.48, 0x161616, 0, 0.21, 0);            // tricorn brim (lowered onto the head)
+      box(a.head, 0.32, 0.18, 0.32, 0x161616, 0, 0.32, 0);            // tricorn crown
+      box(a.head, 0.12, 0.13, 0.48, 0x161616, 0, 0.29, 0);            // up-turned front/back peaks
+      box(a.head, 0.58, 0.13, 0.1, 0x161616, 0, 0.29, 0);             // up-turned side peaks
+      box(a.head, 0.13, 0.11, 0.04, 0xF0F0F0, 0, 0.32, 0.17);         // white skull badge
+      box(a.head, 0.04, 0.04, 0.03, 0x161616, -0.03, 0.34, 0.19);     // skull eyes
+      box(a.head, 0.04, 0.04, 0.03, 0x161616, 0.03, 0.34, 0.19);
+      // 🐈 swishing tail (grouped so it can wag)
+      const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.42); a.group.add(tail);
+      const t1 = box(tail, 0.12, 0.12, 0.55, gin, 0, -0.04, -0.26); t1.rotation.x = 0.35;
+      box(tail, 0.13, 0.13, 0.13, cream, 0, 0.06, -0.52);             // cream tail tip
+      a.tail = tail;
       return a;
     }
   },
