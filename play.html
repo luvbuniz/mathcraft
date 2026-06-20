@@ -7123,12 +7123,31 @@ function buildCinema(g) {                     // 🎬 Stack Cinema — Reading T
   C.position.set(CINEMA_POS.x, 0, CINEMA_POS.z);            // west end of the high street, facing the play area
   g.add(C);
 }
+// 🪧 a billboard sign that floats above a building and always faces the camera, so kids can
+// spot each Reading Town hub from the road (fixes the "circled for 5 minutes" navigation issue).
+function floatingSign(g, text, x, z, y, bg) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 80;
+  const c = cv.getContext('2d');
+  const rr = (rx, ry, w, h, r) => { c.beginPath(); c.moveTo(rx + r, ry); c.arcTo(rx + w, ry, rx + w, ry + h, r); c.arcTo(rx + w, ry + h, rx, ry + h, r); c.arcTo(rx, ry + h, rx, ry, r); c.arcTo(rx, ry, rx + w, ry, r); c.closePath(); };
+  c.fillStyle = bg; rr(6, 6, 244, 68, 22); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.92)'; c.lineWidth = 5; c.stroke();
+  c.fillStyle = '#fff'; c.font = 'bold 38px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(text, 128, 44);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true }));
+  spr.position.set(x, y, z); spr.scale.set(3.4, 1.06, 1);
+  g.add(spr); return spr;
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
   buildPostOffice(g);
   buildRealty(g);
   buildCinema(g);
   buildHighStreetArch(g);
+  // floating hub signs so the learning buildings are easy to find from the high street
+  floatingSign(g, '📚 Library', LIBRARY_POS.x, LIBRARY_POS.z, 5.3, 'rgba(46,120,200,.95)');
+  floatingSign(g, '🏤 Post Office', POST_POS.x, POST_POS.z, 5.3, 'rgba(210,120,40,.95)');
+  floatingSign(g, '🎬 Cinema', CINEMA_POS.x, CINEMA_POS.z, 5.3, 'rgba(123,78,160,.95)');
+  floatingSign(g, '🏡 Stack Realty', REALTY_POS.x, REALTY_POS.z, 5.3, 'rgba(46,150,90,.95)');
   const N = 26;
   for (let i = 0; i < N; i++) {
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.14;
