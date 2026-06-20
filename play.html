@@ -3462,14 +3462,60 @@ function renderGrownup() {
     profs.forEach(p => {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0';
-      row.innerHTML = '<span style="font-weight:700; color:#7a4b44">🙂 ' + p._name + '</span>';
+      row.innerHTML = '<span style="font-weight:700; color:#7a4b44; flex:1">🙂 ' + p._name + '</span>';
+      const rn = document.createElement('button');
+      rn.textContent = '✏️ Rename';
+      rn.style.cssText = 'font-size:13px; background:#3b82c4; color:#fff; border:none; border-radius:9px; padding:7px 13px; cursor:pointer; font-family:inherit; font-weight:bold; box-shadow:0 3px 0 #2a5f96; margin-right:6px';
+      rn.onclick = () => { Sound.click(); startRename(p._name, row); };
       const b = document.createElement('button');
       b.textContent = '🗑️ Delete';
       b.style.cssText = 'font-size:13px; background:#c0392b; color:#fff; border:none; border-radius:9px; padding:7px 13px; cursor:pointer; font-family:inherit; font-weight:bold; box-shadow:0 3px 0 #8e2820';
       b.onclick = () => { Sound.click(); askDeletePlayer(p._name); };
-      row.appendChild(b); del.appendChild(row);
+      row.appendChild(rn); row.appendChild(b); del.appendChild(row);
     });
   }
+}
+// ✏️ Rename a player — keeps ALL their progress (profile + saves in every world), just
+// changes the displayed name. Great for swapping a kid's name to "Player One" before filming.
+function saveExistsFor(name) {
+  return ['meadow', 'city', 'beach'].some(w => localStorage.getItem(saveKey(name, w)) != null);
+}
+function startRename(oldName, row) {
+  row.innerHTML = '';
+  const inp = document.createElement('input');
+  inp.value = oldName; inp.maxLength = 14;
+  inp.style.cssText = 'font-size:14px; padding:6px 9px; border-radius:8px; border:2px solid #c9b6a0; font-family:inherit; flex:1; min-width:80px';
+  inp.onkeydown = e => { if (e.key === 'Enter') doRename(oldName, inp.value); };
+  const ok = document.createElement('button'); ok.textContent = '✅ Save';
+  ok.style.cssText = 'font-size:13px; background:#2f8a52; color:#fff; border:none; border-radius:9px; padding:7px 13px; cursor:pointer; font-family:inherit; font-weight:bold; margin:0 6px';
+  ok.onclick = () => { Sound.click(); doRename(oldName, inp.value); };
+  const no = document.createElement('button'); no.textContent = '✕';
+  no.style.cssText = 'font-size:13px; background:#9aa7b4; color:#fff; border:none; border-radius:9px; padding:7px 11px; cursor:pointer; font-family:inherit; font-weight:bold';
+  no.onclick = () => { Sound.click(); renderGrownup(); };
+  row.appendChild(inp); row.appendChild(ok); row.appendChild(no);
+  inp.focus(); inp.select();
+}
+function doRename(oldName, newName) {
+  newName = (newName || '').trim().slice(0, 14);
+  if (!newName) { toast('Type a name first!', 1600); return; }
+  if (newName === oldName) { renderGrownup(); return; }
+  if (localStorage.getItem(profileKey(newName)) || saveExistsFor(newName)) { toast('“' + newName + '” is already taken — pick another.', 2600); return; }
+  const prof = localStorage.getItem(profileKey(oldName));               // move the profile (keyed by name)
+  if (prof != null) { localStorage.setItem(profileKey(newName), prof); localStorage.removeItem(profileKey(oldName)); }
+  ['meadow', 'city', 'beach'].forEach(w => {                            // move every world's save, fixing the name inside
+    const raw = localStorage.getItem(saveKey(oldName, w));
+    if (raw == null) return;
+    let out = raw; try { const o = JSON.parse(raw); o.name = newName; out = JSON.stringify(o); } catch (e) {}
+    localStorage.setItem(saveKey(newName, w), out); localStorage.removeItem(saveKey(oldName, w));
+  });
+  if (G.playerName === oldName) {                                       // update the live game if it's this player
+    G.playerName = newName; if (typeof profile === 'object' && profile) profile._name = newName;
+    const ni = $('nameInput'); if (ni) ni.value = newName;
+    const pn = $('playerName'); if (pn) pn.textContent = newName;
+  }
+  try { cloudSyncUp(); } catch (e) {}
+  toast('✏️ Renamed to “' + newName + '”!', 2600);
+  renderGrownup();
 }
 /* Optional parent PIN — locks the dashboard so older kids can't peek. Device-level. */
 const PARENT_PIN_KEY = 'stackadooParentPIN';
