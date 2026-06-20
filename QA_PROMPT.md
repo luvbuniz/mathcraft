@@ -40,7 +40,8 @@ difficulty, so don't ace everything.
 
 # Setup
 - On the start screen choose the HIGHEST grade (Grade 5) and Adventure mode.
-- Pick a hero name and an avatar — please specifically try the **Fairy** (newly redone:
+- Give yourself a FUN hero name (don't keep the default "Player One" — past testers
+  went with PixelFairy and StarKid 🎉) and pick an avatar — please specifically try the **Fairy** (newly redone:
   does she look pretty? do her wings + walk look right?).
 - Don't enter payment info. If a world (Reading Town) is locked behind a paywall, note
   it and keep playing free Math Meadow. (The owner may have unlocked it for you — if so,
@@ -113,7 +114,8 @@ is to catch bad questions, wrong answers, ambiguous choices, typos, and anything
 teacher or parent would object to. Be rigorous and a little ruthless.
 
 # Setup & controls
-- Start screen: choose Grade 5, Adventure mode, any name/avatar.
+- Start screen: choose Grade 5, Adventure mode, your own avatar, and a FUN name of
+  your choosing (replace the default "Player One").
 - Reading Town must be unlocked (the owner set this up). If it's locked, stop and say so.
 - Mouse controls: click the "🚶 Click-to-move" button (bottom-left) to turn it ON, then
   LEFT-CLICK the ground to walk and LEFT-CLICK a building to enter it. Drag to look around.
