@@ -2591,24 +2591,38 @@ const AVATARS = [
   {
     id: 'fairy', name: 'Fairy 🧚',
     build() {
-      const dress = 0x57C9B0, dressD = 0x3CAE97, skin = 0xFFD9B3, hair = 0xF6C544;   // mint gown, golden hair
+      const dress = 0x6FD9C2, dressD = 0x46C2A8, skin = 0xFFD9B3, hair = 0xF7CE5A;   // mint gown, golden hair
       const a = buildBiped(dress, skin, dress, skin);                  // proper biped → walks like the rest
-      addEyes(a.head, 0x35506e, 0.26);
-      box(a.head, 0.1, 0.04, 0.03, 0xC2185B, 0, -0.13, 0.26);          // smile
-      box(a.head, 0.54, 0.2, 0.54, hair, 0, 0.2, 0);                   // hair top
-      box(a.head, 0.2, 0.52, 0.16, hair, -0.3, -0.12, -0.02);          // side locks
-      box(a.head, 0.2, 0.52, 0.16, hair, 0.3, -0.12, -0.02);
-      box(a.head, 0.12, 0.12, 0.05, 0xFF7AAE, 0.27, 0.16, 0.12);       // flower hair clip
-      box(a.head, 0.05, 0.05, 0.05, 0xFFE680, 0.27, 0.16, 0.16);       // flower center
-      box(a.group, 0.62, 0.34, 0.42, dress, 0, 0.45, 0);               // gown skirt
-      box(a.group, 0.74, 0.14, 0.5, dressD, 0, 0.24, 0);               // gown hem
-      box(a.group, 0.1, 0.1, 0.06, 0xFFE680, 0, 0.95, 0.16);           // sparkle brooch
-      // 🦋 translucent fairy wings on the back (angled out so they read in profile)
-      const wing = (x, y, w, h, col, ry, rz) => { const m = box(a.group, w, h, 0.03, col, x, y, -0.22); m.rotation.y = ry; m.rotation.z = rz; };
-      wing(-0.28, 0.98, 0.34, 0.5, 0xCDEBFF, 0.5, 0.25);
-      wing(0.28, 0.98, 0.34, 0.5, 0xCDEBFF, -0.5, -0.25);
-      wing(-0.32, 0.6, 0.26, 0.34, 0xE6D6FF, 0.5, 0.35);
-      wing(0.32, 0.6, 0.26, 0.34, 0xE6D6FF, -0.5, -0.35);
+      // 😊 sweet face — soft eyes, rosy cheeks, an upturned smile
+      addEyes(a.head, 0x3a5f8a, 0.26);
+      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, -0.17, -0.05, 0.25);     // rosy cheeks
+      box(a.head, 0.07, 0.05, 0.03, 0xFF9EC4, 0.17, -0.05, 0.25);
+      box(a.head, 0.13, 0.035, 0.03, 0xD24A7E, 0, -0.15, 0.26);        // smile centre
+      box(a.head, 0.05, 0.035, 0.03, 0xD24A7E, -0.085, -0.13, 0.26);   // corners turn up
+      box(a.head, 0.05, 0.035, 0.03, 0xD24A7E, 0.085, -0.13, 0.26);
+      // 💛 framing hair: crown + soft bangs + long flowing locks
+      box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // crown of hair
+      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // soft bangs across the forehead
+      box(a.head, 0.16, 0.62, 0.16, hair, -0.31, -0.1, -0.03);         // long locks
+      box(a.head, 0.16, 0.62, 0.16, hair, 0.31, -0.1, -0.03);
+      box(a.head, 0.5, 0.5, 0.14, hair, 0, -0.05, -0.26);             // back hair
+      // 🌸 little flower crown
+      const flower = (parent, x, y, z, petal, s) => { box(parent, s, s, 0.06, petal, x, y, z); box(parent, s * 0.45, s * 0.45, 0.04, 0xFFE680, x, y, z + 0.03); };
+      flower(a.head, -0.18, 0.3, 0.21, 0xFF7EC4, 0.1); flower(a.head, 0.01, 0.33, 0.23, 0xFFFFFF, 0.1); flower(a.head, 0.2, 0.3, 0.21, 0xB388FF, 0.1);
+      // 👗 gown — skirt, hem, gold sash, a flower at the chest
+      box(a.group, 0.64, 0.36, 0.44, dress, 0, 0.45, 0);               // skirt
+      box(a.group, 0.78, 0.14, 0.52, dressD, 0, 0.23, 0);              // hem
+      box(a.group, 0.54, 0.06, 0.3, 0xFFE07A, 0, 0.6, 0.005);          // gold sash
+      flower(a.group, 0, 0.95, 0.16, 0xFF7EC4, 0.11);                  // chest flower
+      // 🦋 translucent butterfly wings — saturated so they stay pretty in back-light, fanned up & out
+      const wing = (x, y, w, h, col, ry, rz) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.86 }));
+        m.position.set(x, y, -0.2); m.rotation.y = ry; m.rotation.z = rz; a.group.add(m); return m;
+      };
+      wing(-0.3, 1.04, 0.42, 0.56, 0xFF8FD4, 0.32, 0.32);             // upper wings (pink)
+      wing(0.3, 1.04, 0.42, 0.56, 0xFF8FD4, -0.32, -0.32);
+      wing(-0.32, 0.58, 0.32, 0.42, 0xB388FF, 0.32, 0.52);            // lower wings (purple)
+      wing(0.32, 0.58, 0.32, 0.42, 0xB388FF, -0.32, -0.52);
       return a;
     }
   },
