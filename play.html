@@ -6362,6 +6362,15 @@ function makeMisspellings(word) {
    scene shows 4 versions of a line — exactly ONE is written correctly), then it
    premieres. Every scene has a single unambiguous correct fix + 3 clearly-wrong ones. */
 const GRAMMAR_MOVIES = [
+  { id: 'leo', title: 'Leo and the Fire Truck', emoji: '🚒', scenes: [
+    { correct: 'Leo jumped into the big fire truck.', bad: ['leo jumped into the big fire truck.', 'Leo jumped into the big fire truck', 'Leo jump into the big fire truck.'], why: 'Names start with a capital, the sentence ends with a period, and "jumped" is the past tense.' },
+    { correct: 'Where is the fire today?', bad: ['Where is the fire today.', 'where is the fire today?', 'Where are the fire today?'], why: 'A question ends with a question mark, and one fire uses "is."' },
+    { correct: 'Leo grabbed the hose, the ladder, and the boots.', bad: ['Leo grabbed the hose the ladder, and the boots.', 'leo grabbed the hose, the ladder, and the boots.', 'Leo grabbed the hose, the ladder, and the boots'], why: 'Use commas to separate things in a list.' },
+    { correct: 'Leo drove the truck down Main Street.', bad: ['Leo drived the truck down Main Street.', 'leo drove the truck down Main Street.', 'Leo drove the truck down main street.'], why: 'The past tense of "drive" is "drove," and street names are capitalized.' },
+    { correct: 'Leo saw an orange flame.', bad: ['Leo saw a orange flame.', 'leo saw an orange flame.', 'Leo saw an orange flame'], why: 'Use "an" before a vowel sound: an orange.' },
+    { correct: 'The firefighters put on their boots.', bad: ['The firefighters put on there boots.', 'the firefighters put on their boots.', 'The firefighters put on their boots'], why: '"Their" shows the boots belong to them.' },
+    { correct: 'Everyone cheered for Leo\'s brave team.', bad: ['Everyone cheered for Leos brave team.', 'everyone cheered for Leo\'s brave team.', 'Everyone cheered for Leo\'s brave team'], why: 'The apostrophe shows the team belongs to Leo.' },
+  ] },
   { id: 'dino', title: 'Dino Day Out', emoji: '🦖', scenes: [
     { correct: 'The big dinosaur stomped through the forest.', bad: ['the big dinosaur stomped through the forest.', 'The big dinosaur stomped through the forest', 'The big dinosaur stomp through the forest.'], why: 'A sentence starts with a capital letter and ends with a period.' },
     { correct: 'Rex and I found a giant egg.', bad: ['Rex and i found a giant egg.', 'rex and I found a giant egg.', 'Rex and I found a giant egg'], why: 'The word "I" is always a capital letter.' },
