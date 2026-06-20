@@ -372,6 +372,11 @@
   #walkBtn { pointer-events:auto; cursor:pointer; font-weight:bold; font-size:13px; border:none; border-radius:9px;
     padding:4px 9px; margin-right:7px; background:#bfe3c4; color:#1f5d2a; box-shadow:0 2px 0 rgba(0,0,0,.25); }
   #walkBtn.on { background:#7bc6ff; color:#0a3a66; }
+  /* desktop ⭐ USE button so mouse-only players can open shops, hop in cars, sit, etc. */
+  #useBtnDesk { position:absolute; right:18px; bottom:86px; display:none; pointer-events:auto; cursor:pointer;
+    font-weight:bold; font-size:17px; color:#7a5c00; background:rgba(255,233,150,.94); border:none;
+    border-radius:14px; padding:12px 22px; box-shadow:0 4px 0 rgba(0,0,0,.2); }
+  #useBtnDesk:active { transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.2); }
   #selfieBtn.on { background:#ffd0e4; box-shadow:0 3px 0 #d98bb0; }
   #badgeBtn { pointer-events:auto; background:#FFE9A0; color:#7a5c00; border-radius:12px;
     padding:5px 12px; font-weight:bold; font-size:clamp(14px,2.3vw,18px); box-shadow:0 3px 0 #d4b44a; align-self:flex-start; }
@@ -1084,6 +1089,7 @@
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
   <button id="undoBtn" class="hudBtn" title="Undo — put back the last thing you removed (Z key)">↩️ Undo</button>
+  <button id="useBtnDesk" title="Use what's in front of you — open a shop, hop in a car, sit (E key)">⭐ USE</button>
   <div id="crosshair">＋</div>
   <div id="mouseLegend"><button id="walkBtn" title="Toggle mouse movement">🚶 Click-to-move: OFF</button> <span id="legendText">🖱️ Drag to look • Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️</span></div>
   <div id="hintBar"></div>
@@ -8539,9 +8545,12 @@ function workedSteps(eq) {
   if ((m = t.match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/))) return addSteps(+m[1], +m[2]);
   if ((m = t.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/)))  return subSteps(+m[1], +m[2]);
   if ((m = t.match(/^\s*(\d+)\s*[×x*]\s*(\d+)\s*$/i))) {
-    const a = +m[1], b = +m[2], seq = [];
-    for (let i = 1; i <= Math.min(a, 12); i++) seq.push(b * i);
-    return '<div class="fixSeq">Count by ' + b + ', ' + a + ' times: ' + seq.join(', ') + '</div>' +
+    const a = +m[1], b = +m[2];
+    // Count by the BIGGER factor the SMALLER number of times → fewer terms, and the list reaches the answer.
+    const lo = Math.min(a, b), hi = Math.max(a, b), show = Math.min(lo, 15), seq = [];
+    for (let i = 1; i <= show; i++) seq.push(hi * i);
+    const tail = lo > show ? ', …, ' + (a * b) : '';   // very large counts: truncate but still end on the answer
+    return '<div class="fixSeq">Count by ' + hi + ', ' + lo + ' times: ' + seq.join(', ') + tail + '</div>' +
       '<div class="fixAnsLine">So ' + a + ' × ' + b + ' = <b>' + (a * b) + '</b></div>';
   }
   if ((m = t.match(/^\s*(\d+)\s*[÷\/]\s*(\d+)\s*$/))) {
@@ -10332,6 +10341,32 @@ function barnDist() { return Math.hypot(player.pos.x - BARN_POS.x, player.pos.z 
 
 /* ============================ INPUT ============================ */
 const keys = {};
+// ⭐ USE — the context action (open shops/buildings, hop in/out vehicles, sit, take the road).
+// Shared by the E key AND the on-screen ⭐ USE button (so mouse-only players aren't stuck).
+function tryUse() {
+  if (!G.running || popupOpen) return;
+  if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
+  else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
+  else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
+  else if (player.sittingChair) { Sound.click(); toggleSit(); }
+  else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
+  else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
+  else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
+  else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
+  else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
+  else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
+  else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
+  else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
+  else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
+  else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
+  else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
+  else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
+  else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
+  else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
+  else if (nearestChair()) { Sound.click(); toggleSit(); }
+  else if (nearestBed()) { Sound.click(); toggleBedRest(); }
+  else { toast('⭐ Walk up to a shop, car, or chair, then tap USE!', 1800); }
+}
 addEventListener('keydown', e => {
   if (e.code === 'KeyM' && G.running) { freeMouse(); return; }
   if (!G.running || popupOpen) return;
@@ -10342,28 +10377,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyX') { Sound.click(); setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
   if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
-  if (e.code === 'KeyE') {
-    if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
-    else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
-    else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
-    else if (player.sittingChair) { Sound.click(); toggleSit(); }
-    else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
-    else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
-    else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
-    else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
-    else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
-    else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
-    else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
-    else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
-    else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
-    else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
-    else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
-    else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
-    else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
-    else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
-    else if (nearestChair()) { Sound.click(); toggleSit(); }
-    else if (nearestBed()) { Sound.click(); toggleBedRest(); }
-  }
+  if (e.code === 'KeyE') { tryUse(); }
   if (e.code === 'KeyL') { Sound.click(); toggleBedRest(); }
   if (e.code === 'KeyC') toggleCamera();
   if (e.code === 'Digit1') selectSlot('block');
@@ -10718,6 +10732,7 @@ function setRemoveMode(on) {
 $('modeBtn').onclick = () => { Sound.click(); setRemoveMode(!G.removeMode);
   toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click a spot to place a block.', 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
+$('useBtnDesk').onclick = () => { tryUse(); };
 $('walkBtn').onclick = () => {
   Sound.click(); G.mouseWalk = !G.mouseWalk; player.walkTo = null;
   const b = $('walkBtn'); b.classList.toggle('on', G.mouseWalk);
@@ -11358,6 +11373,7 @@ function startGame() {
   G.selfie = false; $('selfieBtn').classList.remove('on');
   setRemoveMode(false);                        // always start in 🧱 Build mode
   $('mouseLegend').style.display = isTouch ? 'none' : 'block';   // show the click shortcut on desktop
+  $('useBtnDesk').style.display = isTouch ? 'none' : 'block';    // desktop ⭐ USE button (mouse-only players)
   $('coinRow').style.display = 'block';        // coins matter in every mode now
   $('playerRow').style.display = 'block';
   $('playerName').textContent = G.playerName;
@@ -11526,56 +11542,56 @@ function loop(now) {
     const ns = nearestStation();
     if (roadExitDist() < 3.2) {
       const dest = WORLDS[ROAD_DEST[G.world]];
-      hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ Press E — take the road to ') + (dest ? dest.name : 'the next town') + '!';
+      hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ ⭐ USE (or E) — take the road to ') + (dest ? dest.name : 'the next town') + '!';
       hint.style.display = 'block';
     } else if (player.driving) {
       if (performance.now() - (player.driveStart || 0) < 4500) {   // show briefly, then get out of the way
-        hint.textContent = isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • ⭐ USE to hop off' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • Press E to hop off' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • Press E to hop off');
+        hint.textContent = isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • ⭐ USE to hop off' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • ⭐ USE (or E) to hop off' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • ⭐ USE (or E) to hop off');
         hint.style.display = 'block';
       } else hint.style.display = 'none';
     } else if (ns.dist < 2.6) {
       const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
-      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ Press E to ' + verb + ' and pick a reward!');
+      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ ⭐ USE (or E) to ' + verb + ' and pick a reward!');
       hint.style.display = 'block';
     } else if (carDist() < 2.8) {
       const nm = activeCarObj() ? activeCarObj().def.name : 'car';
-      hint.textContent = isTouch ? '🚗 Tap ⭐ USE to drive your ' + nm + '!' : '🚗 Press E to drive your ' + nm + '!';
+      hint.textContent = isTouch ? '🚗 Tap ⭐ USE to drive your ' + nm + '!' : '🚗 ⭐ USE (or E) to drive your ' + nm + '!';
       hint.style.display = 'block';
     } else if (motorsDist() < 4.0) {
-      hint.textContent = isTouch ? '🚗 Tap ⭐ USE — Stack Motors car showroom!' : '🚗 Press E — Stack Motors car showroom!';
+      hint.textContent = isTouch ? '🚗 Tap ⭐ USE — Stack Motors car showroom!' : '🚗 ⭐ USE (or E) — Stack Motors car showroom!';
       hint.style.display = 'block';
     } else if (bakeryDist() < 3.6) {
-      hint.textContent = isTouch ? '🧁 Tap ⭐ USE — make a treat at Stack Sweets!' : '🧁 Press E — make a treat at Stack Sweets!';
+      hint.textContent = isTouch ? '🧁 Tap ⭐ USE — make a treat at Stack Sweets!' : '🧁 ⭐ USE (or E) — make a treat at Stack Sweets!';
       hint.style.display = 'block';
     } else if (libraryDist() < 4.2) {
-      hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 Press E — read a story at the Library!';
+      hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 ⭐ USE (or E) — read a story at the Library!';
       hint.style.display = 'block';
     } else if (postDist() < 3.8) {
-      hint.textContent = isTouch ? '🏤 Tap ⭐ USE — Spelling Bee at the Post Office!' : '🏤 Press E — Spelling Bee at the Post Office!';
+      hint.textContent = isTouch ? '🏤 Tap ⭐ USE — Spelling Bee at the Post Office!' : '🏤 ⭐ USE (or E) — Spelling Bee at the Post Office!';
       hint.style.display = 'block';
     } else if (cinemaDist() < 4.0) {
-      hint.textContent = isTouch ? '🎬 Tap ⭐ USE — fix the grammar at the Cinema!' : '🎬 Press E — fix the grammar at the Cinema!';
+      hint.textContent = isTouch ? '🎬 Tap ⭐ USE — fix the grammar at the Cinema!' : '🎬 ⭐ USE (or E) — fix the grammar at the Cinema!';
       hint.style.display = 'block';
     } else if (martDist() < 3.8) {
-      hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 Press E — order in Spanish at El Mercadito!';
+      hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 ⭐ USE (or E) — order in Spanish at El Mercadito!';
       hint.style.display = 'block';
     } else if (boatShopDist() < 3.8) {
-      hint.textContent = isTouch ? '🚤 Tap ⭐ USE — bikes & boats at Stack Barcos!' : '🚤 Press E — bikes & boats at Stack Barcos!';
+      hint.textContent = isTouch ? '🚤 Tap ⭐ USE — bikes & boats at Stack Barcos!' : '🚤 ⭐ USE (or E) — bikes & boats at Stack Barcos!';
       hint.style.display = 'block';
     } else if (schoolDist() < 3.8) {
-      hint.textContent = isTouch ? '🏫 Tap ⭐ USE — learn Spanish at La Escuela!' : '🏫 Press E — learn Spanish at La Escuela!';
+      hint.textContent = isTouch ? '🏫 Tap ⭐ USE — learn Spanish at La Escuela!' : '🏫 ⭐ USE (or E) — learn Spanish at La Escuela!';
       hint.style.display = 'block';
     } else if (shopDist() < 3.5) {
-      hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 Press E to open Stack Mart!';
+      hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 ⭐ USE (or E) to open Stack Mart!';
       hint.style.display = 'block';
     } else if (barnDist() < 3.7) {
-      hint.textContent = isTouch ? '🏚️ Tap ⭐ USE — Stack Barn: doors, blocks & furniture!' : '🏚️ Press E — Stack Barn: doors, blocks & furniture!';
+      hint.textContent = isTouch ? '🏚️ Tap ⭐ USE — Stack Barn: doors, blocks & furniture!' : '🏚️ ⭐ USE (or E) — Stack Barn: doors, blocks & furniture!';
       hint.style.display = 'block';
     } else if (portalDist() < 2.8) {
       hint.textContent = isTouch ? '🌀 Tap ⭐ USE (or tap the portal) to travel!' : '🌀 Press E (or click the portal) to travel to another world!';
       hint.style.display = 'block';
     } else if (player.sittingChair || nearestChair()) {
-      hint.textContent = isTouch ? '🪑 Tap ⭐ USE to ' + (player.sittingChair ? 'get up' : 'sit down') + '!' : '🪑 Press E to ' + (player.sittingChair ? 'get up' : 'sit down') + '!';
+      hint.textContent = isTouch ? '🪑 Tap ⭐ USE to ' + (player.sittingChair ? 'get up' : 'sit down') + '!' : '🪑 ⭐ USE (or E) to ' + (player.sittingChair ? 'get up' : 'sit down') + '!';
       hint.style.display = 'block';
     } else if (nearestBed()) {
       hint.textContent = isTouch ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';

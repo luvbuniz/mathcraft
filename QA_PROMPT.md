@@ -31,11 +31,10 @@ difficulty, so don't ace everything.
   move and build whenever you like (also a 🧱 Build / ⛏️ Remove button).
 - To BUY: walk up to a shop and click it. Stores include Stack Mart (items, pets,
   power-ups), Stack Motors (vehicles), Stack Realty (houses), and more. Spend your coins!
-- To DRIVE: buy/own a vehicle, walk to it, and click the "⭐ USE" button to hop in.
-  Click "👁️" for first-person. NOTE: steering a vehicle currently uses the keyboard
-  (WASD/arrows) or the on-screen move-circle, so driving may be awkward with a mouse —
-  try it anyway and report how hard it is. In the FIRE TRUCK, tap the "TRUCK CONTROL"
-  panel on the dashboard to toggle the lights & siren.
+- To DRIVE: own a vehicle, walk to it, and click the "⭐ USE" button to hop in. With
+  Click-to-move ON, just LEFT-CLICK the road ahead and the vehicle steers/drives there
+  (it arcs toward your click). Click "👁️" for first-person. In the FIRE TRUCK, tap the
+  "TRUCK CONTROL" panel on the dashboard to toggle the lights & siren.
 - "⭐ USE" = context action (sit, hop in/out, enter a building). "↑ JUMP" = jump.
 - If you ever get stuck, drag to look around and click a new spot to walk to.
 
@@ -94,7 +93,73 @@ End with:
 ## Notes
 - The **math-verification** line is the single most valuable instruction — a capable
   agent checking every answer catches bad questions instantly.
-- Driving is still keyboard-steered, so the agent will likely struggle to drive — that's
-  useful signal, but if you want the agent (and mouse players) to drive well, ask Claude
-  to add **mouse steering for vehicles** too.
+- Both walking AND driving now work with the mouse (Click-to-move) — no keyboard needed.
 - Run it 2–3 times; agents take different paths each run and surface more.
+
+---
+
+# 📚 Reading Town — content-QA variant (focused pass)
+
+Use this when **Reading Town is unlocked**. It's a focused proofreading pass on the
+reading / spelling / grammar content — judging every question for correctness, which is
+exactly what a language model is best at. Paste the block below.
+
+```
+# Mission
+You're a sharp content editor proofreading the learning content in Stackadoo's READING
+TOWN (https://stackadoo.com). Play through every reading/spelling/grammar activity at
+the HIGHEST difficulty (Grade 5) and scrutinize EVERY question for correctness. Your job
+is to catch bad questions, wrong answers, ambiguous choices, typos, and anything a
+teacher or parent would object to. Be rigorous and a little ruthless.
+
+# Setup & controls
+- Start screen: choose Grade 5, Adventure mode, any name/avatar.
+- Reading Town must be unlocked (the owner set this up). If it's locked, stop and say so.
+- Mouse controls: click the "🚶 Click-to-move" button (bottom-left) to turn it ON, then
+  LEFT-CLICK the ground to walk and LEFT-CLICK a building to enter it. Drag to look around.
+  Walk into each hub building (Library, Post Office, Stack Cinema) and click it to enter.
+
+# Visit every learning hub and do several rounds in each
+1. 📚 **Library** — read the story, then answer the comprehension questions, including
+   the simile/metaphor/figurative-language questions. Do at least 2–3 different stories.
+2. 🏤 **Post Office — Spelling Bee** — the word is spoken aloud; spell it. Do ~8–10 words,
+   letting it ramp to the hardest level. (If audio doesn't play, note it.)
+3. 🎬 **Stack Cinema — Grammar Cinema** — fix the grammar in the "movie script"
+   (capitalization, commas, verb tense, a/an, etc.), then watch it premiere. Do 2–3 movies.
+4. 🔤 **Level-up bonus word games** — trigger a level-up and play the Describing Words
+   and/or Unscramble bonus games. Do several rounds.
+
+# Judge EVERY question (the important part)
+For each question, work out the correct answer yourself BEFORE answering, then check the
+game against your judgment. Flag any of these:
+- **No correct option, or MORE THAN ONE defensible correct option.** (e.g., a "describe
+  the ___" question where two choices both fit; a comprehension question where two
+  answers are both supported by the story.)
+- **The keyed "correct" answer is actually wrong**, or doesn't match the story/word/rule.
+- **Spelling Bee:** the spoken word doesn't match the expected spelling, the word is
+  mis-spelled in the answer key, or the word is too easy/hard for the level.
+- **Grammar Cinema:** the "fixed" version still has an error, the original wasn't actually
+  wrong, or one of the "bad" options is actually grammatically fine.
+- **Comprehension/figurative language:** a simile labeled a metaphor (or vice-versa), a
+  question whose answer isn't actually in the passage.
+- **Typos, punctuation, capitalization** errors in stories, questions, options, or UI.
+- **Reading level:** is the passage/vocabulary genuinely ~Grade 5? Too easy? Too hard?
+- **Repetition:** same story/word/question repeating too often.
+
+# Hard rules
+- Stay on stackadoo.com. Don't enter payment or sign-in info. Keep it wholesome.
+
+# Report
+For EVERY issue, quote it EXACTLY so it can be found and fixed:
+- The activity (Library / Spelling Bee / Grammar Cinema / bonus game) and approx
+  timestamp (mm:ss).
+- The full question / story line / word, ALL answer options, the keyed "correct" answer,
+  and what YOU believe is correct — with a one-line reason.
+Group the report as:
+1. **Wrong or ambiguous answers** (highest priority — these mislead kids).
+2. **Typos / grammar / punctuation** in the content itself.
+3. **Difficulty & repetition** notes.
+4. **Suggestions** — better wording, harder/clearer questions, more variety.
+5. **Overall** — is this content a parent would trust as "real" 5th-grade learning?
+```
+
