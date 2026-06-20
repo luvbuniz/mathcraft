@@ -1027,7 +1027,7 @@
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
           <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
           <p><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
-          <p>🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. Drag to look around.</p>
+          <p>🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. <b>Driving?</b> Just click the road ahead and your vehicle steers there. Drag to look around.</p>
           <p>🔨 <b>Build mode</b> (default): <b>left-click builds</b>, <b>right-click removes</b>, drag to look. Move with the arrow keys / WASD.</p>
           <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb), tap the world to build, and tap ⭐ Use for math, JUMP to jump, Place to switch build/break.</p>
           <p>Solve math to earn build blocks, Power Blocks, coins, or ammo — and a 🛡️ Shield from the Gloomies!</p>
@@ -4939,7 +4939,7 @@ function openBoatShop() {                   // Stack Barcos — bikes & boats, o
 function closeMotors() { $('motorsPopup').style.display = 'none'; popupOpen = false; }
 function toggleDrive() {
   const a = activeCarObj();
-  player.walkTo = null;                                   // stop any click-to-move when getting in/out
+  player.walkTo = null; player.driveTo = null;            // stop any click-to-move/drive when getting in/out
   if (player.driving) {                                   // hop off
     player.driving = null; Sound.engineStop(); Sound.sirenStop();
     const sb = $('sirenBtn'); if (sb) sb.style.display = 'none';
@@ -7527,7 +7527,20 @@ function updatePlayer(dt) {
     const v = player.driving, speed = (v.def && v.def.speed) || 11;
     const jmag = Math.hypot(touch.joyX, touch.joyY);
     let moving = false;
-    if (jmag > 0.22) {                                    // steer with the move-circle (same feel as on foot)
+    const kbDrive = keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS'] || keys['ArrowLeft'] || keys['ArrowRight'] || keys['KeyA'] || keys['KeyD'];
+    if (jmag > 0.22 || kbDrive) player.driveTo = null;    // manual steering cancels click-to-drive
+    if (player.driveTo) {                                 // 🖱️ click-to-drive: steer toward the clicked spot
+      const tdx = player.driveTo.x - player.pos.x, tdz = player.driveTo.z - player.pos.z;
+      const td = Math.hypot(tdx, tdz);
+      if (td < 1.6) { player.driveTo = null; }
+      else {
+        moving = true;
+        const ndx = tdx / td, ndz = tdz / td;
+        const turn = shortAngle(v.yaw, Math.atan2(-ndx, -ndz)) * Math.min(1, dt * 3.5), maxStep = 1.9 * dt;
+        v.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
+        player.vel.x = -Math.sin(v.yaw) * speed; player.vel.z = -Math.cos(v.yaw) * speed;   // roll forward as it arcs toward the target
+      }
+    } else if (jmag > 0.22) {                             // steer with the move-circle (same feel as on foot)
       moving = true;
       const cfx = -Math.sin(v.yaw), cfz = -Math.cos(v.yaw), crx = -cfz, crz = cfx;
       let dx = crx * touch.joyX + cfx * (-touch.joyY), dz = crz * touch.joyX + cfz * (-touch.joyY);
@@ -7546,6 +7559,7 @@ function updatePlayer(dt) {
       if (f) { moving = true; player.vel.x = -Math.sin(v.yaw) * speed * f; player.vel.z = -Math.cos(v.yaw) * speed * f; }
       else { player.vel.x = 0; player.vel.z = 0; }
     }
+    if (walkMarker) walkMarker.visible = !!player.driveTo;   // show the destination ring while click-driving
     const isBoat = !!(v.def && v.def.water);
     if (isBoat) {                                        // ⛵ float on the water — no gravity, free to sail onto the ocean
       player.pos.x += player.vel.x * dt; player.pos.z += player.vel.z * dt;
@@ -10174,6 +10188,13 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
     raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera); raycaster.far = 6;
     if (raycaster.intersectObject(cockpit.userData.emSwitch, true)[0]) { Sound.click(); toggleEmergency(); return; }
   }
+  // 🖱️ click-to-drive: while driving, a move-click sets a spot on the ground to steer toward
+  if (action === 'move' && player.driving) {
+    raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera); raycaster.far = 400;
+    const h = raycaster.intersectObject(ground)[0];
+    if (h) { player.driveTo = { x: h.point.x, z: h.point.z }; showWalkMarker(h.point); }
+    return;
+  }
   raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
   // Generous reach so kids can TAP a faraway/high spot to build or remove —
   // no need to walk the avatar over or jump up to reach roof tiles & sky blocks.
@@ -11509,7 +11530,7 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (player.driving) {
       if (performance.now() - (player.driveStart || 0) < 4500) {   // show briefly, then get out of the way
-        hint.textContent = isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • ⭐ USE to hop off' : '🛻 Drive with WASD/arrows • 👁️ first-person • Press E to hop off';
+        hint.textContent = isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • ⭐ USE to hop off' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • Press E to hop off' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • Press E to hop off');
         hint.style.display = 'block';
       } else hint.style.display = 'none';
     } else if (ns.dist < 2.6) {
