@@ -2626,9 +2626,10 @@ const AVATARS = [
       box(a.group, 0.54, 0.06, 0.3, 0xFFE07A, 0, 0.6, 0.005);          // gold sash
       flower(a.group, 0, 0.95, 0.16, 0xFF7EC4, 0.11);                  // chest flower
       // 🦋 translucent butterfly wings — saturated so they stay pretty in back-light, fanned up & out
+      a.wings = [];
       const wing = (x, y, w, h, col, ry, rz) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.86 }));
-        m.position.set(x, y, -0.2); m.rotation.y = ry; m.rotation.z = rz; a.group.add(m); return m;
+        m.position.set(x, y, -0.2); m.rotation.y = ry; m.rotation.z = rz; m.userData.baseRY = ry; a.group.add(m); a.wings.push(m); return m;
       };
       wing(-0.3, 1.04, 0.42, 0.56, 0xFF8FD4, 0.32, 0.32);             // upper wings (pink)
       wing(0.3, 1.04, 0.42, 0.56, 0xFF8FD4, -0.32, -0.32);
@@ -7850,6 +7851,8 @@ function updatePlayer(dt) {
       d.arms[0].rotation.z *= 0.8; d.arms[1].rotation.z *= 0.8;
     }
   }
+  // 🦋 fairy wings flutter (a touch faster when moving)
+  if (d.wings) { const f = Math.sin(t * (moving ? 16 : 11)) * 0.26; d.wings.forEach(w => { w.rotation.y = w.userData.baseRY + (w.userData.baseRY >= 0 ? f : -f); }); }
   // expression: happy by default, a big grin for selfies/celebrations, a frown when something went wrong
   const nowMs = performance.now();
   let expr = 'smile';
@@ -11398,7 +11401,7 @@ function startGame() {
   G.running = true;
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
-  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 Calm') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
+  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
   if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
@@ -11587,8 +11590,8 @@ function loop(now) {
     } else if (barnDist() < 3.7) {
       hint.textContent = isTouch ? '🏚️ Tap ⭐ USE — Stack Barn: doors, blocks & furniture!' : '🏚️ ⭐ USE (or E) — Stack Barn: doors, blocks & furniture!';
       hint.style.display = 'block';
-    } else if (portalDist() < 2.8) {
-      hint.textContent = isTouch ? '🌀 Tap ⭐ USE (or tap the portal) to travel!' : '🌀 Press E (or click the portal) to travel to another world!';
+    } else if (portalDist() < 5.5) {
+      hint.textContent = isTouch ? '🌀 The TRAVEL portal! Tap ⭐ USE (or tap the portal) to visit Reading Town & other worlds!' : '🌀 The TRAVEL portal! ⭐ USE (or E, or click the portal) to visit Reading Town & other worlds!';
       hint.style.display = 'block';
     } else if (player.sittingChair || nearestChair()) {
       hint.textContent = isTouch ? '🪑 Tap ⭐ USE to ' + (player.sittingChair ? 'get up' : 'sit down') + '!' : '🪑 ⭐ USE (or E) to ' + (player.sittingChair ? 'get up' : 'sit down') + '!';
