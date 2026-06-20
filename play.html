@@ -1325,6 +1325,7 @@
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="travelClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#7a4ea0; font-size:clamp(24px,4vw,32px)">🌀 Travel to a world</h2>
     <div style="font-weight:bold; color:#7a6a35; margin-bottom:6px">Your build here is saved — hop to another world!</div>
+    <div style="background:#fff3d6; border:2px solid #f0d089; border-radius:12px; padding:8px 11px; margin:0 0 10px; font-weight:700; color:#7a5a18; font-size:14px; line-height:1.35">🪙 Each world has its <b>own coin jar!</b> The coins you earn here stay here — so if you're great at math, stock up in Math Meadow before you decorate elsewhere.</div>
     <div id="travelList"></div>
   </div>
 </div>
@@ -8030,8 +8031,10 @@ function updatePlayer(dt) {
     const far = dir.length(); dir.normalize();
     let allowed = far;
     for (let d = 0.5; d < far; d += 0.3) {
-      if (solidAt(Math.floor(head.x + dir.x * d), Math.floor(head.y + dir.y * d), Math.floor(head.z + dir.z * d))) {
-        allowed = Math.max(3.0, d - 0.3); break;
+      const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
+      // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
+      if (solidAt(fx, fy, fz) || (fy < 5 && inShopZone(fx, fz))) {
+        allowed = Math.max(1.7, d - 0.4); break;   // pull in tight in narrow gaps instead of sitting inside the wall
       }
     }
     camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
@@ -8581,9 +8584,14 @@ function bumpSkill(skill, correct) {
 function isTrickyQuestion(eq) {
   if (!eq || curWorld().subject !== 'math') return false;
   const sk = eq.skill;
-  if (sk === 'multi' || sk === 'order' || sk === 'geo' || sk === 'frac' || sk === 'round') return true;
+  if (sk === 'multi' || sk === 'order' || sk === 'geo' || sk === 'round') return true;
   const t = String(eq.text).replace(/−/g, '-');
   const nums = (t.match(/\d+/g) || []).map(Number);
+  if (sk === 'frac') {                                   // fractions: only the harder ones deserve the nudge
+    const dens = (t.match(/\/(\d+)/g) || []).map(s => +s.slice(1));
+    if (dens.length >= 2 && dens[0] !== dens[1]) return true;   // unlike denominators (e.g. 1/2 + 1/3)
+    return Math.max(0, ...nums) >= 40;                          // a big "fraction of N"
+  }
   if (sk === 'word') return Math.max(0, ...nums) >= 12;
   if (Math.max(0, ...nums) >= 100) return true;        // any triple-digit number → grab paper
   let m;
@@ -11706,7 +11714,7 @@ function loop(now) {
   }
 
   // show the block-color swatches only while you're actually building on foot
-  const _showPaints = !isTouch && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
+  const _showPaints = !isTouch && !G.mouseWalk && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
   if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
   $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 
