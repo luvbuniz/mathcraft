@@ -6512,8 +6512,16 @@ function openPost() {
   if (G.spellLevel == null) G.spellLevel = Math.max(1, Math.min(5, profile.spellLevel || G.grade));
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   const lvl = G.spellLevel;
-  const pool = (SPELL_WORDS[lvl] || SPELL_WORDS[2]).slice(); shuffle(pool);
-  spell = { words: pool.slice(0, 5), qi: 0, right: 0, firstRight: 0, attempted: false, level: lvl, typed: lvl >= 3 };
+  const all = SPELL_WORDS[lvl] || SPELL_WORDS[2];
+  if (!profile.spellSeen) profile.spellSeen = {};
+  let seen = profile.spellSeen[lvl] || [];
+  let fresh = all.filter(e => seen.indexOf(e[0]) === -1);   // skip words used in recent sessions
+  if (fresh.length < 5) { fresh = all.slice(); seen = []; } // cycled through the whole level → start it over
+  shuffle(fresh);
+  const chosen = fresh.slice(0, 5);
+  profile.spellSeen[lvl] = seen.concat(chosen.map(e => e[0]));   // remember these so they don't come back soon
+  profileDirty = true; saveProfile();
+  spell = { words: chosen, qi: 0, right: 0, firstRight: 0, attempted: false, level: lvl, typed: lvl >= 3 };
   $('postPopup').style.display = 'flex';
   renderSpell();
 }
