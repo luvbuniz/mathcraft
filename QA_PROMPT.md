@@ -165,3 +165,60 @@ Group the report as:
 5. **Overall** — is this content a parent would trust as "real" 5th-grade learning?
 ```
 
+
+---
+
+# 🏡 GPT agent — Reading Town & Houses (focused pass)
+
+A focused run for a second agent (e.g. GPT/Operator): explore Reading Town, concentrate
+on buying and/or building + decorating a house. Paste the block below.
+
+```
+# Mission (you have ~15 MINUTES)
+You're playtesting Stackadoo (https://stackadoo.com). Start fresh, head to READING
+TOWN, and focus your time on the HOUSE experience — buying a move-in home AND/OR
+building & decorating one. Have fun, but watch for bugs and report at the end.
+
+# Setup
+- New game: Grade 5 (highest) + Adventure mode, any avatar, a FUN name (replace the
+  default "Player One"). Reading Town is unlocked.
+
+# Controls (mouse-driven, no arrow keys)
+- MOVE: click "🚶 Click-to-move" (bottom-left) ON, then LEFT-CLICK the ground to walk.
+  DRAG to look around.
+- USE: click a building to enter, or click "⭐ USE" when next to it. Click "❓" blocks
+  to answer questions.
+- BUILD: toggle "🚶 Click-to-move" OFF → left-click places a block, right-click removes;
+  a color strip lets you pick colors.
+
+# Focus: HOUSES
+1. Take the "🌀 TRAVEL" portal to Reading Town. (Each world has its OWN coin jar — earn
+   coins here to spend here.)
+2. Earn coins in Reading Town: 📚 Library, 🏤 Post Office Spelling Bee, 🎬 Grammar Cinema
+   (floating signs mark each).
+3. BUY a house at 🏡 Stack Realty — browse the homes, buy one you can afford, place it,
+   walk in.
+4. DECORATE/BUILD: furnish it (Stack Barn/Mart furniture), build rooms with colored
+   blocks, add decorations/a pool. Make it yours.
+5. If you can't afford a house in time, BUILD one from blocks instead and report how that
+   felt.
+
+# Watch for
+- Can you AFFORD a house in ~15 min of Reading Town play? Which, and how many questions?
+- Is buying/placing/entering a home clear? Is decorating intuitive? Anything broken
+  (furniture won't place, camera clips walls, stuck, purchase doesn't apply)?
+- Verify any question you answer is correct (flag wrong/ambiguous).
+- Anything a 10-year-old couldn't figure out.
+
+# Screenshots: ONLY things that need fixing, each as a SEPARATE PNG/JPEG (no GIFs).
+# Rules: stay on stackadoo.com, no real purchase/sign-in, keep it wholesome.
+
+# Final report (REQUIRED)
+1. Header: name, what you ended with (coins, level, house owned/built, items placed).
+2. HOUSE experience: could you afford one? how long? was buying + decorating clear & fun?
+3. Bugs — severity, what happened vs expected, repro, timestamp.
+4. Content issues — wrong/ambiguous questions, typos (quoted).
+5. Suggestions — prioritized.
+6. Overall — would a 5th grader enjoy the house/decorating loop? best & worst moments;
+   what you didn't reach.
+```
