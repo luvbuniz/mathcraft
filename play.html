@@ -6311,6 +6311,20 @@ const GRAMMAR_MOVIES = [
     { correct: 'Will the knight win the battle?', bad: ['Will the knight win the battle.', 'will the knight win the battle?', 'Will the knight wins the battle?'], why: 'A question ends with a question mark; after "will," use "win."' },
     { correct: 'The knight and the dragon became friends.', bad: ['The knight and the dragon becomed friends.', 'the knight and the dragon became friends.', 'The knight and the dragon became friends'], why: 'The past tense of "become" is "became."' },
   ] },
+  { id: 'unicorn', title: 'Fiona and the Unicorns', emoji: '🦄', scenes: [
+    { correct: 'Fiona painted a bright rainbow.', bad: ['fiona painted a bright rainbow.', 'Fiona painted a bright rainbow', 'Fiona paint a bright rainbow.'], why: 'Names start with a capital letter, and a sentence ends with a period.' },
+    { correct: 'The unicorn has a shiny horn.', bad: ['The unicorn have a shiny horn.', 'the unicorn has a shiny horn.', 'The unicorn has a shiny horn'], why: 'Use "has" for one unicorn.' },
+    { correct: 'We saw pink, purple, and gold sparkles.', bad: ['We saw pink purple, and gold sparkles.', 'we saw pink, purple, and gold sparkles.', 'We saw pink, purple, and gold sparkles'], why: 'Use commas to separate things in a list.' },
+    { correct: 'Where did the magic horn go?', bad: ['Where did the magic horn go.', 'where did the magic horn go?', 'Where did the magic horn go'], why: 'A question ends with a question mark.' },
+    { correct: 'The unicorns flew back to Rainbow Land.', bad: ['The unicorns flewed back to Rainbow Land.', 'the unicorns flew back to Rainbow Land.', 'The unicorns flew back to rainbow land.'], why: 'The past tense of "fly" is "flew," and place names are capitalized.' },
+  ] },
+  { id: 'pony', title: 'Clumsy Cassie the Pony', emoji: '🐴', scenes: [
+    { correct: 'Cassie the pony loved to dance.', bad: ['cassie the pony loved to dance.', 'Cassie the pony loved to dance', 'Cassie the pony love to dance.'], why: 'Names start with a capital, and the past tense of "love" is "loved."' },
+    { correct: 'Her mane was long and silky.', bad: ['Her mane were long and silky.', 'her mane was long and silky.', 'Her mane was long and silky'], why: 'Use "was" for one mane.' },
+    { correct: 'Cassie and I braided her hair.', bad: ['Cassie and i braided her hair.', 'cassie and I braided her hair.', 'Cassie and I braided her hair'], why: 'The word "I" is always a capital letter.' },
+    { correct: 'Will Cassie win the ribbon?', bad: ['Will Cassie win the ribbon.', 'will Cassie win the ribbon?', 'Will Cassie wins the ribbon?'], why: 'A question ends with a question mark, and after "will" you use "win."' },
+    { correct: 'The ponies ran across the meadow.', bad: ['The ponies runned across the meadow.', 'the ponies ran across the meadow.', 'The ponies ran across the meadow'], why: 'The past tense of "run" is "ran."' },
+  ] },
 ];
 let cinema = null;
 function openCinema() {
