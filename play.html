@@ -113,6 +113,10 @@
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   #camBtn { position:absolute; top:62px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  /* 👁️ "look inside your car" nudge — pulses the view button so kids notice it */
+  @keyframes camPeek { 0%,100%{ transform:scale(1); box-shadow:0 3px 0 rgba(0,0,0,.15), 0 0 0 0 rgba(255,196,0,.9); }
+    50%{ transform:scale(1.16); box-shadow:0 3px 0 rgba(0,0,0,.15), 0 0 0 9px rgba(255,196,0,0); } }
+  #camBtn.peek { background:#FFE07A; animation:camPeek 1s ease-in-out infinite; }
   /* 🚨 siren toggle — only shown while driving an emergency vehicle (set in JS) */
   #sirenBtn { position:absolute; top:114px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
@@ -5069,6 +5073,7 @@ function toggleDrive() {
     player.vel.set(0, 0, 0);
     if (cockpit) cockpit.visible = false;
     if (player.avatar) player.avatar.visible = !G.firstPerson;
+    const cb = $('camBtn'); if (cb) cb.classList.remove('peek');   // stop the view-button nudge once you're out
     toast('🧍 Off you hop!', 1100); return;
   }
   if (!a || !a.spawned) return;
@@ -5088,6 +5093,14 @@ function toggleDrive() {
     if (sb) sb.style.display = 'none';
     toast('🚗 Vroom! Steer with the move-circle • 👁️ for first-person • ⭐ USE to hop off.', 3800);
   }
+  peekHint();   // 👁️ until they discover it, glow the view button + spell out "ride INSIDE your car"
+}
+// One-time-ish nudge so kids find the first-person ride. Pulses the 👁️ button and pops a big,
+// plain-language toast; stops bugging them once they've actually looked inside once.
+function peekHint() {
+  if (G.fpDiscovered || G.firstPerson) return;
+  const b = $('camBtn'); if (b) b.classList.add('peek');
+  setTimeout(() => { if (!G.firstPerson) toast('👁️ Want to ride INSIDE your car? Tap the glowing eye button (top-right) to see out the windshield!', 5200); }, 900);
 }
 // 🚨 emergency lights + siren — one shared state (player.sirenOn), controlled by BOTH the
 // dashboard switch (tap it in first-person) and the HUD button. `false` = switched off.
@@ -7733,9 +7746,13 @@ function updatePlayer(dt) {
       else {
         moving = true;
         const ndx = tdx / td, ndz = tdz / td;
-        const turn = shortAngle(v.yaw, Math.atan2(-ndx, -ndz)) * Math.min(1, dt * 3.5), maxStep = 1.9 * dt;
-        v.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
-        player.vel.x = -Math.sin(v.yaw) * speed; player.vel.z = -Math.cos(v.yaw) * speed;   // roll forward as it arcs toward the target
+        const diff = shortAngle(v.yaw, Math.atan2(-ndx, -ndz));   // how far we still need to turn toward the spot
+        const maxStep = 2.8 * dt;                                 // sharper steering so the car can actually reach the spot (no endless donuts)
+        v.yaw += Math.max(-maxStep, Math.min(maxStep, diff));
+        // Ease off the gas while we still have a lot of turning to do, so the car pivots TOWARD the
+        // target instead of orbiting it forever when it's clicked close or off to the side.
+        const sp = speed * (0.32 + 0.68 * Math.max(0, Math.cos(diff)));
+        player.vel.x = -Math.sin(v.yaw) * sp; player.vel.z = -Math.cos(v.yaw) * sp;   // roll forward as it arcs toward the target
       }
     } else if (jmag > 0.22) {                             // steer with the move-circle (same feel as on foot)
       moving = true;
@@ -10622,6 +10639,7 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 function toggleCamera() {
   G.firstPerson = !G.firstPerson;
   if (G.firstPerson && G.selfie) toggleSelfie();             // can't be in your own eyes AND see your face
+  if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }   // found it — stop nudging
   $('camBtn').textContent = G.firstPerson ? '👁️' : '🧍';   // eye = looking through their eyes; person = seeing the character
   toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
 }
