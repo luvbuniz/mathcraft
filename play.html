@@ -2748,7 +2748,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -2897,6 +2897,7 @@ const SHOP_ITEMS = [
   { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
   { id: 'pool',     icon: '🏊', name: 'Splash Pool', price: 30,  kind: 'many', desc: 'A swimmable pool with rippling water — drop it in any open yard and dive in! Removes in one tap, all in one piece.' },
   { id: 'poolfam',  icon: '🏊', name: 'Family Pool', price: 75,  kind: 'many', desc: 'A big swimmable pool — lots more room to splash. The whole thing places & packs up as one item.' },
+  { id: 'poolslide', icon: '🛝', name: 'Splash & Slide Pool', price: 90, kind: 'many', desc: 'A Family Pool with a climbable WATER SLIDE — climb the steps and whoosh down in first-person, then SPLASH! Places & packs up as one item.' },
   { id: 'poolmega', icon: '🌊', name: 'Mega Pool',   price: 150, kind: 'many', desc: 'The giant one! A huge swimmable pool — the grandest splash in town. Places & packs up as one item.' },
   { id: 'bush',   icon: '🌳', name: 'Leafy Bush', price: 4,    kind: 'many',  desc: 'A round green bush for the garden.' },
   { id: 'food',   icon: '🍎', name: 'Apple', price: 4,        kind: 'many',  desc: 'Place it on a table — or eat it for zoomy speed!' },
@@ -2942,7 +2943,7 @@ const ITEM_CAT = {
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
-  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolmega: 'outdoor'
+  table: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolslide: 'outdoor', poolmega: 'outdoor'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
@@ -3743,7 +3744,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -3932,6 +3933,7 @@ let pools = [];   // every placed pool is ONE whole item: { tier, x0, z0, w, d, 
 const POOL_TIERS = {
   pool:     { name: 'Splash Pool', icon: '🏊', price: 30,  w: 4, d: 3 },
   poolfam:  { name: 'Family Pool', icon: '🏊', price: 75,  w: 6, d: 4 },
+  poolslide:{ name: 'Splash & Slide Pool', icon: '🛝', price: 90, w: 6, d: 4 },
   poolmega: { name: 'Mega Pool',   icon: '🌊', price: 150, w: 8, d: 5 },
 };
 const POOL_KEYS = Object.keys(POOL_TIERS);
@@ -3967,7 +3969,7 @@ function buildPool(tier, x0, z0, force) {
     } else { placePoolWater(cx, cz, p); p.cells.push([cx, cz, 'water']); }       // animated, swimmable water
   }
   pools.push(p);
-  if (p.tier === 'poolmega') buildPoolSlide(p);   // the Mega Pool comes with a water slide
+  if (p.tier === 'poolmega' || p.tier === 'poolslide') buildPoolSlide(p);   // Mega Pool & Splash-&-Slide come with a water slide
   return p;
 }
 // 🛝 a climbable water slide on the side of a Mega Pool: walk up the steps, slide down
@@ -10495,7 +10497,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -10639,6 +10641,7 @@ function renderInv() {
     ['🌱', 'Garden Planters', G.furniture.garden, 'garden'],
     ['🏊', 'Splash Pools', G.furniture.pool, 'pool'],
     ['🏊', 'Family Pools', G.furniture.poolfam, 'poolfam'],
+    ['🛝', 'Splash & Slide Pools', G.furniture.poolslide, 'poolslide'],
     ['🌊', 'Mega Pools', G.furniture.poolmega, 'poolmega'],
     ['🌳', 'Bushes', G.furniture.bush, 'bush'],
     ['🍎', 'Apples', G.furniture.food, 'food']
