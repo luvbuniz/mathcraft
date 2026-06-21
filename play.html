@@ -6266,6 +6266,23 @@ function renderLib() {
   });
   lockChoices(wrap, 1000);            // read first — no instant mashing
 }
+// Kid-friendly definitions for the figurative-language questions. When a kid
+// misses one, we show the meaning right in the feedback — so the Library teaches
+// the term instead of just marking it wrong.
+const DEVICE_DEFS = {
+  alliteration: 'Alliteration is when words close together start with the same sound — like "slow and steady" or "big blue boat."',
+  metaphor: 'A metaphor calls one thing another to show they\'re alike — like "her idea was the key" — without using "like" or "as."',
+  simile: 'A simile compares two things using "like" or "as" — like "brave as a lion."',
+  personification: 'Personification gives human actions to something that isn\'t human — like "the wind whispered."',
+  onomatopoeia: 'Onomatopoeia is a word that sounds like the noise it makes — like "buzz," "pop," or "boom."',
+  hyperbole: 'Hyperbole is a big exaggeration you\'re not meant to take literally — like "I\'ve told you a million times."',
+  rhyme: 'Words rhyme when they end with the same sound — like "cat" and "hat."'
+};
+function deviceDef(answer) {                          // find a definition if the answer names a literary device
+  const s = (answer || '').toLowerCase();
+  for (const k in DEVICE_DEFS) if (s.indexOf(k) !== -1) return DEVICE_DEFS[k];
+  return null;
+}
 function libAnswer(opt, q, btn) {
   if (!lib || lib.attempted) return;               // one answer per question — no mashing to the right one
   lib.attempted = true;
@@ -6286,8 +6303,11 @@ function libAnswer(opt, q, btn) {
   } else {
     Sound.wrong(); btn.classList.add('flop'); lib.wrong = (lib.wrong || 0) + 1;
     markCorrectChoice($('libChoices'), q.a);
-    $('libMsg').style.color = '#c0392b'; $('libMsg').innerHTML = '✗ The answer was: <b>' + q.a + '</b>';
-    setTimeout(() => { if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, 2400);
+    const def = deviceDef(q.a);                      // if it's a literary device, explain what it means
+    $('libMsg').style.color = '#c0392b';
+    $('libMsg').innerHTML = '✗ The answer was: <b>' + q.a + '</b>' +
+      (def ? '<br><span style="color:#5a4a7a;font-weight:600;font-size:0.92em">💡 ' + def + '</span>' : '');
+    setTimeout(() => { if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, def ? 4400 : 2400);
   }
 }
 function finishLib() {
