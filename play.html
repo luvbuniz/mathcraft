@@ -5625,8 +5625,8 @@ const QUEST_OBJECTS = [
 // 🔤 unscramble words — picture-hint anagrams, length scaled by level (younger = shorter)
 const ANAGRAM_WORDS = [
   { w: 'cat', e: '🐱' }, { w: 'dog', e: '🐶' }, { w: 'sun', e: '☀️' }, { w: 'hat', e: '🎩' }, { w: 'bug', e: '🐛' }, { w: 'cup', e: '☕' }, { w: 'bee', e: '🐝' }, { w: 'pig', e: '🐷' },
-  { w: 'fish', e: '🐠' }, { w: 'star', e: '⭐' }, { w: 'tree', e: '🌳' }, { w: 'frog', e: '🐸' }, { w: 'cake', e: '🍰' }, { w: 'moon', e: '🌙' }, { w: 'bird', e: '🐦' }, { w: 'ball', e: '⚽' }, { w: 'boat', e: '⛵' }, { w: 'leaf', e: '🍃' },
-  { w: 'apple', e: '🍎' }, { w: 'tiger', e: '🐯' }, { w: 'snake', e: '🐍' }, { w: 'house', e: '🏠' }, { w: 'train', e: '🚂' }, { w: 'robot', e: '🤖' }, { w: 'lemon', e: '🍋' }, { w: 'mouse', e: '🐭' },
+  { w: 'fish', e: '🐠' }, { w: 'star', e: '⭐' }, { w: 'tree', e: '🌳' }, { w: 'frog', e: '🐸' }, { w: 'cake', e: '🍰' }, { w: 'moon', e: '🌙' }, { w: 'bird', e: '🐦' }, { w: 'ball', e: '⚽' }, { w: 'boat', e: '⛵' }, { w: 'leaf', e: '🍃', alt: ['flea'] },
+  { w: 'apple', e: '🍎' }, { w: 'tiger', e: '🐯' }, { w: 'snake', e: '🐍', alt: ['sneak'] }, { w: 'house', e: '🏠' }, { w: 'train', e: '🚂' }, { w: 'robot', e: '🤖' }, { w: 'lemon', e: '🍋', alt: ['melon'] }, { w: 'mouse', e: '🐭' },
   { w: 'rocket', e: '🚀' }, { w: 'flower', e: '🌸' }, { w: 'turtle', e: '🐢' }, { w: 'pencil', e: '✏️' }, { w: 'guitar', e: '🎸' }, { w: 'rabbit', e: '🐰' }, { w: 'monkey', e: '🐵' }, { w: 'castle', e: '🏰' },
 ];
 let sideQuest = null;
@@ -5728,7 +5728,7 @@ function newAnagram() {
   sideQuest._used = (sideQuest._used || []).concat(item.w);
   const letters = item.w.split('');
   let scr; do { scr = letters.slice().sort(() => Math.random() - 0.5); } while (scr.join('') === item.w && item.w.length > 1);
-  sideQuest.ana = { word: item.w, emoji: item.e, tiles: scr.map((ch, i) => ({ ch, id: i, used: false })), placed: [] };
+  sideQuest.ana = { word: item.w, alt: item.alt || [], emoji: item.e, tiles: scr.map((ch, i) => ({ ch, id: i, used: false })), placed: [] };
 }
 function renderAnagram() {
   const a = sideQuest.ana; if (!a) return;
@@ -5766,9 +5766,12 @@ function unplaceAnagram(i) {
 }
 function checkAnagram() {
   const a = sideQuest.ana;
-  if (a.placed.map(t => t.ch).join('') === a.word) {
+  const typed = a.placed.map(t => t.ch).join('');
+  // Accept the pictured word OR any real-word anagram of the same tiles (e.g. lemon/melon) — the
+  // kid made a valid word from those exact letters, so it counts. Celebrate the word they spelled.
+  if (typed === a.word || (a.alt && a.alt.indexOf(typed) !== -1)) {
     sideQuest.locked = true; Sound.correct(); sideQuest.right++; sideQuest.round++;
-    $('sqMsg').style.color = '#2f8a52'; $('sqMsg').textContent = '✓ ' + a.word.toUpperCase() + '! 🎉';
+    $('sqMsg').style.color = '#2f8a52'; $('sqMsg').textContent = '✓ ' + typed.toUpperCase() + '! 🎉';
     setTimeout(() => { sideQuest.locked = false; if (sideQuest.round >= sideQuest.total) finishSideQuest(); else { $('sqMsg').textContent = ''; newAnagram(); renderAnagram(); } }, 1100);
   } else {
     Sound.wrong();
