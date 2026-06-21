@@ -62,6 +62,39 @@ Each owns a subject. They're the "wise residents" of Stackadoo World.
 🐧 Penguin, 🐰 Bunny, 🦌 Deer, 🦕 T-Rex (comic relief — big but bad at small
 numbers), 🛡️ Knight (turns problems into quests), 🦁 King Lion (the brave one).
 
+> **Spark is also the kids' main guide** — the warm first friend who hands out
+> the Stackadoo coins and helps with everyday smarts (money/change, telling
+> time, reading signs). Wiz/Bolt are the deeper specialists they meet later.
+
+---
+
+## 📜 Canon (the rules of the world)
+- **The Stackadoo Coin.** Each kid gets a glowing coin. Hold it to your heart,
+  say **"Stackadoo!"**, and you're whisked into the world for help. This is the
+  brand catchphrase — kids will say it out loud. 🪙
+- **The moral engine.** Learning is *power and protection* — a kid who can do
+  the math can't be cheated, tricked, or shortchanged. Every episode proves it.
+- **Avatar hook (future):** the coin can let a kid take an animal form — Leo →
+  Tiger, Fiona → Queen Fox — tying the cartoons to the playable avatars.
+
+---
+
+## 😈 The nemesis
+
+### 🐉 Murk — the Fog Dragon  *(avatar: `dragon`, dark/stormy recolor)*
+- **Who:** A gloomy dragon who breathes **"muddle fog"** (gray brain-fog)
+  instead of fire. Where his fog drifts, kids' heads go fuzzy — they can't count,
+  can't read, can't think.
+- **Why:** Confused kids are *easy to cheat.* Murk teams up with every swindler
+  in town (the shortchanging ice-cream man, the rigged-scale grocer); they
+  prosper while kids stay foggy. **He profits from ignorance.**
+- **His weapon is a feeling:** the fog whispers *"It's too hard… just give up…"*
+  — he's the voice of *I can't*, which makes him Leo's true mirror, and beatable
+  the same way: by trying, learning, and the coin (which burns the fog away).
+- **Every episode:** Murk fogs a kid → the kid learns the skill with a teacher →
+  the fog clears, the cheat is exposed, Murk fumes and slinks off to scheme again.
+- *(In-game later: a "Shadow Dragon" skin, or a boss whose riddles you beat with math.)*
+
 ---
 
 ## 🔁 The repeatable format — *"Stuck? Step into Stackadoo World"*
