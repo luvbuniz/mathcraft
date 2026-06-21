@@ -34,9 +34,11 @@ fog curls at the truck's edges (we don't know it yet, but that's Murk's).
 
 ## SEGMENT 2 — The shifty change
 At the truck, a **shifty Ice Cream Man** with a sly grin hands over two cones.
-A little sign reads "Cones $3.50." Leo gives him the $5. The man drops a single
-coin — **one dollar** — into Leo's hand and quickly slides the window half-shut.
-A puff of **gray fog** drifts over the kids; their eyes go swirly and confused.
+*(He's Murk in disguise — watch for the tell: his eyes glint **gray-green** and a
+thin curl of fog leaks from his sleeve.)* A little sign reads "Cones $3.50." Leo
+gives him the $5. The man drops a single coin — **one dollar** — into Leo's hand
+and quickly slides the window half-shut. A puff of **gray fog** drifts over the
+kids; their eyes go swirly and confused.
 - **Ice Cream Man (smirking):** "There's your change. Run along!"
 - **Fiona (uneasy):** "Wait… is that right?"
 - **Leo (head fuzzy):** "I— I don't know! Ugh, I can't tell!"
@@ -89,8 +91,13 @@ palm, clear-eyed and confident, a crowd of **other kids** gathering.
   you only gave me a dollar. You owe me **two quarters!**"
 - **A kid in the crowd:** "He shorted me too!"  **Another kid:** "And me!"
 The **Sheriff** strolls up, badge gleaming, and takes the sputtering Ice Cream
-Man by the collar. Above the rooftops, Murk's fog thins and he slinks away.
+Man by the collar.
 - **Ice Cream Man:** "I— uh— it was an honest mistake!"  **Sheriff:** "Sure it was."
+**THE UNMASK:** the Ice Cream Man's disguise flickers — gray-green eyes flash —
+and he dissolves into a swirl of gray fog, rising into the sky as **Murk the Fog
+Dragon**, snarling down at the kids.
+- **Murk:** "You got lucky, little ones… I'll be back — and next time you won't
+  be so clever!" He vanishes in a puff of fog. (Sets up the series.)
 
 ## SEGMENT 8 — A sweeter ending + tag
 A cheerful **new owner** opens the truck — bigger, friendlier — and hands every

@@ -85,9 +85,15 @@ numbers), 🛡️ Knight (turns problems into quests), 🦁 King Lion (the brave
 - **Who:** A gloomy dragon who breathes **"muddle fog"** (gray brain-fog)
   instead of fire. Where his fog drifts, kids' heads go fuzzy — they can't count,
   can't read, can't think.
-- **Why:** Confused kids are *easy to cheat.* Murk teams up with every swindler
-  in town (the shortchanging ice-cream man, the rigged-scale grocer); they
-  prosper while kids stay foggy. **He profits from ignorance.**
+- **Why:** Confused kids are *easy to cheat.* **Murk is a shape-shifter** — he
+  doesn't just *help* swindlers, he disguises himself AS them: the shortchanging
+  ice-cream man, the rigged-scale grocer, the carnival barker, the "half the
+  pizza?" trickster. Different scam every episode, same dragon underneath. He
+  profits from ignorance.
+- **His tell (let kids spot it):** in any disguise, his eyes glint **gray-green**
+  and a curl of fog leaks from his sleeve. When the kids unmask him with the
+  right skill, the disguise melts into fog and he flees as the dragon, vowing
+  to return. **This is the franchise's format engine** — a new Murk con each week.
 - **His weapon is a feeling:** the fog whispers *"It's too hard… just give up…"*
   — he's the voice of *I can't*, which makes him Leo's true mirror, and beatable
   the same way: by trying, learning, and the coin (which burns the fog away).
