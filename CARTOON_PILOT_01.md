@@ -43,9 +43,9 @@ swimmy and confused.
 - **Ice Cream Man (booming, gleeful):** "There's your change, ha-HAA! Now SCRAM!"
 
 ## SEGMENT 3 — Fiona guesses, Leo runs (the fall)
-The kids stare at the lone penny, heads swimmy and confused. Fiona turns it over,
-guessing, totally unsure — neither of them actually *knows*.
-- **Fiona (baffled):** "Wait… a penny? Is that… right? What's going on?"
+The kids stare at the two little coins, heads swimmy and confused. Fiona turns
+them over, guessing, totally unsure — neither of them actually *knows*.
+- **Fiona (baffled):** "Wait… fifty cents? Is that… right? What's going on?"
 - **Leo (cheeks burning):** "I— I don't know either! Is everyone looking? Are
   we dumb?"
 The villain's laughter BOOMS. Humiliated and frustrated, Leo bolts away —
