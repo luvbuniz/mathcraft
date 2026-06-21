@@ -9,9 +9,10 @@ makes you un-trickable.*
 **Run time:** ~2 minutes (a "tentpole" piece — worth a Gemini-quality version
 for the channel trailer / homepage; the weekly shorts can be Grok).
 
-**The math (keep it exact):** Two cones cost **$3.50**. They pay with **$5.00**.
-Correct change = **$1.50** (one $1 + two 25¢). The cheat hands back only **$1.00**
-— shorting them **50¢ (two quarters)**. Lesson = *counting up* to make change.
+**The math (keep it exact — 2nd-grade friendly):** Two cones cost **$3.50**. They
+pay with **$5.00**. Correct change = **$1.50**, an easy *count-up* ($3.50 → +50¢ →
+$4.00 → +$1 → $5.00). The cheat hands back only **50¢**, shorting them a clean,
+obvious **whole dollar**. Numbers stay friendly; the villain supplies the drama.
 
 **Cast:** Leo & Fiona (human voxel kids — the girl & boy; rename if you like),
 Mom (voxel), **Spark** the kind fairy, **Murk** the fog dragon (villain), the
@@ -35,9 +36,10 @@ They race down the sidewalk toward a jingling **ice cream truck** parked in the 
 At the truck looms the **Ice Cream Man** — a towering, greasy-grinned brute with
 a cold stare and a too-wide smile. He slaps down two small cones. A sign reads
 "Cones $3.50." Leo proudly hands over the whole **$5 bill**. The man makes a big
-show of counting "change" — then drops a **single penny** into Leo's palm and
-SLAMS the window shut, cackling. *(Blink-and-miss tell, never explained yet: for
-a flicker his eyes glint an odd green.)* The kids' heads go swimmy and confused.
+show of counting "change" — then drops just **two coins (fifty cents)** into
+Leo's palm and SLAMS the window shut, cackling. *(Blink-and-miss tell, never
+explained yet: for a flicker his eyes glint an odd green.)* The kids' heads go
+swimmy and confused.
 - **Ice Cream Man (booming, gleeful):** "There's your change, ha-HAA! Now SCRAM!"
 
 ## SEGMENT 3 — Fiona guesses, Leo runs (the fall)
@@ -65,14 +67,14 @@ A gentle sparkle — **Spark the Fairy** flutters down, warm and kind.
 Spark waves her wand; glowing **coins** float in the air — a shiny dollar and
 bright quarters. She lines them up over a number path.
 - **Spark:** "Your cones cost three dollars fifty. You paid five. Let's count UP
-  to five! Start at $3.50…" *(a quarter lands)* "…$3.75…" *(another quarter)*
-  "…$4.00…" *(a dollar coin)* "…and $5.00!"
-- **Spark:** "How much did we add back? Two quarters and a dollar — that's
+  to five! Start at $3.50…" *(coins land)* "…add fifty cents, that's $4.00…"
+  *(a dollar coin)* "…add a dollar, that's $5.00!"
+- **Spark:** "How much did we add back? Fifty cents and a dollar — that's
   **one dollar and fifty cents!**"
 As Leo gets it, the **muddle in his head clears** into sparkles; his eyes go
 clear and bright.
-- **Leo (lighting up):** "One dollar fifty! But that crook only gave me ONE
-  PENNY — he stole almost all of it!"
+- **Leo (lighting up):** "One dollar fifty! But that crook only gave me FIFTY
+  CENTS — he kept a whole dollar!"
 - **Spark:** "Now you see. A kid who can count can't be cheated."
 
 ## SEGMENT 6 — The Stackadoo coin
@@ -87,7 +89,7 @@ The coins flash; the kids are gently swept back through the portal.
 Real world, the ice cream truck again. This time Leo counts the change in his
 palm, clear-eyed and confident, a crowd of **other kids** gathering.
 - **Leo (bold):** "Hey! Two cones are $3.50. I paid $5. My change is $1.50 — and
-  you gave me ONE PENNY! You owe me **a dollar fifty!**"
+  you only gave me FIFTY CENTS! You owe me **a whole dollar more!**"
 - **A kid in the crowd:** "He shorted me too!"  **Another kid:** "And me!"
 The **Sheriff** strolls up, badge gleaming, and takes the sputtering Ice Cream
 Man by the collar.
