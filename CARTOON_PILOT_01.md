@@ -32,24 +32,27 @@ Sunny blocky neighborhood. **Mom** (warm, smiling) hands a crisp **$5 bill** to
 They race down the sidewalk toward a jingling **ice cream truck**. A wisp of gray
 fog curls at the truck's edges (we don't know it yet, but that's Murk's).
 
-## SEGMENT 2 — The shifty change
-At the truck, a **shifty Ice Cream Man** with a sly grin hands over two cones.
-*(He's Murk in disguise — watch for the tell: his eyes glint **gray-green** and a
-thin curl of fog leaks from his sleeve.)* A little sign reads "Cones $3.50." Leo
-gives him the $5. The man drops a single coin — **one dollar** — into Leo's hand
-and quickly slides the window half-shut. A puff of **gray fog** drifts over the
-kids; their eyes go swirly and confused.
-- **Ice Cream Man (smirking):** "There's your change. Run along!"
-- **Fiona (uneasy):** "Wait… is that right?"
-- **Leo (head fuzzy):** "I— I don't know! Ugh, I can't tell!"
+## SEGMENT 2 — The gross cheat (uber-villain)
+At the truck looms the **Ice Cream Man** — a towering, greasy-grinned brute,
+barely hiding the monster underneath: **gray-green eyes**, fog seeping from his
+collar and sleeves. *(He's Murk in disguise.)* He slaps down two small cones.
+A sign reads "Cones $3.50." Leo proudly hands over the whole **$5 bill**. The
+villain makes a big show of counting "change" — then drops a **single penny**
+into Leo's palm and SLAMS the window shut, cackling. Thick **gray fog** rolls
+over the kids; their eyes go swirly and confused.
+- **Ice Cream Man (booming, gleeful):** "There's your change, ha-HAA! Now SCRAM!"
 
-## SEGMENT 3 — The fight & the fall
-The cones drip. The kids bicker, frustrated and foggy.
-- **Fiona:** "You held the money — *you* count it!"
-- **Leo:** "I CAN'T, okay?! Math is too hard!" *(Murk's exact whisper.)*
-Leo turns and stomps off — and **trips into a glowing hole** in the ground that
-wasn't there a second ago. It's a swirling **portal**! He vanishes with a yelp.
-- **Fiona (gasping):** "LEO!" — she jumps in after him.
+## SEGMENT 3 — Fiona guesses, Leo runs (the fall)
+The kids stare at the lone penny, heads muddled by the fog. Fiona turns it over,
+guessing, totally unsure — neither of them actually *knows*.
+- **Fiona (baffled):** "Wait… a penny? Is that… right? What's going on?"
+- **Leo (cheeks burning, the fog whispering):** "I— I don't know either! Is
+  everyone looking? Are we dumb?" *(That's Murk's voice in his head.)*
+The villain's laughter BOOMS. Humiliated and frustrated, Leo bolts away —
+- **Fiona:** "Leo, wait!"
+— and Leo **trips into a glowing hole** that yawns open in the sidewalk. A
+swirling **portal!** He vanishes with a yelp.
+- **Fiona (gasping):** "LEO!" — she leaps in after him.
 
 ## SEGMENT 4 — Stackadoo World
 They land softly in a dazzling **voxel wonderland** — rainbow hills, candy-bright
@@ -71,8 +74,8 @@ bright quarters. She lines them up over a number path.
   **one dollar and fifty cents!**"
 As Leo gets it, the **gray fog around them burns away** into sparkles; his eyes
 go clear and bright.
-- **Leo (lighting up):** "One-fifty! But the man only gave me ONE dollar… he
-  kept my two quarters!"
+- **Leo (lighting up):** "One dollar fifty! But that crook only gave me ONE
+  PENNY — he stole almost all of it!"
 - **Spark:** "Now you see. A kid who can count can't be cheated."
 
 ## SEGMENT 6 — The Stackadoo coin
@@ -87,8 +90,8 @@ distance Murk SNARLS, furious that the fog lifted.
 ## SEGMENT 7 — Back to the truck (the catch)
 Real world, the ice cream truck again. This time Leo counts the change in his
 palm, clear-eyed and confident, a crowd of **other kids** gathering.
-- **Leo (bold):** "Hey! Two cones are $3.50. I paid $5. My change is $1.50 — but
-  you only gave me a dollar. You owe me **two quarters!**"
+- **Leo (bold):** "Hey! Two cones are $3.50. I paid $5. My change is $1.50 — and
+  you gave me ONE PENNY! You owe me **a dollar fifty!**"
 - **A kid in the crowd:** "He shorted me too!"  **Another kid:** "And me!"
 The **Sheriff** strolls up, badge gleaming, and takes the sputtering Ice Cream
 Man by the collar.
