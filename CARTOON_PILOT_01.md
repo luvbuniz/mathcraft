@@ -98,15 +98,16 @@ Man away as the crowd of kids cheers.
 *(No dragon this episode — the Ice Cream Man is just a human cheat who gets
 caught. Murk is held back for a later episode to build the mystery.)*
 
-## SEGMENT 8 — A sweeter ending + tag
+## SEGMENT 8 — Sweet ending + logo sign-off
 A cheerful **new owner** opens the truck — bigger, friendlier — and hands every
 kid an **extra-tall double cone**, change counted out correctly into each palm.
 - **New Owner:** "Honest scoops, and the change counted right — every time!"
-Leo and Fiona clink their glowing Stackadoo coins together and grin at the camera.
+Leo and Fiona clink their glowing Stackadoo coins together and grin.
 - **Leo:** "Smart kids don't get tricked."
-- **Fiona:** "Stackadoo!"
-**Tag card (logo + voice-over):** *"Stackadoo — where smart kids win. Play free
-at Stackadoo.com."* 🧱
+- **Fiona (happy catchphrase):** "Stackadoo!"
+**End card:** a clean bear-block **STACKADOO** logo — logo only, no URL and no
+sales line. *(Keeps the kid-facing cartoon as content; the "try it" pitch lives
+in the video description + a parent-facing end card, not spoken to children.)* 🧱
 
 ---
 

@@ -92,13 +92,12 @@ sputtering Ice Cream Man away.
 - ICE CREAM MAN (sputtering): "I— uh— honest mistake!"  SHERIFF: "Sure it was."
 
 ═══════════════════════════════════════════════════════════════════
-## SEGMENT 8 — Sweeter ending + tag
+## SEGMENT 8 — Sweet ending + logo sign-off
 ═══════════════════════════════════════════════════════════════════
 A cheerful NEW OWNER opens the truck — bigger, friendlier — and hands every kid a
 tall double cone, counting the change correctly into each palm. Leo and Fiona
-clink their glowing Stackadoo coins together and grin at the camera. End on the
-bear-block Stackadoo logo.
+clink their glowing Stackadoo coins together and grin. End on a clean bear-block
+STACKADOO logo card (logo only — no URL, no sales line).
 - NEW OWNER: "Honest scoops, and the change counted right — every time!"
 - LEO: "Smart kids don't get tricked."
-- FIONA: "Stackadoo!"
-- VOICE-OVER (tag): "Stackadoo — where smart kids win. Play free at Stackadoo.com."
+- FIONA (happy catchphrase): "Stackadoo!"
