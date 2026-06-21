@@ -398,6 +398,10 @@
     background:linear-gradient(#fffefb,#e8edf6); border:4px solid #14202d; border-radius:6px;
     box-shadow:0 0 28px 7px rgba(170,205,255,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; overflow:hidden; }
   #cinemaScene .screen .cvid { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  #cinemaScene .screen .sndcue { position:absolute; bottom:6px; left:50%; transform:translateX(-50%); z-index:4;
+    background:rgba(0,0,0,.62); color:#fff; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px;
+    cursor:pointer; white-space:nowrap; animation:sndpulse 1.3s ease-in-out infinite; }
+  @keyframes sndpulse { 0%,100%{ opacity:.6; transform:translateX(-50%) scale(1); } 50%{ opacity:1; transform:translateX(-50%) scale(1.07); } }
   #cinemaScene .screen .fallback { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
   #cinemaScene .screen .ns { font-size:11px; letter-spacing:2px; color:#9b59b6; font-weight:800; }
   #cinemaScene .screen .em { font-size:42px; line-height:1; }
@@ -6504,7 +6508,8 @@ function finishCinema() {
     '<div class="theatre">' +
       '<div class="valance"></div><div class="curtain l"></div><div class="curtain r"></div>' +
       '<div class="screen">' +
-        '<video class="cvid" src="shots/cinema/' + mv.id + '.mp4" autoplay playsinline onerror="this.remove()" onclick="this.muted=false;this.play()"></video>' +
+        '<video class="cvid" id="cvid" src="shots/cinema/' + mv.id + '.mp4" muted loop autoplay playsinline preload="auto"></video>' +
+        '<div class="sndcue" id="sndcue" style="display:none">🔊 Tap for sound</div>' +
         '<div class="fallback">' +
           '<div class="ns">✨ NOW SHOWING ✨</div>' +
           '<div class="em">' + mv.emoji + '</div>' +
@@ -6517,6 +6522,16 @@ function finishCinema() {
         '<div class="head" style="width:66px;height:72px;left:50%;transform:translateX(-50%);background:#16091f"></div>' +
       '</div>' +
     '</div>';
+  // The video auto-plays MUTED (browsers always allow that); a tap unmutes it and restarts from the
+  // top with sound. Finishing the quiz happens on a timer, so autoplay-with-sound would be blocked.
+  const vid = $('cvid'), cue = $('sndcue');
+  if (vid) {
+    vid.addEventListener('error', () => { vid.remove(); if (cue) cue.remove(); });   // no clip yet → show the title card
+    vid.addEventListener('playing', () => { if (cue) cue.style.display = ''; });     // it's rolling → invite a tap for sound
+    const unmute = () => { try { vid.loop = false; vid.muted = false; vid.currentTime = 0; vid.play(); } catch (e) {} if (cue) cue.style.display = 'none'; };
+    vid.onclick = unmute; if (cue) cue.onclick = unmute;
+    const p = vid.play(); if (p && p.catch) p.catch(() => {});
+  }
   $('cinemaPrompt').innerHTML = '🍿 You fixed the whole script — the movie premieres!' +
     '<br><span style="color:#2f8a52;font-weight:800">✍️ Grammar score: ' + fr + '/' + total + '</span>' +
     '<br><span style="color:#e0a21c;font-weight:800">🪙 +' + reward + ' coins!</span>';
