@@ -1,0 +1,5 @@
+# Stackadoo — welcome, search engines! Crawl everything.
+User-agent: *
+Allow: /
+
+Sitemap: https://stackadoo.com/sitemap.xml
