@@ -6447,7 +6447,17 @@ function openCinema() {
   $('cinemaPopup').style.display = 'flex';
   showMoviePicker();
 }
-function closeCinema() { $('cinemaPopup').style.display = 'none'; popupOpen = false; cinema = null; }
+function saveCinemaProgress() {
+  // Remember where a kid is in a movie so closing (X) resumes instead of restarting. Fixed lines
+  // are gone from the queue; a line they missed stays in it, so they pick up the remaining lines
+  // (the wrong one included) rather than starting afresh.
+  if (!cinema || !cinema.queue) return;
+  if (!profile.cinemaProgress) profile.cinemaProgress = {};
+  if (cinema.queue.length) profile.cinemaProgress[cinema.movie.id] = { queue: cinema.queue.slice(), tried: Object.keys(cinema.tried || {}).map(Number), firstRight: cinema.firstRight };
+  else delete profile.cinemaProgress[cinema.movie.id];
+  profileDirty = true; saveProfile();
+}
+function closeCinema() { saveCinemaProgress(); $('cinemaPopup').style.display = 'none'; popupOpen = false; cinema = null; }
 function showMoviePicker() {
   cinema = null;
   $('cinemaTitle').innerHTML = '🎬 Grammar Cinema';
@@ -6456,20 +6466,32 @@ function showMoviePicker() {
   $('cinemaMsg').textContent = '';
   const wrap = $('cinemaChoices'); wrap.innerHTML = '';
   GRAMMAR_MOVIES.forEach(m => {
+    const prog = profile.cinemaProgress && profile.cinemaProgress[m.id];
+    const left = prog && prog.queue ? prog.queue.length : 0;
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '18px';
-    b.innerHTML = m.emoji + ' <b>' + m.title + '</b>';
+    b.innerHTML = m.emoji + ' <b>' + m.title + '</b>' + (left ? ' <span style="color:#7a4ea0;font-size:13px;font-weight:700">▶ resume · ' + left + ' to fix</span>' : '');
     b.onclick = () => { Sound.click(); startMovie(m); };
     wrap.appendChild(b);
   });
 }
-function startMovie(m) { cinema = { movie: m, qi: 0, firstRight: 0, attempted: false }; renderScene(); }
+function startMovie(m) {
+  cinema = { movie: m, queue: m.scenes.map((_, i) => i), tried: {}, firstRight: 0, attempted: false };
+  const saved = profile.cinemaProgress && profile.cinemaProgress[m.id];
+  if (saved && saved.queue && saved.queue.length) {     // resume — fixed lines stay gone, missed ones remain
+    cinema.queue = saved.queue.slice();
+    cinema.firstRight = saved.firstRight || 0;
+    (saved.tried || []).forEach(i => cinema.tried[i] = true);
+  }
+  renderScene();
+}
 function renderScene() {
   if (!cinema) return;
   const m = cinema.movie;
-  if (cinema.qi >= m.scenes.length) { finishCinema(); return; }
+  if (!cinema.queue.length) { finishCinema(); return; }
   cinema.attempted = false;
-  const sc = m.scenes[cinema.qi];
-  $('cinemaTitle').innerHTML = m.emoji + ' ' + m.title + ' — Scene ' + (cinema.qi + 1) + '/' + m.scenes.length;
+  const idx = cinema.queue[0], sc = m.scenes[idx];
+  const fixed = m.scenes.length - cinema.queue.length;
+  $('cinemaTitle').innerHTML = m.emoji + ' ' + m.title + ' — Scene ' + (fixed + 1) + '/' + m.scenes.length;
   $('cinemaScene').innerHTML = '<div style="font-size:34px">🎬</div>';
   $('cinemaPrompt').textContent = '🎟️ Tap the line that is written correctly!';
   $('cinemaMsg').textContent = '';
@@ -6477,37 +6499,46 @@ function renderScene() {
   const wrap = $('cinemaChoices'); wrap.innerHTML = '';
   opts.forEach(opt => {
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.style.textAlign = 'left'; b.textContent = opt;
-    b.onclick = () => cinemaAnswer(opt, sc, b);
+    b.onclick = () => cinemaAnswer(opt, sc, b, idx);
     wrap.appendChild(b);
   });
   lockChoices(wrap, 700);
 }
-function cinemaAnswer(ans, sc, btn) {
+function cinemaAnswer(ans, sc, btn, idx) {
   if (!cinema || cinema.attempted) return;
   cinema.attempted = true;
   disableChoices($('cinemaChoices'));
   const correct = ans === sc.correct;
-  profile.grammarFirstTotal = (profile.grammarFirstTotal || 0) + 1;
+  const firstTry = !cinema.tried[idx];
+  if (firstTry) {                                    // only the first crack at a line counts toward the score/stats
+    cinema.tried[idx] = true;
+    profile.grammarFirstTotal = (profile.grammarFirstTotal || 0) + 1;
+    if (correct) { profile.grammarFirstRight = (profile.grammarFirstRight || 0) + 1; cinema.firstRight++; }
+  }
   if (correct) {
-    profile.grammarFirstRight = (profile.grammarFirstRight || 0) + 1; cinema.firstRight++;
     G.solved++; recordSolve({ skill: 'grammar', level: Math.max(1, Math.min(5, profile.readLevel || G.grade || 2)) }); bumpHud('solvedCount');
-  } else recordWrong({ skill: 'grammar' });
+    cinema.queue.shift();                            // line fixed → leaves the queue
+  } else {
+    recordWrong({ skill: 'grammar' });
+    cinema.queue.push(cinema.queue.shift());         // not yet → send to the back to try again (kept even if they X out)
+  }
+  saveCinemaProgress();
   profileDirty = true; saveProfile(); refreshHUD();
-  cinema.qi++;
   markCorrectChoice($('cinemaChoices'), sc.correct);
-  const done = () => { if (cinema && cinema.qi >= cinema.movie.scenes.length) finishCinema(); else renderScene(); };
+  const done = () => { if (cinema && !cinema.queue.length) finishCinema(); else renderScene(); };
   if (correct) {
     Sound.correct();
     $('cinemaMsg').style.color = '#2f8a52'; $('cinemaMsg').innerHTML = '✓ ' + sc.why;
     setTimeout(done, 1600);
   } else {
     Sound.wrong(); if (btn && btn.classList) btn.classList.add('flop');
-    $('cinemaMsg').style.color = '#c0392b'; $('cinemaMsg').innerHTML = '✗ It should be: <b>' + sc.correct + '</b><br><span style="color:#7a5a9a">' + sc.why + '</span>';
+    $('cinemaMsg').style.color = '#c0392b'; $('cinemaMsg').innerHTML = '✗ It should be: <b>' + sc.correct + '</b><br><span style="color:#7a5a9a">' + sc.why + '</span><br><span style="color:#9a7ab0;font-size:0.86em">You\'ll get this line again later — you\'ve got it next time! 💪</span>';
     setTimeout(done, 2900);
   }
 }
 function finishCinema() {
   const mv = cinema.movie, total = mv.scenes.length, fr = cinema.firstRight || 0;
+  if (profile.cinemaProgress) { delete profile.cinemaProgress[mv.id]; profileDirty = true; }   // whole script fixed → progress cleared
   const reward = 4 + fr * 3;   // pay for lines fixed right on the first try (no farming)
   G.coins += reward; Sound.fanfare && Sound.fanfare(); refreshHUD(); bumpHud && bumpHud('coinCount');
   $('cinemaTitle').innerHTML = '🎬 Premiere!';
