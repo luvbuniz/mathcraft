@@ -2774,6 +2774,44 @@ const AVATARS = [
       box(tail, 0.12, 0.14, 0.4, grnD, 0, -0.2, -0.68);              // tail tip
       return { group: g, legs, arms, head, tail };
     }
+  },
+  {
+    // ⭐ The cartoon stars — play AS Leo or Fiona. Looks match the Stackadoo World cartoons so a
+    // kid who loves the shows can be their favourite character (the cartoon→game bridge).
+    id: 'leo', name: 'Leo 👦',
+    build() {
+      const tee = 0xF6C744, shorts = 0x3A6FB0, skin = 0xFFD9B3, hair = 0x6B4423;
+      const a = buildBiped(tee, skin, shorts, skin);                  // yellow tee, blue shorts, bare arms
+      addEyes(a.head, 0x35506e, 0.26);
+      box(a.head, 0.08, 0.03, 0.03, 0xC0694A, 0, -0.15, 0.26);        // small smile
+      box(a.head, 0.035, 0.03, 0.03, 0xC0694A, -0.052, -0.135, 0.26);
+      box(a.head, 0.035, 0.03, 0.03, 0xC0694A, 0.052, -0.135, 0.26);
+      box(a.head, 0.54, 0.2, 0.54, hair, 0, 0.22, 0);                 // messy brown hair cap
+      box(a.head, 0.5, 0.1, 0.08, hair, 0, 0.18, 0.24);               // bangs
+      box(a.head, 0.12, 0.12, 0.12, hair, -0.18, 0.34, 0.05);         // messy tufts
+      box(a.head, 0.12, 0.12, 0.12, hair, 0.16, 0.35, -0.02);
+      box(a.head, 0.1, 0.1, 0.1, hair, 0.05, 0.36, 0.13);
+      a.legs.forEach(L => box(L, 0.26, 0.13, 0.34, 0xF4F4F4, 0, -0.5, 0.08));   // white sneakers
+      return a;
+    }
+  },
+  {
+    id: 'fiona', name: 'Fiona 👧',
+    build() {
+      const dress = 0x9B59B6, dressD = 0x7D3C98, skin = 0xFFD9B3, hair = 0x6B4423;
+      const a = buildBiped(dress, skin, dressD, skin);                // purple dress, bare arms
+      addEyes(a.head, 0x35506e, 0.26);
+      box(a.head, 0.08, 0.03, 0.03, 0xD06A92, 0, -0.15, 0.26);        // small smile
+      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, -0.052, -0.135, 0.26);
+      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
+      box(a.head, 0.56, 0.24, 0.56, hair, 0, 0.2, 0);                 // brown hair cap
+      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.14, 0.24);            // bangs
+      box(a.head, 0.14, 0.5, 0.14, hair, -0.31, -0.06, 0.02);        // shoulder-length side locks
+      box(a.head, 0.14, 0.5, 0.14, hair, 0.31, -0.06, 0.02);
+      box(a.head, 0.5, 0.5, 0.14, hair, 0, -0.05, -0.26);           // back hair
+      box(a.group, 0.42, 0.09, 0.32, 0xFFFFFF, 0, 1.17, 0.03);       // white collar
+      return a;
+    }
   }
 ];
 
