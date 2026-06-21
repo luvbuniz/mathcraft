@@ -15,8 +15,10 @@ $4.00 → +$1 → $5.00). The cheat hands back only **50¢**, shorting them a cl
 obvious **whole dollar**. Numbers stay friendly; the villain supplies the drama.
 
 **Cast:** Leo & Fiona (human voxel kids — the girl & boy; rename if you like),
-Mom (voxel), **Spark** the kind fairy, **Murk** the fog dragon (villain), the
-shifty Ice Cream Man, a crowd of voxel kids, the Sheriff.
+Mom (voxel), **Spark** the kind fairy, the shifty **Ice Cream Man** (this
+episode's villain — a plain human cheat), a crowd of voxel kids, the Sheriff.
+*(Murk the fog dragon is deliberately NOT in Episode 1 — saved for a later
+episode so the big reveal builds anticipation.)*
 
 **Style line (paste at the top of every segment):**
 > Bright cartoony voxel-cube animation, soft rounded blocks, sunny and warm,
@@ -37,9 +39,8 @@ At the truck looms the **Ice Cream Man** — a towering, greasy-grinned brute wi
 a cold stare and a too-wide smile. He slaps down two small cones. A sign reads
 "Cones $3.50." Leo proudly hands over the whole **$5 bill**. The man makes a big
 show of counting "change" — then drops just **two coins (fifty cents)** into
-Leo's palm and SLAMS the window shut, cackling. *(Blink-and-miss tell, never
-explained yet: for a flicker his eyes glint an odd green.)* The kids' heads go
-swimmy and confused.
+Leo's palm and SLAMS the window shut, cackling. The kids look confused, unsure
+if that's right.
 - **Ice Cream Man (booming, gleeful):** "There's your change, ha-HAA! Now SCRAM!"
 
 ## SEGMENT 3 — Fiona guesses, Leo runs (the fall)
@@ -91,19 +92,11 @@ palm, clear-eyed and confident, a crowd of **other kids** gathering.
 - **Leo (bold):** "Hey! Two cones are $3.50. I paid $5. My change is $1.50 — and
   you only gave me FIFTY CENTS! You owe me **a whole dollar more!**"
 - **A kid in the crowd:** "He shorted me too!"  **Another kid:** "And me!"
-The **Sheriff** strolls up, badge gleaming, and takes the sputtering Ice Cream
-Man by the collar.
+The **Sheriff** strolls up, badge gleaming, and hauls the sputtering Ice Cream
+Man away as the crowd of kids cheers.
 - **Ice Cream Man:** "I— uh— it was an honest mistake!"  **Sheriff:** "Sure it was."
-**THE BIG REVEAL (first time we learn the truth):** the Ice Cream Man's whole
-body flickers — those green eyes blaze — and he ROARS, ballooning out of the
-disguise into an enormous **gray-purple dragon**, gray fog pouring from his
-snout. The crowd gasps.
-- **Leo & Fiona:** "A— a DRAGON?!"
-- **The Dragon (booming):** "I am **Murk** — and confused little children are *so*
-  much easier to fool. You got lucky this time… I'll be back, in a hundred new
-  disguises, and next time you won't be so clever!"
-He sweeps into the sky in a swirl of fog and is gone. *(The villain — held back
-the whole episode — finally revealed, and the series is launched.)*
+*(No dragon this episode — the Ice Cream Man is just a human cheat who gets
+caught. Murk is held back for a later episode to build the mystery.)*
 
 ## SEGMENT 8 — A sweeter ending + tag
 A cheerful **new owner** opens the truck — bigger, friendlier — and hands every
@@ -119,12 +112,12 @@ at Stackadoo.com."* 🧱
 
 ## 🛠️ Generation notes
 - Generate **segment by segment**, then stitch. Re-paste the **style line** and
-  the **character looks** at the top of each so Leo/Fiona/Spark/Murk stay
-  consistent.
+  the **character looks** at the top of each so Leo/Fiona/Spark stay consistent.
 - Lock looks: Leo = boy, messy brown hair, yellow tee; Fiona = girl, brown hair,
-  purple dress (matches the unicorn film); Spark = sparkly fairy; Murk = dark
-  gray-purple dragon, sickly-green eyes, gray fog (NOT fire).
+  purple dress (matches the unicorn film); Spark = sparkly fairy; Ice Cream Man =
+  towering, greasy-grinned human, cold stare.
 - Keep the math on screen *spoken*, never as text overlays.
-- Gentle villain — Murk is spooky-funny, never scary; the Sheriff bit is light.
-- This origin sets up the series: future episodes = Murk fogs a kid → a teacher
-  (Wiz/Bolt/Spark) clears it with one skill → cheat foiled.
+- Keep it light — the Ice Cream Man is a cartoony cheat, the Sheriff bit is gentle.
+- **Murk is held for a later episode.** When he debuts, the format becomes: Murk
+  (in disguise) fogs a kid → a teacher (Wiz/Bolt/Spark) clears it with one skill
+  → the cheat is unmasked as Murk. Ep 1 just plants "smart kids don't get tricked."

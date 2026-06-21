@@ -16,8 +16,6 @@ CHARACTER LOOKS (keep identical every shot):
 - MOM: a warm, smiling voxel mom.
 - SPARK: a small glowing fairy with sparkly wings, kind and gentle.
 - ICE CREAM MAN: a towering, greasy-grinned man, cold stare, too-wide smile.
-- (Late reveal only) MURK: a huge gray-purple dragon, sickly green eyes, gray
-  fog pouring from his snout — fog, NOT fire.
 
 ═══════════════════════════════════════════════════════════════════
 ## SEGMENT 1 — The five dollars
@@ -35,8 +33,7 @@ At the ice cream truck looms the ICE CREAM MAN — towering, greasy grin, cold
 stare. A little sign reads "Cones $3.50." He slaps down two small cones. Leo
 proudly hands over the whole $5 bill. The man makes a big show of counting
 "change," then drops just two small coins (fifty cents) into Leo's palm and
-SLAMS the window shut, cackling. For one quick flicker his eyes glint an odd
-green. The kids look confused.
+SLAMS the window shut, cackling. The kids look confused, unsure if that's right.
 - ICE CREAM MAN (booming, gleeful): "There's your change, ha-HAA! Now SCRAM!"
 
 ═══════════════════════════════════════════════════════════════════
@@ -83,20 +80,16 @@ the kids are gently swept back through the portal.
 - LEO & FIONA: "Stackadoo!"
 
 ═══════════════════════════════════════════════════════════════════
-## SEGMENT 7 — The catch + THE BIG REVEAL
+## SEGMENT 7 — The catch
 ═══════════════════════════════════════════════════════════════════
 Back at the ice cream truck. Leo counts the change in his palm, clear-eyed and
-confident, as a crowd of other kids gathers. A SHERIFF strolls up and grabs the
-sputtering Ice Cream Man by the collar. Then the man's whole body flickers — his
-eyes blaze green — and he ROARS, ballooning out of the disguise into an enormous
-gray-purple DRAGON, gray fog pouring from his snout. The crowd gasps. He sweeps
-into the sky in a swirl of fog and is gone.
+confident, as a crowd of other kids gathers. He calls out the cheat; the other
+kids realize they were shorted too. A SHERIFF strolls up and hauls the
+sputtering Ice Cream Man away.
 - LEO (bold): "Hey! Two cones are $3.50. I paid $5. My change is $1.50 — and you
   only gave me FIFTY CENTS! You owe me a whole dollar more!"
-- A KID IN THE CROWD: "He shorted me too!"
-- LEO & FIONA (shocked): "A— a DRAGON?!"
-- THE DRAGON (booming): "I am MURK — and confused little children are so much
-  easier to fool. You got lucky… I'll be back, in a hundred new disguises!"
+- A KID IN THE CROWD: "He shorted me too!"  ANOTHER KID: "And me!"
+- ICE CREAM MAN (sputtering): "I— uh— honest mistake!"  SHERIFF: "Sure it was."
 
 ═══════════════════════════════════════════════════════════════════
 ## SEGMENT 8 — Sweeter ending + tag
