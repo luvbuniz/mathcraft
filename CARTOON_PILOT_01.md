@@ -29,25 +29,23 @@ Sunny blocky neighborhood. **Mom** (warm, smiling) hands a crisp **$5 bill** to
 **Leo** (excited boy) and **Fiona** (clever girl) on the porch.
 - **Mom:** "Five dollars — one cone each, and bring me back the change, okay?"
 - **Leo & Fiona:** "Thank you, Mom!"
-They race down the sidewalk toward a jingling **ice cream truck**. A wisp of gray
-fog curls at the truck's edges (we don't know it yet, but that's Murk's).
+They race down the sidewalk toward a jingling **ice cream truck** parked in the shade.
 
 ## SEGMENT 2 — The gross cheat (uber-villain)
-At the truck looms the **Ice Cream Man** — a towering, greasy-grinned brute,
-barely hiding the monster underneath: **gray-green eyes**, fog seeping from his
-collar and sleeves. *(He's Murk in disguise.)* He slaps down two small cones.
-A sign reads "Cones $3.50." Leo proudly hands over the whole **$5 bill**. The
-villain makes a big show of counting "change" — then drops a **single penny**
-into Leo's palm and SLAMS the window shut, cackling. Thick **gray fog** rolls
-over the kids; their eyes go swirly and confused.
+At the truck looms the **Ice Cream Man** — a towering, greasy-grinned brute with
+a cold stare and a too-wide smile. He slaps down two small cones. A sign reads
+"Cones $3.50." Leo proudly hands over the whole **$5 bill**. The man makes a big
+show of counting "change" — then drops a **single penny** into Leo's palm and
+SLAMS the window shut, cackling. *(Blink-and-miss tell, never explained yet: for
+a flicker his eyes glint an odd green.)* The kids' heads go swimmy and confused.
 - **Ice Cream Man (booming, gleeful):** "There's your change, ha-HAA! Now SCRAM!"
 
 ## SEGMENT 3 — Fiona guesses, Leo runs (the fall)
-The kids stare at the lone penny, heads muddled by the fog. Fiona turns it over,
+The kids stare at the lone penny, heads swimmy and confused. Fiona turns it over,
 guessing, totally unsure — neither of them actually *knows*.
 - **Fiona (baffled):** "Wait… a penny? Is that… right? What's going on?"
-- **Leo (cheeks burning, the fog whispering):** "I— I don't know either! Is
-  everyone looking? Are we dumb?" *(That's Murk's voice in his head.)*
+- **Leo (cheeks burning):** "I— I don't know either! Is everyone looking? Are
+  we dumb?"
 The villain's laughter BOOMS. Humiliated and frustrated, Leo bolts away —
 - **Fiona:** "Leo, wait!"
 — and Leo **trips into a glowing hole** that yawns open in the sidewalk. A
@@ -56,13 +54,12 @@ swirling **portal!** He vanishes with a yelp.
 
 ## SEGMENT 4 — Stackadoo World
 They land softly in a dazzling **voxel wonderland** — rainbow hills, candy-bright
-blocks, floating islands. Far off, a dark shape: **Murk the Fog Dragon**, gray
-smoke pouring from his snout, chuckling. Leo sits up, upset and lost.
+blocks, floating islands. Leo sits up, upset and lost.
 - **Leo:** "Where ARE we? I just wanted ice cream…"
 A gentle sparkle — **Spark the Fairy** flutters down, warm and kind.
-- **Spark:** "Welcome to Stackadoo World! Oh dear — you've got the muddle fog.
-  Murk loves it when kids can't think… it's how his friends trick them. Show me
-  what happened."
+- **Spark:** "Welcome to Stackadoo World! Oh, you poor things — you look so
+  muddled and upset. Come, tell me what happened."
+*(No villain talk yet — Spark just helps. The dragon stays a mystery.)*
 
 ## SEGMENT 5 — The lesson (counting up)
 Spark waves her wand; glowing **coins** float in the air — a shiny dollar and
@@ -72,8 +69,8 @@ bright quarters. She lines them up over a number path.
   "…$4.00…" *(a dollar coin)* "…and $5.00!"
 - **Spark:** "How much did we add back? Two quarters and a dollar — that's
   **one dollar and fifty cents!**"
-As Leo gets it, the **gray fog around them burns away** into sparkles; his eyes
-go clear and bright.
+As Leo gets it, the **muddle in his head clears** into sparkles; his eyes go
+clear and bright.
 - **Leo (lighting up):** "One dollar fifty! But that crook only gave me ONE
   PENNY — he stole almost all of it!"
 - **Spark:** "Now you see. A kid who can count can't be cheated."
@@ -84,8 +81,7 @@ Stackadoo logo on its face.
 - **Spark:** "Take a Stackadoo coin. Whenever you're stuck, hold it to your heart
   and say… **'Stackadoo!'** — and I'll help you learn."
 - **Leo & Fiona:** "Stackadoo!"
-The coins flash; the kids are gently swept back through the portal. In the
-distance Murk SNARLS, furious that the fog lifted.
+The coins flash; the kids are gently swept back through the portal.
 
 ## SEGMENT 7 — Back to the truck (the catch)
 Real world, the ice cream truck again. This time Leo counts the change in his
@@ -96,11 +92,16 @@ palm, clear-eyed and confident, a crowd of **other kids** gathering.
 The **Sheriff** strolls up, badge gleaming, and takes the sputtering Ice Cream
 Man by the collar.
 - **Ice Cream Man:** "I— uh— it was an honest mistake!"  **Sheriff:** "Sure it was."
-**THE UNMASK:** the Ice Cream Man's disguise flickers — gray-green eyes flash —
-and he dissolves into a swirl of gray fog, rising into the sky as **Murk the Fog
-Dragon**, snarling down at the kids.
-- **Murk:** "You got lucky, little ones… I'll be back — and next time you won't
-  be so clever!" He vanishes in a puff of fog. (Sets up the series.)
+**THE BIG REVEAL (first time we learn the truth):** the Ice Cream Man's whole
+body flickers — those green eyes blaze — and he ROARS, ballooning out of the
+disguise into an enormous **gray-purple dragon**, gray fog pouring from his
+snout. The crowd gasps.
+- **Leo & Fiona:** "A— a DRAGON?!"
+- **The Dragon (booming):** "I am **Murk** — and confused little children are *so*
+  much easier to fool. You got lucky this time… I'll be back, in a hundred new
+  disguises, and next time you won't be so clever!"
+He sweeps into the sky in a swirl of fog and is gone. *(The villain — held back
+the whole episode — finally revealed, and the series is launched.)*
 
 ## SEGMENT 8 — A sweeter ending + tag
 A cheerful **new owner** opens the truck — bigger, friendlier — and hands every
