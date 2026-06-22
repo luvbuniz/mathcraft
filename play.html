@@ -2681,39 +2681,40 @@ const AVATARS = [
     }
   },
   {
-    id: 'fairy', name: 'Fairy 🧚',
+    id: 'spark', name: 'Spark the Fairy ✨',
     build() {
-      const dress = 0x6FD9C2, dressD = 0x46C2A8, skin = 0xFFD9B3, hair = 0xF7CE5A;   // mint gown, golden hair
-      const a = buildBiped(dress, skin, dress, skin);                  // proper biped → walks like the rest
-      // 😊 sweet face — soft eyes (blush comes from addEyes), a small cute smile
+      // ✨ Spark — the cartoons' kind fairy guide, matched to her character sheet (lavender hair +
+      // pastel petal skirt + sparkly wings + wand). Took over the old Fairy slot so indices don't shift.
+      const top = 0xB89AE0, topD = 0x9B7BD0, skin = 0xFFD9B3, hair = 0xCBA8EC;   // lavender top + lavender hair
+      const a = buildBiped(top, skin, skin, skin);                    // lavender top, bare legs (petal skirt below)
       addEyes(a.head, 0x3a5f8a, 0.26);
       box(a.head, 0.08, 0.03, 0.03, 0xD24A7E, 0, -0.15, 0.26);         // small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, -0.052, -0.135, 0.26);  // tiny upturned corners
+      box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, -0.052, -0.135, 0.26);
       box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, 0.052, -0.135, 0.26);
-      // 💛 framing hair: crown + soft bangs + long flowing locks
-      box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // crown of hair
-      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // soft bangs across the forehead
-      box(a.head, 0.16, 0.62, 0.16, hair, -0.31, -0.1, -0.03);         // long locks
-      box(a.head, 0.16, 0.62, 0.16, hair, 0.31, -0.1, -0.03);
+      box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // lavender hair cap
+      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // bangs
+      box(a.head, 0.16, 0.52, 0.16, hair, -0.31, -0.08, -0.02);        // soft side locks
+      box(a.head, 0.16, 0.52, 0.16, hair, 0.31, -0.08, -0.02);
       box(a.head, 0.5, 0.5, 0.14, hair, 0, -0.05, -0.26);             // back hair
-      // 🌸 little flower crown
-      const flower = (parent, x, y, z, petal, s) => { box(parent, s, s, 0.06, petal, x, y, z); box(parent, s * 0.45, s * 0.45, 0.04, 0xFFE680, x, y, z + 0.03); };
-      flower(a.head, -0.18, 0.3, 0.21, 0xFF7EC4, 0.1); flower(a.head, 0.01, 0.33, 0.23, 0xFFFFFF, 0.1); flower(a.head, 0.2, 0.3, 0.21, 0xB388FF, 0.1);
-      // 👗 gown — skirt, hem, gold sash, a flower at the chest
-      box(a.group, 0.64, 0.36, 0.44, dress, 0, 0.45, 0);               // skirt
-      box(a.group, 0.78, 0.14, 0.52, dressD, 0, 0.23, 0);              // hem
-      box(a.group, 0.54, 0.06, 0.3, 0xFFE07A, 0, 0.6, 0.005);          // gold sash
-      flower(a.group, 0, 0.95, 0.16, 0xFF7EC4, 0.11);                  // chest flower
-      // 🦋 translucent butterfly wings — saturated so they stay pretty in back-light, fanned up & out
+      // 🌸 pastel petal skirt — a ring of mint / pink / lilac petals
+      const petals = [0xA8E6C8, 0xF6B8D8, 0xC9B8F0, 0xA8E6C8, 0xF6B8D8, 0xC9B8F0];
+      petals.forEach((col, i) => { const ang = (i / petals.length) * Math.PI * 2; box(a.group, 0.2, 0.3, 0.12, col, Math.sin(ang) * 0.27, 0.42, Math.cos(ang) * 0.27); });
+      box(a.group, 0.5, 0.08, 0.3, topD, 0, 0.58, 0);                  // waistband
+      a.legs.forEach(L => box(L, 0.24, 0.13, 0.34, topD, 0, -0.5, 0.08));   // lavender shoes
+      // 🪄 little glowing wand by her right hand
+      const wand = new THREE.Group(); wand.position.set(0.46, 0.55, 0.14); a.group.add(wand);
+      box(wand, 0.04, 0.34, 0.04, 0xF7E27A, 0, 0.12, 0);              // gold stick
+      box(wand, 0.14, 0.14, 0.05, 0xFFF6C0, 0, 0.32, 0);             // sparkle star
+      // 🦋 sparkly fairy wings (reuse the flutter system)
       a.wings = [];
       const wing = (x, y, w, h, col, ry, rz) => {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.86 }));
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.82 }));
         m.position.set(x, y, -0.2); m.rotation.y = ry; m.rotation.z = rz; m.userData.baseRY = ry; a.group.add(m); a.wings.push(m); return m;
       };
-      wing(-0.3, 1.04, 0.42, 0.56, 0xFF8FD4, 0.32, 0.32);             // upper wings (pink)
-      wing(0.3, 1.04, 0.42, 0.56, 0xFF8FD4, -0.32, -0.32);
-      wing(-0.32, 0.58, 0.32, 0.42, 0xB388FF, 0.32, 0.52);            // lower wings (purple)
-      wing(0.32, 0.58, 0.32, 0.42, 0xB388FF, -0.32, -0.52);
+      wing(-0.3, 1.04, 0.42, 0.56, 0xB8E0F5, 0.32, 0.32);             // upper wings (light blue)
+      wing(0.3, 1.04, 0.42, 0.56, 0xB8E0F5, -0.32, -0.32);
+      wing(-0.32, 0.58, 0.32, 0.42, 0xE6BEF2, 0.32, 0.52);            // lower wings (lavender)
+      wing(0.32, 0.58, 0.32, 0.42, 0xE6BEF2, -0.32, -0.52);
       return a;
     }
   },
