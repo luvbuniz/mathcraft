@@ -2,3 +2,4 @@
 # (Code still lives on GitHub; this only controls what Cloudflare serves.)
 admin.html
 *.md
+character-sheets/
