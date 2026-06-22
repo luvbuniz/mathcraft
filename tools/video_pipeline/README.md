@@ -38,6 +38,15 @@ KLING_API_KEY=... python3 generate.py --episode episode.example.json --provider 
 - `providers.py` — Kling / OpenAI(Sora) / xAI adapters. Real HTTP calls are
   `TODO` — wired tomorrow once a provider is chosen.
 - `episode.example.json` — the pilot ("The Stackadoo Coin"), 8 segments, 9:16.
+- `finish.py` — **post-production, 100% local ffmpeg, NO API / NO cost.** Turns a
+  raw clip (pipeline OR hand-made in Kling) into a posted-ready file: normalizes
+  to clean full-screen 9:16 (kills letterbox bars), burns styled captions from a
+  script file, and lays in your phone-recorded voiceover (+ optional music).
+  ```bash
+  python3 finish.py --video raw.mp4 --audio voice.m4a --script lines.txt --vertical --out final.mp4
+  ```
+  `lines.txt` = one caption line per line (spread evenly across the clip).
+  Tested ✓ — captions render bold-white-on-outline, bottom-centered.
 
 ## Episode format
 ```json
