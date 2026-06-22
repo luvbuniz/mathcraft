@@ -1,0 +1,15 @@
+{
+  "title": "The Stackadoo Coin (Pilot)",
+  "ratio": "9:16",
+  "style": "Bright cartoony voxel-cube animation, soft rounded cube blocks, sunny and warm, smooth toy-like motion. No text on screen. Original cube characters — NOT Minecraft Steve.",
+  "segments": [
+    { "duration": 5, "ref_image": "refs/seg1.jpg", "prompt": "A sunny blocky neighborhood. MOM smiles and hands a crisp $5 bill to LEO (messy brown hair, yellow t-shirt, blue shorts) and FIONA (brown hair, purple dress); they light up and race toward a jingling ice cream truck." },
+    { "duration": 5, "ref_image": "refs/leo.jpg", "prompt": "A towering greasy-grinned ICE CREAM MAN slaps down two cones, takes the $5, drops just two small coins in Leo's palm and slams the window, cackling. The kids look confused." },
+    { "duration": 5, "ref_image": "refs/leo.jpg", "prompt": "The kids stare at the coins, unsure. Leo, embarrassed, bolts away and trips into a glowing swirling PORTAL in the sidewalk; Fiona leaps in after him." },
+    { "duration": 5, "ref_image": "refs/spark.jpg", "prompt": "Leo and Fiona land in a dazzling voxel wonderland of rainbow hills and floating islands. SPARK the fairy (lavender hair, sparkly wings, wand) flutters down, warm and kind." },
+    { "duration": 6, "ref_image": "refs/spark.jpg", "prompt": "Spark waves her wand; glowing coins float over a number path as she counts up from three-fifty to five dollars. Leo's eyes light up with understanding." },
+    { "duration": 5, "ref_image": "refs/spark.jpg", "prompt": "Spark presses a glowing gold coin into each child's palm; the coins flash and the kids are gently swept back through the portal." },
+    { "duration": 5, "ref_image": "refs/leo.jpg", "prompt": "Back at the truck, Leo confidently calls out the cheat as a crowd of kids gathers; a Sheriff hauls the sputtering Ice Cream Man away." },
+    { "duration": 5, "ref_image": "refs/seg1.jpg", "prompt": "A cheerful new owner hands every kid a tall double cone with the change counted right. Leo and Fiona clink their glowing Stackadoo coins and grin. End on the bear-block Stackadoo logo." }
+  ]
+}
