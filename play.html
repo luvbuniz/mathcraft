@@ -11880,7 +11880,7 @@ function friendlyAuthErr(e) {
 function authGoogle() {
   if (!cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
   const p = new firebase.auth.GoogleAuthProvider();
-  fbAuth.signInWithPopup(p).then(() => authMsg('Signed in! Syncing your worlds…')).catch(e => {
+  fbAuth.signInWithPopup(p).then(() => { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }).catch(e => {
     if (((e && e.code) || '').indexOf('popup') >= 0) { try { fbAuth.signInWithRedirect(p); return; } catch (_) {} }   // mobile fallback
     authMsg(friendlyAuthErr(e), true);
   });
@@ -11890,12 +11890,21 @@ function authEmail(create) {
   const email = ($('authEmail').value || '').trim(), pw = $('authPass').value || '';
   if (!email || !pw) { authMsg('Enter your email and a password.', true); return; }
   const fn = create ? 'createUserWithEmailAndPassword' : 'signInWithEmailAndPassword';
-  fbAuth[fn](email, pw).then(() => authMsg(create ? 'Account created! Syncing…' : 'Signed in! Syncing…')).catch(e => authMsg(friendlyAuthErr(e), true));
+  fbAuth[fn](email, pw).then(() => { authMsg(create ? 'Account created! Syncing…' : 'Signed in! Syncing…'); authAutoClose(); }).catch(e => authMsg(friendlyAuthErr(e), true));
 }
 function authSignOut() { if (cloudReady()) fbAuth.signOut().then(() => authMsg('Signed out — this device still has its local saves.')); }
 function authMsg(t, bad) { const el = $('authMsg'); if (el) { el.textContent = t; el.style.color = bad ? '#c0392b' : '#2f8a52'; } }
 function openAuth() { if (typeof document.exitPointerLock === 'function') document.exitPointerLock(); $('authPopup').style.display = 'flex'; authMsg(''); renderAuthUI(); }
 function closeAuth() { $('authPopup').style.display = 'none'; }
+function authAutoClose() {
+  // After a successful sign-in, let the kid read the ✓ confirmation for a moment, then
+  // close the popup on its own so they aren't stranded on it. Sync keeps running in the
+  // background — closing the popup doesn't interrupt it.
+  setTimeout(() => {
+    const p = $('authPopup');
+    if (p && p.style.display !== 'none' && fbUser) closeAuth();
+  }, 2000);
+}
 function renderAuthUI() {
   const signed = $('authSignedIn'), out = $('authSignedOut'), un = $('authUnavailable');
   if (!signed || !out || !un) return;
