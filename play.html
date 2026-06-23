@@ -2170,13 +2170,14 @@ function addCrown(parent, y, color) {
 const blushMat = new THREE.MeshBasicMaterial({ color: 0xFFB3CC });   // 🌸 unlit → always a flat SOFT pink, never red
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
 // layers never z-fight (the flicker the Ninja Dog had). `color` becomes the pupil/iris colour.
-function addEyes(head, color, z) {
+function addEyes(head, color, z, noBlush) {
   const pupil = (color && color !== 0xFFFFFF) ? color : 0x1a1a1a;
   box(head, 0.09, 0.095, 0.03, 0xF7F7F7, -0.11, 0.05, z);          // white sclera
   box(head, 0.09, 0.095, 0.03, 0xF7F7F7, 0.11, 0.05, z);
   box(head, 0.045, 0.062, 0.03, pupil, -0.105, 0.04, z + 0.022);   // pupil (offset forward → no flicker)
   box(head, 0.045, 0.062, 0.03, pupil, 0.105, 0.04, z + 0.022);
-  for (const sx of [-1, 1]) {                                       // 🌸 flat unlit pink blush
+  if (noBlush) return;                                              // human kid avatars skip the blush
+  for (const sx of [-1, 1]) {                                       // 🌸 flat unlit soft-pink blush
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.05, 0.014), blushMat);
     m.position.set(sx * 0.155, -0.07, z + 0.004); head.add(m);
   }
@@ -2783,7 +2784,7 @@ const AVATARS = [
     build() {
       const tee = 0xF6C744, shorts = 0x3A6FB0, skin = 0xFFD9B3, hair = 0x6B4423;
       const a = buildBiped(tee, skin, shorts, skin);                  // yellow tee, blue shorts, bare arms
-      addEyes(a.head, 0x35506e, 0.26);
+      addEyes(a.head, 0x35506e, 0.26, true);                          // no blush on the boy
       box(a.head, 0.08, 0.03, 0.03, 0xC0694A, 0, -0.15, 0.26);        // small smile
       box(a.head, 0.035, 0.03, 0.03, 0xC0694A, -0.052, -0.135, 0.26);
       box(a.head, 0.035, 0.03, 0.03, 0xC0694A, 0.052, -0.135, 0.26);
@@ -2809,7 +2810,7 @@ const AVATARS = [
     build() {
       const dress = 0x9B59B6, dressD = 0x7D3C98, skin = 0xFFD9B3, hair = 0x6B4423;
       const a = buildBiped(dress, skin, skin, skin);                  // purple top; skin legs — the DRESS skirt is added below
-      addEyes(a.head, 0x35506e, 0.26);
+      addEyes(a.head, 0x35506e, 0.26, true);                          // no blush on the girl
       box(a.head, 0.08, 0.03, 0.03, 0xD06A92, 0, -0.15, 0.26);        // sweet small smile
       box(a.head, 0.035, 0.03, 0.03, 0xD06A92, -0.052, -0.135, 0.26);
       box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
@@ -2827,7 +2828,8 @@ const AVATARS = [
       box(a.group, 0.6, 0.36, 0.4, dress, 0, 0.46, 0);              // skirt
       box(a.group, 0.74, 0.12, 0.46, dressD, 0, 0.27, 0);          // flared hem
       box(a.group, 0.44, 0.09, 0.32, 0xFFFFFF, 0, 1.17, 0.03);      // white collar
-      a.legs.forEach(L => box(L, 0.22, 0.13, 0.3, dressD, 0, -0.5, 0.08));   // purple shoes
+      // chunky purple shoes that wrap the WHOLE foot (centred, so the back of the foot shows from behind)
+      a.legs.forEach(L => box(L, 0.26, 0.16, 0.36, dressD, 0, -0.48, 0.0));
       return a;
     }
   }
