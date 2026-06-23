@@ -2858,7 +2858,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
+  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
   world: 'meadow',
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
@@ -3922,7 +3922,7 @@ function resetGameState() {
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
-  G.selectedSlot = 'block'; G.blockColor = 0xC9B79A; G.furnFinish = 0;
+  G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
@@ -8655,7 +8655,7 @@ function placeSelectedAt(x, z, blockY) {
   mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
   addBlockMesh(x, y, z, null, 'placed', true, mesh);
   blocks.get(key(x, y, z)).color = G.blockColor;     // remember the paint for saving
-  G.blocks -= 1; Sound.place(); refreshHUD(); return true;
+  G.blocks -= 1; G.buildMode = true; Sound.place(); refreshHUD(); return true;
 }
 /* D — put down the selected item on the square in front of you (blocks stack) */
 function putDownBlock() {
@@ -10878,7 +10878,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyP') pickupBlock();
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
-  if (e.code === 'KeyX') { Sound.click(); setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
+  if (e.code === 'KeyX') { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
   if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
   if (e.code === 'KeyE') { tryUse(); }
   if (e.code === 'KeyL') { Sound.click(); toggleBedRest(); }
@@ -10960,6 +10960,7 @@ function openInv() {
 }
 function closeInv() { $('invPopup').style.display = 'none'; popupOpen = false; }
 function startPlacing(slot) {
+  G.buildMode = true;
   selectSlot(slot);
   closeInv();
   toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
@@ -11108,6 +11109,7 @@ function renderInv() {
         sw.style.background = '#' + pc.color.toString(16).padStart(6, '0');
         sw.onclick = () => {
           Sound.click();
+          G.buildMode = true;
           G.blockColor = pc.color; selectSlot('block', true);
           prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
           sw.classList.add('sel');
@@ -11260,7 +11262,7 @@ function setRemoveMode(on) {
   b.textContent = G.removeMode ? '⛏️ Remove' : '🧱 Build';
   b.classList.toggle('remove', G.removeMode);
 }
-$('modeBtn').onclick = () => { Sound.click(); setRemoveMode(!G.removeMode);
+$('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
   toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click a spot to place a block.', 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
 $('useBtnDesk').onclick = () => { tryUse(); };
@@ -12068,7 +12070,7 @@ function loop(now) {
   }
 
   // show the block-color swatches only while you're actually building on foot
-  const _showPaints = !isTouch && !G.mouseWalk && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
+  const _showPaints = !isTouch && G.buildMode && !G.mouseWalk && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
   if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
   $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 
