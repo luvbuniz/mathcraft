@@ -28,7 +28,7 @@ It's free (Google account only) and takes ~5 minutes.
   `admin.html` (currently `remus`). This is what lets your admin page generate codes.
 
 ## 5. Connect the game + admin page
-- In **`index.html`**, paste your `/exec` URL into `const REDEEM_URL = '';`.
+- In **`play.html`**, paste your `/exec` URL into `const REDEEM_URL = '';`.
 - In **`admin.html`**, paste the same `/exec` URL into `const GIFT_URL = '';`.
 - Now every code redeemed in the game (typed in the unlock dialog **or** opened via a
   `stackadoo.com/?code=STK-XXXXX` link) is validated and burned server-side.
