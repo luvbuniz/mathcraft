@@ -8,6 +8,20 @@
 <meta name="description" content="Support, privacy policy, and terms for Stackadoo, the kid-safe educational building game by Buni LLC. No ads, no chat, no data collection.">
 <meta name="theme-color" content="#3CA45C">
 <link rel="canonical" href="https://stackadoo.com/support.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Buni LLC">
+<!-- Social link previews -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Stackadoo">
+<meta property="og:title" content="Stackadoo — Support, Privacy & Terms">
+<meta property="og:description" content="Support, privacy policy, and terms for Stackadoo, the kid-safe educational building game by Buni LLC. No ads, no chat, no data collection.">
+<meta property="og:url" content="https://stackadoo.com/support.html">
+<meta property="og:image" content="https://stackadoo.com/shots/build.jpg">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stackadoo — Support, Privacy & Terms">
+<meta name="twitter:description" content="Support, privacy & terms for Stackadoo — kid-safe, no ads, no chat, no data collection.">
+<meta name="twitter:image" content="https://stackadoo.com/shots/build.jpg">
 <link rel="icon" href="icon.svg">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -186,14 +200,27 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
     if (standalone || !isTouch) return;
     wrap.style.display = '';
     var isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var pendingTap = false;
+    function fire(){
+      var p = window._installPrompt; if (!p) return false;
+      p.prompt();
+      p.userChoice.then(function(){ window._installPrompt = null; wrap.style.display = 'none'; });
+      return true;
+    }
+    // Chrome can fire the install event a beat after load (or once the service worker takes
+    // control on a return visit). Catch it whenever it lands, and if the user already tapped
+    // Install, pop the real system dialog right then — no digging through the ⋮ menu.
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault(); window._installPrompt = e;
+      if (pendingTap){ pendingTap = false; fire(); }
+    });
     btn.onclick = function(){
-      if (window._installPrompt) {
-        window._installPrompt.prompt();
-        window._installPrompt.userChoice.then(function(){ window._installPrompt = null; wrap.style.display = 'none'; });
-      } else if (isiOS) {
-        alert('To install on iPhone/iPad:\n\n1) Tap the Share button (the square with an up-arrow).\n2) Scroll down and tap “Add to Home Screen.”');
+      if (fire()) return;                                     // Android Chromium → real one-tap install
+      if (isiOS){
+        alert('To install on iPad/iPhone:\n\n1) Tap the Share button (the box with an ↑ arrow).\n2) Scroll down and tap “Add to Home Screen.”');
       } else {
-        alert('To install:\n\nOpen your browser menu (⋮ in the corner) and tap “Install app” or “Add to Home Screen.”');
+        pendingTap = true;                                    // event may be a second away — auto-fire when it lands
+        alert('Getting the app ready…\n\nIf an “Install” box doesn’t pop up in a moment, open your browser menu (⋮ or ⋯ in the corner) and tap “Install app” or “Add to Home Screen.”');
       }
     };
   })();
