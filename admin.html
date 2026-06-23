@@ -197,9 +197,10 @@ function render(d) {
   $('drawDetail').textContent = fmt(players) + ' of ' + fmt(visitors) + ' visitors started a game';
   // daily mini-bars
   const daily = d.daily || [];
+  const fmtDay = s => { const t = new Date(s); return isNaN(t) ? String(s).slice(5) : (t.getMonth() + 1) + '/' + t.getDate(); };
   const max = Math.max(1, ...daily.map(x => x.visitors || 0));
   $('daily').innerHTML = daily.map(x =>
-    '<div class="barRow"><span class="d">' + x.date.slice(5) + '</span>' +
+    '<div class="barRow"><span class="d">' + fmtDay(x.date) + '</span>' +
     '<span class="t"><span class="f" style="width:' + Math.round((x.visitors || 0) / max * 100) + '%"></span></span>' +
     '<span class="v">' + (x.visitors || 0) + '</span></div>'
   ).join('') || '<p class="note">No data yet.</p>';
