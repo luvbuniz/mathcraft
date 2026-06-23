@@ -2978,7 +2978,7 @@ function beginPurchase() {
      and each code burns after a single redemption — no spreading into the ether.
    • Until then, PROMO_CODES below works as a local fallback (multi-use) so the
      flow is testable today. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
-const REDEEM_URL = '';   // <-- paste your Apps Script Web App URL here to enforce one-use-each
+const REDEEM_URL = 'https://script.google.com/macros/s/AKfycbxwa9NZi9kGFa3cjWQ_lUCtCNLuX4CK_z2QEy-21n5a2SS4Jbz4AuTYHuLnFZpZgnpr/exec';   // Apps Script gift-code backend (one-use-each)
 const PROMO_CODES = ['STK-E8UZD', 'STK-8CSPM', 'STK-XYBJ6', 'STK-K7MUE', 'STK-7SN4K', 'STK-EKEDD', 'STK-FBGY4', 'STK-Z3X58', 'STK-7KG4E', 'STK-EY934'];
 function unlockNow() { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} }
 async function redeemCode(raw) {                 // -> { ok, reason }
