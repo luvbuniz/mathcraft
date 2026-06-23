@@ -1490,6 +1490,7 @@
       <div class="unlockPerk">♾️ <b>All future updates, free for life</b> — buy once, never again</div>
       <div class="unlockPerk">🏖️ Spanish Beach &amp; more <span style="color:#b5832a; font-weight:700">• Coming soon (included free)</span></div>
     </div>
+    <div id="unlockUrgency" style="display:none; margin:0 0 10px; background:#FFF3D6; border:1px solid #f0d9a6; color:#8a5c1e; font-weight:700; font-size:13px; border-radius:12px; padding:9px 12px"></div>
     <button id="unlockBuyBtn">Become a Founding Family — $4.99 once</button>
     <div style="color:#9a86b8; font-size:12px; margin-top:8px">One-time purchase • no subscription • every future update included</div>
     <div style="margin-top:14px; padding-top:12px; border-top:1px solid #ece4f5">
@@ -2928,6 +2929,8 @@ function comingSoonNote(id) {
    Stored locally per device. This is the hook for a real payment (Stripe / RevenueCat) later;
    for now doUnlock() just flips the flag so the model can be demoed. ===== */
 const UNLOCK_KEY = 'stackadooUnlocked';
+const FOUNDING_KEY = 'stackadooFounding';   // ISO date they unlocked — Founding Families are grandfathered forever
+const TRIAL_KEY = 'stackadooTrialStart';    // ms timestamp the free "taste of premium" trial began
 /* ===== Are we running inside the Google Play Android app (a Trusted Web Activity)? =====
    The TWA loads this same live site. Google Play forbids external (Stripe) payments for
    digital goods *inside* the app, so on Android we ship the full game FREE: everything is
@@ -2947,7 +2950,30 @@ function isUnlocked() {
   if (IS_ANDROID_APP) return true;                                  // Android app = full game, free
   try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; }
 }
-function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnlocked(); }
+function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !premiumActive(); }
+/* ===== Monetization levers (all default OFF — flip the knobs in PAY when you're ready to gate) =====
+   • Grandfather: an unlock, once earned, is never revoked (UNLOCK_KEY + FOUNDING_KEY persist).
+   • Trial:  PAY.trialDays > 0 gives a NEW player every world free for N days, then the paywall.
+   • Price:  PAY.price is the single source of truth shown everywhere; PAY.nextPrice powers the
+             "price going up soon" urgency banner. */
+function premiumActive() { return isUnlocked() || inTrial(); }      // full access = bought OR mid free-trial
+function inTrial() {
+  if (!PAY.trialDays) return false;
+  try { const t = +(localStorage.getItem(TRIAL_KEY) || 0); return t > 0 && (Date.now() - t) < PAY.trialDays * 864e5; }
+  catch (e) { return false; }
+}
+function trialDaysLeft() {
+  try { const t = +(localStorage.getItem(TRIAL_KEY) || 0); return t ? Math.max(0, Math.ceil((t + PAY.trialDays * 864e5 - Date.now()) / 864e5)) : 0; }
+  catch (e) { return 0; }
+}
+function trialAvailable() {   // can a fresh trial start? (trials on, not already bought, never started one)
+  if (!PAY.trialDays || isUnlocked()) return false;
+  try { return !localStorage.getItem(TRIAL_KEY); } catch (e) { return false; }
+}
+function startTrial() {
+  try { localStorage.setItem(TRIAL_KEY, String(Date.now())); } catch (e) {}
+  if (typeof toast === 'function') toast('🎉 Free trial started — every world is open for ' + PAY.trialDays + ' days. Have fun!', 4200);
+}
 
 /* ===== Payments — how the $5 full-game unlock is purchased =====
    WEB is first (Stripe). Native app stores (Apple/Google) come later and REQUIRE their own
@@ -2965,7 +2991,10 @@ const PAY = {
   // (3) NATIVE APP only: Apple App Store / Google Play in-app purchase (via RevenueCat). The SDK
   //     flips the unlock on a verified purchase — there's nothing to redirect to.
   revenueCat: false,
-  price: '$4.99'
+  // ===== Monetization knobs — change these when you're ready to gate harder =====
+  price: '$4.99',          // the price shown EVERYWHERE — edit it here in this one spot
+  nextPrice: '',           // set e.g. '$7.99' to show a "Founding Family price going up soon" urgency banner
+  trialDays: 0             // set e.g. 7 to give NEW players every world free for N days, then the paywall ("taste then unlock")
 };
 function beginPurchase() {
   if (IS_ANDROID_APP) return;     // Google Play policy: never open an external (Stripe) payment inside the app
@@ -2984,7 +3013,7 @@ function beginPurchase() {
      flow is testable today. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
 const REDEEM_URL = 'https://script.google.com/macros/s/AKfycbxwa9NZi9kGFa3cjWQ_lUCtCNLuX4CK_z2QEy-21n5a2SS4Jbz4AuTYHuLnFZpZgnpr/exec';   // Apps Script gift-code backend (one-use-each)
 const PROMO_CODES = ['STK-E8UZD', 'STK-8CSPM', 'STK-XYBJ6', 'STK-K7MUE', 'STK-7SN4K', 'STK-EKEDD', 'STK-FBGY4', 'STK-Z3X58', 'STK-7KG4E', 'STK-EY934'];
-function unlockNow() { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} }
+function unlockNow() { try { localStorage.setItem(UNLOCK_KEY, '1'); if (!localStorage.getItem(FOUNDING_KEY)) localStorage.setItem(FOUNDING_KEY, new Date().toISOString()); } catch (e) {} }
 async function redeemCode(raw) {                 // -> { ok, reason }
   const code = (raw || '').trim().toUpperCase();
   if (!code) return { ok: false, reason: 'empty' };
@@ -3348,7 +3377,7 @@ function openTravel() {
     const w = WORLDS[id], here = id === G.world, soon = worldComingSoon(id), locked = worldLocked(id);
     const b = document.createElement('button');
     b.className = 'travelBtn' + (here ? ' here' : (soon ? ' soon' : (locked ? ' locked' : '')));
-    const sub = here ? 'You are here now' : soon ? '🔜 Coming soon' : locked ? '🔒 Unlock for $5' : 'Learn ' + w.chip + ' • build a house here';
+    const sub = here ? 'You are here now' : soon ? '🔜 Coming soon' : locked ? '🔒 Unlock for ' + PAY.price : 'Learn ' + w.chip + ' • build a house here';
     b.innerHTML = '<span class="tEmoji">' + w.emoji + '</span><span class="tInfo"><b>' + w.name +
       '</b><small>' + sub + '</small></span>';
     if (here) b.disabled = true;
@@ -3373,7 +3402,10 @@ function travelRoad() {
 function travelToWorld(id) {
   if (!WORLDS[id] || id === G.world) { closeTravel(); return; }
   if (worldComingSoon(id)) { closeTravel(); comingSoonNote(id); return; }   // not ready yet → tease it
-  if (worldLocked(id)) { closeTravel(); openUnlock(); return; }     // locked → offer the unlock
+  if (worldLocked(id)) {
+    if (trialAvailable()) startTrial();                             // first premium tap → start the free trial, then let them in
+    else { closeTravel(); openUnlock(); return; }                  // locked → offer the unlock
+  }
   closeTravel();
   // your current vehicle comes with you through the portal/road
   const broughtCar = (G.activeCar && G.owned[G.activeCar]) ? G.activeCar : null;
@@ -3402,6 +3434,13 @@ function travelToWorld(id) {
 /* ---------- Full-game unlock dialog ---------- */
 function openUnlock() {
   if (IS_ANDROID_APP) return;     // app is already fully unlocked — never show the paywall
+  const btn = $('unlockBuyBtn'); if (btn) btn.textContent = 'Become a Founding Family — ' + PAY.price + ' once';
+  const ub = $('unlockUrgency');
+  if (ub) {
+    if (inTrial()) { ub.style.display = 'block'; ub.innerHTML = '🎁 <b>Free trial:</b> ' + trialDaysLeft() + ' day(s) left — unlock now to keep every world forever.'; }
+    else if (PAY.nextPrice) { ub.style.display = 'block'; ub.innerHTML = '⏰ <b>Founding Family price</b> goes up to ' + PAY.nextPrice + ' soon — lock in ' + PAY.price + ' now!'; }
+    else { ub.style.display = 'none'; }
+  }
   if (G.running) popupOpen = true;
   document.exitPointerLock && document.exitPointerLock();
   $('unlockPopup').style.display = 'flex';
@@ -3409,7 +3448,7 @@ function openUnlock() {
 function closeUnlock() { $('unlockPopup').style.display = 'none'; if (G.running) popupOpen = false; }
 function doUnlock() {
   // TODO: wire to a real payment (Stripe Checkout / RevenueCat). For now this flips the local flag.
-  try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {}
+  try { localStorage.setItem(UNLOCK_KEY, '1'); if (!localStorage.getItem(FOUNDING_KEY)) localStorage.setItem(FOUNDING_KEY, new Date().toISOString()); } catch (e) {}
   try { cloudSyncUp(); } catch (e) {}            // push the unlock to the account → follows to other devices
   closeUnlock();
   renderWorldLocks();
@@ -3424,7 +3463,7 @@ function renderWorldLocks() {
     b.classList.toggle('locked', locked && !soon);
     b.classList.toggle('soon', soon);
     const small = b.querySelector('small');
-    if (small) small.textContent = (b.dataset.desc || '') + (soon ? ' • 🔜 Coming soon' : locked ? ' • 🔒 $5' : '');
+    if (small) small.textContent = (b.dataset.desc || '') + (soon ? ' • 🔜 Coming soon' : locked ? ' • 🔒 ' + PAY.price : '');
   });
 }
 
@@ -11512,7 +11551,10 @@ function buildMenu() {
     Sound.click();
     updateGradeDescs(b.dataset.world);                 // preview this world's grade levels (reading / Spanish / math)
     if (worldComingSoon(b.dataset.world)) { comingSoonNote(b.dataset.world); return; }
-    if (worldLocked(b.dataset.world)) { openUnlock(); return; }
+    if (worldLocked(b.dataset.world)) {
+      if (trialAvailable()) startTrial();                          // first premium tap → start trial, then select it
+      else { openUnlock(); return; }
+    }
     $('worldRow').querySelectorAll('button').forEach(x => x.classList.remove('selected'));
     b.classList.add('selected');
     G.world = b.dataset.world;
