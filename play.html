@@ -14,17 +14,42 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stackadoo">
 <meta name="description" content="A 3D world where kids build houses and drive cars by solving math, reading & Spanish — sneaky learning that feels like play. Free to start!">
-<!-- Social link previews (Open Graph + Twitter). Add an og.png (1200×630) at the site root for a banner image. -->
+<link rel="canonical" href="https://stackadoo.com/play.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<!-- Social link previews (Open Graph + Twitter). Uses shots/build.jpg (900×563) as the banner image. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Stackadoo">
 <meta property="og:title" content="Stackadoo — Build & drive by doing math!">
 <meta property="og:description" content="Kids build houses and drive cars by solving math, reading & Spanish. Sneaky learning that feels like play — free to start!">
-<meta property="og:url" content="https://stackadoo.com/">
-<meta property="og:image" content="https://stackadoo.com/og.png">
+<meta property="og:url" content="https://stackadoo.com/play.html">
+<meta property="og:image" content="https://stackadoo.com/shots/build.jpg">
+<meta property="og:image:width" content="900">
+<meta property="og:image:height" content="563">
+<meta property="og:image:alt" content="A kid building a colorful 3D voxel world in Stackadoo by solving math">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Stackadoo — Build & drive by doing math!">
 <meta name="twitter:description" content="Kids build & drive by solving math, reading & Spanish. Free to start!">
-<meta name="twitter:image" content="https://stackadoo.com/og.png">
+<meta name="twitter:image" content="https://stackadoo.com/shots/build.jpg">
+<meta name="twitter:site" content="@Stackadoo">
+<!-- Structured data (JSON-LD) — the playable game itself -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Stackadoo",
+  "url": "https://stackadoo.com/play.html",
+  "image": "https://stackadoo.com/shots/build.jpg",
+  "description": "A 3D world where kids build houses and drive cars by solving math, reading and Spanish. Sneaky learning that feels like play. Free to start.",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Web browser",
+  "gamePlatform": "Web",
+  "inLanguage": "en",
+  "audience": { "@type": "EducationalAudience", "educationalRole": "student" },
+  "publisher": { "@type": "Organization", "name": "Buni LLC", "url": "https://stackadoo.com/" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2858,7 +2883,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
+  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
   world: 'meadow',
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
@@ -2899,7 +2924,25 @@ function comingSoonNote(id) {
    Stored locally per device. This is the hook for a real payment (Stripe / RevenueCat) later;
    for now doUnlock() just flips the flag so the model can be demoed. ===== */
 const UNLOCK_KEY = 'stackadooUnlocked';
-function isUnlocked() { try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; } }
+/* ===== Are we running inside the Google Play Android app (a Trusted Web Activity)? =====
+   The TWA loads this same live site. Google Play forbids external (Stripe) payments for
+   digital goods *inside* the app, so on Android we ship the full game FREE: everything is
+   unlocked and no paywall / purchase UI is ever shown. Web (a normal browser) is unchanged.
+   Detection: the TWA sets an "android-app://" referrer on launch, and only a Play-backed TWA
+   exposes the Digital Goods API. Referrer is only present on the first navigation, so we
+   remember it for the rest of the session. (Phase 2 later: wire Play Billing here.) */
+const IS_ANDROID_APP = (function () {
+  try {
+    if (sessionStorage.getItem('twa') === '1') return true;
+    const fromApp = (document.referrer || '').startsWith('android-app://') || ('getDigitalGoodsService' in window);
+    if (fromApp) sessionStorage.setItem('twa', '1');
+    return fromApp;
+  } catch (e) { return false; }
+})();
+function isUnlocked() {
+  if (IS_ANDROID_APP) return true;                                  // Android app = full game, free
+  try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; }
+}
 function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnlocked(); }
 
 /* ===== Payments — how the $5 full-game unlock is purchased =====
@@ -2921,6 +2964,7 @@ const PAY = {
   price: '$4.99'
 };
 function beginPurchase() {
+  if (IS_ANDROID_APP) return;     // Google Play policy: never open an external (Stripe) payment inside the app
   if (typeof saveGame === 'function' && G.running) saveGame();    // don't lose a build if we navigate away
   if (PAY.checkoutEndpoint) { location.href = PAY.checkoutEndpoint + '?return=' + encodeURIComponent(location.origin + location.pathname); return; }
   if (PAY.stripePaymentLink) { location.href = PAY.stripePaymentLink; return; }
@@ -2934,7 +2978,7 @@ function beginPurchase() {
      and each code burns after a single redemption — no spreading into the ether.
    • Until then, PROMO_CODES below works as a local fallback (multi-use) so the
      flow is testable today. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
-const REDEEM_URL = '';   // <-- paste your Apps Script Web App URL here to enforce one-use-each
+const REDEEM_URL = 'https://script.google.com/macros/s/AKfycbxwa9NZi9kGFa3cjWQ_lUCtCNLuX4CK_z2QEy-21n5a2SS4Jbz4AuTYHuLnFZpZgnpr/exec';   // Apps Script gift-code backend (one-use-each)
 const PROMO_CODES = ['STK-E8UZD', 'STK-8CSPM', 'STK-XYBJ6', 'STK-K7MUE', 'STK-7SN4K', 'STK-EKEDD', 'STK-FBGY4', 'STK-Z3X58', 'STK-7KG4E', 'STK-EY934'];
 function unlockNow() { try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {} }
 async function redeemCode(raw) {                 // -> { ok, reason }
@@ -3353,6 +3397,7 @@ function travelToWorld(id) {
 
 /* ---------- Full-game unlock dialog ---------- */
 function openUnlock() {
+  if (IS_ANDROID_APP) return;     // app is already fully unlocked — never show the paywall
   if (G.running) popupOpen = true;
   document.exitPointerLock && document.exitPointerLock();
   $('unlockPopup').style.display = 'flex';
@@ -3922,7 +3967,7 @@ function resetGameState() {
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
-  G.selectedSlot = 'block'; G.blockColor = 0xC9B79A; G.furnFinish = 0;
+  G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
@@ -8655,7 +8700,7 @@ function placeSelectedAt(x, z, blockY) {
   mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
   addBlockMesh(x, y, z, null, 'placed', true, mesh);
   blocks.get(key(x, y, z)).color = G.blockColor;     // remember the paint for saving
-  G.blocks -= 1; Sound.place(); refreshHUD(); return true;
+  G.blocks -= 1; G.buildMode = true; Sound.place(); refreshHUD(); return true;
 }
 /* D — put down the selected item on the square in front of you (blocks stack) */
 function putDownBlock() {
@@ -10878,7 +10923,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyP') pickupBlock();
   if (e.code === 'KeyD') putDownBlock();
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
-  if (e.code === 'KeyX') { Sound.click(); setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
+  if (e.code === 'KeyX') { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
   if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
   if (e.code === 'KeyE') { tryUse(); }
   if (e.code === 'KeyL') { Sound.click(); toggleBedRest(); }
@@ -10960,6 +11005,7 @@ function openInv() {
 }
 function closeInv() { $('invPopup').style.display = 'none'; popupOpen = false; }
 function startPlacing(slot) {
+  G.buildMode = true;
   selectSlot(slot);
   closeInv();
   toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
@@ -11108,6 +11154,7 @@ function renderInv() {
         sw.style.background = '#' + pc.color.toString(16).padStart(6, '0');
         sw.onclick = () => {
           Sound.click();
+          G.buildMode = true;
           G.blockColor = pc.color; selectSlot('block', true);
           prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
           sw.classList.add('sel');
@@ -11260,7 +11307,7 @@ function setRemoveMode(on) {
   b.textContent = G.removeMode ? '⛏️ Remove' : '🧱 Build';
   b.classList.toggle('remove', G.removeMode);
 }
-$('modeBtn').onclick = () => { Sound.click(); setRemoveMode(!G.removeMode);
+$('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
   toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click a spot to place a block.', 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
 $('useBtnDesk').onclick = () => { tryUse(); };
@@ -12068,7 +12115,7 @@ function loop(now) {
   }
 
   // show the block-color swatches only while you're actually building on foot
-  const _showPaints = !isTouch && !G.mouseWalk && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
+  const _showPaints = !isTouch && G.buildMode && !G.mouseWalk && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
   if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
   $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 

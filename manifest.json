@@ -13,5 +13,13 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "shots/build.jpg",     "sizes": "900x563", "type": "image/jpeg", "form_factor": "wide", "label": "Build houses and worlds block by block" },
+    { "src": "shots/world.jpg",     "sizes": "900x563", "type": "image/jpeg", "form_factor": "wide", "label": "Explore a colorful 3D voxel town" },
+    { "src": "shots/math.jpg",      "sizes": "900x563", "type": "image/jpeg", "form_factor": "wide", "label": "Earn building blocks by solving math" },
+    { "src": "shots/drive.jpg",     "sizes": "900x563", "type": "image/jpeg", "form_factor": "wide", "label": "Drive cars around the worlds you build" },
+    { "src": "shots/cinema.jpg",    "sizes": "900x563", "type": "image/jpeg", "form_factor": "wide", "label": "Watch story clips in Grammar Cinema" },
+    { "src": "shots/dashboard.jpg", "sizes": "900x563", "type": "image/jpeg", "form_factor": "wide", "label": "Track progress, badges and worlds" }
   ]
 }

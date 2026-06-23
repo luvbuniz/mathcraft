@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.stackadoo.twa",
+      "sha256_cert_fingerprints": [
+        "0F:F0:D5:01:12:06:35:EC:C7:3D:0B:5C:BF:D1:1E:62:BD:2C:E5:DA:D5:C2:AE:F3:DE:50:B4:39:34:D7:6A:86"
+      ]
+    }
+  }
+]
