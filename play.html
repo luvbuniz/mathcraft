@@ -362,11 +362,13 @@
   .touchBtn { position:absolute; pointer-events:auto; touch-action:none; background:rgba(255,255,255,.65);
     border-radius:16px; font-size:17px; font-weight:bold; padding:14px 16px; color:#333;
     box-shadow:0 3px 0 rgba(0,0,0,.25); }
-  #btnJump { right:26px; bottom:96px; }
-  #btnAction { right:26px; bottom:170px; background:rgba(255,233,150,.85); }
-  #btnModeTouch { right:104px; bottom:96px; }
-  #btnUndoTouch { right:182px; bottom:96px; background:rgba(196,238,201,.92); }
-  #btnShoot { right:104px; bottom:170px; background:rgba(255,170,150,.9); }
+  /* Base layout = tidy 2-column cluster (also the fallback for wide 10" tablets >1250px,
+     where none of the phone breakpoints match — the old single-row base overlapped). */
+  #btnAction { right:18px; bottom:200px; background:rgba(255,233,150,.85); }
+  #btnJump { right:18px; bottom:134px; }
+  #btnModeTouch { right:18px; bottom:68px; }
+  #btnUndoTouch { right:122px; bottom:134px; background:rgba(196,238,201,.92); }
+  #btnShoot { right:122px; bottom:68px; background:rgba(255,170,150,.9); }
 
   /* ---------- Names + saved games ---------- */
   #nameInput { width:min(420px,90%); font-family:inherit; font-size:clamp(16px,2.6vw,20px);
@@ -11963,6 +11965,10 @@ function startGame() {
   setRemoveMode(false);                        // always start in 🧱 Build mode
   $('mouseLegend').style.display = isTouch ? 'none' : 'block';   // show the click shortcut on desktop
   $('useBtnDesk').style.display = isTouch ? 'none' : 'block';    // desktop ⭐ USE button (mouse-only players)
+  if (isTouch) {                                                 // touch has its own 🧱 Place / ↩️ Undo in the bottom cluster —
+    $('modeBtn').style.display = 'none';                         // hide the desktop Build/Undo buttons so they don't overlap
+    $('undoBtn').style.display = 'none';                         // (CSS only hid them on narrow phones, not wide tablets)
+  }
   $('coinRow').style.display = 'block';        // coins matter in every mode now
   $('playerRow').style.display = 'block';
   $('playerName').textContent = G.playerName;
