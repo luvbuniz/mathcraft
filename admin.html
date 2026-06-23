@@ -103,10 +103,11 @@
         <div class="stat" style="box-shadow:none; background:#f3f8f1"><div class="n" id="cAvail" style="font-size:30px">—</div><div class="l">Available</div></div>
         <div class="stat" style="box-shadow:none; background:#f3f8f1"><div class="n" id="cUsed" style="font-size:30px">—</div><div class="l">Redeemed</div></div>
       </div>
-      <div class="row" style="margin-bottom:8px">
-        <input id="genN" type="number" min="1" max="100" value="1" style="max-width:90px">
-        <button onclick="genCodes()">Generate codes</button>
-        <button class="refresh" onclick="loadCodes()">↻</button>
+      <div class="row" style="flex-wrap:wrap; gap:8px; margin-bottom:8px">
+        <input id="genN" type="number" min="1" max="100" value="5" style="max-width:84px; flex:0 0 auto">
+        <button onclick="genCodes()" style="flex:0 0 auto">Generate codes</button>
+        <button class="refresh" onclick="loadCodes()" title="Refresh the list" style="flex:0 0 auto">↻ Refresh</button>
+        <button class="refresh" onclick="copyAvailable()" title="Copy every unused code as a share link" style="flex:0 0 auto">📋 Copy available</button>
       </div>
       <div id="genOut"></div>
       <div id="codeList" style="margin-top:10px"></div>
@@ -146,9 +147,11 @@ function loadCodes() {
     $('cAvail').textContent = d.available; $('cUsed').textContent = d.used;
     const rate = d.total ? Math.round(d.used / d.total * 100) : 0;
     $('cUsed').nextElementSibling.textContent = 'Redeemed' + (d.total ? ' · ' + rate + '% of ' + d.total : '');
+    _avail = (d.codes || []).filter(c => !c.used).map(c => c.code);
     $('codeList').innerHTML = (d.codes || []).map(c => {
       const when = c.used && c.redeemedAt ? new Date(c.redeemedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
-      return '<div class="barRow"><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
+      const click = c.used ? '' : ' style="cursor:pointer" title="Click to copy this code\'s share link" onclick="copyOne(\'' + c.code + '\', this)"';
+      return '<div class="barRow"' + click + '><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
         '<span style="flex:1;text-align:right;color:#6a7b6c;font-size:12px;padding-right:8px">' + when + '</span>' +
         '<span class="v" style="width:auto;color:' + (c.used ? '#c0392b' : '#3f9d34') + '">' + (c.used ? 'used' : 'free') + '</span></div>';
     }).join('') || '<p class="note">No codes yet — generate some above.</p>';
@@ -171,6 +174,34 @@ function genCodes() {
 function copyGen(btn) {
   const ta = btn.parentElement.parentElement.querySelector('textarea');
   ta.select(); try { document.execCommand('copy'); btn.textContent = 'Copied!'; } catch (e) {}
+}
+let _avail = [];                              // unused codes from the last load, for "Copy available"
+function siteBase() { return location.origin.replace(/\/$/, ''); }
+function copyToClip(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fbCopy(text, done));
+  } else fbCopy(text, done);
+}
+function fbCopy(text, done) {                  // fallback for older browsers / non-HTTPS
+  const t = document.createElement('textarea'); t.value = text;
+  t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t);
+  t.focus(); t.select(); try { document.execCommand('copy'); } catch (e) {}
+  t.remove(); done && done();
+}
+function copyOne(code, row) {                  // click a code row → copy its share link, flash "copied!"
+  copyToClip(siteBase() + '/?code=' + code, () => {
+    const lbl = row && row.querySelector('.v'); if (!lbl) return;
+    const prev = lbl.textContent; lbl.textContent = 'copied!';
+    setTimeout(() => { lbl.textContent = prev; }, 1200);
+  });
+}
+function copyAvailable() {                      // copy/paste area with every unused code as a link
+  if (!_avail.length) { $('genOut').innerHTML = '<p class="note">No unused codes to copy — generate some first.</p>'; return; }
+  const site = siteBase();
+  const lines = _avail.map(c => c + '   →   ' + site + '/?code=' + c).join('\n');
+  $('genOut').innerHTML = '<p class="note" style="color:#2f8a52;font-weight:700">📋 ' + _avail.length + ' available code(s) — copy &amp; paste to share:</p>' +
+    '<textarea readonly style="width:100%;height:' + Math.min(220, 24 + _avail.length * 20) + 'px;font-family:monospace;font-size:13px;border:2px solid #cfe0cb;border-radius:10px;padding:8px">' + lines + '</textarea>' +
+    '<div class="row" style="margin-top:6px"><button onclick="copyGen(this)">Copy all</button></div>';
 }
 
 function loadStats() {
