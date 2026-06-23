@@ -2924,7 +2924,25 @@ function comingSoonNote(id) {
    Stored locally per device. This is the hook for a real payment (Stripe / RevenueCat) later;
    for now doUnlock() just flips the flag so the model can be demoed. ===== */
 const UNLOCK_KEY = 'stackadooUnlocked';
-function isUnlocked() { try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; } }
+/* ===== Are we running inside the Google Play Android app (a Trusted Web Activity)? =====
+   The TWA loads this same live site. Google Play forbids external (Stripe) payments for
+   digital goods *inside* the app, so on Android we ship the full game FREE: everything is
+   unlocked and no paywall / purchase UI is ever shown. Web (a normal browser) is unchanged.
+   Detection: the TWA sets an "android-app://" referrer on launch, and only a Play-backed TWA
+   exposes the Digital Goods API. Referrer is only present on the first navigation, so we
+   remember it for the rest of the session. (Phase 2 later: wire Play Billing here.) */
+const IS_ANDROID_APP = (function () {
+  try {
+    if (sessionStorage.getItem('twa') === '1') return true;
+    const fromApp = (document.referrer || '').startsWith('android-app://') || ('getDigitalGoodsService' in window);
+    if (fromApp) sessionStorage.setItem('twa', '1');
+    return fromApp;
+  } catch (e) { return false; }
+})();
+function isUnlocked() {
+  if (IS_ANDROID_APP) return true;                                  // Android app = full game, free
+  try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; }
+}
 function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !isUnlocked(); }
 
 /* ===== Payments — how the $5 full-game unlock is purchased =====
@@ -2946,6 +2964,7 @@ const PAY = {
   price: '$4.99'
 };
 function beginPurchase() {
+  if (IS_ANDROID_APP) return;     // Google Play policy: never open an external (Stripe) payment inside the app
   if (typeof saveGame === 'function' && G.running) saveGame();    // don't lose a build if we navigate away
   if (PAY.checkoutEndpoint) { location.href = PAY.checkoutEndpoint + '?return=' + encodeURIComponent(location.origin + location.pathname); return; }
   if (PAY.stripePaymentLink) { location.href = PAY.stripePaymentLink; return; }
@@ -3378,6 +3397,7 @@ function travelToWorld(id) {
 
 /* ---------- Full-game unlock dialog ---------- */
 function openUnlock() {
+  if (IS_ANDROID_APP) return;     // app is already fully unlocked — never show the paywall
   if (G.running) popupOpen = true;
   document.exitPointerLock && document.exitPointerLock();
   $('unlockPopup').style.display = 'flex';
