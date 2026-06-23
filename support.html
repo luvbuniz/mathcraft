@@ -200,14 +200,27 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
     if (standalone || !isTouch) return;
     wrap.style.display = '';
     var isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var pendingTap = false;
+    function fire(){
+      var p = window._installPrompt; if (!p) return false;
+      p.prompt();
+      p.userChoice.then(function(){ window._installPrompt = null; wrap.style.display = 'none'; });
+      return true;
+    }
+    // Chrome can fire the install event a beat after load (or once the service worker takes
+    // control on a return visit). Catch it whenever it lands, and if the user already tapped
+    // Install, pop the real system dialog right then — no digging through the ⋮ menu.
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault(); window._installPrompt = e;
+      if (pendingTap){ pendingTap = false; fire(); }
+    });
     btn.onclick = function(){
-      if (window._installPrompt) {
-        window._installPrompt.prompt();
-        window._installPrompt.userChoice.then(function(){ window._installPrompt = null; wrap.style.display = 'none'; });
-      } else if (isiOS) {
-        alert('To install on iPhone/iPad:\n\n1) Tap the Share button (the square with an up-arrow).\n2) Scroll down and tap “Add to Home Screen.”');
+      if (fire()) return;                                     // Android Chromium → real one-tap install
+      if (isiOS){
+        alert('To install on iPad/iPhone:\n\n1) Tap the Share button (the box with an ↑ arrow).\n2) Scroll down and tap “Add to Home Screen.”');
       } else {
-        alert('To install:\n\nOpen your browser menu (⋮ in the corner) and tap “Install app” or “Add to Home Screen.”');
+        pendingTap = true;                                    // event may be a second away — auto-fire when it lands
+        alert('Getting the app ready…\n\nIf an “Install” box doesn’t pop up in a moment, open your browser menu (⋮ or ⋯ in the corner) and tap “Install app” or “Add to Home Screen.”');
       }
     };
   })();
