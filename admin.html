@@ -140,6 +140,13 @@ function giftFetch(params) {
   const url = GIFT_URL + (GIFT_URL.indexOf('?') < 0 ? '?' : '&') + params + '&key=' + encodeURIComponent(ADMIN_KEY) + '&_=' + Date.now();
   return fetch(url).then(r => r.json());
 }
+let _lastCodes = [];
+const SENT_KEY = 'stackadooSentCodes';                 // codes you've handed out (kept in THIS admin browser)
+function sentSet() { try { return new Set(JSON.parse(localStorage.getItem(SENT_KEY) || '[]')); } catch (e) { return new Set(); } }
+function saveSent(s) { try { localStorage.setItem(SENT_KEY, JSON.stringify([...s])); } catch (e) {} }
+function markSent(codes) { const s = sentSet(); (Array.isArray(codes) ? codes : [codes]).forEach(c => s.add(c)); saveSent(s); }
+function toggleSent(code) { const s = sentSet(); s.has(code) ? s.delete(code) : s.add(code); saveSent(s); renderCodeList(); }
+function clearSent(e) { if (e) e.preventDefault(); if (confirm('Clear all "sent" marks? The codes themselves are unaffected.')) { saveSent(new Set()); renderCodeList(); } }
 function loadCodes() {
   if (!GIFT_URL) return;
   giftFetch('action=codes').then(d => {
@@ -147,15 +154,28 @@ function loadCodes() {
     $('cAvail').textContent = d.available; $('cUsed').textContent = d.used;
     const rate = d.total ? Math.round(d.used / d.total * 100) : 0;
     $('cUsed').nextElementSibling.textContent = 'Redeemed' + (d.total ? ' · ' + rate + '% of ' + d.total : '');
-    _avail = (d.codes || []).filter(c => !c.used).map(c => c.code);
-    $('codeList').innerHTML = (d.codes || []).map(c => {
-      const when = c.used && c.redeemedAt ? new Date(c.redeemedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
-      const click = c.used ? '' : ' style="cursor:pointer" title="Click to copy this code\'s share link" onclick="copyOne(\'' + c.code + '\', this)"';
-      return '<div class="barRow"' + click + '><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
-        '<span style="flex:1;text-align:right;color:#6a7b6c;font-size:12px;padding-right:8px">' + when + '</span>' +
-        '<span class="v" style="width:auto;color:' + (c.used ? '#c0392b' : '#3f9d34') + '">' + (c.used ? 'used' : 'free') + '</span></div>';
-    }).join('') || '<p class="note">No codes yet — generate some above.</p>';
+    _lastCodes = d.codes || [];
+    _avail = _lastCodes.filter(c => !c.used).map(c => c.code);
+    renderCodeList();
   }).catch(() => { $('codeList').innerHTML = '<p class="err">Network error reaching gift backend.</p>'; });
+}
+function renderCodeList() {
+  const sent = sentSet();
+  const sentCount = _lastCodes.filter(c => !c.used && sent.has(c.code)).length;
+  const rows = _lastCodes.map(c => {
+    const isS = !c.used && sent.has(c.code);
+    const when = c.used && c.redeemedAt ? new Date(c.redeemedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    const status = c.used ? '<span style="color:#c0392b">used</span>' : (isS ? '<span style="color:#9a7b1e">📤 sent</span>' : '<span style="color:#3f9d34">free</span>');
+    const codeCell = c.used
+      ? '<span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>'
+      : '<span class="d" style="width:auto;font-weight:700;font-family:monospace;cursor:pointer" title="Copy this code\'s link (marks it sent)" onclick="copyOne(\'' + c.code + '\')">' + c.code + '</span>';
+    const toggle = c.used ? '' : '<button onclick="toggleSent(\'' + c.code + '\')" title="Mark sent / not sent" style="border:none;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;background:' + (isS ? '#efe6c9' : '#eef3ec') + ';color:' + (isS ? '#9a7b1e' : '#6a7b6c') + '">' + (isS ? '✓ Sent' : 'Mark sent') + '</button>';
+    return '<div class="barRow" style="' + (isS ? 'opacity:.55;' : '') + '">' + codeCell +
+      '<span style="flex:1;text-align:right;color:#6a7b6c;font-size:12px;padding:0 8px">' + when + '</span>' +
+      toggle + '<span class="v" style="width:auto;margin-left:8px">' + status + '</span></div>';
+  }).join('');
+  $('codeList').innerHTML = (rows || '<p class="note">No codes yet — generate some above.</p>') +
+    (sentCount ? '<div style="margin-top:8px;font-size:12px;color:#6a7b6c">📤 ' + sentCount + ' marked sent · <a href="#" onclick="clearSent(event)" style="color:#3f9d34">clear sent marks</a></div>' : '');
 }
 function genCodes() {
   if (!GIFT_URL) return;
@@ -188,20 +208,23 @@ function fbCopy(text, done) {                  // fallback for older browsers / 
   t.focus(); t.select(); try { document.execCommand('copy'); } catch (e) {}
   t.remove(); done && done();
 }
-function copyOne(code, row) {                  // click a code row → copy its share link, flash "copied!"
-  copyToClip(siteBase() + '/?code=' + code, () => {
-    const lbl = row && row.querySelector('.v'); if (!lbl) return;
-    const prev = lbl.textContent; lbl.textContent = 'copied!';
-    setTimeout(() => { lbl.textContent = prev; }, 1200);
-  });
+function copyOne(code) {                        // click a code → copy its share link + mark it sent
+  copyToClip(siteBase() + '/?code=' + code, () => { markSent(code); renderCodeList(); });
 }
-function copyAvailable() {                      // copy/paste area with every unused code as a link
-  if (!_avail.length) { $('genOut').innerHTML = '<p class="note">No unused codes to copy — generate some first.</p>'; return; }
+function copyAvailable() {                      // copy the codes you HAVEN'T sent yet, then mark them sent
+  const sent = sentSet();
+  const toSend = _avail.filter(c => !sent.has(c));
+  if (!toSend.length) {
+    $('genOut').innerHTML = '<p class="note">✅ Every available code is already marked sent. Generate more above, or use “clear sent marks” under the list.</p>';
+    return;
+  }
   const site = siteBase();
-  const lines = _avail.map(c => c + '   →   ' + site + '/?code=' + c).join('\n');
-  $('genOut').innerHTML = '<p class="note" style="color:#2f8a52;font-weight:700">📋 ' + _avail.length + ' available code(s) — copy &amp; paste to share:</p>' +
-    '<textarea readonly style="width:100%;height:' + Math.min(220, 24 + _avail.length * 20) + 'px;font-family:monospace;font-size:13px;border:2px solid #cfe0cb;border-radius:10px;padding:8px">' + lines + '</textarea>' +
-    '<div class="row" style="margin-top:6px"><button onclick="copyGen(this)">Copy all</button></div>';
+  const lines = toSend.map(c => c + '   →   ' + site + '/?code=' + c).join('\n');
+  copyToClip(lines);                            // straight to the clipboard — no extra click needed
+  $('genOut').innerHTML = '<p class="note" style="color:#2f8a52;font-weight:700">📋 Copied ' + toSend.length + ' un-sent code(s) to your clipboard (now marked sent):</p>' +
+    '<textarea readonly style="width:100%;height:' + Math.min(220, 24 + toSend.length * 20) + 'px;font-family:monospace;font-size:13px;border:2px solid #cfe0cb;border-radius:10px;padding:8px">' + lines + '</textarea>' +
+    '<div class="row" style="margin-top:6px"><button onclick="copyGen(this)">Copy again</button></div>';
+  markSent(toSend); renderCodeList();
 }
 
 function loadStats() {
