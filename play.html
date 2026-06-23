@@ -1329,6 +1329,7 @@
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="badgeClose" title="Close" aria-label="Close">✕</button></div>
     <h2 style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🏅 My Badges</h2>
     <div style="font-weight:bold; color:#7a6a35">Problems solved: <span id="badgeSolved">0</span></div>
+    <div id="hatToggleRow" style="margin-top:10px; display:none"></div>
     <div id="badgeGrid"></div>
   </div>
 </div>
@@ -2162,18 +2163,23 @@ function limb(parent, w, h, d, color, x, topY, z) {
   return g;
 }
 function addCrown(parent, y, color) {
-  const jewel = 0xE0457B;                                       // pink gemstone on the tips
-  const top = y + 0.06;                                         // top surface of the band
-  box(parent, 0.46, 0.12, 0.46, color, 0, y, 0);                // gold band around the head
-  box(parent, 0.48, 0.03, 0.48, 0xFFE98A, 0, top, 0);           // bright rim highlight
-  const r = 0.19;
-  [0, 45, 90, 135, 180, 225, 270, 315].forEach(deg => {         // ring of pointed spikes
-    const a = deg * Math.PI / 180;
-    const x = Math.sin(a) * r, z = Math.cos(a) * r;             // 0° faces front (+z)
-    const h = (deg === 0) ? 0.24 : 0.15;                        // front point is the tallest
-    box(parent, 0.06, h, 0.06, color, x, top + h / 2, z);       // spike
-    box(parent, 0.055, 0.055, 0.055, jewel, x, top + h + 0.02, z);  // gem on the tip
-  });
+  const top = y + 0.07;                                         // top surface of the band
+  box(parent, 0.47, 0.14, 0.47, color, 0, y, 0);                // gold band around the head
+  box(parent, 0.49, 0.03, 0.49, 0xFFE98A, 0, top, 0);           // bright rim highlight
+  box(parent, 0.06, 0.07, 0.03, 0xE0457B, 0,     y, 0.245);     // centre pink gem set in the band
+  box(parent, 0.05, 0.06, 0.03, 0x4FC3F7, -0.13, y, 0.235);     // blue gem
+  box(parent, 0.05, 0.06, 0.03, 0x4FC3F7,  0.13, y, 0.235);     // blue gem
+  // triangular peaks around the rim — wide bases nearly touch, so it reads as a crown (not sticks)
+  const r = 0.18, n = 8;
+  for (let k = 0; k < n; k++) {
+    const ang = k / n * Math.PI * 2;                            // 0 = front (+z)
+    const x = Math.sin(ang) * r, z = Math.cos(ang) * r;
+    const h = (k === 0) ? 0.2 : 0.14;                           // tallest peak at the front
+    const peak = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.085, h, 4), mat(color));
+    peak.position.set(x, top + h / 2, z);
+    peak.rotation.y = Math.PI / 4;                              // square base faces outward
+    parent.add(peak);
+  }
 }
 const blushMat = new THREE.MeshBasicMaterial({ color: 0xFFB3CC });   // 🌸 unlit → always a flat SOFT pink, never red
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
@@ -3057,7 +3063,7 @@ let shopCat = 'food';
 const BADGE_SETS = {
   math: [
     { id: 'star',   n: 5,  icon: '⭐', name: 'Math Star' },
-    { id: 'tophat', n: 10, icon: '🎩', name: 'Fancy Top Hat', wear: true },
+    { id: 'tophat', n: 10, icon: '🧢', name: 'Cool Baseball Cap', wear: true },
     { id: 'crown',  n: 15, icon: '👑', name: 'Golden Crown', wear: true },
     { id: 'champ',  n: 25, icon: '🏆', name: 'Math Champion' }
   ],
@@ -3256,6 +3262,24 @@ function renderBadges() {
       grid.appendChild(card);
     });
   });
+  // 🎩 Wear / take off your prize hat — only shown once you actually have one
+  const row = $('hatToggleRow');
+  const hasHat = profile.badges.includes('crown') || profile.badges.includes('tophat') || G.owned.usahat || G.owned.hat;
+  if (hasHat) {
+    row.style.display = '';
+    row.innerHTML = '<button id="hatToggleBtn" style="font:inherit;font-weight:800;cursor:pointer;border:none;border-radius:12px;padding:10px 18px;color:#fff;background:' +
+      (profile.hideHat ? '#3aa657' : '#c2683a') + '">' +
+      (profile.hideHat ? '🎩 Put my prize hat on' : '🙅 Take my prize hat off') + '</button>';
+    $('hatToggleBtn').onclick = () => {
+      Sound.click();
+      profile.hideHat = !profile.hideHat;
+      saveProfile();
+      applyHeadwear();
+      renderBadges();
+    };
+  } else {
+    row.style.display = 'none';
+  }
 }
 function openBadges() {
   if (popupOpen || G.over) return;
@@ -7748,6 +7772,7 @@ function applyHeadwear() {
   const d = player.avatarData;
   if (!d) return;
   if (d.headwear) { d.head.remove(d.headwear); d.headwear = null; }
+  if (profile.hideHat) return;         // player chose to go bare-headed (toggle in 🏅 Badges)
   const topY = d.quad ? 0.2 : 0.25;    // top of the head box
   let h = null;
   if (G.owned.usahat) {                 // a bought cosmetic the player chose to wear — it wins
@@ -7766,12 +7791,14 @@ function applyHeadwear() {
     addCrown(h, 0, 0xFFD23E);
     h.position.y = topY + 0.04;
   } else if (profile.badges.includes('tophat')) {
-    h = new THREE.Group();
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.04, 10), mat(0x222222));
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3, 10), mat(0x222222));
-    top.position.y = 0.17;
-    h.add(brim); h.add(top);
-    h.position.y = topY + 0.03;
+    h = new THREE.Group();                                          // 🧢 a cool baseball cap
+    const capCol = 0xE23B3B, brimCol = 0xB52D2D;
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(capCol));
+    h.add(dome);                                                    // rounded cap dome
+    box(h, 0.05, 0.05, 0.05, capCol, 0, 0.2, 0);                    // top button
+    box(h, 0.28, 0.04, 0.22, brimCol, 0, 0.01, 0.21);              // forward brim
+    box(h, 0.11, 0.09, 0.02, 0xFFFFFF, 0, 0.11, 0.2);              // little white logo patch
+    h.position.y = topY + 0.02;
   } else if (G.owned.hat) {
     h = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.18, 0.4, 6), mat(0x2BC4E8));
     h.position.y = topY + 0.2;
