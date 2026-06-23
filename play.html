@@ -2162,10 +2162,18 @@ function limb(parent, w, h, d, color, x, topY, z) {
   return g;
 }
 function addCrown(parent, y, color) {
-  box(parent, 0.34, 0.08, 0.34, color, 0, y, 0);
-  box(parent, 0.07, 0.12, 0.07, color, -0.12, y + 0.09, 0);
-  box(parent, 0.07, 0.16, 0.07, color, 0, y + 0.11, 0);
-  box(parent, 0.07, 0.12, 0.07, color, 0.12, y + 0.09, 0);
+  const jewel = 0xE0457B;                                       // pink gemstone on the tips
+  const top = y + 0.06;                                         // top surface of the band
+  box(parent, 0.46, 0.12, 0.46, color, 0, y, 0);                // gold band around the head
+  box(parent, 0.48, 0.03, 0.48, 0xFFE98A, 0, top, 0);           // bright rim highlight
+  const r = 0.19;
+  [0, 45, 90, 135, 180, 225, 270, 315].forEach(deg => {         // ring of pointed spikes
+    const a = deg * Math.PI / 180;
+    const x = Math.sin(a) * r, z = Math.cos(a) * r;             // 0° faces front (+z)
+    const h = (deg === 0) ? 0.24 : 0.15;                        // front point is the tallest
+    box(parent, 0.06, h, 0.06, color, x, top + h / 2, z);       // spike
+    box(parent, 0.055, 0.055, 0.055, jewel, x, top + h + 0.02, z);  // gem on the tip
+  });
 }
 const blushMat = new THREE.MeshBasicMaterial({ color: 0xFFB3CC });   // 🌸 unlit → always a flat SOFT pink, never red
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
