@@ -917,11 +917,13 @@
     #btnShoot     { right:104px; bottom:116px; }
     #btnUndoTouch { right:194px; bottom:58px; }
   }
-  /* Short screens (landscape phones): the start/setup screen vertically centers the card
-     (flex-direction:column + justify-content:center), which clips the top and traps
-     scrolling when the card is taller than the viewport. Top-align it + force vertical
-     scroll so every step (avatars, Back/Next) is reachable. */
-  @media (max-height:600px) {
+  /* Short screens (landscape phones AND landscape tablets): the start/setup screen
+     vertically centers the card (flex-direction:column + justify-content:center), which
+     clips the top and traps scrolling when the card is taller than the viewport. Top-align
+     it + force vertical scroll so every step (avatars, Back/Next) is reachable. The menu is
+     ~750px tall, so anything shorter than that needs to scroll (covers the 10" tablet gap
+     above 1250px wide / 600px tall that the other breakpoints missed). */
+  @media (max-height:820px) {
     #startScreen { overflow-y:auto !important; justify-content:flex-start !important; }
   }
 </style>
