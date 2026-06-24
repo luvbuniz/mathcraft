@@ -2212,19 +2212,30 @@ function addCrown(parent, y, color) {
   }
 }
 const blushMat = new THREE.MeshBasicMaterial({ color: 0xFFB3CC });   // 🌸 unlit → always a flat SOFT pink, never red
+const eyeShineMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });   // ✨ unlit white eye catch-light — stays bright on EVERY eye colour, never dimmed by scene light
+// 🎨 avatar-cuteness knobs — dial these to taste (bigger/brighter eyes, softer/darker brows, blush pop)
+const EYE_SHINE = 0.018, EYE_PUPIL_CORE = 0x141414, BROW_COLOR = 0x6E4A2E, BROW_Y = 0.165, BLUSH_GRIN = 1.25;
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
 // layers never z-fight (the flicker the Ninja Dog had). `color` becomes the pupil/iris colour.
 function addEyes(head, color, z, noBlush) {
   const pupil = (color && color !== 0xFFFFFF) ? color : 0x1a1a1a;
   box(head, 0.09, 0.095, 0.03, 0xF7F7F7, -0.11, 0.05, z);          // white sclera
   box(head, 0.09, 0.095, 0.03, 0xF7F7F7, 0.11, 0.05, z);
-  box(head, 0.045, 0.062, 0.03, pupil, -0.105, 0.04, z + 0.022);   // pupil (offset forward → no flicker)
+  box(head, 0.045, 0.062, 0.03, pupil, -0.105, 0.04, z + 0.022);   // coloured iris (offset forward → no flicker)
   box(head, 0.045, 0.062, 0.03, pupil, 0.105, 0.04, z + 0.022);
+  box(head, 0.022, 0.03, 0.03, EYE_PUPIL_CORE, -0.105, 0.035, z + 0.030); // dark pupil core in front of iris → iris reads as a ring, real depth
+  box(head, 0.022, 0.03, 0.03, EYE_PUPIL_CORE, 0.105, 0.035, z + 0.030);
+  for (const sx of [-1, 1]) {                                       // ✨ tiny white catch-light, upper-inner corner = 'wet/alive' eyes
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(EYE_SHINE, EYE_SHINE * 1.2, 0.02), eyeShineMat);
+    sh.position.set(sx * 0.09, 0.066, z + 0.038); head.add(sh);
+  }
   if (noBlush) return;                                              // human kid avatars skip the blush
+  const blush = [];
   for (const sx of [-1, 1]) {                                       // 🌸 flat unlit soft-pink blush
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.05, 0.014), blushMat);
-    m.position.set(sx * 0.155, -0.07, z + 0.004); head.add(m);
+    m.position.set(sx * 0.155, -0.07, z + 0.004); head.add(m); blush.push(m);
   }
+  head.userData.blush = blush;                                     // setFaceExpr puffs these up on a grin
 }
 /* A bendy mouth + brows on the head front, so the avatar can smile, grin or frown.
    Returns the pieces so the animation loop can switch expressions (great for selfies). */
@@ -2235,27 +2246,34 @@ function addFace(head, y, z, color) {
   const lc = box(mouth, 0.055, 0.04, 0.03, col, -0.105, 0, 0); // left corner
   const rc = box(mouth, 0.055, 0.04, 0.03, col, 0.105, 0, 0);  // right corner
   head.add(mouth);
-  const browL = box(head, 0.1, 0.035, 0.03, 0x4a3326, -0.11, 0.16, z); // brows sit just above the eyes
-  const browR = box(head, 0.1, 0.035, 0.03, 0x4a3326, 0.11, 0.16, z);
-  browL.visible = browR.visible = false;                      // only shown for a frown
-  return { mouth, lc, rc, browL, browR, y };
+  const browL = box(head, 0.105, 0.03, 0.03, BROW_COLOR, -0.11, BROW_Y, z + 0.002); // soft, always-on brows (forward of the catch-lights)
+  const browR = box(head, 0.105, 0.03, 0.03, BROW_COLOR, 0.11, BROW_Y, z + 0.002);
+  browL.visible = browR.visible = true;                       // brows now expressive every frame, not frown-only
+  return { mouth, lc, rc, browL, browR, y, browY: BROW_Y, blush: head.userData.blush || null };
 }
 function setFaceExpr(face, kind) {
   if (!face) return;
   const f = face;
+  const by = (f.browY != null) ? f.browY : 0.16;
+  const setBlush = s => { if (f.blush) { f.blush[0].scale.setScalar(s); f.blush[1].scale.setScalar(s); } };
   if (kind === 'grin') {                                      // big happy selfie smile
     f.mouth.position.y = f.y - 0.01; f.mouth.scale.set(1.25, 1.6, 1);
     f.lc.position.y = 0.075; f.rc.position.y = 0.075; f.lc.rotation.z = 0.6; f.rc.rotation.z = -0.6;
-    f.browL.visible = f.browR.visible = false;
+    f.browL.position.y = by + 0.02; f.browR.position.y = by + 0.02;   // brows lift = delighted
+    f.browL.rotation.z = 0.08; f.browR.rotation.z = -0.08;
+    setBlush(BLUSH_GRIN);                                     // 🌸 cheeks flush when happy
   } else if (kind === 'frown') {
     f.mouth.position.y = f.y - 0.02; f.mouth.scale.set(1, 1, 1);
     f.lc.position.y = -0.06; f.rc.position.y = -0.06; f.lc.rotation.z = -0.55; f.rc.rotation.z = 0.55;
-    f.browL.visible = f.browR.visible = true;
+    f.browL.position.y = by - 0.01; f.browR.position.y = by - 0.01; // brows drop toward the nose
     f.browL.rotation.z = -0.4; f.browR.rotation.z = 0.4;       // angry/sad angled brows
+    setBlush(1);
   } else {                                                    // gentle everyday smile
     f.mouth.position.y = f.y; f.mouth.scale.set(1, 1, 1);
     f.lc.position.y = 0.045; f.rc.position.y = 0.045; f.lc.rotation.z = 0.45; f.rc.rotation.z = -0.45;
-    f.browL.visible = f.browR.visible = false;
+    f.browL.position.y = by; f.browR.position.y = by;         // neutral resting brows
+    f.browL.rotation.z = 0.05; f.browR.rotation.z = -0.05;
+    setBlush(1);
   }
 }
 
