@@ -2172,8 +2172,27 @@ function mat(color) {
   if (!matCache[color]) matCache[color] = new THREE.MeshLambertMaterial({ color });
   return matCache[color];
 }
+// 🟢 Avatars (ONLY) get soft rounded edges so the characters read less blocky than the voxel world.
+// While ROUND_AV is on (set around avatar builds), box() rounds its corners + smooth-shades; the
+// world / shops / furniture call box() with ROUND_AV off, so they stay crisp and blocky.
+let ROUND_AV = false;
+const AV_ROUND = 0.28;           // corner softness = fraction of a part's smallest side (0.15 subtle … 0.45 very round)
+function roundedBoxGeo(w, h, d) {
+  const r = Math.min(w, h, d) * AV_ROUND;
+  const g = new THREE.BoxGeometry(w, h, d, 2, 2, 2);
+  const p = g.attributes.position, v = new THREE.Vector3();
+  const hw = w / 2 - r, hh = h / 2 - r, hd = d / 2 - r;
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const cx = Math.max(-hw, Math.min(hw, v.x)), cy = Math.max(-hh, Math.min(hh, v.y)), cz = Math.max(-hd, Math.min(hd, v.z));
+    const dx = v.x - cx, dy = v.y - cy, dz = v.z - cz, L = Math.hypot(dx, dy, dz);
+    if (L > 1e-6) { const s = r / L; p.setXYZ(i, cx + dx * s, cy + dy * s, cz + dz * s); }   // push corner verts out onto the rounding sphere
+  }
+  g.computeVertexNormals();
+  return g;
+}
 function box(parent, w, h, d, color, x, y, z) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+  const m = new THREE.Mesh(ROUND_AV ? roundedBoxGeo(w, h, d) : new THREE.BoxGeometry(w, h, d), mat(color));
   m.position.set(x, y, z);
   parent.add(m);
   return m;
@@ -7859,16 +7878,19 @@ function toggleBedRest() {
 
 function setAvatar(index) {
   if (player.avatar) scene.remove(player.avatar);
-  const data = AVATARS[index].build();
-  // give the avatar an expressive face on its front (best seen in selfie mode).
-  // bipeds have a flat face + arms; quads get a smaller mouth on the muzzle.
-  data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
-  setFaceExpr(data.face, 'smile');
-  // remember each arm's resting pose so we can return to it after a wave
-  if (data.arms) data.armRest = data.arms.map(a => ({ x: a.rotation.x, z: a.rotation.z }));
-  player.avatar = data.group;
-  player.avatarData = data;
-  applyHeadwear();
+  ROUND_AV = true;                         // build a soft, rounded character (avatars only — the world stays voxel)
+  try {
+    const data = AVATARS[index].build();
+    // give the avatar an expressive face on its front (best seen in selfie mode).
+    // bipeds have a flat face + arms; quads get a smaller mouth on the muzzle.
+    data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
+    setFaceExpr(data.face, 'smile');
+    // remember each arm's resting pose so we can return to it after a wave
+    if (data.arms) data.armRest = data.arms.map(a => ({ x: a.rotation.x, z: a.rotation.z }));
+    player.avatar = data.group;
+    player.avatarData = data;
+    applyHeadwear();
+  } finally { ROUND_AV = false; }
   scene.add(player.avatar);
 }
 /* Badge prizes go on your head! Best earned hat wins: crown > top hat > party hat. */
@@ -11641,7 +11663,9 @@ function buildMenu() {
     card.appendChild(cv); card.appendChild(nm);
     grid.appendChild(card);
 
-    const data = av.build();
+    ROUND_AV = true;
+    let data;
+    try { data = av.build(); } finally { ROUND_AV = false; }
     data.group.rotation.y = data.quad ? 0.85 : 0.5;   // angle quadrupeds to show all four legs
     pvScene.add(data.group);
     pvRenderer.render(pvScene, pvCam);
