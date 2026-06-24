@@ -2719,8 +2719,7 @@ const AVATARS = [
       box(a.head, 0.46, 0.15, 0.05, accent, 0, 0.06, 0.245);          // mask band
       box(a.head, 0.07, 0.1, 0.05, accent, -0.2, 0.06, 0.18);         // mask wraps to the temples
       box(a.head, 0.07, 0.1, 0.05, accent, 0.2, 0.06, 0.18);
-      box(a.head, 0.05, 0.05, 0.02, 0xffffff, -0.105, 0.07, 0.292);   // eye shine
-      box(a.head, 0.05, 0.05, 0.02, 0xffffff, 0.115, 0.07, 0.292);
+      // eye shine now comes from the shared addEyes catch-light (no double sparkle)
       // cape — collar on the shoulders + a long flowing back
       box(a.group, 0.34, 0.16, 0.1, accent, 0, 1.16, -0.16);          // upturned collar (behind the neck)
       const cape = box(a.group, 0.56, 0.82, 0.05, accent, 0, 0.76, -0.21); // cape
@@ -2850,8 +2849,7 @@ const AVATARS = [
       box(a.head, 0.08, 0.03, 0.03, 0xC0694A, 0, -0.15, 0.26);        // small smile
       box(a.head, 0.035, 0.03, 0.03, 0xC0694A, -0.052, -0.135, 0.26);
       box(a.head, 0.035, 0.03, 0.03, 0xC0694A, 0.052, -0.135, 0.26);
-      box(a.head, 0.1, 0.028, 0.03, 0x4a3326, -0.11, 0.17, 0.255);    // little eyebrows (detail)
-      box(a.head, 0.1, 0.028, 0.03, 0x4a3326, 0.11, 0.17, 0.255);
+      // eyebrows now come from the shared, expression-animated addFace brows (no more static doubles)
       // 💇 standard boy haircut — full cap + bangs + BACK of head + short SIDES
       box(a.head, 0.56, 0.26, 0.56, hair, 0, 0.2, 0);                 // hair cap
       box(a.head, 0.52, 0.12, 0.1, hair, 0, 0.16, 0.24);             // bangs
