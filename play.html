@@ -2176,7 +2176,7 @@ function mat(color) {
 // While ROUND_AV is on (set around avatar builds), box() rounds its corners + smooth-shades; the
 // world / shops / furniture call box() with ROUND_AV off, so they stay crisp and blocky.
 let ROUND_AV = false;
-const AV_ROUND = 0.36;           // corner softness = fraction of a part's smallest side (0.15 subtle … 0.45 very round)
+const AV_ROUND = 0.40;           // corner softness = fraction of a part's smallest side (0.15 subtle … 0.45 very round)
 function roundedBoxGeo(w, h, d) {
   const r = Math.min(w, h, d) * AV_ROUND;
   const g = new THREE.BoxGeometry(w, h, d, 2, 2, 2);
@@ -2318,19 +2318,19 @@ function buildQuad(bodyColor, headColor, legColor) {
 function buildBiped(bodyColor, headColor, legColor, armColor) {
   const g = new THREE.Group();
   const legs = [
-    limb(g, 0.2, 0.55, 0.2, legColor, -0.13, 0.55, 0),
-    limb(g, 0.2, 0.55, 0.2, legColor, 0.13, 0.55, 0)
+    limb(g, 0.24, 0.55, 0.24, legColor, -0.14, 0.55, 0),
+    limb(g, 0.24, 0.55, 0.24, legColor, 0.14, 0.55, 0)
   ];
-  legs.forEach(L => box(L, 0.24, 0.12, 0.32, shade(legColor, 0.72), 0, -0.5, 0.07));   // feet
-  box(g, 0.5, 0.6, 0.28, bodyColor, 0, 0.85, 0);                                        // torso
-  box(g, 0.5, 0.12, 0.3, shade(bodyColor, 0.9), 0, 0.56, 0);                            // hips/belt line
-  box(g, 0.66, 0.18, 0.3, shade(bodyColor, 0.94), 0, 1.12, 0);                          // shoulder line bridges torso → arms
+  legs.forEach(L => box(L, 0.28, 0.12, 0.34, shade(legColor, 0.72), 0, -0.5, 0.06));   // chunkier feet
+  box(g, 0.54, 0.6, 0.34, bodyColor, 0, 0.85, 0);                                       // chunkier torso (proportionate to the legs)
+  box(g, 0.54, 0.12, 0.34, shade(bodyColor, 0.9), 0, 0.56, 0);                           // hips/belt line
+  box(g, 0.7, 0.18, 0.34, shade(bodyColor, 0.94), 0, 1.12, 0);                           // shoulder line bridges torso → arms
   const arms = [
-    limb(g, 0.15, 0.5, 0.15, armColor, -0.31, 1.08, 0),
-    limb(g, 0.15, 0.5, 0.15, armColor, 0.31, 1.08, 0)
+    limb(g, 0.17, 0.5, 0.17, armColor, -0.33, 1.08, 0),
+    limb(g, 0.17, 0.5, 0.17, armColor, 0.33, 1.08, 0)
   ];
-  arms.forEach(A => { box(A, 0.17, 0.16, 0.17, headColor, 0, -0.5, 0);                  // hands
-                      box(A, 0.2, 0.2, 0.2, armColor, 0, -0.04, 0); });                 // rounded shoulder fills the joint as the arm swings
+  arms.forEach(A => { box(A, 0.19, 0.18, 0.19, headColor, 0, -0.5, 0);                  // hands
+                      box(A, 0.22, 0.22, 0.22, armColor, 0, -0.04, 0); });               // rounded shoulder fills the joint as the arm swings
   const head = new THREE.Group();
   head.position.set(0, 1.4, 0);
   box(head, 0.5, 0.5, 0.5, headColor, 0, 0, 0);
@@ -2899,11 +2899,10 @@ const AVATARS = [
       box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
       // 💇 pretty brown hair — cap, soft bangs, long shoulder locks, full back
       box(a.head, 0.6, 0.3, 0.6, hair, 0, 0.21, 0);                   // full rounded hair cap
-      // side-parted wavy fringe — soft clumps sweep across the brow at staggered heights (the part sits left of centre)
-      box(a.head, 0.20, 0.16, 0.13, hair, -0.25, 0.15, 0.255);
-      box(a.head, 0.17, 0.18, 0.14, hair, -0.07, 0.16, 0.265);       // the part crown — a touch higher
-      box(a.head, 0.18, 0.15, 0.14, hair, 0.12, 0.13, 0.265);        // sweeps right + dips (a wave)
-      box(a.head, 0.17, 0.17, 0.13, hair, 0.29, 0.15, 0.25);         // end lifts back up (a wave)
+      // light side-swept fringe — parts left of centre and sweeps across to the right, leaving the brow open (lighter face)
+      box(a.head, 0.13, 0.13, 0.13, hair, -0.23, 0.17, 0.255);       // short wisp on the left of the part
+      box(a.head, 0.21, 0.13, 0.14, hair, 0.05, 0.16, 0.265);        // main sweep across the upper forehead
+      box(a.head, 0.16, 0.14, 0.13, hair, 0.28, 0.14, 0.25);         // tucks down by the right ear
       // soft wavy shoulder locks (stacked rounded clumps, not flat slabs)
       [-0.33, 0.33].forEach(sx => {
         box(a.head, 0.19, 0.20, 0.19, hair, sx, 0.05, 0.04);
