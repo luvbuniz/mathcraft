@@ -2205,7 +2205,7 @@ const shade = (c, f) => {                 // scale a hex color's brightness by f
 function limb(parent, w, h, d, color, x, topY, z) {
   const g = new THREE.Group();
   g.position.set(x, topY, z);
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+  const m = new THREE.Mesh(ROUND_AV ? roundedBoxGeo(w, h, d) : new THREE.BoxGeometry(w, h, d), mat(color));
   m.position.y = -h / 2;
   g.add(m);
   parent.add(g);
@@ -2301,13 +2301,13 @@ function setFaceExpr(face, kind) {
 function buildQuad(bodyColor, headColor, legColor) {
   const g = new THREE.Group();
   const legs = [
-    limb(g, 0.16, 0.5, 0.16, legColor, -0.16, 0.5, 0.3),   // front left
-    limb(g, 0.16, 0.5, 0.16, legColor, 0.16, 0.5, 0.3),    // front right
-    limb(g, 0.16, 0.5, 0.16, legColor, -0.16, 0.5, -0.3),  // back left
-    limb(g, 0.16, 0.5, 0.16, legColor, 0.16, 0.5, -0.3)    // back right
+    limb(g, 0.2, 0.5, 0.2, legColor, -0.17, 0.5, 0.3),   // front left
+    limb(g, 0.2, 0.5, 0.2, legColor, 0.17, 0.5, 0.3),    // front right
+    limb(g, 0.2, 0.5, 0.2, legColor, -0.17, 0.5, -0.3),  // back left
+    limb(g, 0.2, 0.5, 0.2, legColor, 0.17, 0.5, -0.3)    // back right
   ];
-  box(g, 0.46, 0.42, 0.95, bodyColor, 0, 0.7, 0);          // body
-  box(g, 0.3, 0.3, 0.24, bodyColor, 0, 0.95, 0.42);        // neck
+  box(g, 0.58, 0.48, 0.96, bodyColor, 0, 0.72, 0);          // chunkier body — proportionate to the legs (lion-like)
+  box(g, 0.34, 0.32, 0.26, bodyColor, 0, 0.96, 0.42);        // neck
   const head = new THREE.Group();
   head.position.set(0, 1.22, 0.56);
   box(head, 0.42, 0.4, 0.42, headColor, 0, 0, 0);
@@ -2773,9 +2773,15 @@ const AVATARS = [
       box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, -0.052, -0.135, 0.26);
       box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, 0.052, -0.135, 0.26);
       box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // lavender hair cap
-      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // bangs
-      box(a.head, 0.16, 0.52, 0.16, hair, -0.31, -0.08, -0.02);        // soft side locks
-      box(a.head, 0.16, 0.52, 0.16, hair, 0.31, -0.08, -0.02);
+      // light side-swept fringe — RAISED above the brow line so her eyebrows show on her face, not her hair
+      box(a.head, 0.13, 0.13, 0.13, hair, -0.23, 0.21, 0.255);
+      box(a.head, 0.21, 0.13, 0.14, hair, 0.05, 0.20, 0.265);
+      box(a.head, 0.16, 0.14, 0.13, hair, 0.28, 0.18, 0.25);
+      // soft wavy side locks (clumps, not flat slabs)
+      [-0.32, 0.32].forEach(sx => {
+        box(a.head, 0.18, 0.20, 0.18, hair, sx, 0.02, -0.01);
+        box(a.head, 0.16, 0.20, 0.16, hair, sx - Math.sign(sx) * 0.02, -0.16, -0.03);
+      });
       box(a.head, 0.5, 0.5, 0.14, hair, 0, -0.05, -0.26);             // back hair
       // 🌸 pastel petal skirt — a ring of mint / pink / lilac petals
       const petals = [0xA8E6C8, 0xF6B8D8, 0xC9B8F0, 0xA8E6C8, 0xF6B8D8, 0xC9B8F0];
@@ -2879,11 +2885,10 @@ const AVATARS = [
       box(a.head, 0.5, 0.46, 0.15, hair, 0, 0.0, -0.26);            // back of the head
       box(a.head, 0.14, 0.42, 0.5, hair, -0.28, 0.04, -0.03);        // short left side
       box(a.head, 0.14, 0.42, 0.5, hair, 0.28, 0.04, -0.03);         // short right side
-      box(a.head, 0.17, 0.16, 0.17, hair, -0.17, 0.36, 0.07);        // 🦔 tousled spiky top — raised tufts across the crown
-      box(a.head, 0.17, 0.2, 0.17, hair, 0.02, 0.39, 0.03);
-      box(a.head, 0.16, 0.16, 0.16, hair, 0.19, 0.36, -0.05);
-      box(a.head, 0.15, 0.15, 0.15, hair, -0.05, 0.37, -0.17);
-      box(a.head, 0.13, 0.14, 0.13, hair, 0.16, 0.34, 0.18);
+      // gently tousled top — low, soft clumps that hug the head (not a tall poof)
+      box(a.head, 0.20, 0.12, 0.20, hair, -0.15, 0.31, 0.06);
+      box(a.head, 0.20, 0.13, 0.20, hair, 0.10, 0.32, 0.0);
+      box(a.head, 0.18, 0.12, 0.18, hair, 0.0, 0.30, -0.16);
       a.legs.forEach(L => box(L, 0.26, 0.13, 0.34, 0xF4F4F4, 0, -0.5, 0.08));   // white sneakers
       return a;
     }
@@ -7910,7 +7915,7 @@ function applyHeadwear() {
   if (!d) return;
   if (d.headwear) { d.head.remove(d.headwear); d.headwear = null; }
   if (profile.hideHat) return;         // player chose to go bare-headed (toggle in 🏅 Badges)
-  const topY = d.quad ? 0.2 : 0.25;    // top of the head box
+  const topY = d.quad ? 0.13 : 0.25;   // top of the head box (quads sit the crown lower so it rests ON the head)
   let h = null;
   if (G.owned.usahat) {                 // a bought cosmetic the player chose to wear — it wins
     h = new THREE.Group();
