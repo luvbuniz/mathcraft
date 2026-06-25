@@ -6535,6 +6535,14 @@ function renderLib() {
     mv.innerHTML = '🎞️ My Movie Collection (' + u.length + '/' + CARTOONS.length + ')';
     mv.onclick = () => { Sound.click(); lib.phase = 'movies'; renderLib(); };
     wrap.appendChild(mv);
+    const booksRead = profile.booksRead || 0, battlesWon = profile.battlesWon || 0;
+    if (booksRead >= (battlesWon + 1) * 3) {                    // ⚔️ a Library Battle is ready (every 3 books)
+      const bt = document.createElement('button'); bt.className = 'libBtn';
+      bt.style.cssText = 'background:linear-gradient(180deg,#ffb24d,#e0531a);color:#fff;font-size:16px;font-weight:800;margin-top:4px';
+      bt.innerHTML = '⚔️ Library Battle! — beat the challenge for a prize movie';
+      bt.onclick = () => { Sound.click(); startLibraryBattle(); };
+      wrap.appendChild(bt);
+    }
     return;
   }
   if (lib.phase === 'read') {
@@ -6550,6 +6558,14 @@ function renderLib() {
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.background = '#3f9d34'; b.style.color = '#fff'; b.textContent = "📖 I've read it — start the questions!";
     b.onclick = () => {
       Sound.click();
+      if (lib.battle) {                                        // ⚔️ Battle = a longer, harder 5-question gauntlet
+        const lvl = lib.battleLevel;
+        let qs = shuffle(lib.story.qs.filter(q => q.g <= lvl)).slice(0, 5);
+        if (qs.length < 5) qs = qs.concat(shuffle(lib.story.qs).filter(q => qs.indexOf(q) < 0)).slice(0, 5);
+        lib.level = lvl; lib.qs = qs;
+        lib.qi = 0; lib.right = 0; lib.wrong = 0; lib.firstRight = 0; lib.attempted = false; lib.phase = 'quiz'; renderLib();
+        return;
+      }
       const rl = readLevelNow();
       // the story text the reader just saw supports facts up to this tier max, so a
       // "challenge" question can stretch UP to it (and pay bonus coins) without asking
@@ -6626,6 +6642,7 @@ function libAnswer(opt, q, btn) {
   }
 }
 function finishLib() {
+  if (lib.battle) { finishBattle(); return; }                  // ⚔️ the Library Battle has its own win/lose screen
   const lvl = (lib.level != null) ? lib.level : readLevelNow();
   // harder questions pay more, and a stretch "challenge" question pays double —
   // so even an easier reader is rewarded for tackling the tougher ones.
@@ -6647,7 +6664,7 @@ function finishLib() {
     G.readStreak = 0; G.readSlip = (G.readSlip || 0) + 1;
     if (G.readSlip >= 2 && G.readLevel > 1) { G.readLevel--; G.readSlip = 0; levelMsg = '📖 Now at Reading Level ' + G.readLevel + ' — you\'ve got this!'; }
   } else { G.readStreak = 0; }
-  profile.readLevel = G.readLevel; profileDirty = true; saveProfile();
+  profile.readLevel = G.readLevel; profile.booksRead = (profile.booksRead || 0) + 1; profileDirty = true; saveProfile();
   const unlockedNow = unlockNextCartoon();              // reading a book is how you collect the cartoons
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
   $('libPrompt').innerHTML = '🎉 You read <b>' + lib.story.t + '</b> — wonderful reading!' +
@@ -6662,6 +6679,56 @@ function finishLib() {
   $('libAgainBtn').onclick = () => { closeLibrary(); openLibrary(); };
   if (unlockedNow) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow }; $('libStory').innerHTML = ''; renderLib(); };
   $('libDoneBtn').onclick = closeLibrary;
+}
+/* ⚔️ Library Battle — a milestone boss-read: a longer story one level harder, a 5-question
+   gauntlet (need 4/5 on the FIRST try). Win it for a prize movie + a reading level-up.
+   Unlocks every 3 books finished. The questions still count as reading solves, so they also
+   feed the 🐛 Bookworm / 🦉 Wise Owl badges. */
+function startLibraryBattle() {
+  if (!lib) lib = {};
+  const lvl = Math.min(5, readLevelNow() + 1);                 // one notch harder than usual
+  const pool = STORIES.slice().sort((a, b) => (b.qs ? b.qs.length : 0) - (a.qs ? a.qs.length : 0));
+  lib.story = pool[Math.floor(Math.random() * Math.min(3, pool.length))];   // one of the 3 meatiest stories
+  lib.battle = true; lib.battleLevel = lvl; lib.phase = 'read'; renderLib();
+}
+function finishBattle() {
+  const total = lib.qs.length || 1, fr = lib.firstRight || 0;
+  const need = Math.ceil(total * 0.8);                          // 4 of 5
+  const won = fr >= need;
+  lib.battle = false;
+  $('libMsg').textContent = '';
+  if (won) {
+    profile.battlesWon = (profile.battlesWon || 0) + 1;
+    if (G.readLevel < 5) { G.readLevel++; profile.readLevel = G.readLevel; }  // a battle win bumps the reading level
+    const reward = 30 + (lib.battleLevel || 2) * 4;
+    G.coins += reward; if (Sound.fanfare) Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+    const prize = unlockNextCartoon();                          // bonus movie prize
+    profileDirty = true; saveProfile();
+    $('libTitle').innerHTML = '⚔️ Library Battle — WON!';
+    $('libStory').innerHTML = '<div style="font-size:54px">🏆⚔️</div>';
+    $('libPrompt').innerHTML = '🎉 You aced the challenge — <b>' + fr + '/' + total + '</b>!  +' + reward + ' 🪙' +
+      '<br><span style="color:#2f8a52;font-weight:800">📈 Reading Level up — now Level ' + G.readLevel + '!</span>' +
+      (prize ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 Prize unlocked — "' + prize.title + '"!</span>' : '') +
+      '<br><span style="color:#8a6d3b;font-size:0.9em">Keep reading to earn the 🐛 Bookworm &amp; 🦉 Wise Owl badges!</span>';
+    $('libChoices').innerHTML =
+      (prize ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch my prize cartoon!</button>' : '') +
+      '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">📚 Back to the Library</button>' +
+      '<button class="libBtn" id="libDoneBtn">Done</button>';
+    if (prize) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: prize }; $('libStory').innerHTML = ''; renderLib(); };
+    $('libAgainBtn').onclick = () => { Sound.click(); lib = { phase: 'pick' }; $('libStory').innerHTML = ''; renderLib(); };
+    $('libDoneBtn').onclick = closeLibrary;
+  } else {
+    if (Sound.wrong) Sound.wrong();
+    $('libTitle').innerHTML = '⚔️ Library Battle';
+    $('libStory').innerHTML = '<div style="font-size:54px">💪📚</div>';
+    $('libPrompt').innerHTML = 'So close — <b>' + fr + '/' + total + '</b>. You need <b>' + need + '</b> to win.' +
+      '<br><span style="color:#8a6d3b">Read the story once more and try the Battle again — you\'ve got this!</span>';
+    $('libChoices').innerHTML =
+      '<button class="libBtn" style="background:#e0531a;color:#fff" id="libRetryBtn">⚔️ Try the Battle again</button>' +
+      '<button class="libBtn" id="libDoneBtn">Back</button>';
+    $('libRetryBtn').onclick = () => { Sound.click(); startLibraryBattle(); };
+    $('libDoneBtn').onclick = () => { Sound.click(); lib = { phase: 'pick' }; $('libStory').innerHTML = ''; renderLib(); };
+  }
 }
 
 /* ============================ 🏤 STACK POST OFFICE: a spelling bee with a real voice ============================
