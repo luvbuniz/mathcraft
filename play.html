@@ -3026,7 +3026,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach', 'costa', 'space', 'west'];
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
-  meadow: { shop: { x: -16.8, z: -15.2 }, barn: { x: -22.3, z: -9.5 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced WIDE so no two shops crowd
+  meadow: { shop: { x: -16.8, z: -15.2 }, barn: { x: -21.5, z: -11.5 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced WIDE so no two shops crowd
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
@@ -8257,8 +8257,25 @@ function buildCountryRealty(g) {
   box(R, 3.2, 2.2, 0.16, STONE, 0, 1.2, 1.4);                   // front wall (cottage is enclosed)
   box(R, 0.7, 1.5, 0.12, WOOD, -0.9, 0.83, 1.48);              // timber door
   box(R, 0.12, 0.12, 0.16, 0xFFD23E, -0.66, 0.9, 1.54);        // door knob
-  box(R, 1.3, 0.95, 0.06, GLASS, 0.55, 1.35, 1.48);           // listings window
-  box(R, 0.07, 0.95, 0.06, WOOD, 0.55, 1.35, 1.52); box(R, 1.3, 0.07, 0.06, WOOD, 0.55, 1.35, 1.52);   // mullion cross
+  // 🏡 the listings window — actual house "photos" with prices, like a real estate agent's window
+  const lc = document.createElement('canvas'); lc.width = 240; lc.height = 170; const lg = lc.getContext('2d');
+  lg.fillStyle = '#EAF2F7'; lg.fillRect(0, 0, 240, 170);
+  lg.fillStyle = '#2E5E45'; lg.font = 'bold 18px Georgia, serif'; lg.textAlign = 'center'; lg.textBaseline = 'middle'; lg.fillText('🏡 FOR SALE', 120, 16);
+  const drawListing = (ox, oy, wall, roof, price) => {
+    lg.fillStyle = '#ffffff'; lg.fillRect(ox, oy, 98, 96); lg.strokeStyle = '#c9b27e'; lg.lineWidth = 2; lg.strokeRect(ox, oy, 98, 96);
+    lg.fillStyle = '#cfe6d6'; lg.fillRect(ox + 4, oy + 4, 90, 56);                 // sky behind the house
+    lg.fillStyle = wall; lg.fillRect(ox + 24, oy + 30, 50, 30);                    // house body
+    lg.fillStyle = roof; lg.beginPath(); lg.moveTo(ox + 18, oy + 32); lg.lineTo(ox + 49, oy + 12); lg.lineTo(ox + 80, oy + 32); lg.closePath(); lg.fill();   // roof
+    lg.fillStyle = '#6b4a2c'; lg.fillRect(ox + 44, oy + 44, 11, 16);               // door
+    lg.fillStyle = '#bcd6e0'; lg.fillRect(ox + 28, oy + 36, 9, 9); lg.fillRect(ox + 61, oy + 36, 9, 9);   // windows
+    lg.fillStyle = '#E8B923'; lg.beginPath(); lg.arc(ox + 22, oy + 80, 7, 0, 7); lg.fill();               // gold coin
+    lg.fillStyle = '#2E5E45'; lg.font = 'bold 17px Georgia, serif'; lg.textAlign = 'left'; lg.fillText(price, ox + 33, oy + 81); lg.textAlign = 'center';
+  };
+  drawListing(14, 30, '#F2E2C7', '#9E5B4A', '320'); drawListing(128, 30, '#D9E6F2', '#6E7F9A', '540');
+  const lpanel = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.98, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(lc) }));
+  lpanel.position.set(0.55, 1.35, 1.49); R.add(lpanel);
+  box(R, 1.46, 1.1, 0.05, WOOD, 0.55, 1.35, 1.44);            // window frame
+  box(R, 0.07, 0.98, 0.06, WOOD, 0.55, 1.35, 1.53); box(R, 1.34, 0.07, 0.06, WOOD, 0.55, 1.35, 1.53);   // mullion cross
   const sl = box(R, 0.2, 2.3, 3.5, ROOF, -0.86, 2.72, 0); sl.rotation.z = -0.95;   // steep Cotswold roof
   const sr = box(R, 0.2, 2.3, 3.5, ROOF, 0.86, 2.72, 0); sr.rotation.z = 0.95;
   box(R, 0.22, 0.22, 3.5, 0x4f535a, 0, 3.34, 0);              // ridge beam
@@ -8272,25 +8289,47 @@ function buildCountryRealty(g) {
   c.fillStyle = '#8a5c2c'; c.font = 'italic bold 16px Georgia, serif'; c.fillText('cottages & estates', 128, 52);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.7, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 1.95, 1.5); R.add(sign);
-  box(R, 0.1, 0.7, 0.1, WOOD, 1.3, 0.35, 1.95);              // little "FOR SALE" yard sign
-  box(R, 0.6, 0.4, 0.04, GREEN, 1.3, 0.72, 1.95);
+  box(R, 0.07, 0.82, 0.07, WOOD, 1.05, 0.41, 1.95); box(R, 0.07, 0.82, 0.07, WOOD, 1.55, 0.41, 1.95);   // a proper "FOR SALE" yard sign on two posts
+  const yc = document.createElement('canvas'); yc.width = 170; yc.height = 100; const yg = yc.getContext('2d');
+  yg.fillStyle = '#2E5E45'; yg.fillRect(0, 0, 170, 100); yg.strokeStyle = '#F4ECD8'; yg.lineWidth = 5; yg.strokeRect(5, 5, 160, 90);
+  yg.fillStyle = '#F4ECD8'; yg.font = 'bold 28px Georgia, serif'; yg.textAlign = 'center'; yg.textBaseline = 'middle'; yg.fillText('FOR SALE', 85, 34);
+  yg.fillStyle = '#F2C037'; yg.font = 'italic bold 18px Georgia, serif'; yg.fillText('🏡 ask inside!', 85, 68);
+  const ysign = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.52, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(yc) })); ysign.position.set(1.3, 0.74, 1.98); R.add(ysign);
   R.position.set(COUNTRY_REALTY_POS.x, 0, COUNTRY_REALTY_POS.z);
   R.rotation.y = (typeof REALTY_ROT !== 'undefined' ? REALTY_ROT : 0);   // faces into the plaza
   g.add(R);
 }
 // 🏘️ village-green props for Meadowsbury (the central Cotswold high street)
+// 🌸 a little flower — green stem, four petals & a golden centre (shared by the well, planters & gardens)
+function flowerAt(g, x, y, z, col) {
+  box(g, 0.035, 0.24, 0.035, 0x3E9B3E, x, y + 0.12, z);                            // stem
+  [[0.06, 0], [-0.06, 0], [0, 0.06], [0, -0.06]].forEach(([ox, oz]) => box(g, 0.07, 0.05, 0.07, col, x + ox, y + 0.27, z + oz));   // petals
+  box(g, 0.06, 0.06, 0.06, 0xF7E08A, x, y + 0.285, z);                             // golden centre
+}
 function buildWell(g, x, z) {
-  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; box(g, 0.34, 0.5, 0.34, 0xB7A98A, x + Math.cos(a) * 0.55, 0.25, z + Math.sin(a) * 0.55); }   // stone ring
-  box(g, 0.55, 0.1, 0.55, 0x6f6a4a, x, 0.52, z);                                  // water/cover
-  box(g, 0.14, 1.3, 0.14, 0x6b4a2c, x - 0.5, 0.9, z); box(g, 0.14, 1.3, 0.14, 0x6b4a2c, x + 0.5, 0.9, z);   // posts
-  const rl = box(g, 0.14, 0.95, 0.85, 0x8a8f98, x - 0.26, 1.62, z); rl.rotation.z = -0.78;   // little pitched roof
-  const rr = box(g, 0.14, 0.95, 0.85, 0x8a8f98, x + 0.26, 1.62, z); rr.rotation.z = 0.78;
-  box(g, 0.22, 0.24, 0.22, 0x3a2a1a, x, 0.66, z);                                 // hanging bucket
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; box(g, 0.3, 0.56, 0.3, (i % 3 === 0) ? 0x8a9a6a : 0xB7A98A, x + Math.cos(a) * 0.6, 0.28, z + Math.sin(a) * 0.6); }   // round mossy stone ring
+  box(g, 0.98, 0.12, 0.98, 0xA89C7E, x, 0.6, z);                                  // stone rim cap
+  box(g, 0.66, 0.08, 0.66, 0x3f7f9f, x, 0.52, z);                                 // sparkling water
+  box(g, 0.16, 1.5, 0.16, 0x6b4a2c, x - 0.55, 1.0, z); box(g, 0.16, 1.5, 0.16, 0x6b4a2c, x + 0.55, 1.0, z);   // posts
+  const rl = box(g, 0.16, 1.1, 1.05, 0x8a5a3a, x - 0.3, 1.82, z); rl.rotation.z = -0.78;   // pitched shingle roof
+  const rr = box(g, 0.16, 1.1, 1.05, 0x8a5a3a, x + 0.3, 1.82, z); rr.rotation.z = 0.78;
+  for (let i = 0; i < 4; i++) { box(g, 0.52, 0.04, 0.04, 0x6e4630, x - 0.34 + i * 0.06, 1.5 + i * 0.16, z + 0.5); box(g, 0.52, 0.04, 0.04, 0x6e4630, x + 0.34 - i * 0.06, 1.5 + i * 0.16, z + 0.5); }  // shingle lines
+  box(g, 0.2, 0.2, 1.06, 0x5e3f24, x, 2.2, z);                                    // ridge beam
+  const crank = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.0, 10), mat(0x5e3f24)); crank.rotation.z = Math.PI / 2; crank.position.set(x, 1.0, z); g.add(crank);   // winding barrel
+  box(g, 0.1, 0.24, 0.1, 0x4a3520, x + 0.58, 0.92, z); box(g, 0.24, 0.08, 0.08, 0x2a2a2a, x + 0.68, 0.8, z);   // crank handle
+  box(g, 0.03, 0.42, 0.03, 0xC9B27E, x, 0.8, z);                                  // rope
+  box(g, 0.24, 0.26, 0.24, 0x6b4a2c, x, 0.58, z); box(g, 0.27, 0.05, 0.27, 0x4a3520, x, 0.71, z);   // bucket + iron rim
+  const fc = [0xE85d8a, 0xF2C037, 0x7aa6ff, 0xff7a4d, 0xB39DDB];
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + 0.35; flowerAt(g, x + Math.cos(a) * 0.98, 0, z + Math.sin(a) * 0.98, fc[i % fc.length]); }   // flowers around the base
 }
 function buildPlanter(g, x, z) {
-  box(g, 0.7, 0.42, 0.7, 0xC2B596, x, 0.21, z);
-  const cols = [0xE85d8a, 0xF2C037, 0xD6466B, 0x7aa6ff, 0xff7a4d];
-  for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; box(g, 0.16, 0.2, 0.16, cols[i % cols.length], x + Math.cos(a) * 0.18, 0.54, z + Math.sin(a) * 0.18); }
+  box(g, 0.8, 0.4, 0.8, 0x9a6b3a, x, 0.2, z);                                     // wooden box
+  box(g, 0.86, 0.12, 0.86, 0x7a4a2a, x, 0.4, z);                                  // top rim
+  for (let s = 0; s < 4; s++) { const a = s * Math.PI / 2; box(g, 0.05, 0.32, 0.6, 0x7a4a2a, x + Math.cos(a) * 0.41, 0.22, z + Math.sin(a) * 0.41); }   // corner slat boards
+  box(g, 0.66, 0.08, 0.66, 0x4a3526, x, 0.42, z);                                // dark soil
+  const fc = [0xE85d8a, 0xF2C037, 0xD6466B, 0x7aa6ff, 0xff7a4d, 0xB39DDB, 0xFF5DA2, 0x9FE0C8];
+  let n = 0;
+  for (let ix = -1; ix <= 1; ix++) for (let iz = -1; iz <= 1; iz++) { flowerAt(g, x + ix * 0.22, 0.42, z + iz * 0.22, fc[n % fc.length]); n++; }   // a full bed of flowers
 }
 function buildSignpost(g, x, z, label) {
   box(g, 0.14, 1.7, 0.14, 0x6b4a2c, x, 0.85, z);                                  // post
@@ -8301,10 +8340,10 @@ function buildSignpost(g, x, z, label) {
   arm.position.set(x + 0.5, 1.55, z); g.add(arm);
 }
 function buildMeadowVillage(g) {
-  box(g, 19, 0.06, 15, 0xCABF9F, -10.5, 0.05, -9);           // plaza paving — squared up to take in Stack Mart's frontage
-  buildWell(g, -11, -8);                                      // 💧 the well, centre of the green
-  buildPlanter(g, -13.6, -12.6); buildPlanter(g, -9, -13);    // planters along the north arm (between the shops)
-  buildPlanter(g, -16.5, -6); buildPlanter(g, -18, -12);      // planters along the west arm
+  box(g, 21, 0.06, 16, 0xCABF9F, -10.5, 0.05, -8.5);         // plaza paving — enlarged to take in the shop frontages & car lot
+  buildWell(g, -11, -7.5);                                    // 💧 the well, centre of the green
+  buildPlanter(g, -13.6, -12.6); buildPlanter(g, -8.5, -12.8);  // planters along the north arm (between the shops)
+  buildPlanter(g, -16.5, -5.5); buildPlanter(g, -19, -13);    // planters along the west arm
   if (typeof decoTree === 'function') { decoTree(g, -4, -4, 1.0); decoTree(g, -15.5, -4.5, 0.95); }   // shade trees by the entrance & plaza green (kept clear of the car lot)
   buildWelcomeArch(g, -2.5, -9, Math.PI / 2, 'MEADOWSBURY');  // 🏷️ "Welcome to Meadowsbury" arch at the east entrance (faces the player)
   cotswoldCottage(g, -28, -3, 0.4); cotswoldCottage(g, -27, -18, 0.2);   // a couple of cottages just outside the plaza
@@ -8614,11 +8653,15 @@ function cotswoldDealership(g, x, z, rot) {
   box(S, w - 0.2, 1.16, 0.18, TIMBER2, 0, h - 0.4, fz + 0.3);                        // fascia board behind the marquee
   const sign = new THREE.Mesh(new THREE.BoxGeometry(w - 0.5, 0.98, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, h - 0.4, fz + 0.41); S.add(sign);
-  // show the ACTUAL vehicles a kid can buy in the Meadow, at full proportional size, facing the customer
-  forecourtCar(S, buildPickupShape, 0x3f7fbf, -w * 0.21, -0.1, 0.8, 0.2);           // pickup, inside bay
-  forecourtCar(S, buildJeepShape, 0x4E7B3A, w * 0.21, -0.1, 0.8, -0.2);             // trail SUV, inside bay
-  const lot = [[buildMinivanShape, 0x8FA6BC, -w * 0.38, 0.32], [buildMonsterShape, 0x6a3fb0, -w * 0.12, -0.28], [buildPickupShape, 0x3f7fbf, w * 0.16, 0.32], [buildJeepShape, 0x4E7B3A, w * 0.42, -0.28]];
-  lot.forEach(([fn, col, cx, ang], i) => forecourtCar(S, fn, col, cx, fz + 2.4 + (i % 2) * 0.55, 0.84, ang));
+  // two hero cars inside the open bays
+  forecourtCar(S, buildPickupShape, 0x3f7fbf, -w * 0.22, -0.1, 0.78, 0.16);         // pickup, inside bay
+  forecourtCar(S, buildJeepShape, 0x4E7B3A, w * 0.22, -0.1, 0.78, -0.16);           // trail SUV, inside bay
+  // a NEAT paved forecourt: an asphalt lot with marked parking spaces so the cars line up tidily
+  box(S, 9.6, 0.05, 3.6, 0x8f8b86, 0.5, 0.04, fz + 2.85);                           // asphalt lot
+  box(S, 9.6, 0.04, 0.1, 0xEDEDED, 0.5, 0.07, fz + 1.15); box(S, 9.6, 0.04, 0.1, 0xEDEDED, 0.5, 0.07, fz + 4.55);  // lot edge stripes
+  for (let i = 0; i < 5; i++) box(S, 0.09, 0.05, 2.9, 0xEDEDED, -3.5 + i * 2.0, 0.07, fz + 2.85);   // parking-bay dividers
+  const row = [[buildMinivanShape, 0x8FA6BC], [buildMonsterShape, 0x6a3fb0], [buildPickupShape, 0x3f7fbf], [buildJeepShape, 0x4E7B3A]];
+  row.forEach(([fn, col], i) => forecourtCar(S, fn, col, -2.5 + i * 2.0, fz + 2.85, 0.74, (i % 2 ? 0.05 : -0.05)));   // one car centred per bay, facing the customer
   // 3 flag poles out front (a dealership classic)
   const flagCols = [0xC0392B, 0x2e86c1, 0xF2C037];
   flagCols.forEach((fc, i) => {
@@ -8670,6 +8713,26 @@ function buildPizzeria(g) {
   c.fillStyle = '#4a3a2a'; c.font = 'italic bold 15px Georgia, serif'; c.fillText('slice it & serve!', 128, 52);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.72, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 2.05, 1.5); P.add(sign);
+  // ── make it read as a real TAKEOUT pizzeria: a serving counter & pizzas you can see in the window ──
+  box(P, 1.8, 0.5, 0.34, 0xF2EAD2, -0.5, 1.0, 1.2);                                 // warm-lit counter behind the glass
+  box(P, 1.8, 0.14, 0.5, WOOD, -0.5, 0.74, 1.66);                                   // takeout counter ledge sticking out under the window
+  const pizza = (px, py, pz) => {
+    const crust = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.05, 14), mat(0xE6BE7A)); crust.position.set(px, py, pz); P.add(crust);
+    const sauce = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.06, 14), mat(0xC0392B)); sauce.position.set(px, py + 0.01, pz); P.add(sauce);
+    [[0.07, 0.05], [-0.06, 0.07], [0.05, -0.07], [-0.07, -0.04], [0.0, 0.0]].forEach(([ox, oz]) => box(P, 0.05, 0.05, 0.05, 0xF2C037, px + ox, py + 0.05, pz + oz));   // cheese/pepperoni
+  };
+  pizza(-0.95, 0.84, 1.72); pizza(-0.5, 0.84, 1.72); pizza(-0.05, 0.84, 1.72);      // three pizzas on the counter
+  box(P, 0.5, 0.6, 0.04, 0x2c2c2c, 1.42, 0.95, 1.66);                               // little MENU chalkboard by the door
+  [0xF5F0E6, 0xF5F0E6, 0xF5F0E6].forEach((cc, i) => box(P, 0.34, 0.03, 0.05, cc, 1.42, 1.12 - i * 0.14, 1.69));
+  // a pavement bistro set out front (umbrella, table & two stools) — looks like a restaurant
+  const tx = 1.2, tz = 2.7;
+  box(P, 0.1, 0.7, 0.1, 0x33302a, tx, 0.35, tz);
+  const ttop = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.07, 16), mat(0xF5F0E6)); ttop.position.set(tx, 0.72, tz); P.add(ttop);
+  box(P, 0.07, 0.95, 0.07, 0x6b4a2c, tx, 1.2, tz);
+  const umb = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.5, 12), mat(0xC0392B)); umb.position.set(tx, 1.78, tz); P.add(umb);
+  [[-0.62, 0.05], [0.5, 0.5]].forEach(([ox, oz]) => { box(P, 0.07, 0.42, 0.07, 0x33302a, tx + ox, 0.21, tz + oz); const st = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.07, 12), mat(0x8a5a32)); st.position.set(tx + ox, 0.44, tz + oz); P.add(st); });
+  // string-light bunting across the front
+  [0xF2C037, 0xC0392B, 0x168039, 0xF5F0E6, 0xF2C037].forEach((cc, i) => { const b = box(P, 0.12, 0.16, 0.04, cc, -1.3 + i * 0.62, 2.18, 1.58); b.rotation.z = Math.PI / 4; });
   P.position.set(PIZZA_POS.x, 0, PIZZA_POS.z); P.rotation.y = (typeof PIZZA_ROT !== 'undefined' ? PIZZA_ROT : 0);
   g.add(P);
 }
