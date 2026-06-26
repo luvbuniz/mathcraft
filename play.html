@@ -8288,42 +8288,45 @@ function buildMeadowVillage(g) {
 }
 // a honey-stone Cotswold cottage (backdrop scenery for the village skyline)
 function cotswoldCottage(g, x, z, ang) {
-  // an authentic Cotswold house: golden limestone with dressed-stone quoins, a steep stone-slate
-  // gabled roof, mullioned windows under dripstone hoods, and a tall chimney with pots.
-  const stones = [0xE0C68C, 0xD9BE84, 0xE4CC97, 0xDCC18A], roofs = [0x6f6657, 0x726a5b, 0x655d50];
-  const STONE = stones[Math.floor(Math.random() * stones.length)], ROOF = roofs[Math.floor(Math.random() * roofs.length)];
-  const QUOIN = 0xF0E2BE;
-  const tier = Math.random();                                            // 🏡 variety: small cottage / medium / tall two-storey
-  const twoStorey = tier > 0.66;
-  const w = tier < 0.33 ? 2.4 : tier < 0.66 ? 3.0 : 3.3;
-  const d = tier < 0.33 ? 2.1 : tier < 0.66 ? 2.6 : 2.9;
-  const h = twoStorey ? 3.4 : (tier < 0.33 ? 2.0 : 2.5);
+  // 🏡 a varied American COUNTRY house: clapboard siding in farmhouse colours, a gabled shingle roof,
+  // white trim & shutters, a brick chimney, and sometimes a front porch — a different style each time.
+  const walls = [0xF2EDE0, 0xF6E7AC, 0xB23A2E, 0x8FA98C, 0x9CB4C4, 0xE8DCC0, 0xCFE0E8];   // white, butter, barn-red, sage, dusty-blue, cream, pale-blue
+  const roofs = [0x5b5e63, 0x3f5d4a, 0x6E4B2A, 0x7a4a3a, 0x4a4438];                        // slate, forest, brown, barn-brown, charcoal
+  const WALL = walls[Math.floor(Math.random() * walls.length)], ROOF = roofs[Math.floor(Math.random() * roofs.length)];
+  const TRIM = 0xFBF6EC, SHUTTER = roofs[Math.floor(Math.random() * roofs.length)];
+  const tier = Math.random(), twoStorey = tier > 0.6, porch = Math.random() < 0.55;
+  const w = tier < 0.33 ? 2.5 : tier < 0.6 ? 3.0 : 3.4;
+  const d = tier < 0.33 ? 2.2 : 2.7;
+  const h = twoStorey ? 3.3 : 2.2;
   const C = new THREE.Group(); const fz = d / 2;
-  box(C, w, h, 0.18, STONE, 0, h / 2, -fz); box(C, w, h, 0.18, STONE, 0, h / 2, fz);     // front/back
-  box(C, 0.18, h, d, STONE, -w / 2, h / 2, 0); box(C, 0.18, h, d, STONE, w / 2, h / 2, 0);   // sides
-  [[-w / 2, fz], [w / 2, fz], [-w / 2, -fz], [w / 2, -fz]].forEach(q => {                 // dressed-stone corner quoins
-    for (let k = 0; k < 5; k++) box(C, 0.26, 0.34, 0.26, QUOIN, q[0], 0.32 + k * 0.5, q[1]);
+  box(C, w, h, 0.16, WALL, 0, h / 2, -fz); box(C, w, h, 0.16, WALL, 0, h / 2, fz);     // front/back (clapboard)
+  box(C, 0.16, h, d, WALL, -w / 2, h / 2, 0); box(C, 0.16, h, d, WALL, w / 2, h / 2, 0);   // sides
+  for (let i = 0; i < Math.floor(h / 0.26); i++) box(C, w, 0.04, 0.02, shade(WALL, 0.88), 0, 0.2 + i * 0.26, fz + 0.09);  // clapboard lines
+  [[-w / 2, fz], [w / 2, fz]].forEach(q => box(C, 0.12, h, 0.12, TRIM, q[0], h / 2, q[1]));   // white corner trim boards
+  const sl = box(C, 0.18, 1.8, d + 0.45, ROOF, -w * 0.27, h + 0.46, 0); sl.rotation.z = -0.95;  // gabled shingle roof
+  const sr = box(C, 0.18, 1.8, d + 0.45, ROOF, w * 0.27, h + 0.46, 0); sr.rotation.z = 0.95;
+  box(C, w, 1.1, 0.16, WALL, 0, h + 0.5, fz); box(C, w, 1.1, 0.16, WALL, 0, h + 0.5, -fz);   // gable ends
+  box(C, 0.2, 0.2, d + 0.45, shade(ROOF, 0.8), 0, h + 1.02, 0);                              // ridge
+  box(C, 0.36, 0.85, 0.36, 0x9a5a4a, w * 0.3, h + 0.65, -d * 0.12); box(C, 0.44, 0.13, 0.44, 0x3a3a3a, w * 0.3, h + 1.13, -d * 0.12);  // brick chimney
+  // front door
+  box(C, 0.52, 1.3, 0.1, 0x5e3f24, 0, 0.66, fz + 0.06); box(C, 0.1, 0.1, 0.08, 0xE0C24A, 0.15, 0.68, fz + 0.12);
+  box(C, 0.66, 0.12, 0.16, TRIM, 0, 1.36, fz + 0.12);                                         // door lintel
+  // ground-floor windows with white frames + shutters
+  [-w * 0.3, w * 0.3].forEach(wx => {
+    box(C, 0.54, 0.62, 0.05, TRIM, wx, 1.15, fz + 0.05); box(C, 0.4, 0.48, 0.06, 0xBCD6E0, wx, 1.15, fz + 0.07);
+    box(C, 0.42, 0.06, 0.07, TRIM, wx, 1.15, fz + 0.1); box(C, 0.06, 0.5, 0.07, TRIM, wx, 1.15, fz + 0.1);   // muntins
+    box(C, 0.1, 0.58, 0.04, SHUTTER, wx - 0.33, 1.15, fz + 0.06); box(C, 0.1, 0.58, 0.04, SHUTTER, wx + 0.33, 1.15, fz + 0.06);  // shutters
   });
-  const sl = box(C, 0.22, 2.5, d + 0.55, ROOF, -w * 0.27, h + 0.66, 0); sl.rotation.z = -1.0;  // steep stone-slate roof
-  const sr = box(C, 0.22, 2.5, d + 0.55, ROOF, w * 0.27, h + 0.66, 0); sr.rotation.z = 1.0;
-  box(C, w, 1.2, 0.18, STONE, 0, h + 0.58, fz); box(C, w, 1.2, 0.18, STONE, 0, h + 0.58, -fz);   // front/back gable walls
-  box(C, 0.22, 0.22, d + 0.55, 0x4a4034, 0, h + 1.42, 0);                                        // ridge
-  box(C, 0.5, 1.5, 0.5, STONE, w * 0.3, h + 1.05, -d * 0.08); box(C, 0.62, 0.16, 0.62, 0x3a3a3a, w * 0.3, h + 1.82, -d * 0.08);  // tall stone chimney + cap
-  box(C, 0.15, 0.26, 0.15, 0x33302c, w * 0.3 - 0.13, h + 1.98, -d * 0.08); box(C, 0.15, 0.26, 0.15, 0x33302c, w * 0.3 + 0.13, h + 1.98, -d * 0.08);  // chimney pots
-  // door: stone surround + plank door + a little stone hood
-  box(C, 0.66, 1.5, 0.14, 0xF0E2BE, 0, 0.77, fz + 0.02);                                         // dressed-stone surround
-  box(C, 0.5, 1.36, 0.12, 0x5e3f24, 0, 0.7, fz + 0.07);                                          // plank door
-  box(C, 0.12, 0.12, 0.1, 0xE0C24A, -0.16, 0.72, fz + 0.14);                                      // knob
-  box(C, 0.86, 0.14, 0.34, ROOF, 0, 1.56, fz + 0.18);                                            // stone door hood
-  // stone-mullioned multi-pane windows under dripstone hoods + a window in the gable
-  [-w * 0.28, w * 0.28].forEach(wx => {
-    paneWindow(C, wx, 1.45, fz + 0.06, 0.74, 0.86, 3, 2, 0xF0E2BE);
-    box(C, 0.96, 0.13, 0.16, 0xEAD9AE, wx, 1.96, fz + 0.1);                                       // dripstone hood
-  });
-  if (twoStorey) [-w * 0.28, w * 0.28].forEach(wx => paneWindow(C, wx, 2.62, fz + 0.06, 0.7, 0.82, 2, 3, 0xF0E2BE));   // upper-floor sash windows
-  paneWindow(C, 0, h + 0.52, fz + 0.07, 0.6, 0.62, 2, 2, 0xF0E2BE);                               // gable window
-  // climbing roses up a front corner
-  for (let i = 0; i < 7; i++) box(C, 0.14, 0.14, 0.14, i % 3 ? 0xD6466B : 0x3E8B3E, -w / 2 + 0.12 + (i % 2) * 0.16, 0.5 + i * 0.3, fz + 0.12);
+  if (porch) {                                                                               // covered front porch
+    [-w / 2 + 0.2, w / 2 - 0.2].forEach(px => box(C, 0.12, 1.45, 0.12, TRIM, px, 0.72, fz + 0.75));
+    box(C, w + 0.25, 0.12, 1.0, ROOF, 0, 1.46, fz + 0.45); box(C, w, 0.1, 0.55, 0x8a6a4a, 0, 0.05, fz + 0.6);
+  }
+  if (twoStorey) {                                                                            // upper-floor windows + shutters
+    [-w * 0.3, w * 0.3].forEach(wx => { box(C, 0.48, 0.54, 0.05, TRIM, wx, 2.3, fz + 0.05); box(C, 0.34, 0.42, 0.06, 0xBCD6E0, wx, 2.3, fz + 0.07); box(C, 0.09, 0.5, 0.04, SHUTTER, wx - 0.3, 2.3, fz + 0.06); box(C, 0.09, 0.5, 0.04, SHUTTER, wx + 0.3, 2.3, fz + 0.06); });
+  } else {
+    box(C, 0.42, 0.42, 0.05, TRIM, 0, h + 0.5, fz + 0.05); box(C, 0.3, 0.3, 0.06, 0xBCD6E0, 0, h + 0.5, fz + 0.07);   // gable window
+  }
+  box(C, 0.34, 0.34, 0.34, 0x4f9a37, -w * 0.42, 0.17, fz + 0.4);   // a flower bush by the door
   C.position.set(x, 0, z); C.rotation.y = ang; g.add(C);
 }
 // a multi-pane Georgian window (the signature Cotswold detail): stone surround, glass, mullion grid
