@@ -4989,6 +4989,13 @@ function carWheels(g, defs, tireC) {
   });
   g.userData.wheels = wheels;
 }
+// shared extra trim — side mirrors on stalks, door handles & a rear plate, so every car reads as more detailed
+function carTrim(g, hw, mY, mZ, plateZ) {
+  const M = mat(0x23262b), CH = mat(0xC8CCD2);
+  [-1, 1].forEach(s => { carPart(g, M, 0.06, 0.05, 0.12, s * (hw + 0.05), mY, mZ); carPart(g, CH, 0.13, 0.14, 0.05, s * (hw + 0.14), mY + 0.02, mZ); });   // wing mirrors
+  [-1, 1].forEach(s => carPart(g, CH, 0.04, 0.05, 0.2, s * (hw + 0.02), mY - 0.22, mZ - 0.55));   // door handles
+  if (plateZ != null) { carPart(g, mat(0xECECEC), 0.42, 0.16, 0.04, 0, 0.5, plateZ); }            // rear plate
+}
 // ---- car shapes (front = +Z). bm = body (recolorable), bm2 = darker accent, gm = glass ----
 function buildPickupShape(g, bm, bm2, gm) {
   const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
@@ -5000,6 +5007,7 @@ function buildPickupShape(g, bm, bm2, gm) {
   P(mat(0xdfe6ee), 1.12, 0.16, 0.12, 0, 0.42, 1.28); P(mat(0x2a2a2a), 0.7, 0.2, 0.06, 0, 0.62, 1.27);
   P(mat(0xFFF6C0), 0.2, 0.14, 0.06, -0.42, 0.66, 1.27); P(mat(0xFFF6C0), 0.2, 0.14, 0.06, 0.42, 0.66, 1.27);
   P(mat(0xD2403A), 0.16, 0.12, 0.05, -0.45, 0.7, -1.69); P(mat(0xD2403A), 0.16, 0.12, 0.05, 0.45, 0.7, -1.69);
+  carTrim(g, 0.58, 1.3, 0.42, -1.66);
   carWheels(g, [[-0.62, 0.92], [0.62, 0.92], [-0.62, -1.0], [0.62, -1.0]]);
 }
 function buildTeslaShape(g, bm, bm2, gm) {       // sleek electric sedan
@@ -5026,6 +5034,7 @@ function buildJeepShape(g, bm, bm2, gm) {         // boxy trail SUV
   const spare = new THREE.Group(); const st = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.2, 16), mat(0x16161a)); st.rotation.z = Math.PI / 2; spare.add(st);
   const sr = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), mat(0xd2d6dc)); sr.rotation.z = Math.PI / 2; spare.add(sr); spare.position.set(0, 0.75, -1.4); g.add(spare);
   P(mat(0xD2403A), 0.18, 0.34, 0.05, -0.5, 0.85, -1.28); P(mat(0xD2403A), 0.18, 0.34, 0.05, 0.5, 0.85, -1.28);
+  carTrim(g, 0.67, 1.25, 0.5, null);
   carWheels(g, [[-0.66, 0.9, 0.42], [0.66, 0.9, 0.42], [-0.66, -0.95, 0.42], [0.66, -0.95, 0.42]]);
 }
 function buildMinivanShape(g, bm, bm2, gm) {      // long family van
@@ -5038,6 +5047,7 @@ function buildMinivanShape(g, bm, bm2, gm) {      // long family van
   P(mat(0xFFF6C0), 0.28, 0.16, 0.05, -0.44, 0.6, 1.62); P(mat(0xFFF6C0), 0.28, 0.16, 0.05, 0.44, 0.6, 1.62); P(mat(0x3a3a3a), 0.66, 0.16, 0.05, 0, 0.5, 1.63);
   P(mat(0xD2403A), 0.16, 0.42, 0.05, -0.54, 0.95, -1.5); P(mat(0xD2403A), 0.16, 0.42, 0.05, 0.54, 0.95, -1.5);
   P(mat(0x1c1c1f), 1.28, 0.14, 0.1, 0, 0.34, 1.62); P(mat(0x1c1c1f), 1.28, 0.14, 0.1, 0, 0.34, -1.55);
+  carTrim(g, 0.64, 1.15, 0.92, -1.57);
   carWheels(g, [[-0.62, 1.05], [0.62, 1.05], [-0.62, -1.05], [0.62, -1.05]]);
 }
 function buildCorvetteShape(g, bm, bm2, gm) {     // low sports car
@@ -5062,6 +5072,7 @@ function buildMonsterShape(g, bm, bm2, gm) {       // monster truck — high bod
   P(mat(0xFFF6C0), 0.24, 0.16, 0.05, -0.42, 1.5, 1.16); P(mat(0xFFF6C0), 0.24, 0.16, 0.05, 0.42, 1.5, 1.16);  // headlights
   P(mat(0x111114), 1.3, 0.16, 0.3, 0, 1.0, 1.25); P(mat(0x111114), 1.3, 0.16, 0.3, 0, 1.0, -1.25);   // bumpers
   P(mat(0xD2403A), 0.18, 0.16, 0.05, -0.45, 1.5, -1.18); P(mat(0xD2403A), 0.18, 0.16, 0.05, 0.45, 1.5, -1.18);  // tail lights
+  carTrim(g, 0.65, 1.78, 0.4, -1.2);
   carWheels(g, [[-0.76, 0.92, 0.62], [0.76, 0.92, 0.62], [-0.76, -0.95, 0.62], [0.76, -0.95, 0.62]]);  // huge tires
 }
 function buildPoliceShape(g, bm, bm2, gm) {        // police cruiser — sedan + light bar
@@ -8310,35 +8321,40 @@ function cotswoldCottage(g, x, z, ang) {
   const w = tier < 0.33 ? 2.5 : tier < 0.6 ? 3.0 : 3.4;
   const d = tier < 0.33 ? 2.2 : 2.7;
   const h = twoStorey ? 3.3 : 2.2;
-  const C = new THREE.Group(); const fz = d / 2;
-  box(C, w, h, 0.16, WALL, 0, h / 2, -fz); box(C, w, h, 0.16, WALL, 0, h / 2, fz);     // front/back (clapboard)
-  box(C, 0.16, h, d, WALL, -w / 2, h / 2, 0); box(C, 0.16, h, d, WALL, w / 2, h / 2, 0);   // sides
-  for (let i = 0; i < Math.floor(h / 0.26); i++) box(C, w, 0.04, 0.02, shade(WALL, 0.88), 0, 0.2 + i * 0.26, fz + 0.09);  // clapboard lines
+  const C = new THREE.Group(); const fz = d / 2, FF = fz + 0.14;   // FF = a safe front-decoration plane, clear of the wall face (kills z-fighting)
+  box(C, w, h, 0.18, WALL, 0, h / 2, -fz); box(C, w, h, 0.18, WALL, 0, h / 2, fz);     // front/back (clapboard)
+  box(C, 0.18, h, d, WALL, -w / 2, h / 2, 0); box(C, 0.18, h, d, WALL, w / 2, h / 2, 0);   // sides
+  for (let i = 0; i < Math.floor(h / 0.28); i++) box(C, w - 0.02, 0.04, 0.03, shade(WALL, 0.86), 0, 0.24 + i * 0.28, FF);  // clapboard lines (proud of the wall)
   [[-w / 2, fz], [w / 2, fz]].forEach(q => box(C, 0.12, h, 0.12, TRIM, q[0], h / 2, q[1]));   // white corner trim boards
-  const sl = box(C, 0.18, 1.8, d + 0.45, ROOF, -w * 0.27, h + 0.46, 0); sl.rotation.z = -0.95;  // gabled shingle roof
-  const sr = box(C, 0.18, 1.8, d + 0.45, ROOF, w * 0.27, h + 0.46, 0); sr.rotation.z = 0.95;
-  box(C, w, 1.1, 0.16, WALL, 0, h + 0.5, fz); box(C, w, 1.1, 0.16, WALL, 0, h + 0.5, -fz);   // gable ends
-  box(C, 0.2, 0.2, d + 0.45, shade(ROOF, 0.8), 0, h + 1.02, 0);                              // ridge
-  box(C, 0.36, 0.85, 0.36, 0x9a5a4a, w * 0.3, h + 0.65, -d * 0.12); box(C, 0.44, 0.13, 0.44, 0x3a3a3a, w * 0.3, h + 1.13, -d * 0.12);  // brick chimney
-  // front door
-  box(C, 0.52, 1.3, 0.1, 0x5e3f24, 0, 0.66, fz + 0.06); box(C, 0.1, 0.1, 0.08, 0xE0C24A, 0.15, 0.68, fz + 0.12);
-  box(C, 0.66, 0.12, 0.16, TRIM, 0, 1.36, fz + 0.12);                                         // door lintel
-  // ground-floor windows with white frames + shutters
+  // ── gabled shingle roof: two chunky panels overlapping at a solid ridge cap (closes the old sky gap) ──
+  const sl = box(C, 0.5, 1.85, d + 0.45, ROOF, -w * 0.25, h + 0.6, 0); sl.rotation.z = -0.92;
+  const sr = box(C, 0.5, 1.85, d + 0.45, ROOF, w * 0.25, h + 0.6, 0); sr.rotation.z = 0.92;
+  box(C, 0.38, 0.38, d + 0.5, shade(ROOF, 0.82), 0, h + 1.34, 0);                            // chunky ridge cap covers the join
+  box(C, w * 0.72, 0.95, 0.16, WALL, 0, h + 0.42, fz); box(C, w * 0.44, 0.62, 0.16, WALL, 0, h + 0.92, fz);   // filled gable triangle (front)
+  box(C, w * 0.72, 0.95, 0.16, WALL, 0, h + 0.42, -fz); box(C, w * 0.44, 0.62, 0.16, WALL, 0, h + 0.92, -fz); // (back)
+  box(C, 0.36, 0.9, 0.36, 0x9a5a4a, w * 0.32, h + 0.7, -d * 0.12); box(C, 0.44, 0.14, 0.44, 0x3a3a3a, w * 0.32, h + 1.2, -d * 0.12);  // brick chimney + cap
+  // front door + stone stoop
+  box(C, 0.54, 1.3, 0.12, 0x5e3f24, 0, 0.66, FF); box(C, 0.1, 0.1, 0.08, 0xE0C24A, 0.16, 0.68, FF + 0.07);
+  box(C, 0.66, 0.12, 0.18, TRIM, 0, 1.36, FF);                                                // door lintel
+  box(C, 0.92, 0.12, 0.5, shade(WALL, 0.8), 0, 0.06, fz + 0.34);                              // stone stoop
+  // ground-floor windows: frames, muntins, shutters + a flower box under each
   [-w * 0.3, w * 0.3].forEach(wx => {
-    box(C, 0.54, 0.62, 0.05, TRIM, wx, 1.15, fz + 0.05); box(C, 0.4, 0.48, 0.06, 0xBCD6E0, wx, 1.15, fz + 0.07);
-    box(C, 0.42, 0.06, 0.07, TRIM, wx, 1.15, fz + 0.1); box(C, 0.06, 0.5, 0.07, TRIM, wx, 1.15, fz + 0.1);   // muntins
-    box(C, 0.1, 0.58, 0.04, SHUTTER, wx - 0.33, 1.15, fz + 0.06); box(C, 0.1, 0.58, 0.04, SHUTTER, wx + 0.33, 1.15, fz + 0.06);  // shutters
+    box(C, 0.56, 0.64, 0.06, TRIM, wx, 1.2, FF); box(C, 0.42, 0.5, 0.05, 0xBCD6E0, wx, 1.2, FF + 0.05);
+    box(C, 0.44, 0.06, 0.06, TRIM, wx, 1.2, FF + 0.08); box(C, 0.06, 0.52, 0.06, TRIM, wx, 1.2, FF + 0.08);   // muntins
+    box(C, 0.1, 0.62, 0.05, SHUTTER, wx - 0.34, 1.2, FF); box(C, 0.1, 0.62, 0.05, SHUTTER, wx + 0.34, 1.2, FF);  // shutters
+    box(C, 0.62, 0.14, 0.16, TRIM, wx, 0.84, FF + 0.04); [0xE53935, 0xFFE066, 0xE85d8a].forEach((fc, i) => box(C, 0.1, 0.15, 0.1, fc, wx - 0.18 + i * 0.18, 0.96, FF + 0.05));   // flower box
   });
   if (porch) {                                                                               // covered front porch
-    [-w / 2 + 0.2, w / 2 - 0.2].forEach(px => box(C, 0.12, 1.45, 0.12, TRIM, px, 0.72, fz + 0.75));
-    box(C, w + 0.25, 0.12, 1.0, ROOF, 0, 1.46, fz + 0.45); box(C, w, 0.1, 0.55, 0x8a6a4a, 0, 0.05, fz + 0.6);
+    [-w / 2 + 0.2, w / 2 - 0.2].forEach(px => box(C, 0.12, 1.45, 0.12, TRIM, px, 0.72, fz + 0.78));
+    box(C, w + 0.25, 0.12, 1.0, ROOF, 0, 1.46, fz + 0.48); box(C, w, 0.1, 0.6, 0x8a6a4a, 0, 0.05, fz + 0.62);
+    box(C, w - 0.1, 0.1, 0.06, TRIM, 0, 0.62, fz + 0.95);                                     // porch railing
   }
   if (twoStorey) {                                                                            // upper-floor windows + shutters
-    [-w * 0.3, w * 0.3].forEach(wx => { box(C, 0.48, 0.54, 0.05, TRIM, wx, 2.3, fz + 0.05); box(C, 0.34, 0.42, 0.06, 0xBCD6E0, wx, 2.3, fz + 0.07); box(C, 0.09, 0.5, 0.04, SHUTTER, wx - 0.3, 2.3, fz + 0.06); box(C, 0.09, 0.5, 0.04, SHUTTER, wx + 0.3, 2.3, fz + 0.06); });
+    [-w * 0.3, w * 0.3].forEach(wx => { box(C, 0.5, 0.56, 0.06, TRIM, wx, 2.35, FF); box(C, 0.36, 0.44, 0.05, 0xBCD6E0, wx, 2.35, FF + 0.05); box(C, 0.09, 0.52, 0.05, SHUTTER, wx - 0.31, 2.35, FF); box(C, 0.09, 0.52, 0.05, SHUTTER, wx + 0.31, 2.35, FF); });
   } else {
-    box(C, 0.42, 0.42, 0.05, TRIM, 0, h + 0.5, fz + 0.05); box(C, 0.3, 0.3, 0.06, 0xBCD6E0, 0, h + 0.5, fz + 0.07);   // gable window
+    box(C, 0.44, 0.44, 0.06, TRIM, 0, h + 0.42, fz + 0.1); box(C, 0.3, 0.3, 0.05, 0xBCD6E0, 0, h + 0.42, fz + 0.13);   // gable window
   }
-  box(C, 0.34, 0.34, 0.34, 0x4f9a37, -w * 0.42, 0.17, fz + 0.4);   // a flower bush by the door
+  box(C, 0.36, 0.36, 0.36, 0x4f9a37, -w * 0.42, 0.18, fz + 0.45);   // a flower bush by the door
   C.position.set(x, 0, z); C.rotation.y = ang; g.add(C);
 }
 // a multi-pane Georgian window (the signature Cotswold detail): stone surround, glass, mullion grid
@@ -8450,7 +8466,7 @@ function americanGeneralStore(g, x, z, rot, bodyCol, accentCol, name, sub) {
   const S = new THREE.Group(); const w = 3.6, d = 2.8, h = 2.4, fz = d / 2;
   box(S, w, h, 0.2, WOOD, 0, h / 2, -fz); box(S, w, h, 0.2, WOOD, 0, h / 2, fz);
   box(S, 0.2, h, d, WOOD, -w / 2, h / 2, 0); box(S, 0.2, h, d, WOOD, w / 2, h / 2, 0);
-  for (let i = 0; i < 9; i++) box(S, w, 0.05, 0.03, shade(WOOD, 0.85), 0, 0.32 + i * 0.24, fz + 0.11);   // clapboard lines
+  for (let i = 0; i < 9; i++) box(S, w, 0.05, 0.03, shade(WOOD, 0.85), 0, 0.32 + i * 0.24, fz + 0.14);   // clapboard lines (proud of the wall — no flicker)
   box(S, w + 0.24, 1.1, 0.24, WOOD, 0, h + 0.55, fz);                                // tall false front
   box(S, w + 0.34, 0.16, 0.34, ACC, 0, h + 1.05, fz + 0.02); box(S, w + 0.34, 0.16, 0.34, ACC, 0, h + 0.04, fz + 0.02);  // cornices
   [-w / 2 + 0.25, w / 2 - 0.25].forEach(px => box(S, 0.14, 1.95, 0.14, PORCH, px, 0.97, fz + 0.95));   // porch posts
@@ -8477,32 +8493,37 @@ function americanGeneralStore(g, x, z, rot, bodyCol, accentCol, name, sub) {
 }
 // 🍬 a whimsical CANDY/SWEET SHOP — pink, candy-stripe awning, gable roof, a giant cupcake on top
 function candyShop(g, x, z, rot, name, sub) {
-  const PINK = 0xF7CFE0, ROSE = 0xD86A92, WHITE = 0xFFFFFF, ROOF = 0xC85a86;
-  const S = new THREE.Group(); const w = 3.3, d = 2.6, h = 2.3, fz = d / 2;
+  const PINK = 0xF7CFE0, ROSE = 0xD86A92, WHITE = 0xFFFFFF, ROOF = 0xC85a86, MINT = 0x9FE0C8, CHOC = 0x7a4a2a;
+  const S = new THREE.Group(); const w = 3.4, d = 2.6, h = 2.3, fz = d / 2, FF = fz + 0.14;
   box(S, w, h, 0.2, PINK, 0, h / 2, -fz); box(S, w, h, 0.2, PINK, 0, h / 2, fz);
   box(S, 0.2, h, d, PINK, -w / 2, h / 2, 0); box(S, 0.2, h, d, PINK, w / 2, h / 2, 0);
-  const sl = box(S, 0.2, 1.7, d + 0.4, ROOF, -w * 0.27, h + 0.48, 0); sl.rotation.z = -0.92;
-  const sr = box(S, 0.2, 1.7, d + 0.4, ROOF, w * 0.27, h + 0.48, 0); sr.rotation.z = 0.92;
-  box(S, w, 1.0, 0.18, PINK, 0, h + 0.45, fz); box(S, w, 1.0, 0.18, PINK, 0, h + 0.45, -fz);
-  box(S, 0.2, 0.2, d + 0.4, WHITE, 0, h + 1.25, 0);                                  // ridge
-  for (let i = 0; i < 11; i++) { const a = box(S, 0.26, 0.08, 0.52, i % 2 ? ROSE : WHITE, -w * 0.44 + i * 0.26, 1.5, fz + 0.42); a.rotation.x = 0.42; }   // candy-stripe awning
-  box(S, 1.5, 1.0, 0.06, 0xDCF0F5, -w * 0.14, 1.0, fz + 0.04);                       // display window
-  const MINT = 0x9FE0C8; [0xE53935, 0x6FA85B, 0x3f7fbf].forEach((cc, i) => box(S, 0.2, 0.34, 0.16, cc, -w * 0.32 + i * 0.24, 1.05, fz + 0.1));   // candy jars in the window
-  box(S, 0.62, 1.4, 0.1, 0x8a4a6a, w * 0.3, 0.82, fz + 0.08); box(S, 0.1, 0.1, 0.1, 0xF2D23E, w * 0.3 + 0.2, 0.84, fz + 0.14);   // door + knob
-  [w * 0.3 - 0.44, w * 0.3 + 0.44].forEach(px => { box(S, 0.12, 1.55, 0.12, WHITE, px, 0.78, fz + 0.12); for (let i = 0; i < 5; i++) box(S, 0.14, 0.1, 0.14, 0xE53935, px, 0.42 + i * 0.3, fz + 0.13); });   // candy-cane door posts
-  // 🧁 a giant CUPCAKE on the roof — fluted wrapper, swirly frosting & a cherry
-  box(S, 0.66, 0.5, 0.66, 0xC9874A, 0, h + 1.5, 0.06);                             // wrapper base
-  for (let i = 0; i < 5; i++) box(S, 0.06, 0.5, 0.7, i % 2 ? 0xB5743A : 0xDDA063, -0.28 + i * 0.14, h + 1.5, 0.06);   // wrapper flutes
-  box(S, 0.8, 0.28, 0.8, 0xF6AECC, 0, h + 1.83, 0.06); box(S, 0.62, 0.26, 0.62, 0xF9C2DC, 0, h + 2.07, 0.06);
-  box(S, 0.44, 0.24, 0.44, 0xFBD5E7, 0, h + 2.29, 0.06); box(S, 0.26, 0.22, 0.26, 0xFEE7F1, 0, h + 2.48, 0.06);   // swirly frosting
-  box(S, 0.17, 0.17, 0.17, 0xE53935, 0, h + 2.64, 0.06); box(S, 0.05, 0.12, 0.05, 0x6B3F1E, 0, h + 2.78, 0.06);   // cherry + stalk
-  [0xFFE066, 0x6FA85B, 0x3f7fbf, 0xF2C037].forEach((cc, i) => box(S, 0.06, 0.13, 0.06, cc, -0.24 + i * 0.16, h + 1.95 + (i % 2) * 0.2, 0.46));   // sprinkles
-  // a giant swirl LOLLIPOP out front
-  box(S, 0.08, 1.3, 0.08, WHITE, -w * 0.52, 0.65, fz + 0.75); box(S, 0.52, 0.52, 0.12, ROSE, -w * 0.52, 1.45, fz + 0.75); box(S, 0.34, 0.34, 0.14, MINT, -w * 0.52, 1.45, fz + 0.77); box(S, 0.16, 0.16, 0.16, ROSE, -w * 0.52, 1.45, fz + 0.79);
-  // a gumball machine
-  box(S, 0.22, 0.2, 0.22, 0x33302a, w * 0.54, 0.26, fz + 0.75); box(S, 0.34, 0.34, 0.34, 0xCFE8F0, w * 0.54, 0.62, fz + 0.75); box(S, 0.28, 0.18, 0.28, 0xE53935, w * 0.54, 0.42, fz + 0.75);
-  // a big, clear SIGN high on the gable (above the awning so it's never hidden)
-  signOn(S, name, sub, ROSE, w - 0.2, 0.62, 0, h + 0.52, fz + 0.12);
+  box(S, w, 0.16, d, ROOF, 0, h + 0.08, 0);                                          // flat roof slab
+  // a tall FLAT false front so the sign is always clear (no rafters crossing it)
+  box(S, w + 0.18, 1.3, 0.2, PINK, 0, h + 0.62, fz);
+  box(S, w + 0.34, 0.18, 0.34, ROSE, 0, h + 1.2, fz + 0.02); box(S, w + 0.34, 0.18, 0.34, ROSE, 0, h + 0.06, fz + 0.02);   // cornices
+  for (let s2 = 0; s2 < 2; s2++) { const px = (s2 ? 1 : -1) * (w / 2 - 0.02); for (let i = 0; i < 8; i++) box(S, 0.18, 0.3, 0.18, i % 2 ? ROSE : WHITE, px, 0.3 + i * 0.3, fz + 0.02); }   // candy-stripe corner pilasters
+  // candy-stripe awning + scalloped valance over the storefront
+  for (let i = 0; i < 13; i++) box(S, 0.27, 0.1, 0.55, i % 2 ? ROSE : WHITE, -w / 2 - 0.05 + i * 0.27, 1.55, fz + 0.42);
+  for (let i = 0; i < 13; i++) box(S, 0.27, 0.22, 0.06, i % 2 ? ROSE : WHITE, -w / 2 - 0.05 + i * 0.27, 1.38, fz + 0.67);
+  // big display window — full of CAKES & treats
+  box(S, 1.5, 1.0, 0.06, 0xEAF7FA, -w * 0.16, 1.02, FF); box(S, 1.62, 0.1, 0.13, WHITE, -w * 0.16, 1.54, FF); box(S, 1.62, 0.1, 0.13, WHITE, -w * 0.16, 0.5, FF);
+  box(S, 0.5, 0.26, 0.3, WHITE, -w * 0.34, 0.8, FF + 0.04); box(S, 0.34, 0.24, 0.24, 0xF6AECC, -w * 0.34, 1.06, FF + 0.04); box(S, 0.1, 0.12, 0.1, 0xE53935, -w * 0.34, 1.24, FF + 0.04);   // tiered cake
+  [[-w * 0.05, 0xF9C2DC], [w * 0.06, 0xFFE066]].forEach(([cx, top]) => { box(S, 0.16, 0.14, 0.16, CHOC, cx, 0.76, FF + 0.04); box(S, 0.2, 0.16, 0.2, top, cx, 0.92, FF + 0.04); box(S, 0.06, 0.07, 0.06, 0xE53935, cx, 1.02, FF + 0.04); });   // two cupcakes
+  // door flanked by candy-cane posts
+  box(S, 0.62, 1.4, 0.1, 0x8a4a6a, w * 0.3, 0.82, FF); box(S, 0.1, 0.1, 0.1, 0xF2D23E, w * 0.3 + 0.2, 0.84, FF + 0.06);
+  [w * 0.3 - 0.44, w * 0.3 + 0.44].forEach(px => { box(S, 0.12, 1.55, 0.12, WHITE, px, 0.78, fz + 0.14); for (let i = 0; i < 5; i++) box(S, 0.14, 0.1, 0.14, 0xE53935, px, 0.42 + i * 0.3, fz + 0.16); });
+  // 🧁 a giant CUPCAKE on top of the false front
+  box(S, 0.66, 0.5, 0.66, 0xC9874A, 0, h + 1.55, fz - 0.12);
+  for (let i = 0; i < 5; i++) box(S, 0.06, 0.5, 0.7, i % 2 ? 0xB5743A : 0xDDA063, -0.28 + i * 0.14, h + 1.55, fz - 0.12);   // wrapper flutes
+  box(S, 0.8, 0.28, 0.8, 0xF6AECC, 0, h + 1.88, fz - 0.12); box(S, 0.62, 0.26, 0.62, 0xF9C2DC, 0, h + 2.12, fz - 0.12);
+  box(S, 0.44, 0.24, 0.44, 0xFBD5E7, 0, h + 2.34, fz - 0.12); box(S, 0.26, 0.22, 0.26, 0xFEE7F1, 0, h + 2.53, fz - 0.12);   // swirly frosting
+  box(S, 0.17, 0.17, 0.17, 0xE53935, 0, h + 2.69, fz - 0.12); box(S, 0.05, 0.12, 0.05, 0x6B3F1E, 0, h + 2.83, fz - 0.12);   // cherry + stalk
+  [0xFFE066, 0x6FA85B, 0x3f7fbf, 0xF2C037].forEach((cc, i) => box(S, 0.06, 0.13, 0.06, cc, -0.24 + i * 0.16, h + 2.0 + (i % 2) * 0.2, fz + 0.22));   // sprinkles
+  // a giant swirl LOLLIPOP + a gumball machine out front
+  box(S, 0.08, 1.3, 0.08, WHITE, -w * 0.52, 0.65, fz + 0.8); box(S, 0.52, 0.52, 0.12, ROSE, -w * 0.52, 1.45, fz + 0.8); box(S, 0.34, 0.34, 0.14, MINT, -w * 0.52, 1.45, fz + 0.82); box(S, 0.16, 0.16, 0.16, ROSE, -w * 0.52, 1.45, fz + 0.84);
+  box(S, 0.22, 0.2, 0.22, 0x33302a, w * 0.54, 0.26, fz + 0.8); box(S, 0.34, 0.34, 0.34, 0xCFE8F0, w * 0.54, 0.62, fz + 0.8); box(S, 0.28, 0.18, 0.28, 0xE53935, w * 0.54, 0.42, fz + 0.8);
+  // the SIGN — flat on the false front, nothing crosses it
+  signOn(S, name, sub, ROSE, w - 0.1, 0.6, 0, h + 0.6, fz + 0.13);
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
 // 🛋️ furniture set out front of the barn store (it sells furniture & home goods)
@@ -8528,7 +8549,7 @@ function americanBarn(g, x, z, rot, name, sub) {
   const S = new THREE.Group(); const w = 4.4, d = 3.4, h = 2.7, fz = d / 2;
   box(S, w, h, 0.2, RED, 0, h / 2, -fz); box(S, w, h, 0.2, RED, 0, h / 2, fz);
   box(S, 0.2, h, d, RED, -w / 2, h / 2, 0); box(S, 0.2, h, d, RED, w / 2, h / 2, 0);
-  for (let i = 0; i < 9; i++) box(S, w, 0.04, 0.02, DARKRED, 0, 0.32 + i * 0.28, fz + 0.11);  // vertical-board seams
+  for (let i = 0; i < 9; i++) box(S, w, 0.04, 0.02, DARKRED, 0, 0.32 + i * 0.28, fz + 0.14);  // board seams (proud of the wall — no flicker)
   // ── SOLID gambrel roof, built as stacked slabs so it always reads as a closed barn roof ──
   const tiers = [[w + 0.5, 0.12], [w + 0.05, 0.34], [w - 0.7, 0.56], [w - 1.4, 0.78],
                  [w - 2.0, 1.02], [w - 2.6, 1.26], [w - 3.2, 1.5], [0.5, 1.72]];
@@ -8585,18 +8606,19 @@ function cotswoldDealership(g, x, z, rot) {
   box(S, 0.32, 0.32, d + 1.4, 0x32302a, 0, h + 2.05, 0);                            // ridge
   box(S, w, 1.5, 0.22, TIMBER, 0, h + 0.85, fz);                                    // front gable infill (sign goes here)
   box(S, 0.55, 1.5, 0.55, STONE, w * 0.34, h + 0.95, -d * 0.1); box(S, 0.66, 0.18, 0.66, 0x3a3a3a, w * 0.34, h + 1.74, -d * 0.1);  // stone chimney
-  // big showroom sign on the gable
+  // STACK MOTORS marquee — hung across the open front, BELOW the roof so the gable never crosses it
   const cv = document.createElement('canvas'); cv.width = 384; cv.height = 96; const c = cv.getContext('2d');
   c.fillStyle = '#3a2a18'; c.fillRect(0, 0, 384, 96); c.strokeStyle = '#C9A24A'; c.lineWidth = 6; c.strokeRect(5, 5, 374, 86);
   c.fillStyle = '#F4ECD8'; c.font = 'bold 40px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('STACK MOTORS', 192, 36);
   c.font = 'italic bold 19px Georgia, serif'; c.fillStyle = '#D9B86A'; c.fillText('Country Car Showroom', 192, 72);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(w - 0.5, 0.95, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
-  sign.position.set(0, h + 0.9, fz + 0.13); S.add(sign);
-  // show the ACTUAL vehicles a kid can buy in the Meadow, in their real showroom colours
-  forecourtCar(S, buildPickupShape, 0x3f7fbf, -w * 0.22, -0.2, 0.52, Math.PI);      // pickup, inside bay
-  forecourtCar(S, buildJeepShape, 0x4E7B3A, w * 0.22, -0.2, 0.52, Math.PI);         // trail SUV, inside bay
-  const lot = [[buildMinivanShape, 0x8FA6BC, -w * 0.34, 0.35], [buildMonsterShape, 0x6a3fb0, -w * 0.04, -0.3], [buildPickupShape, 0x3f7fbf, w * 0.24, 0.35], [buildJeepShape, 0x4E7B3A, w * 0.5, -0.3]];
-  lot.forEach(([fn, col, cx, ang], i) => forecourtCar(S, fn, col, cx, fz + 1.85 + (i % 2) * 0.3, 0.5, Math.PI + ang));
+  box(S, w - 0.2, 1.16, 0.18, TIMBER2, 0, h - 0.4, fz + 0.3);                        // fascia board behind the marquee
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(w - 0.5, 0.98, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, h - 0.4, fz + 0.41); S.add(sign);
+  // show the ACTUAL vehicles a kid can buy in the Meadow, at full proportional size, facing the customer
+  forecourtCar(S, buildPickupShape, 0x3f7fbf, -w * 0.21, -0.1, 0.8, 0.2);           // pickup, inside bay
+  forecourtCar(S, buildJeepShape, 0x4E7B3A, w * 0.21, -0.1, 0.8, -0.2);             // trail SUV, inside bay
+  const lot = [[buildMinivanShape, 0x8FA6BC, -w * 0.38, 0.32], [buildMonsterShape, 0x6a3fb0, -w * 0.12, -0.28], [buildPickupShape, 0x3f7fbf, w * 0.16, 0.32], [buildJeepShape, 0x4E7B3A, w * 0.42, -0.28]];
+  lot.forEach(([fn, col, cx, ang], i) => forecourtCar(S, fn, col, cx, fz + 2.4 + (i % 2) * 0.55, 0.84, ang));
   // 3 flag poles out front (a dealership classic)
   const flagCols = [0xC0392B, 0x2e86c1, 0xF2C037];
   flagCols.forEach((fc, i) => {
