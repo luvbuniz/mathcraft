@@ -3026,7 +3026,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach', 'costa', 'space', 'west'];
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
-  meadow: { shop: { x: -19, z: -17 }, barn: { x: -21, z: -11 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced out, all facing the player
+  meadow: { shop: { x: -18.2, z: -15.8 }, barn: { x: -21, z: -11 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced out, all facing the player
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
@@ -7803,11 +7803,19 @@ const CITY_PALETTE = [
 /* Reading Town = a friendly SUBURBAN town — kids build their own house among cosy houses & trees */
 function decoTree(g, x, z, s) {
   s = s || 1;
-  box(g, 0.42 * s, 2.0 * s, 0.42 * s, 0x7a5230, x, 1.0 * s, z);                 // trunk
-  const greens = [0x4f9a37, 0x5BA84F, 0x3d8b41, 0x66B843];
-  const cg = greens[(Math.random() * greens.length) | 0];
-  box(g, 1.9 * s, 1.4 * s, 1.9 * s, cg, x, 2.4 * s, z);                         // round canopy
-  box(g, 1.35 * s, 1.2 * s, 1.35 * s, cg, x, 3.25 * s, z);
+  const TRUNK = 0x7a5230;
+  box(g, 0.55 * s, 0.4 * s, 0.55 * s, shade(TRUNK, 0.82), x, 0.18 * s, z);      // flared roots at the base
+  box(g, 0.4 * s, 2.0 * s, 0.4 * s, TRUNK, x, 1.1 * s, z);                       // trunk
+  const b = box(g, 0.26 * s, 0.8 * s, 0.26 * s, TRUNK, x + 0.28 * s, 1.95 * s, z); b.rotation.z = -0.6;   // a little branch
+  const greens = [0x4f9a37, 0x5BA84F, 0x3d8b41, 0x66B843, 0x57A53C];
+  const cg = greens[(Math.random() * greens.length) | 0], cg2 = shade(cg, 0.82), cg3 = shade(cg, 1.12);
+  // a full, rounded leafy crown built from several low-poly spheres clustered together (no more cube canopy)
+  const blobs = [[0, 3.05, 0, 1.3, cg], [-0.72, 2.78, 0.22, 0.95, cg2], [0.74, 2.82, -0.18, 0.92, cg3], [0.12, 3.7, 0.08, 0.86, cg], [-0.18, 2.62, -0.66, 0.78, cg2], [0.5, 3.4, 0.5, 0.72, cg3]];
+  blobs.forEach(([bx, by, bz, br, bc]) => {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(br * s, 0), mat(bc));
+    m.position.set(x + bx * s, by * s, z + bz * s); m.rotation.y = bx + bz;
+    g.add(m);
+  });
 }
 const PICKR = a => a[(Math.random() * a.length) | 0];
 function mailbox(h, x, z) {                       // little curbside mailbox
@@ -8282,11 +8290,11 @@ function buildSignpost(g, x, z, label) {
   arm.position.set(x + 0.5, 1.55, z); g.add(arm);
 }
 function buildMeadowVillage(g) {
-  box(g, 18, 0.06, 13, 0xCABF9F, -10, 0.05, -9);             // L-plaza paving (in front of BOTH arms)
+  box(g, 19, 0.06, 15, 0xCABF9F, -10.5, 0.05, -9);           // plaza paving — squared up to take in Stack Mart's frontage
   buildWell(g, -11, -8);                                      // 💧 the well, centre of the green
   buildPlanter(g, -15, -13); buildPlanter(g, -9, -13);        // planters along the north arm
   buildPlanter(g, -16.5, -6); buildPlanter(g, -16.5, -10);    // planters along the west arm
-  if (typeof decoTree === 'function') { decoTree(g, -4, -4, 1.0); decoTree(g, -5, -13, 0.9); }   // shade trees by the entrance
+  if (typeof decoTree === 'function') { decoTree(g, -4, -4, 1.0); decoTree(g, -15.5, -4.5, 0.95); }   // shade trees by the entrance & plaza green (kept clear of the car lot)
   buildWelcomeArch(g, -2.5, -9, Math.PI / 2, 'MEADOWSBURY');  // 🏷️ "Welcome to Meadowsbury" arch at the east entrance (faces the player)
   cotswoldCottage(g, -28, -3, 0.4); cotswoldCottage(g, -27, -18, 0.2);   // a couple of cottages just outside the plaza
 }
@@ -8446,7 +8454,11 @@ function americanGeneralStore(g, x, z, rot, bodyCol, accentCol, name, sub) {
   box(S, w + 0.24, 1.1, 0.24, WOOD, 0, h + 0.55, fz);                                // tall false front
   box(S, w + 0.34, 0.16, 0.34, ACC, 0, h + 1.05, fz + 0.02); box(S, w + 0.34, 0.16, 0.34, ACC, 0, h + 0.04, fz + 0.02);  // cornices
   [-w / 2 + 0.25, w / 2 - 0.25].forEach(px => box(S, 0.14, 1.95, 0.14, PORCH, px, 0.97, fz + 0.95));   // porch posts
-  box(S, w + 0.3, 0.16, 1.3, ROOF, 0, 1.98, fz + 0.5); box(S, w, 0.12, 0.7, PORCH, 0, 0.06, fz + 0.7);  // porch roof + deck
+  // 🟩 a green & white striped awning over the porch (classic country grocer) + scalloped valance
+  for (let i = 0; i < 13; i++) box(S, 0.3, 0.12, 1.32, i % 2 ? ACC : TRIM, -w / 2 - 0.15 + i * 0.31, 1.98, fz + 0.5);
+  for (let i = 0; i < 13; i++) box(S, 0.3, 0.24, 0.06, i % 2 ? ACC : TRIM, -w / 2 - 0.15 + i * 0.31, 1.8, fz + 1.14);
+  box(S, w + 0.34, 0.1, 0.1, shade(WOOD, 0.78), 0, 2.06, fz + 0.5);                  // awning ridge trim
+  box(S, w, 0.12, 0.7, PORCH, 0, 0.06, fz + 0.7);                                    // porch deck
   box(S, 0.74, 1.5, 0.12, 0x5e3f24, 0, 0.84, fz + 0.06); box(S, 0.1, 0.1, 0.1, 0xE0C24A, 0.22, 0.86, fz + 0.13);   // door
   box(S, 0.66, 1.7, 0.13, 0xDCF0F5, -w * 0.3, 0.95, fz + 0.06); box(S, 0.66, 1.7, 0.13, 0xDCF0F5, w * 0.3, 0.95, fz + 0.06);   // big grocery display windows
   [-w * 0.3, w * 0.3].forEach(wx => { box(S, 0.74, 0.08, 0.16, TRIM, wx, 1.8, fz + 0.09); box(S, 0.74, 0.08, 0.16, TRIM, wx, 0.95, fz + 0.09); box(S, 0.1, 0.98, 0.05, ACC, wx - 0.49, 1.0, fz + 0.08); box(S, 0.1, 0.98, 0.05, ACC, wx + 0.49, 1.0, fz + 0.08); });
@@ -8457,10 +8469,13 @@ function americanGeneralStore(g, x, z, rot, bodyCol, accentCol, name, sub) {
     for (let i = 0; i < 6; i++) box(S, 0.14, 0.14, 0.14, PROD[n][i % 2], px - 0.18 + (i % 3) * 0.18, 0.48 + Math.floor(i / 3) * 0.05, fz + 1.08 + Math.floor(i / 3) * 0.16);
   });
   box(S, 0.5, 0.5, 0.04, 0x33302a, w * 0.5, 0.78, fz + 1.05);                        // little chalkboard price sign
+  box(S, 0.4, 0.5, 0.4, 0x9a6b3a, w * 0.34, 0.25, fz + 0.55);                        // a barrel of apples by the door
+  for (let i = 0; i < 4; i++) box(S, 0.13, 0.13, 0.13, [0xE53935, 0xFF8A1E, 0x6FA85B, 0xE53935][i], w * 0.34 - 0.1 + (i % 2) * 0.2, 0.54 + Math.floor(i / 2) * 0.13, fz + 0.5 + (i % 2) * 0.08);
+  [0xE53935, 0xFBF6EC, 0x2f6b4f, 0xFFE066, 0xE53935].forEach((cc, i) => { const fl = box(S, 0.16, 0.2, 0.04, cc, -w * 0.42 + i * 0.21, h + 0.55, fz + 0.16); fl.rotation.z = Math.PI / 4; });   // bunting flags on the false front
   signOn(S, name, sub, ACC, w - 0.1, 0.62, 0, h + 0.55, fz + 0.14);
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
-// 🍬 a whimsical CANDY/SWEET SHOP — pink, candy-stripe awning, gable roof, a giant ice-cream cone on top
+// 🍬 a whimsical CANDY/SWEET SHOP — pink, candy-stripe awning, gable roof, a giant cupcake on top
 function candyShop(g, x, z, rot, name, sub) {
   const PINK = 0xF7CFE0, ROSE = 0xD86A92, WHITE = 0xFFFFFF, ROOF = 0xC85a86;
   const S = new THREE.Group(); const w = 3.3, d = 2.6, h = 2.3, fz = d / 2;
@@ -8475,7 +8490,13 @@ function candyShop(g, x, z, rot, name, sub) {
   const MINT = 0x9FE0C8; [0xE53935, 0x6FA85B, 0x3f7fbf].forEach((cc, i) => box(S, 0.2, 0.34, 0.16, cc, -w * 0.32 + i * 0.24, 1.05, fz + 0.1));   // candy jars in the window
   box(S, 0.62, 1.4, 0.1, 0x8a4a6a, w * 0.3, 0.82, fz + 0.08); box(S, 0.1, 0.1, 0.1, 0xF2D23E, w * 0.3 + 0.2, 0.84, fz + 0.14);   // door + knob
   [w * 0.3 - 0.44, w * 0.3 + 0.44].forEach(px => { box(S, 0.12, 1.55, 0.12, WHITE, px, 0.78, fz + 0.12); for (let i = 0; i < 5; i++) box(S, 0.14, 0.1, 0.14, 0xE53935, px, 0.42 + i * 0.3, fz + 0.13); });   // candy-cane door posts
-  box(S, 0.3, 0.45, 0.3, 0xE8C28A, 0, h + 1.5, 0.1); box(S, 0.42, 0.38, 0.42, 0xF7C6DE, 0, h + 1.9, 0.1); box(S, 0.36, 0.34, 0.36, 0xFFF6D8, 0, h + 2.2, 0.1); box(S, 0.12, 0.12, 0.12, 0xE53935, 0, h + 2.42, 0.1);   // 🍦 cone + scoops + cherry
+  // 🧁 a giant CUPCAKE on the roof — fluted wrapper, swirly frosting & a cherry
+  box(S, 0.66, 0.5, 0.66, 0xC9874A, 0, h + 1.5, 0.06);                             // wrapper base
+  for (let i = 0; i < 5; i++) box(S, 0.06, 0.5, 0.7, i % 2 ? 0xB5743A : 0xDDA063, -0.28 + i * 0.14, h + 1.5, 0.06);   // wrapper flutes
+  box(S, 0.8, 0.28, 0.8, 0xF6AECC, 0, h + 1.83, 0.06); box(S, 0.62, 0.26, 0.62, 0xF9C2DC, 0, h + 2.07, 0.06);
+  box(S, 0.44, 0.24, 0.44, 0xFBD5E7, 0, h + 2.29, 0.06); box(S, 0.26, 0.22, 0.26, 0xFEE7F1, 0, h + 2.48, 0.06);   // swirly frosting
+  box(S, 0.17, 0.17, 0.17, 0xE53935, 0, h + 2.64, 0.06); box(S, 0.05, 0.12, 0.05, 0x6B3F1E, 0, h + 2.78, 0.06);   // cherry + stalk
+  [0xFFE066, 0x6FA85B, 0x3f7fbf, 0xF2C037].forEach((cc, i) => box(S, 0.06, 0.13, 0.06, cc, -0.24 + i * 0.16, h + 1.95 + (i % 2) * 0.2, 0.46));   // sprinkles
   // a giant swirl LOLLIPOP out front
   box(S, 0.08, 1.3, 0.08, WHITE, -w * 0.52, 0.65, fz + 0.75); box(S, 0.52, 0.52, 0.12, ROSE, -w * 0.52, 1.45, fz + 0.75); box(S, 0.34, 0.34, 0.14, MINT, -w * 0.52, 1.45, fz + 0.77); box(S, 0.16, 0.16, 0.16, ROSE, -w * 0.52, 1.45, fz + 0.79);
   // a gumball machine
@@ -8511,22 +8532,29 @@ function americanBarn(g, x, z, rot, name, sub) {
   // ── SOLID gambrel roof, built as stacked slabs so it always reads as a closed barn roof ──
   const tiers = [[w + 0.5, 0.12], [w + 0.05, 0.34], [w - 0.7, 0.56], [w - 1.4, 0.78],
                  [w - 2.0, 1.02], [w - 2.6, 1.26], [w - 3.2, 1.5], [0.5, 1.72]];
-  tiers.forEach(([tw, ty], i) => box(S, tw, 0.22, d + 0.55, i < 4 ? ROOF : ROOF2, 0, h + ty, 0));
+  tiers.forEach(([tw, ty], i) => box(S, tw, 0.22, d + 0.14, i < 4 ? ROOF : ROOF2, 0, h + ty, 0));   // flush at the gable so it never hides the sign
   // gable-end infill front & back so no sky shows through the barn face
   [fz, -fz].forEach(gz => { box(S, w, 1.0, 0.16, RED, 0, h + 0.42, gz); box(S, w - 1.5, 0.78, 0.16, RED, 0, h + 1.04, gz); box(S, w - 2.8, 0.6, 0.16, RED, 0, h + 1.46, gz); });
   // ── BIG barn entrance: tall white sliding doors with red X-bracing ──
-  box(S, 2.2, 2.3, 0.12, WHITE, 0, 1.15, fz + 0.06);                                // big double doors
-  const xb1 = box(S, 0.15, 2.9, 0.05, RED, 0, 1.15, fz + 0.13); xb1.rotation.z = 0.71;
-  const xb2 = box(S, 0.15, 2.9, 0.05, RED, 0, 1.15, fz + 0.13); xb2.rotation.z = -0.71;
-  box(S, 0.07, 2.3, 0.06, RED, 0, 1.15, fz + 0.15);                                 // door split
-  box(S, 2.5, 0.16, 0.16, 0x4a4a4a, 0, 2.35, fz + 0.16);                            // sliding-door track
+  box(S, 2.4, 2.1, 0.12, WHITE, 0, 1.05, fz + 0.06);                                // big double doors
+  const xb1 = box(S, 0.15, 2.7, 0.05, RED, 0, 1.05, fz + 0.13); xb1.rotation.z = 0.73;
+  const xb2 = box(S, 0.15, 2.7, 0.05, RED, 0, 1.05, fz + 0.13); xb2.rotation.z = -0.73;
+  box(S, 0.07, 2.1, 0.06, RED, 0, 1.05, fz + 0.15);                                 // door split
+  box(S, 2.7, 0.14, 0.16, 0x4a4a4a, 0, 2.18, fz + 0.16);                            // sliding-door track
+  box(S, 0.18, 0.18, 0.18, 0x2a2a2a, -0.7, 2.18, fz + 0.2); box(S, 0.18, 0.18, 0.18, 0x2a2a2a, 0.7, 2.18, fz + 0.2);   // door rollers
+  // STACK BARN sign board mounted above the doors (clear on the barn face, never under the roof)
+  signOn(S, name, sub, DARKRED, 3.2, 0.46, 0, 2.5, fz + 0.14);
+  // windows with white flower boxes
+  paneWindow(S, -w * 0.39, 1.3, fz + 0.06, 0.6, 0.78, 2, 2, WHITE); paneWindow(S, w * 0.39, 1.3, fz + 0.06, 0.6, 0.78, 2, 2, WHITE);
+  [-w * 0.39, w * 0.39].forEach(wx => { box(S, 0.72, 0.16, 0.18, WHITE, wx, 0.86, fz + 0.12); [0xE53935, 0xFFE066, 0xE85d8a].forEach((fc, i) => box(S, 0.12, 0.16, 0.12, fc, wx - 0.22 + i * 0.22, 1.0, fz + 0.14)); });
   // hayloft door + pulley up in the gable
-  box(S, 0.7, 0.7, 0.08, WHITE, 0, h + 0.55, fz + 0.12); box(S, 0.12, 0.24, 0.12, 0x5a3a20, 0, h + 1.05, fz + 0.26);
-  paneWindow(S, -w * 0.36, 1.35, fz + 0.06, 0.64, 0.82, 2, 2, WHITE); paneWindow(S, w * 0.36, 1.35, fz + 0.06, 0.64, 0.82, 2, 2, WHITE);
+  box(S, 0.7, 0.7, 0.08, WHITE, 0, h + 0.55, fz + 0.1); box(S, 0.12, 0.24, 0.12, 0x5a3a20, 0, h + 1.05, fz + 0.2);
   // cupola + weathervane on the ridge
-  box(S, 0.5, 0.5, 0.5, WHITE, 0, h + 1.9, 0); box(S, 0.62, 0.16, 0.62, ROOF, 0, h + 2.22, 0); box(S, 0.05, 0.45, 0.05, 0x33302a, 0, h + 2.54, 0);
-  buildBarnFurniture(S, w, fz);                                                      // sofa, table, bookshelf, lamp out front
-  signOn(S, name, sub, DARKRED, w - 0.3, 0.66, 0, h + 0.45, fz + 0.14);
+  box(S, 0.5, 0.5, 0.5, WHITE, 0, h + 1.9, 0); box(S, 0.62, 0.16, 0.62, ROOF, 0, h + 2.22, 0); box(S, 0.05, 0.45, 0.05, 0x33302a, 0, h + 2.54, 0); box(S, 0.42, 0.05, 0.05, 0x33302a, 0, h + 2.74, 0);
+  // a lantern by the door + a potted shrub flanking each side
+  box(S, 0.1, 0.34, 0.1, 0x2a2a2a, w * 0.5, 1.7, fz + 0.18); box(S, 0.17, 0.2, 0.17, 0xF7E08A, w * 0.5, 1.48, fz + 0.18);
+  [-w * 0.5, w * 0.46].forEach((px, n) => { box(S, 0.34, 0.3, 0.34, 0xB5723A, px, 0.16, fz + 0.6); box(S, 0.42, 0.36, 0.42, n ? 0x4f9a37 : 0x57A53C, px, 0.46, fz + 0.6); });
+  buildBarnFurniture(S, w, fz);                                                      // sofa, table, bookshelf, lamp on display
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
 // a real (drivable-style) car built from the game's own vehicle shapes — for the showroom forecourt
@@ -8641,7 +8669,7 @@ function buildMeadowDecor(g) {
   // 🏪 the meadow's OWN American-country shops — each a totally different building so they stand apart
   const ML = WORLD_LAYOUT.meadow;
   americanGeneralStore(g, ML.shop.x, ML.shop.z, 0, 0xEADFC6, 0x2f6b4f, 'STACK MART', 'Grocery & Market');      // N arm — grocer w/ fruit & veg out front
-  candyShop(g, BAKERY_POS.x, BAKERY_POS.z, 0, 'STACK SWEETS', 'Candy & Sweets');                               // N arm — pink candy shop w/ ice-cream cone
+  candyShop(g, BAKERY_POS.x, BAKERY_POS.z, 0, 'STACK SWEETS', 'Candy & Sweets');                               // N arm — pink candy shop w/ cupcake on the roof
   americanBarn(g, ML.barn.x, ML.barn.z, Math.PI / 2, 'STACK BARN', 'Furniture & Home');                       // W arm (faces EAST) — red gambrel barn
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
