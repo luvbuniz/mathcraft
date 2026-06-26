@@ -1166,6 +1166,7 @@
   <button id="camBtn" title="Switch view: see your character / look through their eyes">🧍</button>
   <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
+  <button id="unstuckBtn" class="hudBtn" title="Stuck? Tap to pop back outside">🆘 Unstuck</button>
   <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
   <button id="questBtn" class="hudBtn" title="Quest Board">🗺️</button>
@@ -4110,6 +4111,36 @@ function goHome() {
   syncGloomyMenu();
   if (typeof showSetupScreen === 'function') showSetupScreen('screenLanding');
   $('startScreen').style.display = 'flex';
+}
+// 🆘 free a player trapped inside a house/wall: hop out of any car, then teleport to the nearest
+// open OUTDOOR clearing (a cell with a clear 3×3 around it, away from buildings & shop footprints).
+function cellClearArea(x, z) {
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+    const cx = x + dx, cz = z + dz;
+    if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) return false;
+    if (solidAt(cx, 0, cz) || solidAt(cx, 1, cz)) return false;
+    if (inShopZone(cx, cz)) return false;
+    if (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz)) return false;
+  }
+  return true;
+}
+function unstickPlayer() {
+  if (player.driving) { toggleDrive(); toast('🚪 Out of the car!', 1400); return; }   // stuck in a car → hop off
+  player.restingBed = null; player.sittingChair = null;
+  const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
+  let best = null;
+  for (let r = 3; r <= 28 && !best; r++) {
+    for (let dx = -r; dx <= r && !best; dx++) for (let dz = -r; dz <= r && !best; dz++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const x = px + dx, z = pz + dz;
+      if (cellClearArea(x, z)) best = { x: x + 0.5, z: z + 0.5 };
+    }
+  }
+  if (!best) best = { x: 0.5, z: 0.5 };
+  player.pos.set(best.x, 0, best.z); player.vel.set(0, 0, 0);
+  if (G.firstPerson && typeof toggleCamera === 'function') toggleCamera();   // pop to 3rd-person so they can see their hero in the open
+  toast('✨ Poof! Unstuck — back outside in the open.', 2400);
+  if (Sound.pop) Sound.pop();
 }
 
 /* ============================ THREE.JS WORLD ============================ */
@@ -12173,6 +12204,7 @@ addEventListener('popstate', () => {
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
+$('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 $('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
 function freeMouse() {
   toast(G.mouseWalk
@@ -13025,16 +13057,21 @@ function loop(now) {
   // hints
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
+    // 🚪 while driving, the on-screen USE button reads "EXIT" so kids always know how to get out
+    const _useLbl = player.driving ? '🚪 EXIT' : '⭐ USE';
+    const _ba = $('btnAction'), _bd = $('useBtnDesk');
+    if (_ba && _ba.textContent !== _useLbl) _ba.textContent = _useLbl;
+    if (_bd && _bd.textContent !== _useLbl) _bd.textContent = _useLbl;
     const ns = nearestStation();
     if (roadExitDist() < 3.2) {
       const dest = WORLDS[ROAD_DEST[G.world]];
       hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ ⭐ USE (or E) — take the road to ') + (dest ? dest.name : 'the next town') + '!';
       hint.style.display = 'block';
     } else if (player.driving) {
-      if (performance.now() - (player.driveStart || 0) < 4500) {   // show briefly, then get out of the way
-        hint.textContent = isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • ⭐ USE to hop off' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • ⭐ USE (or E) to hop off' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • ⭐ USE (or E) to hop off');
-        hint.style.display = 'block';
-      } else hint.style.display = 'none';
+      hint.textContent = (performance.now() - (player.driveStart || 0) < 4500)
+        ? (isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • 🚪 USE to get out' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • 🚪 USE (or E) to get out' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • 🚪 USE (or E) to get out'))
+        : (isTouch ? '🚪 Tap the 🚪 EXIT button to get out of the car' : '🚪 Press 🚪 EXIT (or E) to get out of the car');
+      hint.style.display = 'block';
     } else if (ns.dist < 2.6) {
       const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
       hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ ⭐ USE (or E) to ' + verb + ' and pick a reward!');
