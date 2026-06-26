@@ -6086,25 +6086,34 @@ function openRealty() {
     b.onclick = () => { Sound.click(); buyHome(m.id); };
     row.appendChild(b); list.appendChild(row);
   });
-  if (G.homes && G.homes.length) {            // demolish a home you own (no coins back, so the incentive stays)
+  if (G.homes && G.homes.length) {            // your homes — sell back for a FULL refund, or just demolish
     const hdr = document.createElement('div');
     hdr.style.cssText = 'margin-top:10px;font-weight:800;color:#8a5a3a;font-size:14px';
-    hdr.textContent = '🧹 Your homes — demolish clears the lot (no coins back):';
+    hdr.textContent = '🏡 Your homes — picked the wrong one? Sell it back for all your coins:';
     list.appendChild(hdr);
     G.homes.forEach((h, i) => {
       const row = document.createElement('div');
-      row.style.cssText = 'background:#fdecea;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px';
+      row.style.cssText = 'background:#fdecea;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:8px';
       row.innerHTML = '<div style="flex:1"><b style="color:#8e2a20">' + (h.name || '🏠 Home') + '</b></div>';
+      const sb = document.createElement('button');
+      sb.style.cssText = 'font-weight:bold;padding:8px 12px;border-radius:12px;color:#fff;background:#3f9d34;border:none;box-shadow:0 4px 0 #2c6f24;cursor:pointer;white-space:nowrap';
+      sb.textContent = '💰 Sell +' + homeRefund(h);
+      let sArmed = false, st = null;
+      sb.onclick = () => {
+        Sound.click();
+        if (!sArmed) { sArmed = true; sb.textContent = '✅ Tap to confirm'; st = setTimeout(() => { sArmed = false; sb.textContent = '💰 Sell +' + homeRefund(h); }, 3000); return; }
+        if (st) clearTimeout(st); sellHome(i); openRealty();
+      };
       const db = document.createElement('button');
-      db.style.cssText = 'font-weight:bold;padding:8px 12px;border-radius:12px;color:#fff;background:#c0392b;border:none;box-shadow:0 4px 0 #8e2a20;cursor:pointer;white-space:nowrap';
-      db.textContent = '🧹 Demolish';
+      db.style.cssText = 'font-weight:bold;padding:8px 10px;border-radius:12px;color:#fff;background:#c0392b;border:none;box-shadow:0 4px 0 #8e2a20;cursor:pointer;white-space:nowrap';
+      db.textContent = '🧹';  db.title = 'Demolish (no refund)';
       let armed = false, t = null;
       db.onclick = () => {
         Sound.click();
-        if (!armed) { armed = true; db.textContent = '⚠️ Tap again'; db.style.background = '#8e2a20'; t = setTimeout(() => { armed = false; db.textContent = '🧹 Demolish'; db.style.background = '#c0392b'; }, 3000); return; }
+        if (!armed) { armed = true; db.textContent = '⚠️?'; db.style.background = '#8e2a20'; t = setTimeout(() => { armed = false; db.textContent = '🧹'; db.style.background = '#c0392b'; }, 3000); return; }
         if (t) clearTimeout(t); demolishHome(i); openRealty();
       };
-      row.appendChild(db); list.appendChild(row);
+      row.appendChild(sb); row.appendChild(db); list.appendChild(row);
     });
   }
   $('realtyPopup').style.display = 'flex';
@@ -6248,9 +6257,25 @@ function buildHome(ox, oz, m) {
     put('bed', cx0 + L.hw - 4, cz0 + L.hd - 4, 0);
     put('plant', cx0 + 0, cz0 + L.hd - 3, 0);
   }
-  // remember this home's lot so it can be demolished as one unit later (no refund)
+  // remember this home's lot so it can be demolished OR sold back later
   G.homes = G.homes || [];
-  G.homes.push({ x0: lx0, x1: lx1, z0: lz0, z1: lz1, y1: L.wallH + 3, name: m.name });
+  G.homes.push({ x0: lx0, x1: lx1, z0: lz0, z1: lz1, y1: L.wallH + 3, name: m.name, id: m.id, price: m.price });
+}
+// what a home sells back for. Bought a home by mistake? Get ALL your hard-earned coins back (a full refund —
+// net-zero, so there's no coin exploit; it just makes a wrong pick safe to undo).
+function homeRefund(h) {
+  if (h && typeof h.price === 'number') return h.price;
+  const m = HOME_MODELS.find(x => x.id === h.id) || HOME_MODELS.find(x => x.name === h.name);
+  return m ? m.price : 0;
+}
+function sellHome(i) {
+  const h = (G.homes || [])[i]; if (!h) return;
+  const refund = homeRefund(h);
+  for (let x = h.x0; x <= h.x1; x++) for (let z = h.z0; z <= h.z1; z++)
+    for (let y = 0; y <= h.y1; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
+  G.homes.splice(i, 1);
+  G.coins += refund; Sound.coin(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+  toast('🏡 Sold ' + (h.name || 'your home') + ' back — you got all ' + refund + ' 🪙 returned! Pick the one you really want. 😊', 5200);
 }
 function demolishHome(i) {
   const h = (G.homes || [])[i]; if (!h) return;
