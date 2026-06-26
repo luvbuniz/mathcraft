@@ -169,7 +169,7 @@
     text-align:center; box-shadow:0 8px 0 rgba(0,0,0,.2); }
   /* keep the ✕ reachable even on a tall, scrolling card */
   .popupCard > div:first-child { position:sticky; top:-2px; z-index:3; }
-  #mathPopup .popupCard { position:relative; width:min(640px,96vw); padding:14px 20px 16px; }
+  #mathPopup .popupCard { position:relative; width:min(960px,95vw); padding:18px 26px 22px; }
   /* short screens (landscape phones): compact the math popup so answer buttons never get cut off */
   @media (max-height:560px) {
     #mathPopup .popupCard { padding:8px 16px 12px; }
@@ -180,17 +180,17 @@
     .answerBlock { padding:9px 6px; font-size:clamp(18px,4.6vh,26px); }
     #mathFeedback { font-size:16px; min-height:20px; }
   }
-  #mathEquation { font-size:clamp(32px,6vw,48px); color:#34495e; font-weight:bold; margin:4px 0 5px;
-    background:#eef7ff; border:4px solid #7fb4dc; border-radius:16px; padding:10px 14px; line-height:1.15; }
-  #mathEquation.wordy { font-size:clamp(19px,3.5vw,30px); }
-  #mathPrompt { font-size:clamp(14px,2.2vw,18px); color:#7a6a35; margin-bottom:8px; }
+  #mathEquation { font-size:clamp(38px,6.2vw,62px); color:#34495e; font-weight:bold; margin:6px 0 8px;
+    background:#eef7ff; border:4px solid #7fb4dc; border-radius:16px; padding:14px 18px; line-height:1.15; }
+  #mathEquation.wordy { font-size:clamp(22px,3.8vw,40px); }
+  #mathPrompt { font-size:clamp(16px,2.4vw,22px); color:#7a6a35; margin-bottom:10px; }
   #mathNote { font-size:clamp(12px,2vw,15px); color:#6a4ea0; background:#f1ecfb; border:1px solid #d9cdf2;
     border-radius:12px; padding:7px 10px; margin:0 0 9px; line-height:1.35; }
   #paperTip { font-size:clamp(12px,2vw,15px); font-weight:700; color:#8a5c1e; background:#FFF3D6;
     border:1px solid #ECD89A; border-radius:12px; padding:6px 10px; margin:0 0 9px; }
   #mathChoices { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; }
   .answerBlock {
-    font-size:clamp(23px,4vw,34px); font-weight:bold; color:#fff; padding:14px 6px; border-radius:14px;
+    font-size:clamp(28px,4.4vw,46px); font-weight:bold; color:#fff; padding:20px 8px; border-radius:14px;
     background:linear-gradient(180deg,#8d6e4a,#6e5233);
     border:4px solid #5a4128; box-shadow:inset 0 6px 0 rgba(255,255,255,.18), 0 5px 0 #46321d;
     transition:transform .08s;
@@ -200,20 +200,20 @@
     border-color:#9a8d75; box-shadow:inset 0 6px 0 rgba(255,255,255,.25), 0 5px 0 #8a7c63; }
   .answerBlock.shake { animation:shake .35s; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
-  #mathFeedback { min-height:28px; font-size:clamp(16px,2.6vw,21px); font-weight:bold; margin-top:8px; color:#2f7d27; }
+  #mathFeedback { min-height:28px; font-size:clamp(18px,2.8vw,26px); font-weight:bold; margin-top:10px; color:#2f7d27; }
   #hintBtn { margin-top:8px; background:#FFE9A0; color:#7a5c00; font-weight:bold; font-size:clamp(13px,2.2vw,17px);
     padding:8px 16px; border-radius:12px; box-shadow:0 3px 0 #d4b44a; }
   /* Landscape phones (short height): compact the math popup so the WHOLE question + all four
      answers fit without scrolling. Landscape has plenty of width, so put the answers in ONE row. */
   @media (orientation:landscape) and (max-height:560px) {
-    #mathPopup .popupCard { width:min(96vw,1000px); padding:8px 18px 10px; }
-    #mathEquation { font-size:clamp(16px,4.4vh,23px); padding:5px 12px; margin:2px 0 4px; border-width:3px; }
-    #mathEquation.wordy { font-size:clamp(13px,3.4vh,19px); }
-    #mathPrompt { font-size:12px; margin-bottom:3px; }
-    #mathNote, #paperTip { font-size:11px; padding:3px 9px; margin:0 0 4px; }
-    #mathChoices { grid-template-columns:repeat(4,1fr); gap:7px; }
-    .answerBlock { padding:11px 4px; font-size:clamp(16px,4.4vh,24px); }
-    #hintBtn { margin-top:5px; font-size:13px; padding:6px 14px; }
+    #mathPopup .popupCard { width:min(98vw,1200px); padding:8px 20px 12px; }
+    #mathEquation { font-size:clamp(22px,7vh,38px); padding:6px 14px; margin:2px 0 6px; border-width:3px; }
+    #mathEquation.wordy { font-size:clamp(16px,5vh,28px); }
+    #mathPrompt { font-size:clamp(13px,2.6vh,17px); margin-bottom:4px; }
+    #mathNote, #paperTip { font-size:clamp(11px,2.2vh,14px); padding:4px 10px; margin:0 0 5px; }
+    #mathChoices { grid-template-columns:repeat(4,1fr); gap:9px; }
+    .answerBlock { padding:14px 6px; font-size:clamp(20px,6vh,34px); }
+    #hintBtn { margin-top:6px; font-size:clamp(13px,2.4vh,16px); padding:7px 16px; }
   }
   /* 🍕 Pizzeria on short landscape screens: shrink the pie so the order, the pizza, and the
      Serve button all fit without scrolling (kids play in landscape). */
@@ -7171,8 +7171,10 @@ function renderScene() {
   $('cinemaTitle').innerHTML = m.emoji + ' ' + m.title + ' — Scene ' + (fixed + 1) + '/' + m.scenes.length;
   // 🧑‍🏫 show the rule as a coaching tip when the kid is new to it or has been missing it
   $('cinemaScene').innerHTML = grammarTipOn(sc)
-    ? '<div style="font-size:28px">🎬</div>' +
-      '<div style="margin:7px auto 0;max-width:460px;background:#f3ecff;border:2px solid #d9c7f5;border-radius:12px;padding:8px 13px;color:#5a3d86;font-size:14px;font-weight:700;line-height:1.35">💡 ' + sc.why + '</div>'
+    ? '<div style="font-size:22px;margin-bottom:5px">🎬</div>' +
+      '<div style="margin:0 auto;max-width:560px;background:#FFF3C4;border:3px solid #F2C037;border-radius:16px;' +
+      'padding:14px 20px;color:#6a4e00;font-size:clamp(17px,3.6vw,22px);font-weight:800;line-height:1.4;box-shadow:0 4px 0 rgba(0,0,0,.1)">' +
+      '<span style="color:#C0392B">💡 TIP:</span> ' + sc.why + '</div>'
     : '<div style="font-size:34px">🎬</div>';
   $('cinemaPrompt').textContent = '🎟️ Tap the line that is written correctly!';
   $('cinemaMsg').textContent = '';
