@@ -2972,7 +2972,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach'];
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
-  meadow: { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 19, z: -16 } },
+  meadow: { shop: { x: -8, z: -14 }, barn: { x: 0, z: -14 }, motors: { x: 5, z: -14 } },   // 🏡 one central Cotswold high street (Meadowsbury)
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
@@ -5377,7 +5377,7 @@ function syncCars() {
 }
 
 /* ============================ 🧁 STACK BAKERY (Math Meadow): bake a cake by measuring right ============================ */
-const BAKERY_POS = { x: 13, z: 7 };
+const BAKERY_POS = { x: -4, z: -14 };               // 🧁 on the Meadowsbury high street
 function bakeryDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - BAKERY_POS.x, player.pos.z - BAKERY_POS.z) : 999; }
 const bakeryGroup = new THREE.Group();
 {
@@ -5644,7 +5644,7 @@ function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - L
 const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 const REALTY_POS = { x: 14, z: -15 };                       // Reading Town's Stack Realty
-const COUNTRY_REALTY_POS = { x: 13, z: -13 };               // 🏡 Math Meadow's Country Homes estate agency
+const COUNTRY_REALTY_POS = { x: 10, z: -14 };               // 🏡 Country Homes — east end of the Meadowsbury high street
 function realtyPos() { return G.world === 'meadow' ? COUNTRY_REALTY_POS : REALTY_POS; }
 function realtyDist() { return (G.world === 'city' || G.world === 'meadow') ? Math.hypot(player.pos.x - realtyPos().x, player.pos.z - realtyPos().z) : 999; }
 const CINEMA_POS = { x: -15, z: -15 };
@@ -7976,8 +7976,42 @@ function buildCountryRealty(g) {
   box(R, 0.1, 0.7, 0.1, WOOD, 1.3, 0.35, 1.95);              // little "FOR SALE" yard sign
   box(R, 0.6, 0.4, 0.04, GREEN, 1.3, 0.72, 1.95);
   R.position.set(COUNTRY_REALTY_POS.x, 0, COUNTRY_REALTY_POS.z);
-  R.rotation.y = -0.79;                                       // turn the door toward the village/play area
+  R.rotation.y = 0;                                           // faces +Z, down the high street like the other shops
   g.add(R);
+}
+// 🏘️ village-green props for Meadowsbury (the central Cotswold high street)
+function buildWell(g, x, z) {
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; box(g, 0.34, 0.5, 0.34, 0xB7A98A, x + Math.cos(a) * 0.55, 0.25, z + Math.sin(a) * 0.55); }   // stone ring
+  box(g, 0.55, 0.1, 0.55, 0x6f6a4a, x, 0.52, z);                                  // water/cover
+  box(g, 0.14, 1.3, 0.14, 0x6b4a2c, x - 0.5, 0.9, z); box(g, 0.14, 1.3, 0.14, 0x6b4a2c, x + 0.5, 0.9, z);   // posts
+  const rl = box(g, 0.14, 0.95, 0.85, 0x8a8f98, x - 0.26, 1.62, z); rl.rotation.z = -0.78;   // little pitched roof
+  const rr = box(g, 0.14, 0.95, 0.85, 0x8a8f98, x + 0.26, 1.62, z); rr.rotation.z = 0.78;
+  box(g, 0.22, 0.24, 0.22, 0x3a2a1a, x, 0.66, z);                                 // hanging bucket
+}
+function buildPlanter(g, x, z) {
+  box(g, 0.7, 0.42, 0.7, 0xC2B596, x, 0.21, z);
+  const cols = [0xE85d8a, 0xF2C037, 0xD6466B, 0x7aa6ff, 0xff7a4d];
+  for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; box(g, 0.16, 0.2, 0.16, cols[i % cols.length], x + Math.cos(a) * 0.18, 0.54, z + Math.sin(a) * 0.18); }
+}
+function buildSignpost(g, x, z, label) {
+  box(g, 0.14, 1.7, 0.14, 0x6b4a2c, x, 0.85, z);                                  // post
+  const cv = document.createElement('canvas'); cv.width = 220; cv.height = 56; const c = cv.getContext('2d');
+  c.fillStyle = '#EFE6CF'; c.fillRect(0, 0, 220, 56); c.strokeStyle = '#6b4a2c'; c.lineWidth = 4; c.strokeRect(3, 3, 214, 50);
+  c.fillStyle = '#4a6b3a'; c.font = 'bold 25px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🌳 ' + label, 110, 30);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.42, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  arm.position.set(x + 0.5, 1.55, z); g.add(arm);
+}
+function buildMeadowVillage(g) {
+  box(g, 22, 0.06, 2.4, 0xCABF9F, 1, 0.05, -12.0);            // honey-stone high-street pavement (in front of the shop row)
+  box(g, 22, 0.05, 0.22, 0xB7A988, 1, 0.07, -10.8);          // curb edge
+  buildWell(g, 1, -8.6);                                      // the village well on the green
+  buildPlanter(g, -6.4, -11.7); buildPlanter(g, 8.4, -11.7);  // flower planters along the street
+  buildSignpost(g, 14.0, -11.0, 'Meadowsbury');              // the village name sign
+  for (let zz = -12; zz <= -7; zz++) {                        // clipped-hedge borders framing the green
+    box(g, 0.7, 0.7, 1.0, 0x4f9a37, -11.0, 0.35, zz);
+    box(g, 0.7, 0.7, 1.0, 0x57A53C, 13.0, 0.35, zz);
+  }
+  cotswoldCottage(g, -13.5, -14, 0); cotswoldCottage(g, 16, -14, 0);   // cottages extending each end of the street
 }
 // a honey-stone Cotswold cottage (backdrop scenery for the village skyline)
 function cotswoldCottage(g, x, z, ang) {
@@ -8008,6 +8042,7 @@ function buildMeadowDecor(g) {
     g.add(hill);
   }
   buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
+  buildMeadowVillage(g);                                // 🏘️ the Meadowsbury village green dressing around the shop row
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 14;
   for (let i = 0; i < HN; i++) {
