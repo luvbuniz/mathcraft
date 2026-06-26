@@ -6734,6 +6734,16 @@ function mountMoviePlayer(host, src, title) {
     const unmute = () => { try { vid.loop = false; vid.muted = false; vid.currentTime = 0; vid.play(); } catch (e) {} if (cue) cue.style.display = 'none'; };
     vid.onclick = unmute; if (cue) cue.onclick = unmute;
     if (fs) fs.onclick = (e) => { e.stopPropagation(); try { if (vid.requestFullscreen) vid.requestFullscreen(); else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen(); else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen(); } catch (er) {} try { vid.loop = false; vid.muted = false; vid.currentTime = 0; vid.controls = true; vid.play(); } catch (er) {} if (cue) cue.style.display = 'none'; };
+    // when the clip finishes (or the fullscreen player is closed), leave fullscreen and drop back to
+    // the gentle looping preview — so it returns to exactly how it looked before going full screen.
+    const backToPreview = () => {
+      try { const fe = document.fullscreenElement || document.webkitFullscreenElement; if (fe) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (er) {}
+      vid.controls = false; vid.loop = true; vid.muted = true;
+      try { vid.currentTime = 0; const pp = vid.play(); if (pp && pp.catch) pp.catch(() => {}); } catch (er) {}
+      if (cue) cue.style.display = '';
+    };
+    vid.addEventListener('ended', backToPreview);
+    vid.addEventListener('webkitendfullscreen', backToPreview);   // iOS native fullscreen player closed
     const p = vid.play(); if (p && p.catch) p.catch(() => {});
   }
 }
