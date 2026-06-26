@@ -3174,6 +3174,8 @@ const SHOP_ITEMS = [
   { id: 'petbed',   icon: '🛏️', name: 'Pet Bed', price: 9,    kind: 'many',  desc: 'A snug bed. Set a cat or dog to 😴 Sleep and they\'ll curl up in it!' },
   { id: 'litterbox',icon: '🧺', name: 'Litter Box', price: 6, kind: 'many',  desc: 'A tidy litter box for your kitty.' },
   { id: 'leash',  icon: '🦮', name: 'Dog Leash', price: 7,    kind: 'own',   desc: 'Own a leash and your dog will follow you on a Walk!' },
+  { id: 'cattree', icon: '🐈', name: 'Cat Tree', price: 14,   kind: 'many',  desc: 'A cozy carpeted cat tower with perches & a hideaway — cats love to climb and nap up high!' },
+  { id: 'scratchpost', icon: '🐾', name: 'Scratching Post', price: 8, kind: 'many', desc: 'A sisal scratching post with a dangly toy on top — keeps kitty\'s claws happy.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -3202,7 +3204,7 @@ const ITEM_CAT = {
   // 🛒 Stack Mart — the general store
   ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',   // treasuremap removed: gemstone quests are paused for now
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
-  petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets',
+  petfood: 'pets', foodbowl: 'pets', waterbowl: 'pets', petbed: 'pets', litterbox: 'pets', leash: 'pets', cattree: 'pets', scratchpost: 'pets',
   usahat: 'july4', flag: 'july4', bunting: 'july4', bbq: 'july4', hotdog: 'july4', sausage: 'july4', ribs: 'july4', corn: 'july4', sparkler: 'july4', fireworks: 'july4',
   // 🏚️ Stack Barn — furniture & home
   chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
@@ -10582,6 +10584,23 @@ function buildFurnitureMesh(type, variant) {
     [[-0.23, 0, 0.5, 0.16, 0.05], [0.23, 0, 0.5, 0.16, 0.05], [0, -0.23, 0.05, 0.16, 0.5], [0, 0.23, 0.05, 0.16, 0.5]]
       .forEach(([x, z, w, h, d]) => box(g, w, h, d, 0xC7CCD1, x, 0.1, z));   // four low walls
     box(g, 0.42, 0.06, 0.42, 0xE6DFce, 0, 0.06, 0);                    // litter
+  } else if (type === 'cattree') {
+    const CARPET = 0xC9A86E, POST = 0xB08D5B, TRIM = 0x8a6a3a;
+    box(g, 0.5, 0.1, 0.5, CARPET, 0, 0.05, 0);                         // carpeted base
+    box(g, 0.16, 0.7, 0.16, POST, 0, 0.45, 0);                         // lower post
+    box(g, 0.42, 0.08, 0.42, CARPET, 0, 0.84, 0);                      // mid platform
+    box(g, 0.34, 0.3, 0.34, shade(CARPET, 1.08), -0.13, 1.04, -0.1);   // snug box-house
+    box(g, 0.14, 0.2, 0.06, 0x3a2a1a, -0.13, 0.99, 0.08);             // house doorway
+    box(g, 0.16, 0.5, 0.16, POST, 0.13, 1.13, 0.12);                   // upper post (offset)
+    box(g, 0.38, 0.08, 0.38, CARPET, 0.13, 1.42, 0.12);               // top perch
+    box(g, 0.36, 0.14, 0.06, CARPET, 0.13, 1.5, -0.02);              // perch back wall
+    box(g, 0.02, 0.18, 0.02, TRIM, 0.13, 1.6, 0.3); box(g, 0.1, 0.1, 0.1, 0xE8556B, 0.13, 1.47, 0.3);   // dangly toy
+  } else if (type === 'scratchpost') {
+    const SISAL = 0xCBB079, BASE = 0x9a6b3a;
+    box(g, 0.4, 0.08, 0.4, BASE, 0, 0.04, 0);                          // wooden base
+    box(g, 0.16, 0.7, 0.16, SISAL, 0, 0.43, 0);                        // sisal post
+    box(g, 0.19, 0.06, 0.19, shade(SISAL, 0.85), 0, 0.79, 0);         // cap
+    box(g, 0.02, 0.14, 0.02, BASE, 0, 0.9, 0); box(g, 0.1, 0.1, 0.1, 0xE8556B, 0, 0.98, 0);  // dangly ball
   } else if (type === 'flag') {
     box(g, 0.05, 1.5, 0.05, 0x9a8a6a, -0.32, 0.74, 0);                 // pole
     box(g, 0.07, 0.07, 0.07, 0xFFD23E, -0.32, 1.5, 0);               // gold finial
