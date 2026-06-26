@@ -8190,6 +8190,47 @@ function cotswoldCottage(g, x, z, ang) {
   }
   C.position.set(x, 0, z); C.rotation.y = ang; g.add(C);
 }
+// a multi-pane Georgian window (the signature Cotswold detail): stone surround, glass, mullion grid
+function paneWindow(g, x, y, z, w, h, cols, rows, frame) {
+  frame = frame || 0xF2EAD8;
+  box(g, w, h, 0.06, frame, x, y, z);                                  // cream stone surround
+  box(g, w - 0.12, h - 0.12, 0.05, 0xCFE6EE, x, y, z + 0.02);          // glass
+  for (let i = 1; i < cols; i++) box(g, 0.05, h - 0.12, 0.06, frame, x - w / 2 + i * w / cols, y, z + 0.04);   // vertical glazing bars
+  for (let j = 1; j < rows; j++) box(g, w - 0.12, 0.05, 0.06, frame, x, y - h / 2 + j * h / rows, z + 0.04);   // horizontal glazing bars
+}
+const SHOPFRONTS = [0x2f6b4f, 0x2a3550, 0x6e2f33, 0x355e4a, 0x33405e];   // heritage green, navy, oxblood…
+// one attached unit of a Cotswold shop terrace (golden stone, painted shopfront, slate gable, hanging sign)
+function cotswoldShop(g, cx, z, idx) {
+  const STONE = [0xE0C68C, 0xD9BE84, 0xE4CC97][idx % 3], SLATE = 0x6f6657, FRONT = SHOPFRONTS[idx % SHOPFRONTS.length], CREAM = 0xF2EAD8;
+  const u = 3.4, fz = z + 0.78;
+  box(g, u, 4.0, 1.5, STONE, cx, 2.0, z);                              // two-storey stone block
+  // ground-floor painted shopfront + bay display window + door
+  box(g, u - 0.26, 1.7, 0.16, FRONT, cx, 1.0, fz + 0.02);
+  box(g, u - 0.18, 0.22, 0.22, FRONT, cx, 1.93, fz - 0.04);           // fascia board over the shopfront
+  paneWindow(g, cx - u * 0.16, 1.05, fz + 0.13, 1.55, 1.2, 4, 2, CREAM);
+  box(g, 0.66, 1.5, 0.12, 0x4a3526, cx + u * 0.32, 0.9, fz + 0.12);   // shop door
+  box(g, 0.1, 0.1, 0.1, 0xE0C24A, cx + u * 0.32 + 0.18, 0.92, fz + 0.18);
+  // upper-floor multi-pane sash windows in stone surrounds
+  paneWindow(g, cx - u * 0.22, 3.0, z + 0.79, 0.86, 1.15, 2, 3, CREAM);
+  paneWindow(g, cx + u * 0.22, 3.0, z + 0.79, 0.86, 1.15, 2, 3, CREAM);
+  // steep slate gable facing the street (the repeated Cotswold roofline)
+  const sl = box(g, 0.22, 2.3, 1.9, SLATE, cx - u * 0.26, 4.5, z); sl.rotation.z = -0.92;
+  const sr = box(g, 0.22, 2.3, 1.9, SLATE, cx + u * 0.26, 4.5, z); sr.rotation.z = 0.92;
+  box(g, u * 0.82, 1.0, 0.22, STONE, cx, 4.45, z + 0.2);              // gable infill under the peak
+  box(g, 0.22, 0.22, 1.95, 0x4a4034, cx, 5.15, z);                    // ridge
+  box(g, 0.42, 0.8, 0.42, STONE, cx + u * 0.34, 4.7, z - 0.2); box(g, 0.5, 0.16, 0.5, 0x3a3a3a, cx + u * 0.34, 5.14, z - 0.2);  // chimney + pot
+  // hanging shop sign on a wrought-iron bracket
+  box(g, 0.5, 0.06, 0.06, 0x2a2a2a, cx - u * 0.32, 2.35, fz + 0.16);
+  box(g, 0.06, 0.34, 0.05, 0x2a2a2a, cx - u * 0.32 - 0.22, 2.13, fz + 0.16);
+  box(g, 0.5, 0.36, 0.05, CREAM, cx - u * 0.32 - 0.22, 1.95, fz + 0.18);
+  // a flower basket / pots at the base
+  box(g, 0.3, 0.3, 0.3, 0xB5723A, cx - u * 0.4, 0.15, fz + 0.34);
+  const fl = [0xE85d8a, 0xF2C037, 0xD6466B];
+  for (let i = 0; i < 3; i++) box(g, 0.11, 0.13, 0.11, fl[i], cx - u * 0.4 - 0.14 + i * 0.14, 0.36, fz + 0.34);
+}
+function buildCotswoldTerrace(g, x0, z, n) {                          // a continuous parade of attached Cotswold shops
+  for (let i = 0; i < n; i++) cotswoldShop(g, x0 + i * 3.4, z, i);
+}
 // 🍕 Mama Mia Pizzeria — a honey-stone trattoria with a red-and-white awning and a tricolore sign
 function buildPizzeria(g) {
   const STONE = 0xE3D6BC, ROOF = 0x9A5A4A, RED = 0xC0392B, WHITE = 0xF5F0E6, WOOD = 0x6b4a2c, GLASS = 0xBCD6E0;
@@ -8230,6 +8271,7 @@ function buildMeadowDecor(g) {
   }
   buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
   buildPizzeria(g);                                     // 🍕 fractions pizzeria on the high street
+  buildCotswoldTerrace(g, -15, -16.4, 9);              // 🏘️ honey-stone Cotswold shop parade rising behind the high street
   buildMeadowVillage(g);                                // 🏘️ the Meadowsbury village green dressing around the shop row
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 14;
