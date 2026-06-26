@@ -287,10 +287,13 @@
     color:#4a4030; font-size:clamp(14px,2.5vw,17px); line-height:1.5; max-height:42vh; overflow-y:auto; margin:0; }
   .libText.small { font-size:clamp(12px,2vw,14px); line-height:1.4; max-height:22vh; opacity:.92; }
   .scriptText { font-family:'Courier New',monospace; white-space:pre-wrap; font-size:clamp(11px,1.9vw,14px); line-height:1.35; }
-  .libBtn { font-family:inherit; font-weight:700; font-size:clamp(15px,2.6vw,18px); padding:12px 16px; border:none;
-    border-radius:13px; cursor:pointer; color:#5a4632; background:#F0E6D2; box-shadow:0 4px 0 #cdbf9f; }
+  .libBtn { font-family:inherit; font-weight:700; font-size:clamp(18px,3.1vw,25px); padding:16px 20px; border:none;
+    border-radius:13px; cursor:pointer; color:#5a4632; background:#F0E6D2; box-shadow:0 4px 0 #cdbf9f; line-height:1.3; }
   .libBtn:active { transform:translateY(3px); box-shadow:0 1px 0 #cdbf9f; }
   .libBtn.flop { animation:shake .35s; background:#f3b0b0; }
+  /* a gentle glowing pulse so new kids actually NOTICE the helper tip */
+  @keyframes tipGlow { 0%,100%{box-shadow:0 4px 0 rgba(0,0,0,.1),0 0 0 0 rgba(242,192,55,.65)} 50%{box-shadow:0 4px 0 rgba(0,0,0,.1),0 0 0 9px rgba(242,192,55,0)} }
+  .tipPulse { animation:tipGlow 1.7s ease-out infinite; }
   .petBtn.sel { outline:3px solid #ffd23f; outline-offset:2px; }
   .petBtn.putAway { margin-top:14px; background:#eef3ec; color:#2f4a33; box-shadow:0 4px 0 #cdddc8; }
   .answerBlock:disabled { opacity:.55; cursor:default; }
@@ -1429,11 +1432,11 @@
 
 <!-- ================= LIBRARY (read-a-story) POPUP ================= -->
 <div class="popup" id="libraryPopup">
-  <div class="popupCard" style="width:min(560px,95vw); text-align:center">
+  <div class="popupCard" style="width:min(820px,96vw); text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="libraryClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 id="libTitle" style="color:#6E4636; margin:2px 0 6px; font-size:clamp(22px,4vw,30px)">📚 Library</h2>
+    <h2 id="libTitle" style="color:#6E4636; margin:2px 0 6px; font-size:clamp(24px,4.2vw,34px)">📚 Library</h2>
     <div id="libStory" style="margin:4px 0 10px"></div>
-    <div id="libPrompt" style="font-size:clamp(16px,2.8vw,20px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35"></div>
+    <div id="libPrompt" style="font-size:clamp(19px,3.2vw,26px); color:#34495e; font-weight:bold; margin-bottom:12px; line-height:1.4"></div>
     <div id="libChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
     <div id="libMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
   </div>
@@ -1441,12 +1444,12 @@
 
 <!-- ================= POST OFFICE (Spelling Bee) POPUP ================= -->
 <div class="popup" id="postPopup">
-  <div class="popupCard" style="width:min(540px,95vw); text-align:center">
+  <div class="popupCard" style="width:min(800px,96vw); text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="postClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 id="spellTitle" style="color:#2E5E8C; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🏤 Spelling Bee</h2>
-    <div style="color:#5a7a9a; font-weight:700; font-size:13px; margin-bottom:8px">Listen carefully, then spell the word!</div>
+    <h2 id="spellTitle" style="color:#2E5E8C; margin:2px 0 4px; font-size:clamp(24px,4.2vw,34px)">🏤 Spelling Bee</h2>
+    <div style="color:#5a7a9a; font-weight:700; font-size:clamp(13px,2vw,16px); margin-bottom:8px">Listen carefully, then spell the word!</div>
     <div id="spellMain" style="margin:6px 0 10px"></div>
-    <div id="spellPrompt" style="font-size:clamp(16px,2.8vw,20px); color:#34495e; font-weight:bold; background:#EAF2FB; border:3px solid #B8D2EC; border-radius:14px; padding:12px 14px; margin-bottom:10px; line-height:1.35"></div>
+    <div id="spellPrompt" style="font-size:clamp(19px,3.2vw,26px); color:#34495e; font-weight:bold; background:#EAF2FB; border:3px solid #B8D2EC; border-radius:14px; padding:14px 16px; margin-bottom:12px; line-height:1.4"></div>
     <div id="spellChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
     <div id="spellMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
   </div>
@@ -1454,11 +1457,11 @@
 
 <!-- ================= GRAMMAR CINEMA POPUP ================= -->
 <div class="popup" id="cinemaPopup">
-  <div class="popupCard" style="width:min(760px,96vw); text-align:center">
+  <div class="popupCard" style="width:min(880px,96vw); text-align:center">
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="cinemaClose" title="Close" aria-label="Close">✕</button></div>
-    <h2 id="cinemaTitle" style="color:#7a4ea0; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🎬 Grammar Cinema</h2>
+    <h2 id="cinemaTitle" style="color:#7a4ea0; margin:2px 0 4px; font-size:clamp(24px,4.2vw,34px)">🎬 Grammar Cinema</h2>
     <div id="cinemaScene" style="margin:6px 0 10px"></div>
-    <div id="cinemaPrompt" style="font-size:clamp(15px,2.6vw,19px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35"></div>
+    <div id="cinemaPrompt" style="font-size:clamp(19px,3.2vw,26px); color:#34495e; font-weight:bold; margin-bottom:12px; line-height:1.4"></div>
     <div id="cinemaChoices" style="display:flex; flex-direction:column; gap:9px; align-items:stretch"></div>
     <div id="cinemaMsg" style="min-height:18px; font-weight:700; margin-top:8px; line-height:1.4"></div>
   </div>
@@ -7132,8 +7135,8 @@ function grammarConcept(sc) {
 }
 function grammarMastery() { return (profile.grammarMastery = profile.grammarMastery || {}); }
 function grammarTipOn(sc) {
-  if ((profile.grammarFirstTotal || 0) < 4) return true;             // brand-new player → coach every line at first
-  return (grammarMastery()[grammarConcept(sc)] || 0) < 2;           // this rule not mastered yet (or just missed) → show it
+  if ((profile.grammarFirstRight || 0) < 8) return true;             // strong hints until they've got 8 right on the first try
+  return (grammarMastery()[grammarConcept(sc)] || 0) < 2;           // then fade per rule (not mastered yet → still show it)
 }
 function noteGrammarConcept(sc, gotItFirstTry) {                     // update the per-rule streak (first try only)
   const c = grammarConcept(sc), mm = grammarMastery();
@@ -7170,10 +7173,11 @@ function renderScene() {
   const fixed = m.scenes.length - cinema.queue.length;
   $('cinemaTitle').innerHTML = m.emoji + ' ' + m.title + ' — Scene ' + (fixed + 1) + '/' + m.scenes.length;
   // 🧑‍🏫 show the rule as a coaching tip when the kid is new to it or has been missing it
+  const _tipEarly = (profile.grammarFirstRight || 0) < 8;             // brand-new → make the tip glow so they notice it
   $('cinemaScene').innerHTML = grammarTipOn(sc)
     ? '<div style="font-size:22px;margin-bottom:5px">🎬</div>' +
-      '<div style="margin:0 auto;max-width:560px;background:#FFF3C4;border:3px solid #F2C037;border-radius:16px;' +
-      'padding:14px 20px;color:#6a4e00;font-size:clamp(17px,3.6vw,22px);font-weight:800;line-height:1.4;box-shadow:0 4px 0 rgba(0,0,0,.1)">' +
+      '<div class="' + (_tipEarly ? 'tipPulse' : '') + '" style="margin:0 auto;max-width:600px;background:#FFF3C4;border:3px solid #F2C037;border-radius:16px;' +
+      'padding:15px 22px;color:#6a4e00;font-size:clamp(18px,3.8vw,24px);font-weight:800;line-height:1.45;box-shadow:0 4px 0 rgba(0,0,0,.1)">' +
       '<span style="color:#C0392B">💡 TIP:</span> ' + sc.why + '</div>'
     : '<div style="font-size:34px">🎬</div>';
   $('cinemaPrompt').textContent = '🎟️ Tap the line that is written correctly!';
