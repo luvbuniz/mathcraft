@@ -9019,6 +9019,39 @@ function updatePlayer(dt) {
     }
   }
 
+  // 🤚 stroking a pet — hero crouches beside it and strokes; the pet purrs & hearts pop
+  if (player.stroking) {
+    const s = player.stroking, p = s.pet, m = (p && p.f && p.f.mesh), d = player.avatarData;
+    const moved = Math.hypot(touch.joyX, touch.joyY) > 0.22 ||
+      keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+    if (!m || !m.parent || moved || s.t > 5.5) {                       // done: any movement / time-up / pet gone
+      player.stroking = null;
+      if (d && d.arms && d.armRest) d.arms.forEach((a, i) => { a.rotation.x = d.armRest[i].x; a.rotation.z = d.armRest[i].z; });
+      if (d && d.legs) d.legs.forEach(l => l.rotation.x = 0);
+    } else {
+      s.t += dt; player.vel.set(0, 0, 0);
+      player.pos.set(s.sx, 0, s.sz);
+      player.yaw = Math.atan2(m.position.x - s.sx, m.position.z - s.sz);   // face the pet
+      const av = player.avatar; av.visible = !G.firstPerson;
+      av.position.set(s.sx, -0.1, s.sz); av.rotation.set(0, player.yaw + Math.PI, 0);   // crouch down a touch
+      if (d) {
+        if (d.legs) d.legs.forEach(l => l.rotation.x = -0.4);
+        if (d.arms && d.arms.length) {
+          d.arms[0].rotation.x = -1.1 + Math.sin(s.t * 7) * 0.3;        // reach down + stroke up/down
+          d.arms[0].rotation.z = 0.28;
+          if (d.arms[1]) { d.arms[1].rotation.x = -0.15; d.arms[1].rotation.z = -0.1; }
+        }
+      }
+      p.mode = 'purr';
+      p.f.bond = Math.min(100, (p.f.bond || 20) + dt * 4);
+      s._beat = (s._beat || 0) + dt;
+      if (s._beat > 1.1) { s._beat = 0; petHearts(p, 1); if (p.kind === 'cat') { Sound.purr && Sound.purr(); } else { Sound.bark && Sound.bark(); } }
+      camera.position.lerp(new THREE.Vector3(s.sx + 2.4, 2.2, s.sz + 2.4), 0.16);
+      camera.lookAt(m.position.x, 0.35, m.position.z);
+      return;
+    }
+  }
+
   let speed = G.owned.shoes ? 7 : 5;
   if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
   // 🏊 in the pool? wade/swim — a little slower, with a splash the moment you jump in
@@ -11120,6 +11153,20 @@ function petSpeak(p) {
   p.f.bond = Math.min(100, (p.f.bond || 20) + 3);
   toast((p.f.petName ? p.f.petName + ': ' : '') + (p.kind === 'dog' ? '🐶 Woof woof!' : '🐱 Meow!'), 1500);
 }
+// 🤚 stroke the pet: your hero crouches beside it and does a hand-stroking motion while it purrs
+function petStroke(p) {
+  if (player.driving) toggleDrive();
+  const m = p.f.mesh;
+  const ang = Math.atan2(player.pos.x - m.position.x, player.pos.z - m.position.z);   // stand on the side you're already on
+  const sx = m.position.x + Math.sin(ang) * 0.95, sz = m.position.z + Math.cos(ang) * 0.95;
+  player.stroking = { pet: p, t: 0, sx: sx, sz: sz };
+  p.mode = 'purr'; p.purrT = 0;
+  petHearts(p, 2);
+  if (p.kind === 'cat') { Sound.meow && Sound.meow(); setTimeout(() => { if (Sound.purr) Sound.purr(); }, 350); }
+  else { Sound.bark && Sound.bark(); }
+  toast('🤚 You stroke ' + petNiceName(p) + (p.kind === 'cat' ? ' — purrrr…' : ' — happy wags!'), 2200);
+  closePetMenu();
+}
 function petClampX(v) { return Math.max(-WORLD_R + 1.5, Math.min(WORLD_R - 1.5, v)); }
 function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in its path (unless that pet is riding along)
   for (const p of pets) {
@@ -11338,8 +11385,8 @@ function renderPetMenu(pet) {
       (nm ? '✏️ Rename ' + petEsc(nm) : '✏️ Name your ' + (pet.kind === 'dog' ? 'dog' : 'cat') + '!') + '</button></div>';
   // 💛 love + 🎪 tricks + jobs (love/speak/roll are one-shot actions; the rest are lasting modes)
   const modes = pet.kind === 'dog'
-    ? [['love', '💛 Pet me!'], ['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '🔊 Woof!'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
-    : [['love', '💛 Pet me!'], ['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '😺 Meow'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
+    ? [['love', '💛 Pet me!'], ['stroke', '🤚 Stroke'], ['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '🔊 Woof!'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
+    : [['love', '💛 Pet me!'], ['stroke', '🤚 Stroke'], ['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '😺 Meow'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
   const ride = activeCarObj();
   if (ride && ride.spawned) modes.push(['ride', '🚗 Ride along']);            // hop in your vehicle!
   const lasting = { walk: 1, purr: 1, sit: 1, eat: 1, sleep: 1, ride: 1 };
@@ -11348,9 +11395,11 @@ function renderPetMenu(pet) {
     const b = document.createElement('button');
     b.className = 'petBtn' + (pet.mode === m && lasting[m] ? ' sel' : '');
     if (m === 'love') { b.style.background = '#e85d8a'; b.style.boxShadow = '0 4px 0 #b83b66'; }
+    if (m === 'stroke') { b.style.background = '#5aa7d8'; b.style.boxShadow = '0 4px 0 #3f7fae'; b.style.color = '#fff'; }
     b.textContent = label;
     b.onclick = () => {
       if (m === 'love') { petLove(pet); closePetMenu(); return; }
+      if (m === 'stroke') { petStroke(pet); return; }                         // 🤚 hero strokes the pet (petStroke closes the menu)
       if (m === 'speak') { petSpeak(pet); closePetMenu(); return; }
       if (m === 'roll') {
         pet.mode = 'roll'; pet.rollT = 0; pet.f.bond = Math.min(100, (pet.f.bond || 20) + 5);
