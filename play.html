@@ -5335,7 +5335,7 @@ function stowVehicle() {
 function buyCar(id) {
   const def = cars[id].def;
   if (G.owned[id]) { setActiveCar(id); return; }
-  if (G.coins < def.price) { toast('🔒 The ' + def.name + ' costs ' + def.price + ' 🪙 — do math to earn more!', 3200); return; }
+  if (G.coins < def.price) { toast('🔒 The ' + def.name + ' costs ' + def.price + ' 🪙 — earn more at the ❓ stations!', 3200); return; }
   G.coins -= def.price; G.owned[id] = true; Sound.coin(); refreshHUD();
   setActiveCar(id); Sound.honk();   // setActiveCar persists the new car to the global garage
   toast('🎉 You got the ' + def.name + '! It\'s parked out front — tap ⭐ USE to drive!', 4200);
@@ -5860,8 +5860,13 @@ const HOME_MODELS = [
   { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL' },
   { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
   { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!' },
-  { id: 'estate',  name: '🏞️ Country Estate',     price: 1300, stories: 2, garage: true, pool: true, poolW: 6, poolD: 4, color: 0xE3D6BC, roofStyle: 'pointed', columns: true, hw: 9, hd: 8, garW: 5, furnished: true, desc: 'The grandest of all — a sprawling countryside manor: grand columns • 3-car garage • huge POOL • fully furnished' }
+  { id: 'estate',  name: '🏞️ Country Estate',     price: 1300, stories: 2, garage: true, pool: true, poolW: 6, poolD: 4, color: 0xE3D6BC, roofStyle: 'pointed', columns: true, hw: 9, hd: 8, garW: 5, furnished: true,
+    desc: 'The grandest of all — a sprawling countryside manor: grand columns • 3-car garage • huge POOL • fully furnished',
+    cityName: '🏙️ Executive Estate', cityDesc: 'The grandest of all — a sprawling executive estate: grand columns • 3-car garage • huge POOL • fully furnished' }
 ];
+// suburban Reading Town uses town-flavored names/descriptions; the meadow keeps the country ones
+function homeName(m) { return (G.world === 'city' && m.cityName) ? m.cityName : m.name; }
+function homeDesc(m) { return (G.world === 'city' && m.cityDesc) ? m.cityDesc : m.desc; }
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
   const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
@@ -5883,7 +5888,7 @@ function openRealty() {
     const can = G.coins >= m.price;
     const row = document.createElement('div');
     row.style.cssText = 'background:#f4f7fb;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px';
-    row.innerHTML = '<div style="flex:1"><b style="color:#34495e">' + m.name + '</b><br><small style="color:#6c84a6">' + m.desc + '</small></div>';
+    row.innerHTML = '<div style="flex:1"><b style="color:#34495e">' + homeName(m) + '</b><br><small style="color:#6c84a6">' + homeDesc(m) + '</small></div>';
     const b = document.createElement('button');
     b.style.cssText = 'font-weight:bold;padding:10px 14px;border-radius:12px;color:#fff;white-space:nowrap;box-shadow:0 4px 0 #2c6f24;cursor:pointer;border:none;background:' + (can ? '#3f9d34' : '#9bbf95');
     b.textContent = (can ? '' : '🔒 ') + m.price + ' 🪙'; b.disabled = !can;
@@ -6046,14 +6051,14 @@ function demolishHome(i) {
 }
 function buyHome(id) {
   const m = HOME_MODELS.find(h => h.id === id); if (!m) return;
-  if (G.coins < m.price) { toast('🏡 The ' + m.name + ' costs ' + m.price + ' 🪙 — keep reading & doing math to earn more!', 3800); return; }
+  if (G.coins < m.price) { toast('🏡 The ' + homeName(m) + ' costs ' + m.price + ' 🪙 — keep earning coins at the ❓ stations!', 3800); return; }
   const sz = homeLotSize(m), lot = findHomeLot(sz[0], sz[1]);
   if (!lot) { toast('🏡 Not enough open space nearby for that home — stand in a clearer area and try again!', 4400); return; }
   G.coins -= m.price; Sound.coin(); refreshHUD();
   buildHome(lot[0], lot[1], m);
   closeRealty();
   if (Sound.fanfare) Sound.fanfare();
-  toast('🏡 Welcome home! Your ' + m.name + ' is built — walk in and make it yours! (−' + m.price + ' 🪙)', 6000);
+  toast('🏡 Welcome home! Your ' + homeName(m) + ' is built — walk in and make it yours! (−' + m.price + ' 🪙)', 6000);
 }
 /* ===================== 🗺️ LEVEL-UP BONUS QUESTS =====================
    When a kid levels up, a fun, quick, educational mini-quest pops for extra coins:
@@ -9492,7 +9497,7 @@ function placeSelectedAt(x, z, blockY) {
     G.furniture.roof -= 1; Sound.place(); refreshHUD(); return true;
   }
   // plain building block
-  if (G.blocks < 1) { toast('🧱 No blocks yet! Visit a ❓ math station or 🏚️ Stack Barn!', 2000); return false; }
+  if (G.blocks < 1) { toast('🧱 No blocks yet! Earn some at a ❓ station, or buy them at 🏚️ Stack Barn!', 2400); return false; }
   const y = blockY == null ? 0 : blockY;
   if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
   if (blocks.has(key(x, y, z))) return false;
@@ -10014,6 +10019,7 @@ function answerPicked(btn, opt) {
     G.solved++;
     G.mathMisses = 0;
     G.mathCorrectStreak++;
+    G.mathRecent = (G.mathRecent || []); G.mathRecent.push(1); if (G.mathRecent.length > 5) G.mathRecent.shift();   // rolling window for adaptive easing
     if (G.mathCorrectStreak > (profile.bestStreak || 0)) { profile.bestStreak = G.mathCorrectStreak; profileDirty = true; }
     bumpSkill(currentEq.skill, true);
     const ceiling = 5;                            // earned difficulty — strong play climbs past the picked grade (no camping on easy)
@@ -10071,10 +10077,15 @@ function answerPicked(btn, opt) {
     wrongStreak++;
     G.mathCorrectStreak = 0;
     G.mathMisses++;
+    G.mathRecent = (G.mathRecent || []); G.mathRecent.push(0); if (G.mathRecent.length > 5) G.mathRecent.shift();
+    const recentWrong = G.mathRecent.filter(v => !v).length;
     let easierNote = '';
-    if (G.mathMisses >= 2 && G.mathLevel > 1) {
+    // ease DOWN on 2 in a row OR when most of the last few were wrong (so a kid stuck on a
+    // too-hard level — e.g. a little one on a grade-5 save — gets brought down even at ~50%).
+    if ((G.mathMisses >= 2 || (G.mathRecent.length >= 4 && recentWrong >= 3)) && G.mathLevel > 1) {
       G.mathLevel--;
-      G.mathMisses = 0;
+      G.mathMisses = 0; G.mathRecent = [];
+      if (currentEq && currentEq.skill && G.skillLevel) G.skillLevel[currentEq.skill] = Math.max(1, (G.skillLevel[currentEq.skill] || G.mathLevel) - 1);
       easierNote = '🌱 The next question will be a little easier.';
     }
     // Teach the method automatically on every miss: reveal the answer + the easiest way,
