@@ -7011,6 +7011,9 @@ function makeMisspellings(word) {
    Reading Town's grammar game: pick a "movie," fix every line of the script (each
    scene shows 4 versions of a line — exactly ONE is written correctly), then it
    premieres. Every scene has a single unambiguous correct fix + 3 clearly-wrong ones. */
+// 🎬 which movies have a real video clip (shots/cinema/<id>.mp4) — add ids here as videos are added,
+// so the picker can flag the ones a kid can actually watch.
+const CINEMA_VIDEOS = new Set(['leo', 'dino', 'rocket', 'unicorn']);
 const GRAMMAR_MOVIES = [
   { id: 'leo', title: 'Leo and the Fire Truck', emoji: '🚒', scenes: [
     { correct: 'Leo jumped into the big fire truck.', bad: ['leo jumped into the big fire truck.', 'Leo jumped into the big fire truck', 'Leo jump into the big fire truck.'], why: 'Names start with a capital, the sentence ends with a period, and "jumped" is the past tense.' },
@@ -7105,11 +7108,15 @@ function showMoviePicker() {
   GRAMMAR_MOVIES.forEach(m => {
     const prog = profile.cinemaProgress && profile.cinemaProgress[m.id];
     const left = prog && prog.queue ? prog.queue.length : 0;
+    const hasVid = CINEMA_VIDEOS.has(m.id);
     const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '18px';
-    b.innerHTML = m.emoji + ' <b>' + m.title + '</b>' + (left ? ' <span style="color:#7a4ea0;font-size:13px;font-weight:700">▶ resume · ' + left + ' to fix</span>' : '');
+    b.innerHTML = m.emoji + ' <b>' + m.title + '</b>'
+      + (hasVid ? ' <span style="display:inline-block;background:#C0392B;color:#fff;font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px;vertical-align:middle">⭐ MOVIE</span>' : '')
+      + (left ? ' <span style="color:#7a4ea0;font-size:13px;font-weight:700">▶ resume · ' + left + ' to fix</span>' : '');
     b.onclick = () => { Sound.click(); startMovie(m); };
     wrap.appendChild(b);
   });
+  $('cinemaPrompt').innerHTML = 'Pick a movie — fix every line of the script, and it premieres! <span style="color:#C0392B;font-weight:800">⭐ MOVIE</span> = a cartoon plays when you finish!';
 }
 function startMovie(m) {
   cinema = { movie: m, queue: m.scenes.map((_, i) => i), tried: {}, firstRight: 0, attempted: false };
