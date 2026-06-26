@@ -12834,7 +12834,15 @@ async function cloudSyncDown() {
   for (const k in merged) { if (localStorage.getItem(k) !== merged[k]) { try { localStorage.setItem(k, merged[k]); changed = true; } catch (e) {} } }
   if (unlocked && !isUnlocked()) { try { localStorage.setItem(UNLOCK_KEY, '1'); changed = true; } catch (e) {} }
   await cloudWrite(merged, unlocked);
-  if (changed) { try { sessionStorage.setItem('stackadooJustSynced', '1'); } catch (e) {} location.reload(); }
+  if (changed) {
+    if (G.running && !G.over) {              // 🛟 mid-game: NEVER reload — that yanked kids out of their game back to the menu
+      if (typeof refreshSavedList === 'function') { try { refreshSavedList(); } catch (e) {} }
+      if (typeof toast === 'function') toast('☁️ Synced! Your worlds are saved to your account.', 3200);
+    } else {                                 // at the menu: reload to show the freshly-synced saved games
+      try { sessionStorage.setItem('stackadooJustSynced', '1'); } catch (e) {}
+      location.reload();
+    }
+  }
 }
 // debounced push — called by the game's save hooks
 function cloudSyncUp() {
