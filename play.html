@@ -1623,6 +1623,8 @@ const Sound = {
   fanfare() { [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.25, 'triangle', 0.16, i * 0.12)); },
   sad()     { this.tone(392, 0.3, 'sine', 0.12); this.tone(330, 0.4, 'sine', 0.1, 0.25); },
   throw_()  { this.noise(0.18, 0.12, 1400); this.tone(300, 0.16, 'sine', 0.08, 0, 700); },   // soft whoosh
+  bark()    { this.tone(360, 0.08, 'square', 0.16, 0, 230); this.tone(300, 0.1, 'square', 0.13, 0.11, 170); },   // 🐶 ruff ruff
+  meow()    { this.tone(620, 0.16, 'sine', 0.13, 0, 880); this.tone(700, 0.18, 'sine', 0.1, 0.14, 500); },        // 🐱 meow
   gloomyHit() {
     this.noise(0.1, 0.22, 1100);
     this.tone(640, 0.09, 'square', 0.2, 0, 190);
@@ -3912,7 +3914,7 @@ function saveGame() {
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
-      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0]),
+      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0, f.petName || '', f.hunger == null ? '' : Math.round(f.hunger), f.bond == null ? '' : Math.round(f.bond)]),
       quest: G.quest,
       homes: G.homes || [],
       pos: [player.pos.x, player.pos.y, player.pos.z],
@@ -4011,7 +4013,7 @@ function restoreGame(s) {
     }
   });
   reorientFixtures();        // now that every wall is back, line up doors & windows with them
-  (s.foods || []).forEach(([x, z, onTable, kind, y, variant]) => spawnFoodAt(x, z, !!onTable, kind, y, variant));
+  (s.foods || []).forEach(([x, z, onTable, kind, y, variant, petName, hunger, bond]) => spawnFoodAt(x, z, !!onTable, kind, y, variant, { petName: petName, hunger: hunger, bond: bond }));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   startGame();
   restoreQuest();
@@ -4043,6 +4045,7 @@ function resetWorld() {
   pools = [];                                      // whole-pool registry, rebuilt on load
   undoStack = [];                                  // fresh undo history per world
   pets.length = 0;
+  if (typeof petFx !== 'undefined') { petFx.forEach(fx => scene.remove(fx.s)); petFx.length = 0; }
   if (typeof removeQuestGem === 'function') { removeQuestGem(); removeCarriedGem(); }
   const qh = $('questHud'); if (qh) qh.style.display = 'none';
   sparkleProps.length = 0;
@@ -10475,6 +10478,59 @@ const placedFood = [];
    give it a job — Walk, Purr/Wag, Sleep, or Eat. (Cats on furniture stay put as a
    cozy decoration.) */
 const pets = [];
+// ❤️ floaty heart FX — a little burst of love when you pet, feed, or play with an animal
+const petFx = [];
+let _heartTex = null;
+function heartTex() {
+  if (_heartTex) return _heartTex;
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d'); x.font = '50px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('❤️', 32, 36);
+  _heartTex = new THREE.CanvasTexture(c); return _heartTex;
+}
+function petHearts(p, n) {
+  if (!p || !p.f || !p.f.mesh) return;
+  const m = p.f.mesh;
+  for (let i = 0; i < (n || 3); i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: heartTex(), transparent: true, depthTest: false }));
+    s.scale.set(0.3, 0.3, 0.3);
+    s.position.set(m.position.x + (Math.random() - 0.5) * 0.35, m.position.y + 0.45, m.position.z + (Math.random() - 0.5) * 0.35);
+    scene.add(s);
+    petFx.push({ s: s, t: 0, life: 1 + Math.random() * 0.5, vy: 0.7 + Math.random() * 0.35, vx: (Math.random() - 0.5) * 0.35 });
+  }
+}
+function updatePetFx(dt) {
+  for (let i = petFx.length - 1; i >= 0; i--) {
+    const fx = petFx[i]; fx.t += dt;
+    fx.s.position.y += fx.vy * dt; fx.s.position.x += fx.vx * dt;
+    const k = fx.t / fx.life;
+    fx.s.material.opacity = Math.max(0, 1 - k);
+    fx.s.scale.setScalar(0.3 + k * 0.18);
+    if (fx.t >= fx.life) { scene.remove(fx.s); fx.s.material.dispose(); petFx.splice(i, 1); }
+  }
+}
+function petEsc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function petBar(v, col) {
+  v = Math.max(0, Math.min(100, v));
+  return '<span style="display:inline-block;width:58px;height:9px;background:#e3e0d4;border-radius:5px;vertical-align:middle;overflow:hidden">' +
+    '<span style="display:block;height:100%;width:' + v + '%;background:' + col + '"></span></span>';
+}
+function petHungerWord(h) { return h >= 70 ? '😋 Full' : h >= 40 ? '🙂 Okay' : h >= 20 ? '🥺 Hungry' : '😟 Very hungry'; }
+function petNiceName(p) { return p.f.petName || (p.kind === 'dog' ? 'Your doggo' : 'Your kitty'); }
+// 💛 instant affection — a wag, hearts, a happy sound, and a stronger bond
+function petLove(p) {
+  p.f.bond = Math.min(100, (p.f.bond || 20) + 8);
+  p.mode = 'purr';                                   // sit & wag/purr so the love is visible
+  petHearts(p, 4);
+  Sound[p.kind === 'dog' ? 'bark' : 'meow']();
+  toast('❤️ ' + petNiceName(p) + ' loves you!', 1700);
+  if (typeof saveGame === 'function') saveGame();
+}
+function petSpeak(p) {
+  Sound[p.kind === 'dog' ? 'bark' : 'meow']();
+  petHearts(p, 1);
+  p.f.bond = Math.min(100, (p.f.bond || 20) + 3);
+  toast((p.f.petName ? p.f.petName + ': ' : '') + (p.kind === 'dog' ? '🐶 Woof woof!' : '🐱 Meow!'), 1500);
+}
 function petClampX(v) { return Math.max(-WORLD_R + 1.5, Math.min(WORLD_R - 1.5, v)); }
 function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in its path (unless that pet is riding along)
   for (const p of pets) {
@@ -10486,6 +10542,8 @@ function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in i
 }
 function shortAngle(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 function registerPet(f) {
+  if (f.hunger == null) f.hunger = 100;          // 🍖 fullness 0–100 (decays while you play; refill at a food bowl)
+  if (f.bond == null) f.bond = 20;               // ❤️ grows every time you play with / care for them
   const m = f.mesh;
   const home = { x: m.position.x, z: m.position.z };
   pets.push({
@@ -10528,12 +10586,26 @@ function petWalkStep(p, m, tx, tz, dt) {
   return dist;
 }
 function updatePets(dt, now) {
+  updatePetFx(dt);
   if (!pets.length) return;
   for (const p of pets) {
-    const m = p.f.mesh;
+    const m = p.f.mesh, f = p.f;
     p.phase += dt;
+    if (p.mode !== 'eat' && p.mode !== 'ride') {                             // 🍖 fullness slowly drops while you play together
+      f.hunger = Math.max(0, (f.hunger == null ? 100 : f.hunger) - dt * 0.16);
+      if (f.hunger < 25) {                                                   // gentle nudge when really hungry (and you're nearby)
+        const near = Math.hypot(player.pos.x - m.position.x, player.pos.z - m.position.z) < 6;
+        if (near && now - (p._nagAt || 0) > 30000) {
+          p._nagAt = now;
+          if (!nearestPetTarget('foodbowl', m.position.x, m.position.z, true)) {
+            toast('🥺 ' + petNiceName(p) + ' is hungry! Fill a 🥣 bowl with 🥫 Pet Food.', 2800);
+            Sound.sad && Sound.sad();
+          }
+        }
+      }
+    }
     petLegsRest(p);                                                          // legs settle unless a walk step moves them
-    if (p.mode !== 'eat') { m.rotation.x += (0 - m.rotation.x) * 0.2; if (p.head) p.head.position.y += (p.headY - p.head.position.y) * 0.3; }
+    if (p.mode !== 'eat' && p.mode !== 'sit') { m.rotation.x += (0 - m.rotation.x) * 0.2; if (p.head) p.head.position.y += (p.headY - p.head.position.y) * 0.3; }
 
     if (p.mode === 'ride') {                                                  // riding along in your vehicle 🚗
       const a = activeCarObj();
@@ -10565,6 +10637,21 @@ function updatePets(dt, now) {
       if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 3) * 0.28;
       continue;
     }
+    if (p.mode === 'sit') {                                                  // 🪑 sit pretty — leans back, head up, tail thumps
+      m.position.y = p.baseY;
+      m.rotation.x += (-0.2 - m.rotation.x) * 0.15;
+      if (p.head) p.head.position.y = p.headY + 0.04;
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 4) * 0.16;
+      continue;
+    }
+    if (p.mode === 'roll') {                                                 // 🤸 one-shot roll-over, then back to wandering
+      p.rollT = (p.rollT || 0) + dt;
+      const k = Math.min(1, p.rollT / 0.9);
+      m.rotation.z = k * Math.PI * 2;
+      m.position.y = p.baseY + Math.sin(k * Math.PI) * 0.1;
+      if (k >= 1) { m.rotation.z = 0; p.rollT = 0; p.mode = 'walk'; p.timer = 0; }
+      continue;
+    }
     if (p.mode === 'eat') {
       const bowl = nearestPetTarget('foodbowl', m.position.x, m.position.z, true);
       if (bowl && bowl.dist > 0.5) { p.eatT = 0; petWalkStep(p, m, bowl.x, bowl.z, dt); continue; }
@@ -10578,13 +10665,20 @@ function updatePets(dt, now) {
         if (p.eatT > 5) {
           bowl.entry.mesh.userData.filled = false;
           if (bowl.entry.mesh.userData.kibble) bowl.entry.mesh.userData.kibble.visible = false;
+          f.hunger = 100; f.bond = Math.min(100, (f.bond || 20) + 6);        // 🍖 full again & a happier pet
           p.eatT = 0; p.mode = 'walk'; p.timer = 0;
-          toast((p.kind === 'dog' ? '🐶 Woof' : '🐱 Meow') + '! All gone — yum!', 1800);
+          petHearts(p, 3);
+          toast(f.petName ? '🐾 ' + f.petName + ' is full — yum!' : (p.kind === 'dog' ? '🐶 Woof' : '🐱 Meow') + '! All gone — yum!', 1800);
+          if (typeof saveGame === 'function') saveGame();
         }
       }
       continue;
     }
     // 'walk'
+    if (f.hunger < 50) {                                                     // 🍖 hungry → trot over to a full bowl and dig in
+      const fb = nearestPetTarget('foodbowl', m.position.x, m.position.z, true);
+      if (fb) { p.mode = 'eat'; p.eatT = 0; continue; }
+    }
     if (p.kind === 'dog' && G.owned.leash) {                                 // on the leash → heel & follow you
       const dist = Math.hypot(player.pos.x - m.position.x, player.pos.z - m.position.z);
       if (dist > 1.4) petWalkStep(p, m, player.pos.x, player.pos.z, dt);
@@ -10623,24 +10717,71 @@ function setPetMode(pet, mode) {
 let petMenuTarget = null;
 function openPetMenu(pet) {
   if (popupOpen) return;
-  petMenuTarget = pet;
   popupOpen = true;
   document.exitPointerLock && document.exitPointerLock();
-  $('petTitle').textContent = pet.kind === 'dog' ? '🐶 Good doggo!' : '🐱 Here, kitty!';
+  $('petPopup').style.display = 'flex';
+  renderPetMenu(pet);
+}
+function renderPetMenu(pet) {
+  petMenuTarget = pet;
+  const f = pet.f, nm = f.petName;
+  $('petTitle').innerHTML = (pet.kind === 'dog' ? '🐶 ' : '🐱 ') + (nm ? petEsc(nm) : (pet.kind === 'dog' ? 'Good doggo!' : 'Here, kitty!'));
+  const h = Math.round(f.hunger == null ? 100 : f.hunger), bd = Math.round(f.bond == null ? 20 : f.bond);
+  $('petSub').innerHTML =
+    '<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;align-items:center;font-size:14px;font-weight:700">' +
+      '<span>🍖 ' + petHungerWord(h) + ' ' + petBar(h, '#f0a830') + '</span>' +
+      '<span>❤️ Bond ' + petBar(bd, '#e85d8a') + '</span>' +
+    '</div>' +
+    '<div style="margin-top:7px"><button id="petNameBtn" class="petBtn" style="font-size:14px;padding:6px 13px;background:#e9def7;color:#5a3d86;box-shadow:0 3px 0 #cdbce6">' +
+      (nm ? '✏️ Rename' : '✏️ Name your ' + (pet.kind === 'dog' ? 'dog' : 'cat')) + '</button></div>';
+  // 💛 love + 🎪 tricks + jobs (love/speak/roll are one-shot actions; the rest are lasting modes)
   const modes = pet.kind === 'dog'
-    ? [['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
-    : [['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
+    ? [['love', '💛 Pet me!'], ['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '🔊 Woof!'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
+    : [['love', '💛 Pet me!'], ['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '😺 Meow'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
   const ride = activeCarObj();
   if (ride && ride.spawned) modes.push(['ride', '🚗 Ride along']);            // hop in your vehicle!
+  const lasting = { walk: 1, purr: 1, sit: 1, eat: 1, sleep: 1, ride: 1 };
   const wrap = $('petModes'); wrap.innerHTML = '';
   modes.forEach(([m, label]) => {
     const b = document.createElement('button');
-    b.className = 'petBtn' + (pet.mode === m ? ' sel' : '');
+    b.className = 'petBtn' + (pet.mode === m && lasting[m] ? ' sel' : '');
+    if (m === 'love') { b.style.background = '#e85d8a'; b.style.boxShadow = '0 4px 0 #b83b66'; }
     b.textContent = label;
-    b.onclick = () => { setPetMode(pet, m); toast(petLabel(pet.kind) + ' will ' + label.split(' ').slice(1).join(' ').toLowerCase() + '!', 1500); closePetMenu(); };
+    b.onclick = () => {
+      if (m === 'love') { petLove(pet); closePetMenu(); return; }
+      if (m === 'speak') { petSpeak(pet); closePetMenu(); return; }
+      if (m === 'roll') {
+        pet.mode = 'roll'; pet.rollT = 0; pet.f.bond = Math.min(100, (pet.f.bond || 20) + 5);
+        Sound.click(); petHearts(pet, 2); closePetMenu();
+        toast(petNiceName(pet) + ' rolls over! 🤸', 1600); return;
+      }
+      setPetMode(pet, m);
+      pet.f.bond = Math.min(100, (pet.f.bond || 20) + 2);                    // any play grows the bond
+      toast((pet.f.petName || petLabel(pet.kind)) + ' will ' + label.split(' ').slice(1).join(' ').toLowerCase() + '!', 1500);
+      closePetMenu();
+    };
     wrap.appendChild(b);
   });
-  $('petPopup').style.display = 'flex';
+  $('petNameBtn').onclick = () => promptPetName(pet);
+}
+function promptPetName(pet) {
+  const wrap = $('petModes');
+  wrap.innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%">' +
+      '<input id="petNameInput" maxlength="14" placeholder="Type a name…" value="' + petEsc(pet.f.petName || '') +
+        '" style="font-family:inherit;font-size:19px;font-weight:800;text-align:center;padding:9px 12px;border:2px solid #cdbce6;border-radius:12px;width:min(230px,82%)">' +
+      '<div style="display:flex;gap:8px"><button id="petNameSave" class="petBtn" style="background:#3f9d34">💾 Save</button>' +
+        '<button id="petNameCancel" class="petBtn putAway" style="margin:0">↩️ Back</button></div>' +
+    '</div>';
+  const inp = $('petNameInput'); try { inp.focus(); } catch (e) {}
+  const save = () => {
+    const v = inp.value.trim().slice(0, 14);
+    pet.f.petName = v; if (typeof saveGame === 'function') saveGame(); Sound.pop();
+    closePetMenu(); if (v) toast('🐾 Say hi to ' + v + '!', 1900);
+  };
+  $('petNameSave').onclick = save;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  $('petNameCancel').onclick = () => renderPetMenu(pet);
 }
 function closePetMenu() { $('petPopup').style.display = 'none'; popupOpen = false; petMenuTarget = null; }
 $('petClose').onclick = () => { Sound.click(); closePetMenu(); };
@@ -10952,13 +11093,18 @@ function buildTabletopMesh(kind, variant) {
   if (kind === 'bacon' || kind === 'pie') { const m = buildCookProp(kind); m.scale.setScalar(0.66); return m; }
   return buildAppleMesh();
 }
-function spawnFoodAt(x, z, onTable, kind, surfY, variant) {
+function spawnFoodAt(x, z, onTable, kind, surfY, variant, care) {
   kind = kind || 'apple';
   const g = buildTabletopMesh(kind, variant);
   const y = surfY != null ? surfY : (onTable ? 0.82 : 0.2);
   g.position.set(x + 0.5, y, z + 0.5);
   scene.add(g);
   const f = { mesh: g, x, z, onTable, kind, y, variant: variant || 0 };
+  if (care) {                                                        // restore a saved pet's name & care meters
+    if (care.petName) f.petName = care.petName;
+    if (care.hunger !== '' && care.hunger != null) f.hunger = +care.hunger;
+    if (care.bond !== '' && care.bond != null) f.bond = +care.bond;
+  }
   placedFood.push(f);
   if ((kind === 'cat' || kind === 'dog') && y < 0.3) registerPet(f);   // floor cats/dogs come alive
   return f;
