@@ -11896,6 +11896,11 @@ function nearestPetTarget(type, x, z, filledOnly) {
   });
   return best;
 }
+function nearestScratchTarget(x, z) {   // nearest scratching post OR cat tree (cats scratch both)
+  const a = nearestPetTarget('scratchpost', x, z), b = nearestPetTarget('cattree', x, z);
+  if (a && b) return a.dist <= b.dist ? a : b;
+  return a || b;
+}
 function petLegsRest(p) { if (p.legs) for (const L of p.legs) L.rotation.x += (0 - L.rotation.x) * 0.2; }
 function petWalkStep(p, m, tx, tz, dt) {
   const dx = tx - m.position.x, dz = tz - m.position.z, dist = Math.hypot(dx, dz);
@@ -12017,10 +12022,43 @@ function updatePets(dt, now) {
       }
       continue;
     }
+    if (p.mode === 'scratch') {                                              // 🐾 sharpen claws on the post / cat tree
+      if (!p._target) { const t = nearestScratchTarget(m.position.x, m.position.z); if (!t) { p.mode = 'walk'; p.timer = 0; continue; } p._target = { x: t.x, z: t.z }; p.scratchT = 0; p._atPost = false; }
+      const tx = p._target.x, tz = p._target.z, td = Math.hypot(tx - m.position.x, tz - m.position.z);
+      if (!p._atPost) { if (td > 0.72) { petWalkStep(p, m, tx, tz - 0.42, dt); continue; } p._atPost = true; }
+      p.facing += shortAngle(p.facing, Math.atan2(tx - m.position.x, tz - m.position.z)) * 0.3; m.rotation.y = p.facing;
+      m.rotation.x = -0.55; m.position.y = p.baseY + 0.14;                    // rear up against the post
+      if (p.legs) { const sw = Math.sin(p.phase * 17) * 0.8; p.legs[0].rotation.x = sw - 0.9; p.legs[1].rotation.x = -sw - 0.9; }   // front paws swipe
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 5) * 0.3;
+      p.scratchT += dt;
+      if (p.scratchT > 4.5) { m.rotation.x = 0; m.position.y = p.baseY; p._target = null; p._atPost = false; p.mode = 'walk'; p.timer = 0; f.bond = Math.min(100, (f.bond || 20) + 4); petHearts(p, 2); if (Sound.purr) Sound.purr(); }
+      continue;
+    }
+    if (p.mode === 'climb') {                                                // 🌳 hop up onto the cat tree's top perch
+      if (!p._target) { const t = nearestPetTarget('cattree', m.position.x, m.position.z); if (!t) { p.mode = 'walk'; p.timer = 0; continue; } p._target = { x: t.x, z: t.z }; p.climbT = 0; p._onPerch = false; }
+      const tx = p._target.x, tz = p._target.z, td = Math.hypot(tx - m.position.x, tz - m.position.z), PERCH = p.baseY + 1.78;
+      if (!p._onPerch) { if (td > 0.4) { petWalkStep(p, m, tx, tz, dt); continue; } p._onPerch = true; }
+      m.position.x += (tx - m.position.x) * 0.18; m.position.z += (tz - m.position.z) * 0.18;
+      m.position.y += (PERCH - m.position.y) * 0.12; m.rotation.x += (0 - m.rotation.x) * 0.2;   // spring up & sit pretty
+      if (p.tail) p.tail.rotation.z = Math.sin(p.phase * 2) * 0.18;
+      p.climbT += dt;
+      if (p.climbT > 8) { p._target = null; p._onPerch = false; m.position.y = p.baseY; p.mode = 'walk'; p.timer = 0; f.bond = Math.min(100, (f.bond || 20) + 3); }
+      continue;
+    }
     // 'walk'
     if (f.hunger < 50) {                                                     // 🍖 hungry → trot over to a full bowl and dig in
       const fb = nearestPetTarget('foodbowl', m.position.x, m.position.z, true);
       if (fb) { p.mode = 'eat'; p.eatT = 0; continue; }
+    }
+    if (p.kind === 'cat') {                                                  // 🐱 every so often, wander off to use the cat furniture
+      p._catUrge = (p._catUrge == null ? 14 + Math.random() * 22 : p._catUrge) - dt;
+      if (p._catUrge <= 0) {
+        p._catUrge = 22 + Math.random() * 34;
+        const tree = nearestPetTarget('cattree', m.position.x, m.position.z);
+        if (tree && tree.dist < 13 && Math.random() < 0.5) { p.mode = 'climb'; p._target = null; continue; }
+        const scr = nearestScratchTarget(m.position.x, m.position.z);
+        if (scr && scr.dist < 13) { p.mode = 'scratch'; p._target = null; continue; }
+      }
     }
     if (p.kind === 'dog' && G.owned.leash) {                                 // on the leash → heel & follow you
       const dist = Math.hypot(player.pos.x - m.position.x, player.pos.z - m.position.z);
@@ -12055,6 +12093,7 @@ function updatePets(dt, now) {
 function setPetMode(pet, mode) {
   pet.mode = mode;
   if (mode === 'walk') { pet.timer = 0; pet.moving = true; pet.pause = false; }
+  if (mode === 'scratch' || mode === 'climb') { pet._target = null; pet._atPost = false; pet._onPerch = false; pet.scratchT = 0; pet.climbT = 0; }
   Sound.click();
 }
 let petMenuTarget = null;
@@ -12080,10 +12119,10 @@ function renderPetMenu(pet) {
   // 💛 love + 🎪 tricks + jobs (love/speak/roll are one-shot actions; the rest are lasting modes)
   const modes = pet.kind === 'dog'
     ? [['love', '💛 Pet me!'], ['stroke', '🤚 Stroke'], ['walk', '🚶 Walk'], ['purr', '🐕 Wag'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '🔊 Woof!'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']]
-    : [['love', '💛 Pet me!'], ['stroke', '🤚 Stroke'], ['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['speak', '😺 Meow'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
+    : [['love', '💛 Pet me!'], ['stroke', '🤚 Stroke'], ['walk', '🚶 Walk'], ['purr', '😻 Purr'], ['sit', '🪑 Sit'], ['roll', '🤸 Roll over'], ['scratch', '🐾 Scratch'], ['climb', '🌳 Climb tree'], ['speak', '😺 Meow'], ['eat', '🍽️ Eat'], ['sleep', '😴 Sleep']];
   const ride = activeCarObj();
   if (ride && ride.spawned) modes.push(['ride', '🚗 Ride along']);            // hop in your vehicle!
-  const lasting = { walk: 1, purr: 1, sit: 1, eat: 1, sleep: 1, ride: 1 };
+  const lasting = { walk: 1, purr: 1, sit: 1, eat: 1, sleep: 1, ride: 1, scratch: 1, climb: 1 };
   const wrap = $('petModes'); wrap.innerHTML = '';
   modes.forEach(([m, label]) => {
     const b = document.createElement('button');
@@ -12094,6 +12133,11 @@ function renderPetMenu(pet) {
     b.onclick = () => {
       if (m === 'love') { petLove(pet); closePetMenu(); return; }
       if (m === 'stroke') { petStroke(pet); return; }                         // 🤚 hero strokes the pet (petStroke closes the menu)
+      if (m === 'scratch' || m === 'climb') {                                 // 🐾 cat uses its furniture — needs the furniture nearby
+        const px = pet.f.mesh.position.x, pz = pet.f.mesh.position.z;
+        const has = m === 'climb' ? nearestPetTarget('cattree', px, pz) : nearestScratchTarget(px, pz);
+        if (!has) { toast(m === 'climb' ? '🌳 Place a 🐈 Cat Tree first (from your 🎒)!' : '🐾 Place a 🐾 Scratching Post or 🐈 Cat Tree first!', 2800); return; }
+      }
       if (m === 'speak') { petSpeak(pet); closePetMenu(); return; }
       if (m === 'roll') {
         pet.mode = 'roll'; pet.rollT = 0; pet.f.bond = Math.min(100, (pet.f.bond || 20) + 5);
