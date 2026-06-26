@@ -4174,7 +4174,7 @@ setInterval(() => {
 }, 3000);
 
 /* ============================ THREE.JS WORLD ============================ */
-const WORLD_R = 30;                    // world spans -30..30 in x/z — roomier build space (ground is instanced, so cheap)
+const WORLD_R = 34;                    // world spans -34..34 in x/z — lots of build space (ground is instanced, so cheap)
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 40, 90);
@@ -4665,8 +4665,9 @@ function questionTexture() {
 }
 const stations = [];
 const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emissive: 0x3a1f7a });
-// solve a question at any station, then choose your reward (blocks / coins / ammo)
-[[4, 2], [-5, -4], [2, -7], [-3, 6]].forEach(([sx, sz]) => {
+// solve a question at any station, then choose your reward (blocks / coins / ammo).
+// Ringed out around the spawn so the central area stays open for building (kids kept hitting them).
+[[-11, 2], [11, -4], [-3, -11], [3, 11]].forEach(([sx, sz]) => {
   const m = new THREE.Mesh(blockGeo, stationMat);
   m.position.set(sx + 0.5, 0.5, sz + 0.5);
   addBlockMesh(sx, 0, sz, null, 'station', false, m);
@@ -5919,13 +5920,14 @@ function lotClear(ox, oz, W, D) {
     if (blocks.has(key(x, 0, z))) return false;                        // something already on the ground
     if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) return false;  // a background house
     if (inShopZone(x, z)) return false;                                // a shop
+    if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 4.5) return false;   // keep homes off the travel portal
   }
   return true;
 }
 function findHomeLot(W, D) {                  // nearest clear lot, searching out from in front of the player
   const bx = Math.round(player.pos.x - Math.sin(player.yaw) * 5);
   const bz = Math.round(player.pos.z - Math.cos(player.yaw) * 5);
-  for (let rad = 0; rad <= 22; rad++)
+  for (let rad = 0; rad <= WORLD_R - 2; rad++)        // search the whole world for a clear lot (big homes need room)
     for (let dx = -rad; dx <= rad; dx++) for (let dz = -rad; dz <= rad; dz++) {
       if (Math.max(Math.abs(dx), Math.abs(dz)) !== rad) continue;
       const ox = bx + dx - (W >> 1), oz = bz + dz - (D >> 1);
@@ -8014,7 +8016,7 @@ function buildCityDecor(g) {                  // (name kept) Reading Town's subu
   const N = 26;
   for (let i = 0; i < N; i++) {
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.14;
-    const r = 27 + Math.random() * 8;                                       // varied depth → a layered neighborhood
+    const r = 36 + Math.random() * 8;                                       // pushed out to ring the bigger world (more build space inside)
     suburbHouse(g, Math.cos(ang) * r, Math.sin(ang) * r, Math.atan2(-Math.cos(ang), -Math.sin(ang)) + (Math.random() - 0.5) * 0.3);
     if (Math.random() < 0.6) decoTree(g, Math.cos(ang + 0.06) * (r - 1.5), Math.sin(ang + 0.06) * (r - 1.5), 0.8 + Math.random() * 0.5);
   }
@@ -8469,7 +8471,7 @@ function buildMeadowDecor(g) {
   const HN = 16;
   for (let i = 0; i < HN; i++) {
     const a = (i / HN) * Math.PI * 2 + 0.15;
-    const r = 28 + (i % 3) * 2;                                            // pushed out to ring the bigger (R=30) world
+    const r = 32 + (i % 3) * 2;                                            // pushed out to ring the bigger (R=34) world
     cotswoldCottage(g, Math.cos(a) * r, Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)) + (Math.random() - 0.5) * 0.3);
   }
 }
@@ -9355,6 +9357,7 @@ function inShopZone(cx, cz) {
 function placeSelectedAt(x, z, blockY) {
   if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
   if (inShopZone(x, z)) { toast('🏬 That spot belongs to a shop — build a little further away!', 2200); return false; }
+  if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 3) { toast('🌀 Keep the travel portal clear — build a bit further away!', 2200); return false; }
   if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { toast('🏠 That\'s a neighbor\'s house — build a bit closer in!', 2000); return false; }
   const slot = G.selectedSlot;
   if (slot === 'door') {
