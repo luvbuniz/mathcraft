@@ -3066,7 +3066,7 @@ const WORLDS = {
   beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] },
   // 🔬 Science Park — three themed STEM/science worlds (groundwork; built out later)
-  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', comingSoon: true, park: 'science', blurb: '🌉 Build bridges across the canyon — engineering, measuring & forces!',
+  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', park: 'science', blurb: '🌉 Build bridges across the canyon — engineering, measuring & forces!',
             sky: 0xE8B86A, fog: 0xF0D8A8, ground: [0xD9A86A, 0xCF9E60, 0xE3B878] },
   costa:  { id: 'costa',  name: 'Costa Rica',     emoji: '🌴', subject: 'science', chip: 'Nature', comingSoon: true, park: 'science', blurb: '🦜 Explore the rainforest — discover plants & animals in your field journal!',
             sky: 0x8FD9C9, fog: 0xCDEEE4, ground: [0x4FAE52, 0x429646, 0x5FBF5F] },
@@ -3540,11 +3540,11 @@ function openTravel() {
   document.exitPointerLock && document.exitPointerLock();
   const wrap = $('travelList'); wrap.innerHTML = '';
   WORLD_ORDER.forEach(id => {
-    if (SCIENCE_WORLDS.includes(id)) return;   // the three STEM worlds are grouped under 🔬 Science Park below
+    if (SCIENCE_WORLDS.includes(id) && worldComingSoon(id)) return;   // still-coming-soon STEM worlds are grouped under 🔬 Science Park below
     const w = WORLDS[id], here = id === G.world, soon = worldComingSoon(id), locked = worldLocked(id);
     const b = document.createElement('button');
     b.className = 'travelBtn' + (here ? ' here' : (soon ? ' soon' : (locked ? ' locked' : '')));
-    const sub = here ? 'You are here now' : soon ? '🔜 Coming soon' : locked ? '🔒 Unlock for ' + PAY.price : 'Learn ' + w.chip + ' • build a house here';
+    const sub = here ? 'You are here now' : soon ? '🔜 Coming soon' : locked ? '🔒 Unlock for ' + PAY.price : (w.park === 'science' ? '🔬 ' + w.chip + ' • a Science Park world!' : 'Learn ' + w.chip + ' • build a house here');
     b.innerHTML = '<span class="tEmoji">' + w.emoji + '</span><span class="tInfo"><b>' + w.name +
       '</b><small>' + sub + '</small></span>';
     if (here) b.disabled = true;
@@ -3552,12 +3552,14 @@ function openTravel() {
     else b.onclick = () => { Sound.click(); travelToWorld(id); };
     wrap.appendChild(b);
   });
-  // 🔬 Science Park — one grouped entry for the three STEM worlds (all coming soon)
-  const sp = document.createElement('button');
-  sp.className = 'travelBtn soon';
-  sp.innerHTML = '<span class="tEmoji">🔬</span><span class="tInfo"><b>Science Park</b><small>🔜 3 STEM worlds coming soon</small></span>';
-  sp.onclick = () => { Sound.click(); toast('🔬 Science Park is coming soon — build bridges in the 🤠 Country Western, explore 🌴 Costa Rica & blast off to a 🚀 Space Station!', 4600); };
-  wrap.appendChild(sp);
+  // 🔬 Science Park — one grouped entry for the STEM worlds STILL coming soon (Costa Rica & Space Station)
+  if (SCIENCE_WORLDS.some(worldComingSoon)) {
+    const sp = document.createElement('button');
+    sp.className = 'travelBtn soon';
+    sp.innerHTML = '<span class="tEmoji">🔬</span><span class="tInfo"><b>Science Park</b><small>🔜 more STEM worlds coming soon</small></span>';
+    sp.onclick = () => { Sound.click(); toast('🔬 More Science Park worlds coming soon — explore 🌴 Costa Rica & blast off to a 🚀 Space Station!', 4400); };
+    wrap.appendChild(sp);
+  }
   $('travelPopup').style.display = 'flex';
 }
 function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
@@ -4373,8 +4375,8 @@ function applyWorldTheme(worldId) {
   MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z); motorsGroup.rotation.y = L.motors.r || 0;
   // 🏪 the meadow shows its own Cotswold-stone shops (built into worldDecor.meadow); hide the shared
   // cartoon shops there so each world looks different. Town & Beach keep the cartoon shops.
-  const inMeadow = worldId === 'meadow';
-  shopGroup.visible = !inMeadow; barnGroup.visible = !inMeadow; motorsGroup.visible = !inMeadow;
+  const ownShops = worldId === 'meadow' || worldId === 'west';   // these worlds have their OWN themed buildings — hide the shared cartoon shops
+  shopGroup.visible = !ownShops; barnGroup.visible = !ownShops; motorsGroup.visible = !ownShops;
   if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = false;                    // replaced by the Cotswold bakery in the meadow
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
   G.furnFinish = worldId === 'city' ? 1 : worldId === 'beach' ? 2 : 0;   // default to this town's furniture style (kids can change it in the 🎒)
@@ -8084,7 +8086,7 @@ function finishSchool() {
 }
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
-const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group() };
+const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group(), west: new THREE.Group() };
 function cityTexture(bodyN, litN) {
   const hx = n => '#' + n.toString(16).padStart(6, '0');
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 128;
@@ -9125,9 +9127,114 @@ function buildMeadowDecor(g) {
     cotswoldCottage(g, Math.cos(a) * r, Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)) + (Math.random() - 0.5) * 0.3);
   }
 }
+// ════════════════ 🤠 COUNTRY WESTERN — a frontier theme-park town (Science Park) ════════════════
+function cactus(g, x, z, s) {
+  s = s || 1; const C = 0x4f8a4a, C2 = 0x3f7a3a;
+  box(g, 0.4 * s, 1.9 * s, 0.4 * s, C, x, 0.95 * s, z);
+  for (let i = 0; i < 6; i++) box(g, 0.43 * s, 0.04 * s, 0.43 * s, C2, x, 0.4 * s + i * 0.3 * s, z);   // ribs
+  [[1, 1.1], [-1, 1.4]].forEach(([dir, ay]) => { box(g, 0.46 * s, 0.24 * s, 0.24 * s, C, x + dir * 0.32 * s, ay * s, z); box(g, 0.24 * s, 0.62 * s, 0.24 * s, C, x + dir * 0.55 * s, (ay + 0.42) * s, z); });
+  box(g, 0.16 * s, 0.13 * s, 0.16 * s, 0xF2C037, x, 1.96 * s, z);   // bloom on top
+}
+function buildWaterTower(g, x, z) {
+  const WOOD2 = 0x6b4a2c, TANK = 0x9a6b3a;
+  [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(([lx, lz]) => box(g, 0.16, 3.4, 0.16, WOOD2, x + lx, 1.7, z + lz));
+  box(g, 1.96, 0.1, 0.1, WOOD2, x, 1.2, z - 0.7); box(g, 1.96, 0.1, 0.1, WOOD2, x, 1.2, z + 0.7);
+  box(g, 0.1, 0.1, 1.96, WOOD2, x - 0.7, 1.2, z); box(g, 0.1, 0.1, 1.96, WOOD2, x + 0.7, 1.2, z);
+  const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.7, 16), mat(TANK)); tank.position.set(x, 4.2, z); g.add(tank);
+  for (let i = 0; i < 3; i++) box(g, 2.06, 0.08, 2.06, WOOD2, x, 3.7 + i * 0.5, z);   // hoops
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.18, 0.7, 16), mat(0x6b4a2c)); roof.position.set(x, 5.35, z); g.add(roof);
+  box(g, 0.12, 1.0, 0.12, WOOD2, x + 0.7, 3.3, z + 0.95);   // down-spout
+}
+function buildSteamTrain(g, x, z, rot) {
+  const T = new THREE.Group(), BODY = 0x2f6b4f, BODY2 = 0x24513c, RED = 0xB23A2E, BLACK = 0x2a2a2a, BRASS = 0xC9A24A;
+  const boiler = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2.6, 16), mat(BODY)); boiler.rotation.z = Math.PI / 2; boiler.position.set(0.2, 0.98, 0); T.add(boiler);
+  box(T, 2.9, 0.18, 1.05, BLACK, 0, 0.4, 0);                 // frame
+  box(T, 0.8, 0.95, 1.04, BODY2, -1.45, 1.0, 0);             // cab
+  box(T, 0.7, 0.5, 0.06, 0x9fd4e8, -1.45, 1.25, 0.52); box(T, 0.7, 0.5, 0.06, 0x9fd4e8, -1.45, 1.25, -0.52);   // cab windows
+  box(T, 0.9, 0.7, 1.1, BODY2, -1.45, 1.85, 0);              // cab roof
+  box(T, 0.34, 0.7, 0.34, BLACK, 1.0, 1.7, 0); box(T, 0.5, 0.18, 0.5, BLACK, 1.0, 2.05, 0);   // smokestack
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 8), mat(BRASS)); dome.position.set(0.3, 1.6, 0); T.add(dome);
+  box(T, 0.5, 0.55, 1.0, RED, 1.55, 0.5, 0); const cc = box(T, 0.5, 0.5, 1.0, RED, 1.85, 0.32, 0); cc.rotation.z = 0.5;   // cowcatcher
+  box(T, 0.22, 0.36, 0.22, 0xF2E08A, 1.45, 1.35, 0);          // headlamp
+  [-0.85, -0.1, 0.75].forEach(wx => [-0.58, 0.58].forEach(wz => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.12, 14), mat(RED)); w.rotation.x = Math.PI / 2; w.position.set(wx, 0.4, wz); T.add(w); box(T, 0.1, 0.1, 0.1, BRASS, wx, 0.4, wz + 0.62); }));
+  box(T, 1.3, 0.85, 1.05, BODY2, -2.75, 0.75, 0);            // coal tender
+  for (let i = 0; i < 6; i++) box(T, 0.22, 0.22, 0.22, BLACK, -3.1 + (i % 3) * 0.25, 1.2, -0.2 + Math.floor(i / 3) * 0.3, 0);   // coal heap
+  T.position.set(x, 0, z); T.rotation.y = rot || 0; g.add(T); return T;
+}
+function buildDepot(g, x, z, rot) {
+  const D = new THREE.Group(), WOOD = 0xB5703A, TRIM = 0xF4ECD8, ROOF = 0x7a4a3a;
+  box(D, 4.0, 2.4, 2.4, WOOD, 0, 1.2, 0);
+  for (let i = 0; i < 8; i++) box(D, 4.0, 0.04, 0.02, 0x9a5a2a, 0, 0.35 + i * 0.27, 1.21);   // clapboard
+  box(D, 4.7, 0.3, 3.4, ROOF, 0, 2.6, 0);                    // wide overhanging roof
+  box(D, 5.6, 0.12, 1.5, 0x9a8a6a, 0, 0.06, 1.95);           // platform
+  box(D, 0.9, 1.5, 0.1, 0x5e3f24, 0, 0.82, 1.22); paneWindow(D, -1.35, 1.4, 1.22, 0.8, 0.95, 2, 2, TRIM); paneWindow(D, 1.35, 1.4, 1.22, 0.8, 0.95, 2, 2, TRIM);
+  signOn(D, 'STACKADOO', 'Western Depot', 0x5e3f24, 3.2, 0.62, 0, 2.18, 1.26);
+  D.position.set(x, 0, z); D.rotation.y = rot || 0; g.add(D);
+}
+function buildSaloon(g, x, z, rot) {
+  const S = new THREE.Group(), WOOD = 0xC2622E, WOOD2 = 0xA9521F, TRIM = 0xF4ECD8, ROOF = 0x6b4a2c;
+  box(S, 3.8, 3.6, 3.0, WOOD, 0, 1.8, 0);
+  for (let i = 0; i < 12; i++) box(S, 3.8, 0.04, 0.02, WOOD2, 0, 0.4 + i * 0.28, 1.51);   // clapboard
+  box(S, 4.3, 1.5, 0.32, WOOD, 0, 4.35, 1.4);               // tall false front
+  box(S, 4.5, 0.18, 0.42, WOOD2, 0, 5.05, 1.42); box(S, 4.5, 0.18, 0.42, WOOD2, 0, 3.62, 1.42);   // cornices
+  [-1.7, 1.7].forEach(px => box(S, 0.16, 2.2, 0.16, WOOD2, px, 1.1, 1.95));   // porch posts
+  box(S, 4.2, 0.16, 1.2, ROOF, 0, 2.2, 1.55); box(S, 4.0, 0.1, 1.0, WOOD2, 0, 2.3, 1.55);   // balcony deck
+  for (let i = 0; i < 9; i++) box(S, 0.04, 0.34, 0.04, TRIM, -1.8 + i * 0.45, 2.55, 2.05);   // balcony rail spindles
+  box(S, 4.0, 0.06, 0.06, TRIM, 0, 2.74, 2.05);
+  box(S, 0.42, 1.1, 0.08, 0x8a5a32, -0.25, 0.75, 1.53); box(S, 0.42, 1.1, 0.08, 0x8a5a32, 0.25, 0.75, 1.53);   // batwing doors
+  paneWindow(S, -1.1, 2.95, 1.52, 0.7, 0.9, 2, 2, TRIM); paneWindow(S, 1.1, 2.95, 1.52, 0.7, 0.9, 2, 2, TRIM);
+  signOn(S, 'SALOON', 'Sarsaparilla & Lemonade', 0x6b3a1a, 3.4, 0.7, 0, 4.35, 1.59);
+  S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
+}
+function buildFoodStall(g, x, z, rot, name, col) {
+  const F = new THREE.Group(), WOOD = 0x8a5c33, WHITE = 0xF5F0E6;
+  box(F, 2.2, 0.9, 1.2, WOOD, 0, 0.5, 0); box(F, 2.3, 0.14, 1.3, 0x6b4a2c, 0, 0.98, 0);   // counter + top
+  [-1.0, 1.0].forEach(px => box(F, 0.1, 2.0, 0.1, WOOD, px, 1.5, -0.5));   // back posts
+  box(F, 2.2, 0.6, 0.12, col, 0, 2.4, -0.5);   // sign board
+  for (let i = 0; i < 9; i++) { const a = box(F, 0.26, 0.1, 0.6, i % 2 ? col : WHITE, -1.04 + i * 0.26, 1.9, 0.55); a.rotation.x = 0.4; }   // striped awning
+  signOn(F, name, '', col, 2.0, 0.5, 0, 2.4, -0.43);
+  F.position.set(x, 0, z); F.rotation.y = rot || 0; g.add(F);
+}
+function buildMineEntrance(g, x, z) {
+  const ROCK = 0x8a7d6a, WOOD = 0x5e3f24;
+  const mound = new THREE.Mesh(new THREE.SphereGeometry(3.2, 12, 8), mat(ROCK)); mound.scale.set(1, 0.7, 1); mound.position.set(x, 0, z - 1.2); g.add(mound);
+  box(g, 0.3, 2.3, 0.3, WOOD, x - 0.95, 1.15, z + 1.4); box(g, 0.3, 2.3, 0.3, WOOD, x + 0.95, 1.15, z + 1.4); box(g, 2.2, 0.32, 0.34, WOOD, x, 2.3, z + 1.4);   // timber frame
+  box(g, 1.55, 1.95, 0.5, 0x1a1410, x, 0.97, z + 1.3);   // dark tunnel
+  box(g, 0.06, 0.06, 2.2, 0x4a4a4a, x - 0.3, 0.05, z + 2.6); box(g, 0.06, 0.06, 2.2, 0x4a4a4a, x + 0.3, 0.05, z + 2.6);   // rail
+  box(g, 0.74, 0.5, 0.62, 0x6b4a2c, x, 0.42, z + 3.2); box(g, 0.5, 0.2, 0.5, 0x3a3a3a, x, 0.7, z + 3.2);   // ore cart
+  signOn(g, 'GOLD MINE', 'Bridge-build coming soon!', 0x4a3520, 2.0, 0.6, x, 2.9, z + 1.5);
+}
+function hitchingPost(g, x, z) { box(g, 0.1, 0.8, 0.1, 0x6b4a2c, x - 0.5, 0.4, z); box(g, 0.1, 0.8, 0.1, 0x6b4a2c, x + 0.5, 0.4, z); box(g, 1.2, 0.1, 0.1, 0x5e3f24, x, 0.78, z); }
+function buildWestDecor(g) {
+  const tans = [0xD9A86A, 0xCF9E60, 0xE3B878, 0xC79256];
+  for (let i = 0; i < 24; i++) { const ang = (i / 24) * Math.PI * 2 + 0.2, rad = 6 + (i % 4) * 2.6, r = 44 + rad + (i % 3) * 5;
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 10), mat(tans[i % tans.length])); hill.scale.y = 0.45; hill.position.set(Math.cos(ang) * r, -rad * 0.34, Math.sin(ang) * r); g.add(hill); }
+  [[-32, 26], [35, -24], [27, 32], [-28, -30]].forEach(([mx, mz]) => { box(g, 8, 7, 8, 0xC2733A, mx, 1.0, mz); box(g, 9, 1.3, 9, 0xB0652E, mx, 4.6, mz); });   // distant mesas
+  box(g, 34, 0.06, 8, 0xCBA06A, 1, 0.05, -13);             // dirt main street
+  box(g, 7, 0.06, 18, 0xCBA06A, 7, 0.05, -6);              // a side road toward the depot/mine
+  // ── the frontier main street (north side, buildings face SOUTH toward the player) ──
+  buildWelcomeArch(g, -4, -4.5, Math.PI / 2, 'WESTERN');
+  buildSaloon(g, -15, -17, 0);
+  americanGeneralStore(g, -9, -16.5, 0, 0xCBB081, 0x8a3a2a, 'STACK GIFTS', 'Country Gift Shop');
+  buildFoodStall(g, -3.5, -12, 0, '🍩 Funnel Cake', 0xE07B2A);
+  buildFoodStall(g, 0, -12, 0, '🌭 Corn Dogs', 0xC0392B);
+  buildDepot(g, 9, -17, 0);
+  // train track + the steam train waiting at the platform
+  for (let i = 0; i < 22; i++) box(g, 1.4, 0.08, 0.16, 0x5e3f24, 9, 0.04, -14 + i * 0.7);
+  box(g, 0.1, 0.1, 15, 0x6a6a6a, 8.5, 0.12, -7); box(g, 0.1, 0.1, 15, 0x6a6a6a, 9.5, 0.12, -7);
+  buildSteamTrain(g, 9, -10, Math.PI);
+  buildWaterTower(g, -22, -19);
+  buildMineEntrance(g, 20, -19);
+  // props
+  [[-25, -7, 1.3], [24, -5, 1.0], [-19, 6, 0.95], [16, 4, 1.15], [-7, 8, 0.8], [12, 10, 1.05], [4, 6, 0.9]].forEach(([cx, cz, cs]) => cactus(g, cx, cz, cs));
+  hitchingPost(g, -15, -14.5); hitchingPost(g, -9, -14.2); hitchingPost(g, -2, -9.5);
+  if (typeof decoTree === 'function') { decoTree(g, -28, 2, 1.0); decoTree(g, 22, 8, 0.9); }   // a couple of cottonwoods at the edges
+  for (let i = 0; i < 5; i++) { box(g, 0.74, 0.5, 0.52, 0xE3C34A, -18 + i * 0.1, 0.27 + (i % 2) * 0.5, -14); }   // a stack of hay bales by the saloon
+}
 buildMeadowDecor(worldDecor.meadow);
 buildCityDecor(worldDecor.city);
 buildBeachDecor(worldDecor.beach);
+buildWestDecor(worldDecor.west);
 for (const id in worldDecor) { worldDecor[id].visible = (id === G.world); scene.add(worldDecor[id]); }
 
 /* ---- clouds & flowers ---- */
@@ -13522,11 +13629,12 @@ function renderComingSoon() {
   // 🔬 the Science Park umbrella — tap it to reveal its three worlds (all coming soon)
   const park = document.createElement('div');
   park.style.cssText = 'grid-column:1/-1; background:rgba(236,248,238,.85); border:2px dashed #8ec79a; border-radius:14px; padding:11px 8px 9px; text-align:center; cursor:pointer';
+  const westOpen = WORLDS.west && !WORLDS.west.comingSoon;
   park.innerHTML = '<div style="font-size:30px">🔬</div><div style="font-size:14px; font-weight:800; color:#3f7d4f; margin-top:3px">Science Park</div>' +
-    '<div style="font-size:10px; color:#5b8a64; margin-top:2px">3 STEM worlds — tap to peek 👇</div>';
+    '<div style="font-size:10px; color:#5b8a64; margin-top:2px">' + (westOpen ? '🤠 Country Western is OPEN — find a 🌀 portal in-game! Tap to peek at more 👇' : 'STEM worlds — tap to peek 👇') + '</div>';
   const sub = document.createElement('div');
   sub.style.cssText = 'display:none; grid-column:1/-1; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px; margin-top:6px';
-  SCIENCE_WORLDS.forEach(id => { const w = WORLDS[id]; if (w) sub.appendChild(soonCard(w.emoji, w.name, w.blurb)); });
+  SCIENCE_WORLDS.forEach(id => { const w = WORLDS[id]; if (w && w.comingSoon) sub.appendChild(soonCard(w.emoji, w.name, w.blurb)); });
   let open = false;
   park.onclick = () => { open = !open; sub.style.display = open ? 'grid' : 'none'; if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); };
   row.appendChild(park); row.appendChild(sub);
