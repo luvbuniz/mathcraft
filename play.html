@@ -215,6 +215,14 @@
     .answerBlock { padding:11px 4px; font-size:clamp(16px,4.4vh,24px); }
     #hintBtn { margin-top:5px; font-size:13px; padding:6px 14px; }
   }
+  /* 🍕 Pizzeria on short landscape screens: shrink the pie so the order, the pizza, and the
+     Serve button all fit without scrolling (kids play in landscape). */
+  @media (orientation:landscape) and (max-height:560px) {
+    #pizzaPopup .popupCard { padding:8px 18px 12px; }
+    #pizzaPie { width:42vh !important; max-width:200px; }
+    #pizzaOrder { font-size:15px !important; padding:7px 11px !important; margin-bottom:6px !important; line-height:1.25 !important; }
+    #pizzaCount { margin-bottom:5px !important; }
+  }
   #hintBox { display:none; margin-top:8px; background:#E9F5FF; color:#22456b; border-radius:14px; padding:11px 14px;
     font-size:clamp(13px,2.2vw,17px); font-weight:bold; text-align:left; line-height:1.4; }
   #hintBox .hintLead, #fixBody .hintLead { font-size:1.05em; color:#1f6fb2; margin-bottom:6px; }
@@ -5653,7 +5661,7 @@ function finishBake() {
    "Half a pie is half a pie." A customer orders a fraction of a pizza; the kid cuts it into equal
    slices and taps to serve the right amount. Grade-scaled: little ones do halves/quarters with the
    WORD shown and a tip; older kids get thirds/sixths/eighths and the ¼-style symbol — same tactile pie. */
-const PIZZA_POS = { x: -12, z: -14 };               // 🍕 west end of the Meadowsbury high street
+const PIZZA_POS = { x: -4, z: -6 };                 // 🍕 standalone on the village green, fronting the high street (clear of builds)
 function pizzaDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - PIZZA_POS.x, player.pos.z - PIZZA_POS.z) : 999; }
 const PIZZA_NAMES = ['Mia', 'Leo', 'Sam', 'Ava', 'Max', 'Lily', 'Noah', 'Zoe', 'Ben', 'Ruby', 'Nina', 'Theo'];
 const PIZZA_CUSTOMERS = ['🧒', '👦', '👧', '🧑', '👩', '👨', '🐶', '🐱', '🦊', '🐻', '🐰', '🐼'];
@@ -8137,30 +8145,49 @@ function buildSignpost(g, x, z, label) {
   arm.position.set(x + 0.5, 1.55, z); g.add(arm);
 }
 function buildMeadowVillage(g) {
-  box(g, 28, 0.06, 2.4, 0xCABF9F, -2, 0.05, -12.0);           // honey-stone high-street pavement (in front of the shop row)
-  box(g, 28, 0.05, 0.22, 0xB7A988, -2, 0.07, -10.8);         // curb edge
-  buildWell(g, 1, -8.6);                                      // the village well on the green
+  box(g, 24, 0.06, 2.4, 0xCABF9F, 1, 0.05, -12.0);            // honey-stone high-street pavement (in front of the shop row)
+  box(g, 24, 0.05, 0.22, 0xB7A988, 1, 0.07, -10.8);          // curb edge
+  buildWell(g, 4, -8.6);                                      // the village well on the green
   buildPlanter(g, -6.4, -11.7); buildPlanter(g, 8.4, -11.7);  // flower planters along the street
   buildSignpost(g, 14.0, -11.0, 'Meadowsbury');              // the village name sign
   for (let zz = -12; zz <= -7; zz++) {                        // clipped-hedge borders framing the green
-    box(g, 0.7, 0.7, 1.0, 0x4f9a37, -8.6, 0.35, zz);
+    box(g, 0.7, 0.7, 1.0, 0x4f9a37, -11.0, 0.35, zz);
     box(g, 0.7, 0.7, 1.0, 0x57A53C, 13.0, 0.35, zz);
   }
-  cotswoldCottage(g, -17, -14, 0); cotswoldCottage(g, 16, -14, 0);   // cottages extending each end of the street
+  cotswoldCottage(g, -14, -14, 0); cotswoldCottage(g, 16, -14, 0);   // cottages extending each end of the street
 }
 // a honey-stone Cotswold cottage (backdrop scenery for the village skyline)
 function cotswoldCottage(g, x, z, ang) {
-  const stones = [0xD8C39A, 0xCFB890, 0xE0CBA0, 0xD2BC8C], roofs = [0x8a8f98, 0x6f6a4a, 0x7a7f86];
+  // warm honey-stone walls + steep thatch-brown roofs, with white-framed windows, flower boxes,
+  // a stone door surround and (sometimes) Tudor timber framing — a proper English country cottage.
+  const stones = [0xEADBBC, 0xE3D2AC, 0xEEDFBE, 0xE6D4AE], roofs = [0x7c6a4e, 0x6f5f46, 0x86735a];
   const STONE = stones[Math.floor(Math.random() * stones.length)], ROOF = roofs[Math.floor(Math.random() * roofs.length)];
-  const C = new THREE.Group(); const w = 2.4, d = 2.2, h = 1.8;
-  box(C, w, h, 0.16, STONE, 0, h / 2, -d / 2); box(C, w, h, 0.16, STONE, 0, h / 2, d / 2);   // front/back
-  box(C, 0.16, h, d, STONE, -w / 2, h / 2, 0); box(C, 0.16, h, d, STONE, w / 2, h / 2, 0);     // sides
-  const sl = box(C, 0.18, 1.7, d + 0.34, ROOF, -w * 0.27, h + 0.42, 0); sl.rotation.z = -0.95;
-  const sr = box(C, 0.18, 1.7, d + 0.34, ROOF, w * 0.27, h + 0.42, 0); sr.rotation.z = 0.95;
-  box(C, 0.18, 0.18, d + 0.34, 0x4f535a, 0, h + 1.0, 0);                                        // ridge
-  box(C, 0.4, 0.75, 0.4, STONE, w * 0.28, h + 0.65, -d * 0.2); box(C, 0.5, 0.16, 0.5, 0x3a3a3a, w * 0.28, h + 1.05, -d * 0.2);  // chimney
-  box(C, 0.55, 1.1, 0.1, 0x6b4a2c, 0, 0.55, d / 2 + 0.04);                                      // door
-  box(C, 0.5, 0.5, 0.06, 0xBCD6E0, -w * 0.28, 1.05, d / 2 + 0.04); box(C, 0.5, 0.5, 0.06, 0xBCD6E0, w * 0.28, 1.05, d / 2 + 0.04);  // windows
+  const timber = Math.random() < 0.5;
+  const C = new THREE.Group(); const w = 2.5, d = 2.3, h = 1.9, fz = d / 2;
+  box(C, w, h, 0.16, STONE, 0, h / 2, -fz); box(C, w, h, 0.16, STONE, 0, h / 2, fz);     // front/back
+  box(C, 0.16, h, d, STONE, -w / 2, h / 2, 0); box(C, 0.16, h, d, STONE, w / 2, h / 2, 0);   // sides
+  const sl = box(C, 0.2, 1.85, d + 0.5, ROOF, -w * 0.27, h + 0.46, 0); sl.rotation.z = -0.95;  // steep roof w/ overhang
+  const sr = box(C, 0.2, 1.85, d + 0.5, ROOF, w * 0.27, h + 0.46, 0); sr.rotation.z = 0.95;
+  box(C, 0.22, 0.22, d + 0.5, 0x4a4034, 0, h + 1.06, 0);                                        // ridge beam
+  box(C, 0.45, 0.85, 0.45, 0xCDB98E, w * 0.3, h + 0.7, -d * 0.18); box(C, 0.56, 0.16, 0.56, 0x3a3a3a, w * 0.3, h + 1.14, -d * 0.18);  // stone chimney + cap
+  // front door with a stone surround + step
+  box(C, 0.64, 1.2, 0.12, 0xCDB98E, 0, 0.62, fz + 0.02);                                        // pale stone surround
+  box(C, 0.5, 1.12, 0.12, 0x5e3f24, 0, 0.58, fz + 0.06);                                        // timber door
+  box(C, 0.1, 0.1, 0.1, 0xE0C24A, -0.14, 0.6, fz + 0.13);                                        // knob
+  box(C, 0.82, 0.16, 0.34, 0x9a948a, 0, 0.08, fz + 0.24);                                        // stone step
+  // two front windows: white frame + cross mullion + a flower box of blooms
+  [-w * 0.3, w * 0.3].forEach(wx => {
+    box(C, 0.58, 0.58, 0.05, 0xF7F2E6, wx, 1.2, fz + 0.05);                                      // white frame
+    box(C, 0.44, 0.44, 0.06, 0xBFE0EC, wx, 1.2, fz + 0.07);                                      // glass
+    box(C, 0.5, 0.07, 0.08, 0xF7F2E6, wx, 1.2, fz + 0.1); box(C, 0.07, 0.5, 0.08, 0xF7F2E6, wx, 1.2, fz + 0.1);  // mullion cross
+    box(C, 0.54, 0.13, 0.18, 0x6b4a2c, wx, 0.92, fz + 0.13);                                      // window flower box
+    const fl = [0xE85d8a, 0xF2C037, 0xD6466B];
+    for (let i = 0; i < 3; i++) box(C, 0.11, 0.13, 0.11, fl[i], wx - 0.17 + i * 0.17, 1.04, fz + 0.15);
+  });
+  if (timber) {                                                                                  // Tudor timber framing on the gable
+    box(C, 0.1, h, 0.05, 0x4a3526, -w / 2 + 0.12, h / 2, fz + 0.04); box(C, 0.1, h, 0.05, 0x4a3526, w / 2 - 0.12, h / 2, fz + 0.04);
+    box(C, w, 0.1, 0.05, 0x4a3526, 0, h - 0.08, fz + 0.04); box(C, w, 0.1, 0.05, 0x4a3526, 0, h * 0.52, fz + 0.04);
+  }
   C.position.set(x, 0, z); C.rotation.y = ang; g.add(C);
 }
 // 🍕 Mama Mia Pizzeria — a honey-stone trattoria with a red-and-white awning and a tricolore sign
@@ -8185,7 +8212,8 @@ function buildPizzeria(g) {
   c.fillStyle = '#4a3a2a'; c.font = 'italic bold 15px Georgia, serif'; c.fillText('slice it & serve!', 128, 52);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.72, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 2.05, 1.5); P.add(sign);
-  P.position.set(PIZZA_POS.x, 0, PIZZA_POS.z); g.add(P);
+  P.position.set(PIZZA_POS.x, 0, PIZZA_POS.z); P.rotation.y = Math.PI;   // faces north onto the green/high street
+  g.add(P);
 }
 function buildMeadowDecor(g) {
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
