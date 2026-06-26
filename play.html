@@ -8094,7 +8094,7 @@ let cockpit = null;
 //   'fire'  → real fire-truck cab: full gauge cluster + PUMP/LADDER/BEACON switch panel (red trim)
 //   'police'→ cruiser: gauge cluster + LIGHTS/SIREN/RADIO switch panel (blue trim)
 //   default → a clean car gauge cluster + simple radio
-function dashTexture(style, emOn) {
+function dashTexture(style, emOn, dyn) {
   if (emOn === undefined) emOn = true;                 // emergency lights+siren state, drawn on the SIREN/BEACON switches
   const W = 528, H = 200, fire = style === 'fire', police = style === 'police', emerg = fire || police;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
@@ -8118,8 +8118,9 @@ function dashTexture(style, emOn) {
     if (label) { c.fillStyle = '#aeb6c2'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText(label, cx, cy + r + 13); }
   };
   // LEFT: instrument cluster — two big dials + a row of small gauges (like the real cab)
-  dial(96, 76, 52, 0.62, 'SPEED', '#37c3ff', true);
-  dial(212, 76, 44, emerg ? 0.7 : 0.5, emerg ? 'PSI' : 'RPM', '#9be36b', true);
+  const spd = dyn ? dyn.speed : 0;                         // live SPEED needle: 0 parked, sweeps up with real speed
+  dial(96, 76, 52, spd, 'SPEED', '#37c3ff', true);
+  dial(212, 76, 44, emerg ? 0.68 : (dyn ? dyn.rpm : 0.12), emerg ? 'PSI' : 'RPM', '#9be36b', true);
   const small = [['FUEL', 0.8, '#ffd60a'], ['TEMP', 0.45, '#ff7a4d'], ['AIR', 0.66, '#37c3ff'], ['OIL', 0.55, '#c9d1dc']];
   small.forEach((s, i) => dial(72 + i * 56, 158, 21, s[1], s[0], s[2]));
   // RIGHT: switch panel — the signature fire-truck control bank (or a simple radio on a normal car)
@@ -8186,14 +8187,19 @@ function buildCockpit() {
   return g;
 }
 // swap the dashboard art to match the vehicle (fire/police/car) AND the lights+siren on/off state
-function setCockpitDash(style, emOn) {
+function setCockpitDash(style, emOn, spd) {
   if (emOn === undefined) emOn = (player.sirenOn !== false);
-  const key = style + (emOn ? '1' : '0');
-  if (!cockpit || cockpit.userData.dashKey === key) return;        // only rebuild when style/state changes
-  const p = cockpit.userData.panel; if (!p) return;
+  if (!cockpit) return;
+  const p = cockpit.userData.panel, u = cockpit.userData; if (!p) return;
+  spd = Math.max(0, Math.min(1, spd || 0));
+  const key = style + (emOn ? '1' : '0') + '|' + spd.toFixed(2);
+  if (u.dashKey === key) return;                                   // nothing changed (style, siren, OR the needle position)
+  const styleEmSame = (u.dashStyle === style && u.dashEm === emOn);
+  if (styleEmSame && u._dashAt && performance.now() - u._dashAt < 100) return;   // throttle needle-only redraws to ~10/sec
   if (p.material.map) p.material.map.dispose();
-  p.material.map = dashTexture(style, emOn); p.material.needsUpdate = true;
-  cockpit.userData.dashKey = key; cockpit.userData.dashStyle = style;
+  p.material.map = dashTexture(style, emOn, { speed: Math.min(0.95, spd * 0.9), rpm: 0.12 + spd * 0.72 });
+  p.material.needsUpdate = true;
+  u.dashKey = key; u.dashStyle = style; u.dashEm = emOn; u._dashAt = performance.now();
 }
 function dashStyleFor(def) {
   if (!def) return 'default';
@@ -8313,7 +8319,8 @@ function updatePlayer(dt) {
         // the TRUCK CONTROL tap-zone only applies to fire/police rigs; art shows the on/off state
         const emV = dashStyleFor(v.def) !== 'default';
         if (cockpit.userData.emSwitch) cockpit.userData.emSwitch.visible = emV;
-        setCockpitDash(dashStyleFor(v.def), player.sirenOn !== false);
+        const _sp = Math.hypot(player.vel.x || 0, player.vel.z || 0), _mx = (v.def && v.def.speed) || 11;
+        setCockpitDash(dashStyleFor(v.def), player.sirenOn !== false, _sp / _mx);   // live needle tracks real speed
         if (emV && player._dashHintPending) {           // first time you look at the dash: explain the tappable panel
           player._dashHintPending = false;
           toast('🚨 Tap the TRUCK CONTROL panel to switch the lights & siren on/off!', 4200);
