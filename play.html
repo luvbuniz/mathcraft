@@ -1440,6 +1440,18 @@
   </div>
 </div>
 
+<!-- ================= 🌾 FEED STORE (cashier — count the change) POPUP ================= -->
+<div class="popup" id="feedPopup">
+  <div class="popupCard" style="text-align:center; width:min(440px,95vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="feedClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="feedTitle" style="color:#7a5a1f; margin:2px 0 4px; font-size:clamp(20px,4vw,28px)">🌾 Stack Feed &amp; Supply</h2>
+    <div id="feedOrder" style="font-size:clamp(15px,2.8vw,19px); color:#34495e; font-weight:bold; background:#FBF3DE; border:3px solid #E2C892; border-radius:14px; padding:11px 13px; margin-bottom:8px; line-height:1.4"></div>
+    <div id="feedEntry" style="font-weight:800; font-size:clamp(20px,4.5vw,28px); color:#2a2a2a; min-height:28px; margin-bottom:6px"></div>
+    <div id="feedPad" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center"></div>
+    <div id="feedMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
 <!-- ================= DREAM GOAL PICKER POPUP ================= -->
 <div class="popup" id="goalPopup">
   <div class="popupCard" style="text-align:center; width:min(460px,94vw)">
@@ -5885,6 +5897,104 @@ function servePizza() {
   }
 }
 
+/* ============================ 🌾 STACK FEED & SUPPLY (Math Meadow): YOU are the cashier — count the change! ============================
+   A farm-supply store where the kid rings up a customer and gives the right change (bill − total).
+   Younger players (level 1–2) pick from multiple choice; older players (3+) type it on the register
+   keypad, with bigger numbers. It's adaptive — the 'money' skill level climbs/eases with the kid. */
+const FEED_POS = { x: 0.5, z: -15.8 };
+const FEED_ROT = 0;                                  // faces SOUTH, toward the player
+function feedDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - FEED_POS.x, player.pos.z - FEED_POS.z) : 999; }
+const FEED_CUSTOMERS = ['🧑‍🌾', '👩‍🌾', '👨‍🌾', '🐴', '🐄', '🐔', '🐑', '🐖', '🐐', '🦆', '🐕', '🐰'];
+const FEED_ITEMS = [['🌽', 'Corn'], ['🌾', 'Hay Bale'], ['🥕', 'Carrots'], ['🐔', 'Chick Feed'], ['🦴', 'Dog Chow'], ['🍎', 'Apples'], ['🌻', 'Seed'], ['🥜', 'Peanuts'], ['🪣', 'Oats'], ['🧺', 'Bran'], ['🥚', 'Eggs'], ['🧀', 'Cheese']];
+function feedLevel() { return Math.max(1, Math.min(5, (G.skillLevel && G.skillLevel.money) || G.mathLevel || G.grade || 2)); }
+function makeChangeOrder() {
+  const lvl = feedLevel(), manual = lvl >= 3;
+  let nItems, pMin, pMax;
+  if (lvl === 1) { nItems = 1; pMin = 1; pMax = 9; }
+  else if (lvl === 2) { nItems = (Math.random() < 0.5 ? 1 : 2); pMin = 1; pMax = 9; }
+  else if (lvl === 3) { nItems = 2; pMin = 3; pMax = 19; }
+  else if (lvl === 4) { nItems = (Math.random() < 0.5 ? 2 : 3); pMin = 5; pMax = 29; }
+  else { nItems = 3; pMin = 8; pMax = 45; }
+  const pool = shuffle(FEED_ITEMS.slice()), items = []; let total = 0;
+  for (let i = 0; i < nItems; i++) { const it = pool[i], price = ri(pMin, pMax); items.push({ emoji: it[0], name: it[1], price: price }); total += price; }
+  // customer pays with the next round bill above the total (10s for the little ones, 50s/100s for the big kids)
+  const step = lvl <= 3 ? 10 : 50;
+  let bill = Math.ceil((total + 1) / step) * step;             // next round bill above the total (always whole tens/fifties)
+  if (bill <= total) bill += step;
+  const change = bill - total;
+  return { items: items, total: total, bill: bill, change: change, manual: manual, lvl: lvl, cust: pick(FEED_CUSTOMERS), nm: pick(PIZZA_NAMES) };
+}
+function changeChoices(ans) {
+  const set = [ans], cand = shuffle([ans + 1, ans - 1, ans + 2, ans - 2, ans + 5, ans + 10, ans - 10, ans + 3]);
+  for (const c of cand) { if (c >= 0 && set.indexOf(c) < 0) set.push(c); if (set.length >= 4) break; }
+  while (set.length < 4) { const c = ans + set.length; if (set.indexOf(c) < 0) set.push(c); }
+  return shuffle(set);
+}
+let feed = null;
+function openFeed() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  feed = { order: makeChangeOrder(), entry: '', locked: false, done: 0 };
+  renderFeed();
+  $('feedPopup').style.display = 'flex';
+}
+function closeFeed() { $('feedPopup').style.display = 'none'; popupOpen = false; feed = null; }
+function renderFeed() {
+  if (!feed) return;
+  const o = feed.order;
+  $('feedTitle').innerHTML = '🌾 Stack Feed &amp; Supply' + (feed.done ? ' — ' + feed.done + ' served!' : '');
+  let html = '<div style="font-size:1.35em">' + o.cust + ' <b>' + o.nm + '</b> is buying:</div><div style="text-align:left; display:inline-block; margin:6px auto 2px">';
+  o.items.forEach(it => { html += '<div>' + it.emoji + ' ' + it.name + ' &middot;&middot;&middot; <b>' + it.price + '</b> 🪙</div>'; });
+  html += '</div><div style="border-top:2px dashed #c9b27e; margin-top:5px; padding-top:5px">Total: <b style="color:#7a5a1f">' + o.total + '</b> 🪙 &nbsp;•&nbsp; Pays with: <b style="color:#2f8a52">' + o.bill + '</b> 🪙 💵</div>';
+  html += '<div style="margin-top:5px; font-weight:800; color:#7a5a1f">💰 How much change do you give back?</div>';
+  $('feedOrder').innerHTML = html;
+  $('feedMsg').textContent = '';
+  if (o.manual) renderFeedKeypad(); else renderFeedChoices();
+}
+function renderFeedChoices() {
+  const o = feed.order, pad = $('feedPad'); pad.innerHTML = ''; $('feedEntry').textContent = '';
+  changeChoices(o.change).forEach(c => {
+    const b = document.createElement('button'); b.className = 'bakeBtn'; b.textContent = c + ' 🪙';
+    b.onclick = () => submitFeed(c); pad.appendChild(b);
+  });
+}
+function updateFeedEntry() { $('feedEntry').innerHTML = '🧾 Change: <b>' + (feed.entry === '' ? '—' : feed.entry) + '</b> 🪙'; }
+function renderFeedKeypad() {
+  const pad = $('feedPad'); pad.innerHTML = ''; updateFeedEntry();
+  ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫'].forEach(k => {
+    const b = document.createElement('button'); b.className = 'bakeBtn'; b.style.minWidth = '62px'; b.style.flex = '0 0 28%';
+    b.textContent = k;
+    b.onclick = () => { Sound.click(); if (k === 'C') feed.entry = ''; else if (k === '⌫') feed.entry = feed.entry.slice(0, -1); else if (feed.entry.length < 4) feed.entry += k; updateFeedEntry(); };
+    pad.appendChild(b);
+  });
+  const give = document.createElement('button'); give.className = 'bakeBtn'; give.style.background = '#3f9d34'; give.style.color = '#fff'; give.style.flex = '0 0 92%'; give.textContent = '💵 Give Change';
+  give.onclick = () => { if (feed.entry === '') { $('feedMsg').style.color = '#c0392b'; $('feedMsg').textContent = 'Type the change first!'; return; } submitFeed(parseInt(feed.entry, 10)); };
+  pad.appendChild(give);
+}
+function submitFeed(val) {
+  if (!feed || feed.locked) return;
+  const o = feed.order;
+  if (val === o.change) {
+    feed.locked = true; feed.done++;
+    Sound.correct(); G.solved++; recordSolve({ skill: 'money', level: o.lvl }); bumpSkill('money', true); bumpHud('solvedCount');
+    const reward = 5 + o.lvl * 2;
+    G.coins += reward; refreshHUD(); bumpHud('coinCount'); if (Sound.fanfare) Sound.fanfare();
+    $('feedMsg').style.color = '#2f8a52';
+    $('feedMsg').innerHTML = '✓ Correct change! ' + o.bill + ' − ' + o.total + ' = <b>' + o.change + '</b> 🪙. &nbsp;🪙 +' + reward;
+    const pad = $('feedPad'); pad.innerHTML = '';
+    const next = document.createElement('button'); next.className = 'bakeBtn'; next.style.background = '#3f9d34'; next.style.color = '#fff'; next.textContent = '🧑‍🌾 Next customer';
+    next.onclick = () => { feed.order = makeChangeOrder(); feed.entry = ''; feed.locked = false; renderFeed(); };
+    const done = document.createElement('button'); done.className = 'bakeBtn'; done.textContent = 'Done';
+    done.onclick = closeFeed;
+    pad.appendChild(next); pad.appendChild(done);
+  } else {
+    Sound.wrong(); if (typeof recordWrong === 'function') recordWrong({ skill: 'money' }); bumpSkill('money', false);
+    $('feedMsg').style.color = '#c0392b';
+    $('feedMsg').innerHTML = '✗ Not quite — count UP from <b>' + o.total + '</b> to <b>' + o.bill + '</b>. Try again!';
+    if (o.manual) { feed.entry = ''; updateFeedEntry(); }
+  }
+}
+
 /* ============================ 📚 THE LIBRARY (Reading Town): pick a story, then answer about it ============================
    Tied to the Library — its own read-a-story comprehension/theme/literary-device game,
    separate from the ❓ reading stations. Questions are tagged by grade so they're age-appropriate. */
@@ -8340,7 +8450,7 @@ function buildSignpost(g, x, z, label) {
   arm.position.set(x + 0.5, 1.55, z); g.add(arm);
 }
 function buildMeadowVillage(g) {
-  box(g, 21, 0.06, 16, 0xCABF9F, -10.5, 0.05, -8.5);         // plaza paving — enlarged to take in the shop frontages & car lot
+  box(g, 24, 0.06, 16, 0xCABF9F, -9, 0.05, -8.5);            // plaza paving — enlarged to take in the shop frontages, car lot & feed store
   buildWell(g, -11, -7.5);                                    // 💧 the well, centre of the green
   buildPlanter(g, -13.6, -12.6); buildPlanter(g, -8.5, -12.8);  // planters along the north arm (between the shops)
   buildPlanter(g, -16.5, -5.5); buildPlanter(g, -19, -13);    // planters along the west arm
@@ -8736,6 +8846,35 @@ function buildPizzeria(g) {
   P.position.set(PIZZA_POS.x, 0, PIZZA_POS.z); P.rotation.y = (typeof PIZZA_ROT !== 'undefined' ? PIZZA_ROT : 0);
   g.add(P);
 }
+// 🌾 Stack Feed & Supply — a rustic farm store: board-and-batten, false front, a grain silo, sacks & hay bales
+function buildFeedStore(g) {
+  const WOOD = 0xC9A86A, WOOD2 = 0xB5904F, TRIM = 0xF4ECD8, ROOF = 0x4f6b4a, GREEN = 0x3f7d3a, SACK = 0xCBB081;
+  const S = new THREE.Group(); const w = 3.6, d = 2.8, h = 2.6, fz = d / 2;
+  box(S, w, h, 0.2, WOOD, 0, h / 2, -fz); box(S, w, h, 0.2, WOOD, 0, h / 2, fz);
+  box(S, 0.2, h, d, WOOD, -w / 2, h / 2, 0); box(S, 0.2, h, d, WOOD, w / 2, h / 2, 0);
+  for (let i = 0; i < 8; i++) box(S, 0.08, h - 0.1, 0.04, WOOD2, -w / 2 + 0.25 + i * 0.46, h / 2, fz + 0.13);   // board-and-batten battens
+  box(S, w, 0.16, d, ROOF, 0, h + 0.1, -0.1);                                       // low roof behind the false front
+  box(S, w + 0.2, 1.3, 0.22, WOOD, 0, h + 0.62, fz);                                // tall flat FALSE FRONT (keeps the sign clear)
+  box(S, w + 0.34, 0.16, 0.34, GREEN, 0, h + 1.22, fz + 0.02); box(S, w + 0.34, 0.16, 0.34, GREEN, 0, h + 0.06, fz + 0.02);   // cornices
+  [-w / 2 + 0.25, w / 2 - 0.25].forEach(px => box(S, 0.14, 1.9, 0.14, WOOD2, px, 0.95, fz + 0.95));   // porch posts
+  box(S, w + 0.3, 0.14, 1.2, ROOF, 0, 1.95, fz + 0.5); box(S, w, 0.12, 0.7, WOOD2, 0, 0.06, fz + 0.7);   // porch roof + deck
+  box(S, 0.74, 1.5, 0.12, 0x5e3f24, w * 0.26, 0.83, fz + 0.08); box(S, 0.1, 0.1, 0.1, 0xE0C24A, w * 0.26 + 0.22, 0.85, fz + 0.15);   // door + knob
+  paneWindow(S, -w * 0.22, 1.1, fz + 0.06, 1.0, 0.95, 3, 2, TRIM);                  // storefront window
+  box(S, 0.5, 0.5, 0.04, 0x2c2c2c, w * 0.5, 0.78, fz + 1.02);                       // "CASH ONLY" chalkboard (hints the cashier game)
+  signOn(S, 'STACK FEED', 'Feed & Farm Supply', GREEN, w - 0.1, 0.62, 0, h + 0.62, fz + 0.13);
+  // ── farm goods out front: hay bales, leaning feed sacks, a milk can ──
+  box(S, 0.74, 0.5, 0.52, 0xE3C34A, -w * 0.4, 0.27, fz + 1.05); box(S, 0.74, 0.5, 0.52, 0xD9B43E, -w * 0.4, 0.77, fz + 1.05);   // stacked hay bales
+  [[-w * 0.4, 0.27], [-w * 0.4, 0.77]].forEach(([bx, by]) => { box(S, 0.76, 0.04, 0.04, 0xC2A02C, bx, by, fz + 1.05 + 0.27); box(S, 0.76, 0.04, 0.04, 0xC2A02C, bx, by, fz + 1.05 - 0.27); });   // baling twine
+  [[-w * 0.08, fz + 1.0, SACK], [w * 0.02, fz + 1.15, 0xD8C39A], [w * 0.12, fz + 1.0, SACK]].forEach(([sx, sz, col]) => { const sk = box(S, 0.34, 0.52, 0.3, col, sx, 0.27, sz); sk.rotation.x = 0.12; box(S, 0.2, 0.08, 0.16, 0x9a7a4a, sx, 0.52, sz);   // sack tied top
+  });
+  const can = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 12), mat(0x9aa0a6)); can.position.set(w * 0.42, 0.26, fz + 1.0); S.add(can);
+  box(S, 0.16, 0.12, 0.16, 0x7f858c, w * 0.42, 0.55, fz + 1.0);                     // milk-can neck
+  // ── a grain SILO behind the store (distinctive farm landmark) ──
+  const silo = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 3.2, 16), mat(0xC4C9CF)); silo.position.set(-w * 0.36, 1.6, -fz - 0.5); S.add(silo);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.64, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x8a8f98)); dome.position.set(-w * 0.36, 3.2, -fz - 0.5); S.add(dome);
+  for (let i = 0; i < 5; i++) box(S, 1.28, 0.04, 0.04, 0x9aa0a6, -w * 0.36, 0.5 + i * 0.62, -fz - 0.5 + 0.64);   // silo bands
+  S.position.set(FEED_POS.x, 0, FEED_POS.z); S.rotation.y = FEED_ROT; g.add(S);
+}
 function buildMeadowDecor(g) {
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
   // a ring of overlapping rolling hills sitting ON the far ground, their bases sunk
@@ -8751,6 +8890,7 @@ function buildMeadowDecor(g) {
   }
   buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
   buildPizzeria(g);                                     // 🍕 fractions pizzeria on the high street
+  buildFeedStore(g);                                    // 🌾 feed store — be the cashier & count change
   // 🏪 the meadow's OWN American-country shops — each a totally different building so they stand apart
   const ML = WORLD_LAYOUT.meadow;
   americanGeneralStore(g, ML.shop.x, ML.shop.z, 0, 0xEADFC6, 0x2f6b4f, 'STACK MART', 'Grocery & Market');      // N arm — grocer w/ fruit & veg out front
@@ -9671,7 +9811,7 @@ function inShopZone(cx, cz) {
   const px = cx + 0.5, pz = cz + 0.5;
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
-  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8) || near(PIZZA_POS, 2.6))) return true;
+  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8) || near(PIZZA_POS, 2.6) || near(FEED_POS, 2.6))) return true;
   if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   return false;
@@ -12277,6 +12417,7 @@ function tryUse() {
   else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
   else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
+  else if (feedDist() < 3.8) { Sound.click(); openFeed(); }       // 🌾 feed store cashier — count change (Math Meadow)
   else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
   else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
   else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -12640,6 +12781,7 @@ $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
+$('feedClose').onclick = () => { Sound.click(); closeFeed(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
 $('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
@@ -12849,6 +12991,7 @@ if (isTouch) {
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
+    else if (feedDist() < 3.8) { Sound.click(); openFeed(); }       // 🌾 feed store cashier — count change (Math Meadow)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -13598,6 +13741,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (pizzaDist() < 3.8) {
       hint.textContent = isTouch ? '🍕 Tap ⭐ USE — serve fraction pizzas at the Pizzeria!' : '🍕 ⭐ USE (or E) — serve fraction pizzas at the Pizzeria!';
+      hint.style.display = 'block';
+    } else if (feedDist() < 3.8) {
+      hint.textContent = isTouch ? '🌾 Tap ⭐ USE — be the cashier at the Feed Store!' : '🌾 ⭐ USE (or E) — be the cashier at the Feed Store!';
       hint.style.display = 'block';
     } else if (libraryDist() < 4.2) {
       hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 ⭐ USE (or E) — read a story at the Library!';
