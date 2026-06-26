@@ -927,6 +927,9 @@
      above 1250px wide / 600px tall that the other breakpoints missed). */
   @media (max-height:820px) {
     #startScreen { overflow-y:auto !important; justify-content:flex-start !important; }
+    /* No tiny nested-scroll "window" on short landscape tablets — let the saved-games list
+       grow and scroll with the WHOLE page, so it's easy to drag to a saved game or the hero picker. */
+    #savedList { max-height:none !important; overflow:visible !important; }
   }
 </style>
 </head>
