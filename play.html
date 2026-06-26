@@ -3039,7 +3039,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -4088,6 +4088,10 @@ function restoreGame(s) {
   G.goal = s.goal || null; G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
+  // 🩹 heal saves hurt by an old bug where Cat Tree / Scratching Post counts went NaN (they were bought but
+  // never tracked). A NaN means it WAS purchased, so grant 2 back (Fiona bought each twice); then sanitize.
+  ['cattree', 'scratchpost'].forEach(k => { if (Number.isNaN(G.furniture[k])) G.furniture[k] = 2; });
+  for (const k in G.furniture) if (!Number.isFinite(G.furniture[k])) G.furniture[k] = 0;
   Object.assign(G.owned, s.owned || {});
   G.pickupColor = s.pickupColor || 0x3f7fbf;
   G.activeCar = s.activeCar || (s.owned && s.owned.pickup ? 'pickup' : null);
@@ -4181,7 +4185,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -10997,7 +11001,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -11307,22 +11311,23 @@ function buildFurnitureMesh(type, variant) {
       .forEach(([x, z, w, h, d]) => box(g, w, h, d, 0xC7CCD1, x, 0.1, z));   // four low walls
     box(g, 0.42, 0.06, 0.42, 0xE6DFce, 0, 0.06, 0);                    // litter
   } else if (type === 'cattree') {
-    const CARPET = 0xC9A86E, POST = 0xB08D5B, TRIM = 0x8a6a3a;
-    box(g, 0.5, 0.1, 0.5, CARPET, 0, 0.05, 0);                         // carpeted base
-    box(g, 0.16, 0.7, 0.16, POST, 0, 0.45, 0);                         // lower post
-    box(g, 0.42, 0.08, 0.42, CARPET, 0, 0.84, 0);                      // mid platform
-    box(g, 0.34, 0.3, 0.34, shade(CARPET, 1.08), -0.13, 1.04, -0.1);   // snug box-house
-    box(g, 0.14, 0.2, 0.06, 0x3a2a1a, -0.13, 0.99, 0.08);             // house doorway
-    box(g, 0.16, 0.5, 0.16, POST, 0.13, 1.13, 0.12);                   // upper post (offset)
-    box(g, 0.38, 0.08, 0.38, CARPET, 0.13, 1.42, 0.12);               // top perch
-    box(g, 0.36, 0.14, 0.06, CARPET, 0.13, 1.5, -0.02);              // perch back wall
-    box(g, 0.02, 0.18, 0.02, TRIM, 0.13, 1.6, 0.3); box(g, 0.1, 0.1, 0.1, 0xE8556B, 0.13, 1.47, 0.3);   // dangly toy
+    const CARPET = 0xC9A86E, CARPET2 = 0xB8975C, SISAL = 0xD8C28A, TRIM = 0x8a6a3a, TOY = 0xE8556B;
+    box(g, 0.62, 0.12, 0.62, CARPET, 0, 0.06, 0); box(g, 0.64, 0.04, 0.64, CARPET2, 0, 0.13, 0);   // wide sturdy carpeted base
+    box(g, 0.22, 1.04, 0.22, SISAL, 0, 0.64, 0);                        // thick sisal-wrapped trunk
+    for (let i = 0; i < 8; i++) box(g, 0.24, 0.035, 0.24, TRIM, 0, 0.2 + i * 0.13, 0);   // sisal wrap rings (so it reads as a scratch trunk)
+    box(g, 0.5, 0.42, 0.5, CARPET2, 0, 1.0, 0);                         // cozy hideaway box
+    box(g, 0.22, 0.28, 0.06, 0x2a1f14, 0, 0.97, 0.26);                  // round doorway
+    box(g, 0.54, 0.07, 0.54, CARPET, 0, 1.24, 0);                       // box roof = a perch
+    box(g, 0.16, 0.5, 0.16, SISAL, 0.08, 1.52, -0.02);                  // upper post
+    box(g, 0.44, 0.08, 0.44, CARPET, 0.08, 1.8, -0.02); box(g, 0.44, 0.12, 0.06, CARPET2, 0.08, 1.87, -0.21);   // top perch + back lip
+    box(g, 0.02, 0.24, 0.02, TRIM, -0.16, 1.5, 0.12); box(g, 0.12, 0.12, 0.12, TOY, -0.16, 1.34, 0.12);   // dangly toy mouse
   } else if (type === 'scratchpost') {
-    const SISAL = 0xCBB079, BASE = 0x9a6b3a;
-    box(g, 0.4, 0.08, 0.4, BASE, 0, 0.04, 0);                          // wooden base
-    box(g, 0.16, 0.7, 0.16, SISAL, 0, 0.43, 0);                        // sisal post
-    box(g, 0.19, 0.06, 0.19, shade(SISAL, 0.85), 0, 0.79, 0);         // cap
-    box(g, 0.02, 0.14, 0.02, BASE, 0, 0.9, 0); box(g, 0.1, 0.1, 0.1, 0xE8556B, 0, 0.98, 0);  // dangly ball
+    const SISAL = 0xD8C28A, BASE = 0x9a6b3a, CARPET = 0xC9A86E, TRIM = 0x8a6a3a, TOY = 0xE8556B;
+    box(g, 0.5, 0.12, 0.5, CARPET, 0, 0.06, 0); box(g, 0.52, 0.04, 0.52, BASE, 0, 0.13, 0);   // wide carpeted base
+    box(g, 0.22, 1.0, 0.22, SISAL, 0, 0.65, 0);                         // thick sisal post
+    for (let i = 0; i < 8; i++) box(g, 0.24, 0.04, 0.24, TRIM, 0, 0.22 + i * 0.12, 0);   // sisal wrap rings
+    box(g, 0.26, 0.07, 0.26, BASE, 0, 1.18, 0);                         // top cap
+    box(g, 0.02, 0.24, 0.02, BASE, 0, 1.34, 0.1); box(g, 0.13, 0.13, 0.13, TOY, 0, 1.18, 0.18);   // dangly ball
   } else if (type === 'flag') {
     box(g, 0.05, 1.5, 0.05, 0x9a8a6a, -0.32, 0.74, 0);                 // pole
     box(g, 0.07, 0.07, 0.07, 0xFFD23E, -0.32, 1.5, 0);               // gold finial
@@ -12698,7 +12703,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -12810,6 +12815,8 @@ function renderInv() {
     ['🥫', 'Pet Food', G.furniture.petfood, 'petfood'],
     ['🛏️', 'Pet Beds', G.furniture.petbed, 'petbed'],
     ['🧺', 'Litter Boxes', G.furniture.litterbox, 'litterbox'],
+    ['🐈', 'Cat Trees', G.furniture.cattree, 'cattree'],
+    ['🐾', 'Scratching Posts', G.furniture.scratchpost, 'scratchpost'],
     ['🇺🇸', 'USA Flags', G.furniture.flag, 'flag'],
     ['🎏', 'Bunting', G.furniture.bunting, 'bunting'],
     ['🍖', 'Barbecue Grills', G.furniture.bbq, 'bbq'],
