@@ -1162,6 +1162,10 @@
       <span class="stat" id="ballRow" style="display:none" title="Softballs">⚽ <span id="ballCount">0</span></span>
       <span class="stat" id="solvedRow" style="display:none" title="Problems solved">✅ <span id="solvedCount">0</span><span id="solvedGoal"></span></span>
     </div>
+    <div id="goalRow" style="display:none; margin-top:6px; cursor:pointer; pointer-events:auto" title="Your dream goal — tap to change">
+      <div id="goalText" style="font-weight:800; font-size:12px; color:#7a5c1e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px"></div>
+      <div style="height:8px; background:#e8e0cb; border-radius:5px; overflow:hidden; margin-top:3px"><div id="goalFill" style="height:100%; width:0%; background:linear-gradient(90deg,#f0a830,#f5c451); transition:width .35s"></div></div>
+    </div>
   </div>
   <div class="hudBox" id="hudMode">
     <div id="modeLabel">🏡 Stackadoo Adventure</div>
@@ -1433,6 +1437,16 @@
     <div id="pizzaCount" style="font-weight:800; color:#7a6a35; min-height:20px; margin-bottom:8px"></div>
     <div id="pizzaChoices" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center"></div>
     <div id="pizzaMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ================= DREAM GOAL PICKER POPUP ================= -->
+<div class="popup" id="goalPopup">
+  <div class="popupCard" style="text-align:center; width:min(460px,94vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="goalClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 style="color:#b5832a; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🎯 Pick a Dream Goal</h2>
+    <div style="color:#7a6a35; font-weight:700; font-size:13px; margin-bottom:10px">Save up your 🪙 coins by doing math &amp; reading — then buy it!</div>
+    <div id="goalList" style="display:flex; flex-direction:column; gap:8px"></div>
   </div>
 </div>
 
@@ -2980,6 +2994,7 @@ const G = {
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
   selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
   world: 'meadow',
+  goal: null, goalReached: false,                 // 🎯 the kid's dream-purchase goal (coins to save toward)
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
   owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false },
@@ -3951,7 +3966,7 @@ function saveGame() {
   try {
     localStorage.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
-      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
+      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
@@ -4011,6 +4026,7 @@ function restoreGame(s) {
   G.homes = s.homes || [];
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
+  G.goal = s.goal || null; G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
   Object.assign(G.owned, s.owned || {});
@@ -9804,7 +9820,65 @@ function refreshHUD() {
   const wCnt = subjectSolved(wSubj), nextBadge = BADGE_SETS[wSubj].find(b => wCnt < b.n);
   $('solvedGoal').textContent = nextBadge ? '→' + nextBadge.icon + nextBadge.n : '🏅✓';
   $('shopCoins').textContent = G.coins;
+  updateGoalBar();
 }
+/* 🎯 Dream Goal tracker — pick a big thing to save for and watch the coins climb toward it.
+   Turns "do a math problem" into visible progress toward something a kid actually wants. */
+const DREAM_GOALS = [
+  { emoji: '🛝', label: 'Splash & Slide Pool', price: 90 },
+  { emoji: '🌊', label: 'Mega Pool', price: 150 },
+  { emoji: '🏡', label: 'Cozy Ranch home', price: 195 },
+  { emoji: '🏠', label: 'Family Two-Story', price: 340 },
+  { emoji: '🏊', label: 'Deluxe Home + Pool', price: 430 },
+  { emoji: '🏛️', label: 'Columned Manor', price: 620 },
+  { emoji: '🏰', label: 'Grand Mansion', price: 950 },
+  { emoji: '🏞️', label: 'Country Estate', price: 1300 }
+];
+function updateGoalBar() {
+  const row = $('goalRow'); if (!row) return;
+  row.style.display = G.running ? 'block' : 'none';
+  if (!G.goal) { $('goalText').innerHTML = '🎯 Tap to pick a dream to save for!'; $('goalFill').style.width = '0%'; return; }
+  const g = G.goal, pct = Math.max(0, Math.min(100, Math.round(G.coins / g.price * 100))), reached = G.coins >= g.price;
+  $('goalText').innerHTML = reached
+    ? '✨ ' + g.emoji + ' ' + g.label + ' — READY! (🪙 ' + g.price + ')'
+    : '🎯 ' + g.emoji + ' ' + g.label + ' · 🪙 ' + G.coins + '/' + g.price;
+  $('goalFill').style.width = pct + '%';
+  $('goalFill').style.background = reached ? 'linear-gradient(90deg,#3f9d34,#6cc94f)' : 'linear-gradient(90deg,#f0a830,#f5c451)';
+  if (reached && !G.goalReached) {
+    G.goalReached = true;
+    if (Sound.fanfare) Sound.fanfare();
+    toast('✨ GOAL REACHED! You\'ve saved enough for your ' + g.emoji + ' ' + g.label + ' — go get it! 🎉', 5000);
+  }
+}
+function setGoal(g) {
+  G.goal = g ? { emoji: g.emoji, label: g.label, price: g.price } : null;
+  G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
+  if (typeof saveGame === 'function') saveGame();
+  updateGoalBar();
+  if (g) toast('🎯 New goal: ' + g.emoji + ' ' + g.label + ' — save up ' + g.price + ' 🪙!', 3200);
+}
+function openGoalPicker() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  const list = $('goalList'); list.innerHTML = '';
+  DREAM_GOALS.forEach(g => {
+    const b = document.createElement('button'); b.className = 'libBtn'; b.style.textAlign = 'left';
+    const have = G.coins >= g.price, isCur = G.goal && G.goal.label === g.label;
+    b.innerHTML = '<span style="font-size:22px">' + g.emoji + '</span> <b>' + g.label + '</b> — 🪙 ' + g.price +
+      (have ? ' <span style="color:#2f8a52;font-weight:800">✓ ready!</span>' : '') + (isCur ? ' <span style="color:#b5832a">🎯 current</span>' : '');
+    b.onclick = () => { Sound.click(); setGoal(g); closeGoalPicker(); };
+    list.appendChild(b);
+  });
+  if (G.goal) {
+    const clr = document.createElement('button'); clr.className = 'libBtn'; clr.style.background = '#ece7da'; clr.textContent = '✖️ Clear my goal';
+    clr.onclick = () => { Sound.click(); setGoal(null); closeGoalPicker(); };
+    list.appendChild(clr);
+  }
+  $('goalPopup').style.display = 'flex';
+}
+function closeGoalPicker() { $('goalPopup').style.display = 'none'; popupOpen = false; }
+$('goalRow').onclick = () => { Sound.click(); openGoalPicker(); };
+$('goalClose').onclick = () => { Sound.click(); closeGoalPicker(); };
 function fmtTime(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
   return m + ':' + (sec < 10 ? '0' : '') + sec;
