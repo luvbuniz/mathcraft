@@ -1405,6 +1405,19 @@
   </div>
 </div>
 
+<!-- ================= PIZZERIA (fractions minigame) POPUP ================= -->
+<div class="popup" id="pizzaPopup">
+  <div class="popupCard" style="text-align:center; width:min(440px,95vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="pizzaClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="pizzaTitle" style="color:#C0392B; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🍕 Mama Mia Pizzeria</h2>
+    <div id="pizzaOrder" style="font-size:clamp(16px,3vw,21px); color:#34495e; font-weight:bold; background:#FFF6E3; border:3px solid #F0CBA0; border-radius:14px; padding:11px 13px; margin-bottom:9px; line-height:1.35"></div>
+    <div id="pizzaPie" style="margin:0 auto 6px; width:216px; max-width:72vw"></div>
+    <div id="pizzaCount" style="font-weight:800; color:#7a6a35; min-height:20px; margin-bottom:8px"></div>
+    <div id="pizzaChoices" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center"></div>
+    <div id="pizzaMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
 <!-- ================= LIBRARY (read-a-story) POPUP ================= -->
 <div class="popup" id="libraryPopup">
   <div class="popupCard" style="width:min(560px,95vw); text-align:center">
@@ -5636,6 +5649,120 @@ function finishBake() {
   $('bakeDoneBtn').onclick = closeBakery;
 }
 
+/* ============================ 🍕 MAMA MIA PIZZERIA (Math Meadow): fractions you can SEE ============================
+   "Half a pie is half a pie." A customer orders a fraction of a pizza; the kid cuts it into equal
+   slices and taps to serve the right amount. Grade-scaled: little ones do halves/quarters with the
+   WORD shown and a tip; older kids get thirds/sixths/eighths and the ¼-style symbol — same tactile pie. */
+const PIZZA_POS = { x: -12, z: -14 };               // 🍕 west end of the Meadowsbury high street
+function pizzaDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - PIZZA_POS.x, player.pos.z - PIZZA_POS.z) : 999; }
+const PIZZA_NAMES = ['Mia', 'Leo', 'Sam', 'Ava', 'Max', 'Lily', 'Noah', 'Zoe', 'Ben', 'Ruby', 'Nina', 'Theo'];
+const PIZZA_CUSTOMERS = ['🧒', '👦', '👧', '🧑', '👩', '👨', '🐶', '🐱', '🦊', '🐻', '🐰', '🐼'];
+function fracWord(n, d) {                            // friendly name for the common fractions (else null)
+  if (n === d) return 'the WHOLE pizza';
+  return { '1/2': 'HALF', '1/3': 'a THIRD', '2/3': 'TWO-THIRDS', '1/4': 'a QUARTER', '3/4': 'THREE-QUARTERS', '1/6': 'a SIXTH', '1/8': 'an EIGHTH' }[n + '/' + d] || null;
+}
+function pizzaPool(g) {                              // [slicesToServe, slicesToCut] pairs, simpler for the little ones
+  if (g <= 1) return [[1, 2], [1, 2], [1, 4], [2, 2]];                                  // halves, a quarter, the whole pie
+  if (g === 2) return [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [2, 2]];                 // + thirds & quarters
+  if (g === 3) return [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 6], [5, 6], [2, 6]]; // + sixths
+  return [[3, 4], [2, 3], [1, 4], [5, 6], [3, 8], [5, 8], [7, 8], [2, 8], [1, 6]];      // grade 4–5: eighths & trickier
+}
+function makePizzaOrder() {
+  const g = G.grade || 2, pool = pizzaPool(g), pick = pool[Math.floor(Math.random() * pool.length)];
+  const need = pick[0], slices = pick[1], word = fracWord(need, slices), sym = need + '/' + slices, showSym = g >= 3;
+  const cust = PIZZA_CUSTOMERS[Math.floor(Math.random() * PIZZA_CUSTOMERS.length)];
+  const nm = PIZZA_NAMES[Math.floor(Math.random() * PIZZA_NAMES.length)];
+  let order;
+  if (need === slices) order = '<b>' + nm + '</b> wants <b style="color:#C0392B">the WHOLE pizza</b>! 🍕';
+  else if (word) order = '<b>' + nm + '</b> wants <b style="color:#C0392B">' + word + '</b>' + (showSym ? ' (<b>' + sym + '</b>)' : '') + ' of the pizza.';
+  else order = '<b>' + nm + '</b> wants <b style="color:#C0392B">' + sym + '</b> — <b>' + need + ' out of ' + slices + '</b> slices.';
+  const teach = need === slices ? 'Tap all ' + slices + ' slices!' : 'Cut into ' + slices + ' equal slices, then tap ' + need + ' to serve.';
+  return { need: need, slices: slices, cust: cust, nm: nm, order: order, teach: teach, served: new Set() };
+}
+function pizzaSVG(slices, served) {
+  const cx = 108, cy = 108, r = 84, crust = 92;
+  let s = '<svg viewBox="0 0 216 216" width="100%" style="touch-action:manipulation;display:block">';
+  s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + crust + '" fill="#D8A24A"/>';      // crust
+  s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (crust - 4) + '" fill="#E2B964"/>'; // sauce rim
+  for (let i = 0; i < slices; i++) {
+    const a0 = i / slices * Math.PI * 2 - Math.PI / 2, a1 = (i + 1) / slices * Math.PI * 2 - Math.PI / 2;
+    const x0 = (cx + r * Math.cos(a0)).toFixed(1), y0 = (cy + r * Math.sin(a0)).toFixed(1);
+    const x1 = (cx + r * Math.cos(a1)).toFixed(1), y1 = (cy + r * Math.sin(a1)).toFixed(1);
+    const big = (a1 - a0) > Math.PI ? 1 : 0, on = served.has(i);
+    s += '<path data-i="' + i + '" d="M' + cx + ',' + cy + ' L' + x0 + ',' + y0 + ' A' + r + ',' + r + ' 0 ' + big + ',1 ' + x1 + ',' + y1 + ' Z" fill="' + (on ? '#E89B30' : '#F4CB63') + '" stroke="#B9791F" stroke-width="2" style="cursor:pointer"/>';
+    if (on) {                                                                              // pepperoni on a served slice
+      const am = (a0 + a1) / 2;
+      [[0.5, 7], [0.78, 5]].forEach(([fr, rad]) => {
+        s += '<circle cx="' + (cx + r * fr * Math.cos(am)).toFixed(1) + '" cy="' + (cy + r * fr * Math.sin(am)).toFixed(1) + '" r="' + rad + '" fill="#B5322B" pointer-events="none"/>';
+      });
+    }
+  }
+  s += '</svg>';
+  return s;
+}
+let pizza = null;
+function openPizza() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  pizza = { order: makePizzaOrder(), done: 0, locked: false };
+  renderPizza();
+  $('pizzaPopup').style.display = 'flex';
+}
+function closePizza() { $('pizzaPopup').style.display = 'none'; popupOpen = false; pizza = null; }
+function wirePizzaSlices() {
+  const o = pizza.order;
+  $('pizzaPie').querySelectorAll('path[data-i]').forEach(p => {
+    p.onclick = () => {
+      if (pizza.locked) return;
+      const i = +p.getAttribute('data-i');
+      if (o.served.has(i)) o.served.delete(i); else o.served.add(i);
+      Sound.click();
+      $('pizzaPie').innerHTML = pizzaSVG(o.slices, o.served); wirePizzaSlices(); updatePizzaCount();
+    };
+  });
+}
+function updatePizzaCount() {
+  const o = pizza.order;
+  $('pizzaCount').innerHTML = '🍕 Served <b>' + o.served.size + '</b> of <b>' + o.slices + '</b> slices' + (o.served.size === o.need ? '  ✅' : '');
+}
+function renderPizza() {
+  if (!pizza) return;
+  const o = pizza.order;
+  $('pizzaTitle').innerHTML = '🍕 Mama Mia Pizzeria' + (pizza.done ? ' — served ' + pizza.done + '!' : '');
+  $('pizzaOrder').innerHTML = '<span style="font-size:1.3em">' + o.cust + '</span> ' + o.order +
+    ((G.grade || 2) <= 3 ? '<br><span style="font-size:0.82em;color:#8a6d3b">👉 ' + o.teach + '</span>' : '');
+  $('pizzaPie').innerHTML = pizzaSVG(o.slices, o.served);
+  wirePizzaSlices(); updatePizzaCount();
+  const wrap = $('pizzaChoices'); wrap.innerHTML = ''; $('pizzaMsg').textContent = '';
+  const serve = document.createElement('button'); serve.className = 'bakeBtn'; serve.style.background = '#C0392B'; serve.style.color = '#fff'; serve.textContent = '✅ Serve it!';
+  serve.onclick = servePizza;
+  const clr = document.createElement('button'); clr.className = 'bakeBtn'; clr.textContent = '↩️ Clear';
+  clr.onclick = () => { Sound.click(); o.served.clear(); $('pizzaPie').innerHTML = pizzaSVG(o.slices, o.served); wirePizzaSlices(); updatePizzaCount(); };
+  wrap.appendChild(serve); wrap.appendChild(clr);
+}
+function servePizza() {
+  if (!pizza || pizza.locked) return;
+  const o = pizza.order;
+  if (o.served.size === o.need) {
+    pizza.locked = true; pizza.done++;
+    Sound.correct(); G.solved++; recordSolve({ skill: 'fractions', level: G.grade }); bumpHud('solvedCount');
+    const reward = 5 + (G.grade || 2) * 2;
+    G.coins += reward; refreshHUD(); bumpHud('coinCount'); if (Sound.fanfare) Sound.fanfare();
+    $('pizzaMsg').style.color = '#2f8a52';
+    $('pizzaMsg').innerHTML = '✓ Perfect — ' + (fracWord(o.need, o.slices) || (o.need + '/' + o.slices)) + ' served!  🪙 +' + reward;
+    const wrap = $('pizzaChoices'); wrap.innerHTML = '';
+    const next = document.createElement('button'); next.className = 'bakeBtn'; next.style.background = '#3f9d34'; next.style.color = '#fff'; next.textContent = '🍕 Next customer';
+    next.onclick = () => { pizza.order = makePizzaOrder(); pizza.locked = false; renderPizza(); };
+    const done = document.createElement('button'); done.className = 'bakeBtn'; done.textContent = 'Done';
+    done.onclick = closePizza;
+    wrap.appendChild(next); wrap.appendChild(done);
+  } else {
+    Sound.wrong(); if (typeof recordWrong === 'function') recordWrong({ skill: 'fractions' });
+    $('pizzaMsg').style.color = '#c0392b';
+    $('pizzaMsg').innerHTML = '✗ Not yet — they wanted <b>' + o.need + '</b> of <b>' + o.slices + '</b>. You served <b>' + o.served.size + '</b>. Tap slices to fix it!';
+  }
+}
+
 /* ============================ 📚 THE LIBRARY (Reading Town): pick a story, then answer about it ============================
    Tied to the Library — its own read-a-story comprehension/theme/literary-device game,
    separate from the ❓ reading stations. Questions are tagged by grade so they're age-appropriate. */
@@ -8002,16 +8129,16 @@ function buildSignpost(g, x, z, label) {
   arm.position.set(x + 0.5, 1.55, z); g.add(arm);
 }
 function buildMeadowVillage(g) {
-  box(g, 22, 0.06, 2.4, 0xCABF9F, 1, 0.05, -12.0);            // honey-stone high-street pavement (in front of the shop row)
-  box(g, 22, 0.05, 0.22, 0xB7A988, 1, 0.07, -10.8);          // curb edge
+  box(g, 28, 0.06, 2.4, 0xCABF9F, -2, 0.05, -12.0);           // honey-stone high-street pavement (in front of the shop row)
+  box(g, 28, 0.05, 0.22, 0xB7A988, -2, 0.07, -10.8);         // curb edge
   buildWell(g, 1, -8.6);                                      // the village well on the green
   buildPlanter(g, -6.4, -11.7); buildPlanter(g, 8.4, -11.7);  // flower planters along the street
   buildSignpost(g, 14.0, -11.0, 'Meadowsbury');              // the village name sign
   for (let zz = -12; zz <= -7; zz++) {                        // clipped-hedge borders framing the green
-    box(g, 0.7, 0.7, 1.0, 0x4f9a37, -11.0, 0.35, zz);
+    box(g, 0.7, 0.7, 1.0, 0x4f9a37, -8.6, 0.35, zz);
     box(g, 0.7, 0.7, 1.0, 0x57A53C, 13.0, 0.35, zz);
   }
-  cotswoldCottage(g, -13.5, -14, 0); cotswoldCottage(g, 16, -14, 0);   // cottages extending each end of the street
+  cotswoldCottage(g, -17, -14, 0); cotswoldCottage(g, 16, -14, 0);   // cottages extending each end of the street
 }
 // a honey-stone Cotswold cottage (backdrop scenery for the village skyline)
 function cotswoldCottage(g, x, z, ang) {
@@ -8028,6 +8155,30 @@ function cotswoldCottage(g, x, z, ang) {
   box(C, 0.5, 0.5, 0.06, 0xBCD6E0, -w * 0.28, 1.05, d / 2 + 0.04); box(C, 0.5, 0.5, 0.06, 0xBCD6E0, w * 0.28, 1.05, d / 2 + 0.04);  // windows
   C.position.set(x, 0, z); C.rotation.y = ang; g.add(C);
 }
+// 🍕 Mama Mia Pizzeria — a honey-stone trattoria with a red-and-white awning and a tricolore sign
+function buildPizzeria(g) {
+  const STONE = 0xE3D6BC, ROOF = 0x9A5A4A, RED = 0xC0392B, WHITE = 0xF5F0E6, WOOD = 0x6b4a2c, GLASS = 0xBCD6E0;
+  const P = new THREE.Group();
+  box(P, 3.4, 0.16, 3.0, 0x8f8a7d, 0, 0.08, 0);                 // base pad
+  box(P, 3.2, 2.2, 0.18, STONE, 0, 1.2, -1.4);                  // back wall
+  box(P, 0.18, 2.2, 2.9, STONE, -1.55, 1.2, 0); box(P, 0.18, 2.2, 2.9, STONE, 1.55, 1.2, 0);   // side walls
+  box(P, 3.2, 2.2, 0.16, STONE, 0, 1.2, 1.4);                   // front wall
+  box(P, 0.85, 1.7, 0.1, WOOD, 0.95, 0.92, 1.48);             // door
+  box(P, 0.12, 0.12, 0.16, 0xE0C24A, 0.66, 0.92, 1.54);       // knob
+  box(P, 1.7, 1.1, 0.06, GLASS, -0.5, 1.25, 1.46);            // window (pizzas in the case)
+  for (let i = 0; i < 8; i++) box(P, 0.26, 0.12, 0.62, i % 2 ? RED : WHITE, -1.35 + i * 0.31, 1.92, 1.62);   // striped awning
+  const sl = box(P, 0.2, 2.2, 3.4, ROOF, -0.84, 2.66, 0); sl.rotation.z = -0.92;   // pitched roof
+  const sr = box(P, 0.2, 2.2, 3.4, ROOF, 0.84, 2.66, 0); sr.rotation.z = 0.92;
+  box(P, 0.22, 0.22, 3.4, 0x6e3f36, 0, 3.28, 0);             // ridge
+  box(P, 0.5, 0.9, 0.5, STONE, -1.1, 3.0, -0.55); box(P, 0.6, 0.18, 0.6, 0x3a3a3a, -1.1, 3.5, -0.55);   // chimney
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 72; const c = cv.getContext('2d');
+  c.fillStyle = '#168039'; c.fillRect(0, 0, 85, 72); c.fillStyle = '#F5F0E6'; c.fillRect(85, 0, 86, 72); c.fillStyle = '#C0392B'; c.fillRect(171, 0, 85, 72);  // Italian tricolore
+  c.fillStyle = '#2a2a2a'; c.font = 'bold 23px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🍕 PIZZERIA', 128, 26);
+  c.fillStyle = '#4a3a2a'; c.font = 'italic bold 15px Georgia, serif'; c.fillText('slice it & serve!', 128, 52);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.72, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.05, 1.5); P.add(sign);
+  P.position.set(PIZZA_POS.x, 0, PIZZA_POS.z); g.add(P);
+}
 function buildMeadowDecor(g) {
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
   // a ring of overlapping rolling hills sitting ON the far ground, their bases sunk
@@ -8042,6 +8193,7 @@ function buildMeadowDecor(g) {
     g.add(hill);
   }
   buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
+  buildPizzeria(g);                                     // 🍕 fractions pizzeria on the high street
   buildMeadowVillage(g);                                // 🏘️ the Meadowsbury village green dressing around the shop row
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 14;
@@ -8923,7 +9075,7 @@ function inShopZone(cx, cz) {
   const px = cx + 0.5, pz = cz + 0.5;
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
-  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8))) return true;
+  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8) || near(PIZZA_POS, 2.6))) return true;
   if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   return false;
@@ -11416,6 +11568,7 @@ function tryUse() {
   else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
   else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
   else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
+  else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
   else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
   else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
   else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -11778,6 +11931,7 @@ $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
+$('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
 $('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
@@ -11985,6 +12139,7 @@ if (isTouch) {
     else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
     else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
+  else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -12704,6 +12859,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (bakeryDist() < 3.6) {
       hint.textContent = isTouch ? '🧁 Tap ⭐ USE — make a treat at Stack Sweets!' : '🧁 ⭐ USE (or E) — make a treat at Stack Sweets!';
+      hint.style.display = 'block';
+    } else if (pizzaDist() < 3.8) {
+      hint.textContent = isTouch ? '🍕 Tap ⭐ USE — serve fraction pizzas at the Pizzeria!' : '🍕 ⭐ USE (or E) — serve fraction pizzas at the Pizzeria!';
       hint.style.display = 'block';
     } else if (libraryDist() < 4.2) {
       hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 ⭐ USE (or E) — read a story at the Library!';
