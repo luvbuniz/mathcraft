@@ -4142,6 +4142,33 @@ function unstickPlayer() {
   toast('✨ Poof! Unstuck — back outside in the open.', 2400);
   if (Sound.pop) Sound.pop();
 }
+// 🔎 a kid who builds a box around themselves can't reach the open world — flood-fill from their
+// cell; if the reachable area is tiny, they're sealed in, so gently point them at the 🆘 Unstuck button.
+function isSealedIn() {
+  const sx = Math.floor(player.pos.x), sz = Math.floor(player.pos.z);
+  const seen = new Set([sx + ',' + sz]); const q = [[sx, sz]]; let n = 0;
+  while (q.length && n < 130) {
+    const c = q.shift(); n++;
+    for (const d of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = c[0] + d[0], nz = c[1] + d[1], k = nx + ',' + nz;
+      if (seen.has(k) || Math.abs(nx) >= WORLD_R || Math.abs(nz) >= WORLD_R) continue;
+      if (solidAt(nx, 0, nz)) continue;
+      seen.add(k); q.push([nx, nz]);
+    }
+  }
+  return n < 130;   // couldn't reach a big open area → boxed in
+}
+let _sealedTicks = 0, _lastSealedHint = 0;
+setInterval(() => {
+  if (!G.running || G.over || popupOpen || player.driving || player.restingBed || player.sittingChair) { _sealedTicks = 0; return; }
+  if (isSealedIn()) {
+    _sealedTicks++;
+    if (_sealedTicks >= 2 && performance.now() - _lastSealedHint > 18000) {
+      _lastSealedHint = performance.now();
+      toast('🆘 Boxed in? Tap the 🆘 Unstuck button (with the top buttons) to pop back outside!', 4500);
+    }
+  } else _sealedTicks = 0;
+}, 3000);
 
 /* ============================ THREE.JS WORLD ============================ */
 const WORLD_R = 30;                    // world spans -30..30 in x/z — roomier build space (ground is instanced, so cheap)
