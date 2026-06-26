@@ -5968,7 +5968,7 @@ function buildHome(ox, oz, m) {
   if (L.twoStory) {
     const stairX = L.hx0 + 1, stairZ = L.hz1 - 1;
     for (let x = L.hx0 + 1; x < L.hx1; x++) for (let z = L.hz0 + 1; z < L.hz1; z++) {
-      if (x === stairX && (z === stairZ || z === stairZ - 1)) continue;          // stairwell opening
+      if (x === stairX && z <= stairZ && z >= stairZ - L.sH) continue;           // stairwell opening over the WHOLE run + landing (headroom to climb)
       cell(x, L.sH, z, trim);                                                    // 2nd-floor deck
     }
     for (let s = 0; s < L.sH; s++) cell(stairX, s, stairZ - s, woodC);           // stairs up to the deck
@@ -5994,6 +5994,12 @@ function buildHome(ox, oz, m) {
         }
     for (let x = L.gx0; x <= L.gx1; x++) for (let z = L.gz0; z <= L.gz1; z++) cell(x, L.garH, z, roofC);  // flat garage roof
     doorXs.forEach(dx => placeGarageDoor(dx, 0, L.gz1, 0));                                   // roll-up door(s)
+    // 🚪 a pedestrian doorway from the garage into the house, so you can ALWAYS walk out on foot —
+    // even if a car fills the garage and blocks the roll-up door (this trapped Fiona's avatar).
+    const connZ = Math.max(L.hz0 + 1, L.gz0 + 1);
+    [[L.hx1, connZ], [L.gx0, connZ]].forEach(([dwx, dwz]) => {
+      for (let y = 0; y < 2; y++) { if (blocks.has(key(dwx, y, dwz))) removeBlockAt(dwx, y, dwz); }
+    });
   }
   // ---- fenced yards (front gate), flowers, and a back-yard pool ----
   const lx0 = ox, lx1 = ox + L.lotW - 1, lz0 = oz, lz1 = oz + L.lotD - 1;
