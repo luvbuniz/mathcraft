@@ -12540,9 +12540,12 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
   // place
   // tapping a stove with a pot/pan/bacon/pie in hand cooks it right there
   if (entry && entry.type === 'stove' && COOK_SLOTS[G.selectedSlot]) { cookOnStove(entry, G.selectedSlot); return; }
-  // tap any furniture you placed to spin it 90° (so it faces the way you want)
+  // tap any furniture you placed to spin it 90° (so it faces the way you want).
+  // EXCEPT when you're holding something that belongs ON the furniture — food or a pet
+  // (a goldfish/cat/dog) — then a tap should place it on the table/shelf, not rotate the table.
+  const PLACE_ON_FURN = { food: 1, fish: 1, cat: 1, dog: 1 };
   if (entry && entry.removable && FURNITURE_TYPES.includes(entry.type)
-      && G.selectedSlot !== 'food' && !COOK_SLOTS[G.selectedSlot]) {
+      && !PLACE_ON_FURN[G.selectedSlot] && !COOK_SLOTS[G.selectedSlot]) {
     entry.rotY = ((entry.rotY || 0) + Math.PI / 2) % (Math.PI * 2);
     entry.mesh.rotation.y = entry.rotY;
     Sound.place(); toast('🔄 Turned it! Tap again to keep turning.', 1100);
