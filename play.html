@@ -1024,7 +1024,7 @@
       <div class="panel" id="comingSoonPanel">
         <h2 class="panelTitle">🔜 Coming soon</h2>
         <div id="comingSoonRow" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:8px"></div>
-        <p class="muted" style="margin-top:8px; font-size:12.5px">A whole Science Park on the way — explore plants in 🌴 Costa Rica, a 🚀 Space Station &amp; the 🤠 Wild West!</p>
+        <p class="muted" style="margin-top:8px; font-size:12.5px">A whole 🔬 Science Park on the way — build bridges in the 🤠 Country Western, explore the 🌴 Costa Rica rainforest &amp; blast off to a 🚀 Space Station!</p>
       </div>
 
       <button id="grownupBtn" class="btn btn-ghost btn-block">
@@ -3032,15 +3032,16 @@ const WORLDS = {
             sky: 0x9FC6E8, fog: 0xC2DCF0, ground: [0x86C05A, 0x79B24E, 0x93C970] },
   beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] },
-  // 🔬 Science Park — three themed worlds (groundwork; built out later)
-  costa:  { id: 'costa',  name: 'Costa Rica',     emoji: '🌴', subject: 'science', chip: 'Nature', comingSoon: true,
+  // 🔬 Science Park — three themed STEM/science worlds (groundwork; built out later)
+  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', comingSoon: true, park: 'science', blurb: '🌉 Build bridges across the canyon — engineering, measuring & forces!',
+            sky: 0xE8B86A, fog: 0xF0D8A8, ground: [0xD9A86A, 0xCF9E60, 0xE3B878] },
+  costa:  { id: 'costa',  name: 'Costa Rica',     emoji: '🌴', subject: 'science', chip: 'Nature', comingSoon: true, park: 'science', blurb: '🦜 Explore the rainforest — discover plants & animals in your field journal!',
             sky: 0x8FD9C9, fog: 0xCDEEE4, ground: [0x4FAE52, 0x429646, 0x5FBF5F] },
-  space:  { id: 'space',  name: 'Space Station',  emoji: '🚀', subject: 'science', chip: 'Space', comingSoon: true,
-            sky: 0x161628, fog: 0x2A2A40, ground: [0x6A6F78, 0x5E636B, 0x767B84] },
-  west:   { id: 'west',   name: 'Wild West',      emoji: '🤠', subject: 'reading', chip: 'Spelling', comingSoon: true,
-            sky: 0xE8B86A, fog: 0xF0D8A8, ground: [0xD9A86A, 0xCF9E60, 0xE3B878] }
+  space:  { id: 'space',  name: 'Space Station',  emoji: '🚀', subject: 'science', chip: 'Space', comingSoon: true, park: 'science', blurb: '🪐 Blast off — gravity, planets & space science!',
+            sky: 0x161628, fog: 0x2A2A40, ground: [0x6A6F78, 0x5E636B, 0x767B84] }
 };
-const WORLD_ORDER = ['meadow', 'city', 'beach', 'costa', 'space', 'west'];
+const WORLD_ORDER = ['meadow', 'city', 'beach', 'west', 'costa', 'space'];
+const SCIENCE_WORLDS = ['west', 'costa', 'space'];   // the three worlds grouped under 🔬 Science Park
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
@@ -3506,6 +3507,7 @@ function openTravel() {
   document.exitPointerLock && document.exitPointerLock();
   const wrap = $('travelList'); wrap.innerHTML = '';
   WORLD_ORDER.forEach(id => {
+    if (SCIENCE_WORLDS.includes(id)) return;   // the three STEM worlds are grouped under 🔬 Science Park below
     const w = WORLDS[id], here = id === G.world, soon = worldComingSoon(id), locked = worldLocked(id);
     const b = document.createElement('button');
     b.className = 'travelBtn' + (here ? ' here' : (soon ? ' soon' : (locked ? ' locked' : '')));
@@ -3517,6 +3519,12 @@ function openTravel() {
     else b.onclick = () => { Sound.click(); travelToWorld(id); };
     wrap.appendChild(b);
   });
+  // 🔬 Science Park — one grouped entry for the three STEM worlds (all coming soon)
+  const sp = document.createElement('button');
+  sp.className = 'travelBtn soon';
+  sp.innerHTML = '<span class="tEmoji">🔬</span><span class="tInfo"><b>Science Park</b><small>🔜 3 STEM worlds coming soon</small></span>';
+  sp.onclick = () => { Sound.click(); toast('🔬 Science Park is coming soon — build bridges in the 🤠 Country Western, explore 🌴 Costa Rica & blast off to a 🚀 Space Station!', 4600); };
+  wrap.appendChild(sp);
   $('travelPopup').style.display = 'flex';
 }
 function closeTravel() { $('travelPopup').style.display = 'none'; popupOpen = false; }
@@ -13407,18 +13415,34 @@ function refreshSavedList() {
     list.appendChild(row);
   });
 }
+function soonCard(emoji, name, blurb) {
+  const card = document.createElement('div');
+  card.style.cssText = 'background:rgba(255,255,255,.72); border:2px dashed #c7b88a; border-radius:14px; padding:10px 6px 8px; text-align:center';
+  card.innerHTML = '<div style="font-size:28px; line-height:1">' + (emoji || '🌍') + '</div>' +
+    '<div style="font-size:12px; font-weight:800; color:#5b6b80; margin-top:3px">' + name + '</div>' +
+    (blurb ? '<div style="font-size:9px; color:#7a8aa0; margin-top:2px; line-height:1.25">' + blurb + '</div>' : '') +
+    '<div style="font-size:9.5px; font-weight:800; letter-spacing:.5px; color:#a06a2c; margin-top:2px">SOON</div>';
+  return card;
+}
 function renderComingSoon() {
   const row = $('comingSoonRow'); if (!row) return;
   row.innerHTML = '';
+  // any coming-soon worlds that AREN'T part of Science Park (e.g. Spanish Beach) show as their own cards
   WORLD_ORDER.forEach(id => {
-    const w = WORLDS[id]; if (!w || !w.comingSoon) return;
-    const card = document.createElement('div');
-    card.style.cssText = 'background:rgba(255,255,255,.72); border:2px dashed #c7b88a; border-radius:14px; padding:10px 6px 8px; text-align:center';
-    card.innerHTML = '<div style="font-size:30px; line-height:1">' + (w.emoji || '🌍') + '</div>' +
-      '<div style="font-size:12px; font-weight:800; color:#5b6b80; margin-top:3px">' + w.name + '</div>' +
-      '<div style="font-size:9.5px; font-weight:800; letter-spacing:.5px; color:#a06a2c; margin-top:2px">SOON</div>';
-    row.appendChild(card);
+    const w = WORLDS[id]; if (!w || !w.comingSoon || SCIENCE_WORLDS.includes(id)) return;
+    row.appendChild(soonCard(w.emoji, w.name));
   });
+  // 🔬 the Science Park umbrella — tap it to reveal its three worlds (all coming soon)
+  const park = document.createElement('div');
+  park.style.cssText = 'grid-column:1/-1; background:rgba(236,248,238,.85); border:2px dashed #8ec79a; border-radius:14px; padding:11px 8px 9px; text-align:center; cursor:pointer';
+  park.innerHTML = '<div style="font-size:30px">🔬</div><div style="font-size:14px; font-weight:800; color:#3f7d4f; margin-top:3px">Science Park</div>' +
+    '<div style="font-size:10px; color:#5b8a64; margin-top:2px">3 STEM worlds — tap to peek 👇</div>';
+  const sub = document.createElement('div');
+  sub.style.cssText = 'display:none; grid-column:1/-1; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px; margin-top:6px';
+  SCIENCE_WORLDS.forEach(id => { const w = WORLDS[id]; if (w) sub.appendChild(soonCard(w.emoji, w.name, w.blurb)); });
+  let open = false;
+  park.onclick = () => { open = !open; sub.style.display = open ? 'grid' : 'none'; if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); };
+  row.appendChild(park); row.appendChild(sub);
 }
 renderComingSoon();
 refreshSavedList();
