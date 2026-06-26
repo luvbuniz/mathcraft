@@ -6635,13 +6635,21 @@ function renderCartoonWatch() {
 // Self-contained movie player (inline-styled so it works anywhere): autoplays muted + loops,
 // a tap unmutes & restarts with sound, ⛶ goes fullscreen, and a missing clip shows "coming soon."
 function mountMoviePlayer(host, src, title) {
+  // 📱 The Library cartoons are filmed PORTRAIT (phone-shaped), so we show them inside a phone
+  // mock-up — vertical video looks intentional, never stretched across a wide tablet screen.
   host.innerHTML =
-    '<div style="position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:16/9;background:#000;border:4px solid #14202d;border-radius:10px;overflow:hidden;box-shadow:0 0 22px 6px rgba(170,205,255,.5)">' +
-      '<video id="cvid2" src="' + src + '" muted loop autoplay playsinline preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000"></video>' +
-      '<button id="cfs2" style="display:none;position:absolute;top:8px;right:8px;z-index:5;cursor:pointer;border:2px solid rgba(255,255,255,.92);background:#7a4ea0;color:#fff;font-size:13px;font-weight:800;padding:6px 11px;border-radius:20px">⛶ Full Screen</button>' +
-      '<div id="sndcue2" style="display:none;position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;cursor:pointer">🔊 Tap for sound</div>' +
-      '<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#2a1640,#120a1d);color:#fff;text-align:center">' +
-        '<div style="font-size:12px;letter-spacing:2px;color:#b79be0;font-weight:800">🎬 COMING SOON</div><div style="font-size:44px">🎞️</div><div style="font-weight:800;font-size:14px;padding:0 10px">' + title + '</div>' +
+    '<div style="display:flex;justify-content:center;width:100%">' +
+      '<div style="position:relative;height:min(70vh,540px);aspect-ratio:9/17;background:linear-gradient(160deg,#2c2c33,#141417);border-radius:30px;padding:18px 8px;box-sizing:border-box;box-shadow:0 12px 32px rgba(0,0,0,.45),inset 0 0 0 2px #41414a">' +
+        '<div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:52px;height:7px;background:#0a0a0c;border-radius:6px;z-index:7"></div>' +     // camera speaker pill
+        '<div style="position:relative;width:100%;height:100%;background:#000;border-radius:16px;overflow:hidden">' +
+          '<video id="cvid2" src="' + src + '" muted loop autoplay playsinline preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>' +
+          '<button id="cfs2" style="display:none;position:absolute;top:8px;right:8px;z-index:5;cursor:pointer;border:2px solid rgba(255,255,255,.92);background:#7a4ea0;color:#fff;font-size:12px;font-weight:800;padding:5px 9px;border-radius:20px">⛶ Full</button>' +
+          '<div id="sndcue2" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;cursor:pointer">🔊 Tap for sound</div>' +
+          '<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#2a1640,#120a1d);color:#fff;text-align:center">' +
+            '<div style="font-size:12px;letter-spacing:2px;color:#b79be0;font-weight:800">🎬 COMING SOON</div><div style="font-size:40px">🎞️</div><div style="font-weight:800;font-size:13px;padding:0 10px">' + title + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:32%;height:5px;background:rgba(255,255,255,.55);border-radius:4px;z-index:7"></div>' +   // home indicator
       '</div>' +
     '</div>';
   const vid = document.getElementById('cvid2'), cue = document.getElementById('sndcue2'), fs = document.getElementById('cfs2'), fall = document.getElementById('cfall2');
