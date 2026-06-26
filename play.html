@@ -6092,17 +6092,37 @@ function lotClear(ox, oz, W, D) {
   }
   return true;
 }
-function findHomeLot(W, D) {                  // the clear lot CLOSEST to the player, scanning the WHOLE world
+// Find a lot for a new home, scanning the WHOLE world. Strict pass = a perfectly empty lot closest to you.
+// Relaxed pass (allowClear) = a lot clear of IMMOVABLES (shops, neighbour houses, the portal, the edge) with
+// the FEWEST loose player blocks — those get cleared so the biggest mansion can ALWAYS be placed somewhere.
+function findHomeLot(W, D, allowClear) {
   const bx = player.pos.x, bz = player.pos.z;
-  let best = null, bestD = Infinity;
+  let best = null, bestScore = Infinity;
   for (let ox = -WORLD_R + 1; ox <= WORLD_R - 1 - W; ox++) {
     for (let oz = -WORLD_R + 1; oz <= WORLD_R - 1 - D; oz++) {
-      if (!lotClear(ox, oz, W, D)) continue;
-      const cx = ox + W / 2 - bx, cz = oz + D / 2 - bz, d = cx * cx + cz * cz;
-      if (d < bestD) { bestD = d; best = [ox, oz]; }
+      let blocked = false, toClear = 0;
+      for (let x = ox - 1; x <= ox + W && !blocked; x++) {
+        for (let z = oz - 1; z <= oz + D; z++) {
+          if (Math.abs(x) >= WORLD_R - 1 || Math.abs(z) >= WORLD_R - 1) { blocked = true; break; }
+          if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { blocked = true; break; }
+          if (inShopZone(x, z)) { blocked = true; break; }
+          if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 4.5) { blocked = true; break; }
+          if (blocks.has(key(x, 0, z))) { if (!allowClear) { blocked = true; break; } toClear++; }
+        }
+      }
+      if (blocked) continue;
+      const cx = ox + W / 2 - bx, cz = oz + D / 2 - bz, dist = cx * cx + cz * cz;
+      const score = allowClear ? toClear * 100000 + dist : dist;   // fewest blocks to clear, then closest
+      if (score < bestScore) { bestScore = score; best = [ox, oz]; }
     }
   }
   return best;
+}
+// clear every loose block in a lot footprint (used when a mansion is dropped on a built-up plot)
+function clearLotColumns(ox, oz, W, D) {
+  for (let x = ox - 1; x <= ox + W; x++)
+    for (let z = oz - 1; z <= oz + D; z++)
+      for (let y = 0; y < 40; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
 }
 function buildHome(ox, oz, m) {
   const L = homeLayout(ox, oz, m);
@@ -6215,13 +6235,16 @@ function demolishHome(i) {
 function buyHome(id) {
   const m = HOME_MODELS.find(h => h.id === id); if (!m) return;
   if (G.coins < m.price) { toast('🏡 The ' + homeName(m) + ' costs ' + m.price + ' 🪙 — keep earning coins at the ❓ stations!', 3800); return; }
-  const sz = homeLotSize(m), lot = findHomeLot(sz[0], sz[1]);
-  if (!lot) { toast('🏡 Not enough open space nearby for that home — stand in a clearer area and try again!', 4400); return; }
+  const sz = homeLotSize(m);
+  let lot = findHomeLot(sz[0], sz[1]), cleared = false;            // strict: a perfectly empty plot first
+  if (!lot) { lot = findHomeLot(sz[0], sz[1], true); cleared = true; }   // fallback: clear a built-up plot so a purchase NEVER fails for space
+  if (!lot) { toast('🏡 Hmm, no room for that home in this town right now — try a smaller one!', 4400); return; }
   G.coins -= m.price; Sound.coin(); refreshHUD();
+  if (cleared) clearLotColumns(lot[0], lot[1], sz[0], sz[1]);      // a developer clearing the plot for the build
   buildHome(lot[0], lot[1], m);
   closeRealty();
   if (Sound.fanfare) Sound.fanfare();
-  toast('🏡 Welcome home! Your ' + homeName(m) + ' is built — walk in and make it yours! (−' + m.price + ' 🪙)', 6000);
+  toast((cleared ? '🚜 Cleared a plot and built it! ' : '🏡 Welcome home! ') + 'Your ' + homeName(m) + ' is ready — walk in and make it yours! (−' + m.price + ' 🪙)', 6000);
 }
 /* ===================== 🗺️ LEVEL-UP BONUS QUESTS =====================
    When a kid levels up, a fun, quick, educational mini-quest pops for extra coins:
