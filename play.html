@@ -3026,7 +3026,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach', 'costa', 'space', 'west'];
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
-  meadow: { shop: { x: -18.2, z: -15.8 }, barn: { x: -21, z: -11 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced out, all facing the player
+  meadow: { shop: { x: -16.8, z: -15.2 }, barn: { x: -22.3, z: -9.5 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced WIDE so no two shops crowd
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
@@ -5511,7 +5511,7 @@ function syncCars() {
 }
 
 /* ============================ 🧁 STACK BAKERY (Math Meadow): bake a cake by measuring right ============================ */
-const BAKERY_POS = { x: -13.5, z: -17 };            // 🧁 north arm of the Meadowsbury L (faces south)
+const BAKERY_POS = { x: -12.0, z: -17 };            // 🧁 north arm of the Meadowsbury L (faces south) — shifted east to give Stack Mart room
 function bakeryDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - BAKERY_POS.x, player.pos.z - BAKERY_POS.z) : 999; }
 const bakeryGroup = new THREE.Group();
 {
@@ -8303,8 +8303,8 @@ function buildSignpost(g, x, z, label) {
 function buildMeadowVillage(g) {
   box(g, 19, 0.06, 15, 0xCABF9F, -10.5, 0.05, -9);           // plaza paving — squared up to take in Stack Mart's frontage
   buildWell(g, -11, -8);                                      // 💧 the well, centre of the green
-  buildPlanter(g, -15, -13); buildPlanter(g, -9, -13);        // planters along the north arm
-  buildPlanter(g, -16.5, -6); buildPlanter(g, -16.5, -10);    // planters along the west arm
+  buildPlanter(g, -13.6, -12.6); buildPlanter(g, -9, -13);    // planters along the north arm (between the shops)
+  buildPlanter(g, -16.5, -6); buildPlanter(g, -18, -12);      // planters along the west arm
   if (typeof decoTree === 'function') { decoTree(g, -4, -4, 1.0); decoTree(g, -15.5, -4.5, 0.95); }   // shade trees by the entrance & plaza green (kept clear of the car lot)
   buildWelcomeArch(g, -2.5, -9, Math.PI / 2, 'MEADOWSBURY');  // 🏷️ "Welcome to Meadowsbury" arch at the east entrance (faces the player)
   cotswoldCottage(g, -28, -3, 0.4); cotswoldCottage(g, -27, -18, 0.2);   // a couple of cottages just outside the plaza
