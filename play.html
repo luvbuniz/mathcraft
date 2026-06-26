@@ -4174,7 +4174,7 @@ setInterval(() => {
 }, 3000);
 
 /* ============================ THREE.JS WORLD ============================ */
-const WORLD_R = 34;                    // world spans -34..34 in x/z — lots of build space (ground is instanced, so cheap)
+const WORLD_R = 40;                    // world spans -40..40 in x/z — lots of build space (ground is instanced, so cheap)
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 40, 90);
@@ -5924,16 +5924,17 @@ function lotClear(ox, oz, W, D) {
   }
   return true;
 }
-function findHomeLot(W, D) {                  // nearest clear lot, searching out from in front of the player
-  const bx = Math.round(player.pos.x - Math.sin(player.yaw) * 5);
-  const bz = Math.round(player.pos.z - Math.cos(player.yaw) * 5);
-  for (let rad = 0; rad <= WORLD_R - 2; rad++)        // search the whole world for a clear lot (big homes need room)
-    for (let dx = -rad; dx <= rad; dx++) for (let dz = -rad; dz <= rad; dz++) {
-      if (Math.max(Math.abs(dx), Math.abs(dz)) !== rad) continue;
-      const ox = bx + dx - (W >> 1), oz = bz + dz - (D >> 1);
-      if (lotClear(ox, oz, W, D)) return [ox, oz];
+function findHomeLot(W, D) {                  // the clear lot CLOSEST to the player, scanning the WHOLE world
+  const bx = player.pos.x, bz = player.pos.z;
+  let best = null, bestD = Infinity;
+  for (let ox = -WORLD_R + 1; ox <= WORLD_R - 1 - W; ox++) {
+    for (let oz = -WORLD_R + 1; oz <= WORLD_R - 1 - D; oz++) {
+      if (!lotClear(ox, oz, W, D)) continue;
+      const cx = ox + W / 2 - bx, cz = oz + D / 2 - bz, d = cx * cx + cz * cz;
+      if (d < bestD) { bestD = d; best = [ox, oz]; }
     }
-  return null;
+  }
+  return best;
 }
 function buildHome(ox, oz, m) {
   const L = homeLayout(ox, oz, m);
@@ -8016,7 +8017,7 @@ function buildCityDecor(g) {                  // (name kept) Reading Town's subu
   const N = 26;
   for (let i = 0; i < N; i++) {
     const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.14;
-    const r = 36 + Math.random() * 8;                                       // pushed out to ring the bigger world (more build space inside)
+    const r = 42 + Math.random() * 8;                                       // pushed out to ring the bigger world (more build space inside)
     suburbHouse(g, Math.cos(ang) * r, Math.sin(ang) * r, Math.atan2(-Math.cos(ang), -Math.sin(ang)) + (Math.random() - 0.5) * 0.3);
     if (Math.random() < 0.6) decoTree(g, Math.cos(ang + 0.06) * (r - 1.5), Math.sin(ang + 0.06) * (r - 1.5), 0.8 + Math.random() * 0.5);
   }
@@ -8451,7 +8452,7 @@ function buildMeadowDecor(g) {
   for (let i = 0; i < 26; i++) {
     const ang = (i / 26) * Math.PI * 2 + 0.2;
     const rad = 6 + (i % 5) * 2.4;                      // 6..15.6
-    const r = 30 + rad + (i % 4) * 5;                   // inner edge ~30 — well past the play field
+    const r = 44 + rad + (i % 4) * 5;                   // inner edge ~50 — well past the bigger play field
     const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 18, 12), mat(greens[i % greens.length]));
     hill.scale.y = 0.5;                                 // flatten into a rolling dome
     hill.position.set(Math.cos(ang) * r, -rad * 0.32, Math.sin(ang) * r);   // sink base under the skirt
@@ -8471,7 +8472,7 @@ function buildMeadowDecor(g) {
   const HN = 16;
   for (let i = 0; i < HN; i++) {
     const a = (i / HN) * Math.PI * 2 + 0.15;
-    const r = 32 + (i % 3) * 2;                                            // pushed out to ring the bigger (R=34) world
+    const r = 38 + (i % 3) * 2;                                            // pushed out to ring the bigger (R=40) world
     cotswoldCottage(g, Math.cos(a) * r, Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)) + (Math.random() - 0.5) * 0.3);
   }
 }
