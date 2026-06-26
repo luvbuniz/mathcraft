@@ -5643,8 +5643,10 @@ const LIBRARY_POS = { x: -8, z: -15 };
 function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - LIBRARY_POS.x, player.pos.z - LIBRARY_POS.z) : 999; }
 const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
-const REALTY_POS = { x: 14, z: -15 };
-function realtyDist() { return G.world === 'city' ? Math.hypot(player.pos.x - REALTY_POS.x, player.pos.z - REALTY_POS.z) : 999; }
+const REALTY_POS = { x: 14, z: -15 };                       // Reading Town's Stack Realty
+const COUNTRY_REALTY_POS = { x: 13, z: -13 };               // 🏡 Math Meadow's Country Homes estate agency
+function realtyPos() { return G.world === 'meadow' ? COUNTRY_REALTY_POS : REALTY_POS; }
+function realtyDist() { return (G.world === 'city' || G.world === 'meadow') ? Math.hypot(player.pos.x - realtyPos().x, player.pos.z - realtyPos().z) : 999; }
 const CINEMA_POS = { x: -15, z: -15 };
 function cinemaDist() { return G.world === 'city' ? Math.hypot(player.pos.x - CINEMA_POS.x, player.pos.z - CINEMA_POS.z) : 999; }
 /* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
@@ -5654,7 +5656,8 @@ const HOME_MODELS = [
   { id: 'family',  name: '🏠 Family Two-Story',  price: 340, stories: 2, garage: true, pool: false, color: 0xD9C39A, roofStyle: 'pointed', desc: '2 stories + stairs • garage • yards' },
   { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL' },
   { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
-  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!' }
+  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!' },
+  { id: 'estate',  name: '🏞️ Country Estate',     price: 1300, stories: 2, garage: true, pool: true, poolW: 6, poolD: 4, color: 0xE3D6BC, roofStyle: 'pointed', columns: true, hw: 9, hd: 8, garW: 5, furnished: true, desc: 'The grandest of all — a sprawling countryside manor: grand columns • 3-car garage • huge POOL • fully furnished' }
 ];
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
@@ -5671,7 +5674,7 @@ const homeLotSize = m => { const L = homeLayout(0, 0, m); return [L.lotW, L.lotD
 function openRealty() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
-  $('realtyDesc').innerHTML = 'Move-in-ready homes — built and ready to decorate! You have <b>' + G.coins + ' 🪙</b>. Each home is yours to walk into, furnish, and add onto.';
+  $('realtyDesc').innerHTML = (G.world === 'meadow' ? '🏞️ Country cottages & estates — move-in ready in the meadow! ' : 'Move-in-ready homes — built and ready to decorate! ') + 'You have <b>' + G.coins + ' 🪙</b>. Each home is yours to walk into, furnish, and add onto.';
   const list = $('realtyList'); list.innerHTML = '';
   HOME_MODELS.forEach(m => {
     const can = G.coins >= m.price;
@@ -7945,6 +7948,52 @@ function buildRoad(g, destId) {                // a paved road leading off the e
   banner.position.set(23, 3.4, 4); banner.rotation.y = -Math.PI / 2; R.add(banner);
   g.add(R);
 }
+// 🏡 Math Meadow's COUNTRY HOMES estate agency — a honey-stone Cotswold cottage office
+function buildCountryRealty(g) {
+  const STONE = 0xD8C39A, STONE2 = 0xCBB081, ROOF = 0x8a8f98, WOOD = 0x6b4a2c, GLASS = 0xBCD6E0, GREEN = 0x4a6b3a;
+  const R = new THREE.Group();
+  box(R, 3.4, 0.16, 3.0, 0x8f8a7d, 0, 0.08, 0);                 // stone base pad
+  box(R, 3.2, 2.2, 0.18, STONE, 0, 1.2, -1.4);                  // back wall
+  box(R, 0.18, 2.2, 2.9, STONE2, -1.55, 1.2, 0); box(R, 0.18, 2.2, 2.9, STONE2, 1.55, 1.2, 0);  // side walls
+  box(R, 3.2, 2.2, 0.16, STONE, 0, 1.2, 1.4);                   // front wall (cottage is enclosed)
+  box(R, 0.7, 1.5, 0.12, WOOD, -0.9, 0.83, 1.48);              // timber door
+  box(R, 0.12, 0.12, 0.16, 0xFFD23E, -0.66, 0.9, 1.54);        // door knob
+  box(R, 1.3, 0.95, 0.06, GLASS, 0.55, 1.35, 1.48);           // listings window
+  box(R, 0.07, 0.95, 0.06, WOOD, 0.55, 1.35, 1.52); box(R, 1.3, 0.07, 0.06, WOOD, 0.55, 1.35, 1.52);   // mullion cross
+  const sl = box(R, 0.2, 2.3, 3.5, ROOF, -0.86, 2.72, 0); sl.rotation.z = -0.95;   // steep Cotswold roof
+  const sr = box(R, 0.2, 2.3, 3.5, ROOF, 0.86, 2.72, 0); sr.rotation.z = 0.95;
+  box(R, 0.22, 0.22, 3.5, 0x4f535a, 0, 3.34, 0);              // ridge beam
+  box(R, 0.5, 0.95, 0.5, STONE2, 1.1, 3.0, -0.55); box(R, 0.62, 0.18, 0.62, 0x3a3a3a, 1.1, 3.55, -0.55);   // chimney + cap
+  for (let i = 0; i < 8; i++) box(R, 0.16, 0.16, 0.16, 0xD6466B, -1.46 + (i % 2) * 0.18, 0.5 + i * 0.24, 1.5);  // climbing roses
+  for (let i = 0; i < 7; i++) box(R, 0.13, 0.13, 0.13, 0x3E9B3E, -1.52 + (i % 2) * 0.2, 0.62 + i * 0.26, 1.46); // rose leaves
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 72; const c = cv.getContext('2d');
+  c.fillStyle = '#F3EAD4'; c.fillRect(0, 0, 256, 72); c.strokeStyle = '#6b4a2c'; c.lineWidth = 5; c.strokeRect(4, 4, 248, 64);
+  c.fillStyle = '#4a6b3a'; c.font = 'bold 25px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('🏡 COUNTRY HOMES', 128, 26);
+  c.fillStyle = '#8a5c2c'; c.font = 'italic bold 16px Georgia, serif'; c.fillText('cottages & estates', 128, 52);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.7, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 1.95, 1.5); R.add(sign);
+  box(R, 0.1, 0.7, 0.1, WOOD, 1.3, 0.35, 1.95);              // little "FOR SALE" yard sign
+  box(R, 0.6, 0.4, 0.04, GREEN, 1.3, 0.72, 1.95);
+  R.position.set(COUNTRY_REALTY_POS.x, 0, COUNTRY_REALTY_POS.z);
+  R.rotation.y = -0.79;                                       // turn the door toward the village/play area
+  g.add(R);
+}
+// a honey-stone Cotswold cottage (backdrop scenery for the village skyline)
+function cotswoldCottage(g, x, z, ang) {
+  const stones = [0xD8C39A, 0xCFB890, 0xE0CBA0, 0xD2BC8C], roofs = [0x8a8f98, 0x6f6a4a, 0x7a7f86];
+  const STONE = stones[Math.floor(Math.random() * stones.length)], ROOF = roofs[Math.floor(Math.random() * roofs.length)];
+  const C = new THREE.Group(); const w = 2.4, d = 2.2, h = 1.8;
+  box(C, w, h, 0.16, STONE, 0, h / 2, -d / 2); box(C, w, h, 0.16, STONE, 0, h / 2, d / 2);   // front/back
+  box(C, 0.16, h, d, STONE, -w / 2, h / 2, 0); box(C, 0.16, h, d, STONE, w / 2, h / 2, 0);     // sides
+  const sl = box(C, 0.18, 1.7, d + 0.34, ROOF, -w * 0.27, h + 0.42, 0); sl.rotation.z = -0.95;
+  const sr = box(C, 0.18, 1.7, d + 0.34, ROOF, w * 0.27, h + 0.42, 0); sr.rotation.z = 0.95;
+  box(C, 0.18, 0.18, d + 0.34, 0x4f535a, 0, h + 1.0, 0);                                        // ridge
+  box(C, 0.4, 0.75, 0.4, STONE, w * 0.28, h + 0.65, -d * 0.2); box(C, 0.5, 0.16, 0.5, 0x3a3a3a, w * 0.28, h + 1.05, -d * 0.2);  // chimney
+  box(C, 0.55, 1.1, 0.1, 0x6b4a2c, 0, 0.55, d / 2 + 0.04);                                      // door
+  box(C, 0.5, 0.5, 0.06, 0xBCD6E0, -w * 0.28, 1.05, d / 2 + 0.04); box(C, 0.5, 0.5, 0.06, 0xBCD6E0, w * 0.28, 1.05, d / 2 + 0.04);  // windows
+  C.position.set(x, 0, z); C.rotation.y = ang; g.add(C);
+}
 function buildMeadowDecor(g) {
   const greens = [0x6FBF4B, 0x57A53C, 0x79C957, 0x66B843, 0x4f9a37];
   // a ring of overlapping rolling hills sitting ON the far ground, their bases sunk
@@ -7957,6 +8006,14 @@ function buildMeadowDecor(g) {
     hill.scale.y = 0.5;                                 // flatten into a rolling dome
     hill.position.set(Math.cos(ang) * r, -rad * 0.32, Math.sin(ang) * r);   // sink base under the skirt
     g.add(hill);
+  }
+  buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
+  // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
+  const HN = 14;
+  for (let i = 0; i < HN; i++) {
+    const a = (i / HN) * Math.PI * 2 + 0.15;
+    const r = 23 + (i % 3) * 2;
+    cotswoldCottage(g, Math.cos(a) * r, Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)) + (Math.random() - 0.5) * 0.3);
   }
 }
 buildMeadowDecor(worldDecor.meadow);
@@ -8831,7 +8888,7 @@ function inShopZone(cx, cz) {
   const px = cx + 0.5, pz = cz + 0.5;
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
-  if (G.world === 'meadow' && near(BAKERY_POS, 2.5)) return true;
+  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8))) return true;
   if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   return false;
@@ -12621,6 +12678,10 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (cinemaDist() < 4.0) {
       hint.textContent = isTouch ? '🎬 Tap ⭐ USE — fix the grammar at the Cinema!' : '🎬 ⭐ USE (or E) — fix the grammar at the Cinema!';
+      hint.style.display = 'block';
+    } else if (realtyDist() < 3.8) {
+      const rn = G.world === 'meadow' ? 'Country Homes' : 'Stack Realty';
+      hint.textContent = isTouch ? '🏡 Tap ⭐ USE — buy a home at ' + rn + '!' : '🏡 ⭐ USE (or E) — buy a home at ' + rn + '!';
       hint.style.display = 'block';
     } else if (martDist() < 3.8) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 ⭐ USE (or E) — order in Spanish at El Mercadito!';
