@@ -3026,7 +3026,7 @@ const WORLD_ORDER = ['meadow', 'city', 'beach', 'costa', 'space', 'west'];
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
 const WORLD_LAYOUT = {
-  meadow: { shop: { x: -17, z: -17 }, barn: { x: -21, z: -13 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury plaza — shops ring a central green (west)
+  meadow: { shop: { x: -18, z: -16 }, barn: { x: -20, z: -12 }, motors: { x: -7, z: -16 } },   // 🏡 Meadowsbury — L-shaped high street, all storefronts facing the player
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
   beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
 };
@@ -5496,7 +5496,7 @@ function syncCars() {
 }
 
 /* ============================ 🧁 STACK BAKERY (Math Meadow): bake a cake by measuring right ============================ */
-const BAKERY_POS = { x: -11, z: -17 };              // 🧁 north side of the Meadowsbury plaza
+const BAKERY_POS = { x: -13, z: -16 };              // 🧁 north arm of the Meadowsbury L (faces south)
 function bakeryDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - BAKERY_POS.x, player.pos.z - BAKERY_POS.z) : 999; }
 const bakeryGroup = new THREE.Group();
 {
@@ -5759,8 +5759,8 @@ function finishBake() {
    "Half a pie is half a pie." A customer orders a fraction of a pizza; the kid cuts it into equal
    slices and taps to serve the right amount. Grade-scaled: little ones do halves/quarters with the
    WORD shown and a tip; older kids get thirds/sixths/eighths and the ¼-style symbol — same tactile pie. */
-const PIZZA_POS = { x: -21, z: -7 };                // 🍕 west side of the plaza
-const PIZZA_ROT = -Math.PI / 2;                      // faces east into the plaza
+const PIZZA_POS = { x: -20, z: -8 };                // 🍕 west arm of the L
+const PIZZA_ROT = Math.PI / 2;                       // faces EAST, toward the player
 function pizzaDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - PIZZA_POS.x, player.pos.z - PIZZA_POS.z) : 999; }
 const PIZZA_NAMES = ['Mia', 'Leo', 'Sam', 'Ava', 'Max', 'Lily', 'Noah', 'Zoe', 'Ben', 'Ruby', 'Nina', 'Theo'];
 const PIZZA_CUSTOMERS = ['🧒', '👦', '👧', '🧑', '👩', '👨', '🐶', '🐱', '🦊', '🐻', '🐰', '🐼'];
@@ -5878,8 +5878,8 @@ function libraryDist() { return G.world === 'city' ? Math.hypot(player.pos.x - L
 const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 const REALTY_POS = { x: 14, z: -15 };                       // Reading Town's Stack Realty
-const COUNTRY_REALTY_POS = { x: -14, z: -3 };               // 🏡 Country Homes — south side of the plaza
-const REALTY_ROT = Math.PI;                                  // faces north into the plaza
+const COUNTRY_REALTY_POS = { x: -20, z: -4 };               // 🏡 Country Homes — west arm of the L
+const REALTY_ROT = Math.PI / 2;                              // faces EAST, toward the player
 function realtyPos() { return G.world === 'meadow' ? COUNTRY_REALTY_POS : REALTY_POS; }
 function realtyDist() { return (G.world === 'city' || G.world === 'meadow') ? Math.hypot(player.pos.x - realtyPos().x, player.pos.z - realtyPos().z) : 999; }
 const CINEMA_POS = { x: -15, z: -15 };
@@ -8278,12 +8278,13 @@ function buildSignpost(g, x, z, label) {
   arm.position.set(x + 0.5, 1.55, z); g.add(arm);
 }
 function buildMeadowVillage(g) {
-  box(g, 11, 0.06, 11, 0xCABF9F, -15, 0.05, -10);            // central plaza paving (square green)
-  buildWell(g, -15, -10);                                     // 💧 the well as the plaza centerpiece
-  buildPlanter(g, -19, -6); buildPlanter(g, -11, -6); buildPlanter(g, -19, -14); buildPlanter(g, -11, -14);   // four corner planters
-  if (typeof decoTree === 'function') { decoTree(g, -18, -4, 1.0); decoTree(g, -11, -4, 0.9); }   // shade trees by the south entrance
-  buildWelcomeArch(g, -8.5, -8, Math.PI / 2, 'MEADOWSBURY');  // 🏷️ "Welcome to Meadowsbury" arch at the east entrance
-  cotswoldCottage(g, -26, -2, 0.4); cotswoldCottage(g, -27, -16, 0.2);   // a couple of cottages just outside the plaza
+  box(g, 18, 0.06, 13, 0xCABF9F, -10, 0.05, -9);             // L-plaza paving (in front of BOTH arms)
+  buildWell(g, -11, -8);                                      // 💧 the well, centre of the green
+  buildPlanter(g, -15, -13); buildPlanter(g, -9, -13);        // planters along the north arm
+  buildPlanter(g, -16.5, -6); buildPlanter(g, -16.5, -10);    // planters along the west arm
+  if (typeof decoTree === 'function') { decoTree(g, -4, -4, 1.0); decoTree(g, -5, -13, 0.9); }   // shade trees by the entrance
+  buildWelcomeArch(g, -2.5, -9, Math.PI / 2, 'MEADOWSBURY');  // 🏷️ "Welcome to Meadowsbury" arch at the east entrance (faces the player)
+  cotswoldCottage(g, -28, -3, 0.4); cotswoldCottage(g, -27, -18, 0.2);   // a couple of cottages just outside the plaza
 }
 // a honey-stone Cotswold cottage (backdrop scenery for the village skyline)
 function cotswoldCottage(g, x, z, ang) {
@@ -8375,8 +8376,7 @@ function martProduce(S, w, fz) {                                      // 🥕 ba
     for (let i = 0; i < 6; i++) box(S, 0.12, 0.12, 0.12, cols[n][i % 3], px - 0.2 + (i % 3) * 0.2, 0.56 - Math.floor(i / 3) * 0.02, fz + 0.58 - Math.floor(i / 3) * 0.12);
   });
 }
-function bakeryProps(S, w, fz) {                                      // 🧁 striped awning + a cake & an ice-cream cone
-  for (let i = 0; i < 8; i++) { const a = box(S, 0.24, 0.1, 0.46, i % 2 ? 0xF49AC1 : 0xFFFFFF, -w * 0.42 + i * 0.24, 1.78, fz + 0.4); a.rotation.x = 0.4; }
+function bakeryProps(S, w, fz) {                                      // 🧁 a cake & an ice-cream cone out front (the store awning is added by cotswoldStore)
   box(S, 0.5, 0.28, 0.5, 0xEFE0C8, -w * 0.3, 0.28, fz + 0.6); box(S, 0.42, 0.2, 0.42, 0xF6B8D8, -w * 0.3, 0.52, fz + 0.6); box(S, 0.12, 0.12, 0.12, 0xE53935, -w * 0.3, 0.68, fz + 0.6);   // cake + cherry
   box(S, 0.12, 0.34, 0.12, 0xE8C28A, w * 0.22, 0.32, fz + 0.6); box(S, 0.2, 0.2, 0.2, 0xF7C6DE, w * 0.22, 0.56, fz + 0.6);   // ice-cream cone
 }
@@ -8388,8 +8388,8 @@ function motorsProps(S, w, fz) {                                      // ⛽ a f
   box(S, 0.3, 0.7, 0.28, 0xC0392B, -w * 0.36, 0.35, fz + 0.55); box(S, 0.32, 0.16, 0.16, 0x222831, -w * 0.36, 0.66, fz + 0.64); box(S, 0.05, 0.3, 0.05, 0x222831, -w * 0.36 + 0.2, 0.5, fz + 0.62);
   for (let i = 0; i < 3; i++) box(S, 0.38, 0.16, 0.38, 0x222222, w * 0.26, 0.18 + i * 0.16, fz + 0.6);
 }
-function cotswoldStore(g, x, z, frontCol, name, sub, prop, rot) {
-  const STONE = 0xE0C68C, SLATE = 0x6f6657, CREAM = 0xF2EAD8, QUOIN = 0xF0E2BE;
+function cotswoldStore(g, x, z, frontCol, name, sub, prop, rot, roofCol, stoneCol) {
+  const STONE = stoneCol || 0xE0C68C, SLATE = roofCol || 0x6f6657, CREAM = 0xF2EAD8, QUOIN = 0xF0E2BE;
   const S = new THREE.Group(); const w = 3.3, d = 3.0, h = 3.5, fz = d / 2;
   box(S, w, h, 0.2, STONE, 0, h / 2, -fz); box(S, w, h, 0.2, STONE, 0, h / 2, fz);
   box(S, 0.2, h, d, STONE, -w / 2, h / 2, 0); box(S, 0.2, h, d, STONE, w / 2, h / 2, 0);
@@ -8413,6 +8413,9 @@ function cotswoldStore(g, x, z, frontCol, name, sub, prop, rot) {
   c.font = 'italic bold 15px Georgia, serif'; c.fillStyle = '#EAD9AE'; c.fillText(sub, 128, 48);
   const sign = new THREE.Mesh(new THREE.BoxGeometry(w - 0.3, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
   sign.position.set(0, 1.97, fz + 0.16); S.add(sign);
+  // 🌈 a striped awning over the shopfront — gives each store its own splash of colour
+  for (let i = 0; i < 9; i++) { const aw = box(S, 0.3, 0.1, 0.52, i % 2 ? frontCol : 0xF7F2E6, -w * 0.42 + i * 0.3, 1.74, fz + 0.4); aw.rotation.x = 0.42; }
+  box(S, w - 0.16, 0.07, 0.07, shade(frontCol, 0.78), 0, 1.58, fz + 0.64);   // awning trim bar
   if (prop) prop(S, w, fz);
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
@@ -8503,13 +8506,13 @@ function buildMeadowDecor(g) {
   }
   buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
   buildPizzeria(g);                                     // 🍕 fractions pizzeria on the high street
-  buildCotswoldTerrace(g, -20, -19.4, 5);              // 🏘️ stone parade rising behind the plaza's north side
-  // 🏪 the meadow's OWN Cotswold-stone shops, ringing the plaza green (replace the shared cartoon shops)
+  buildCotswoldTerrace(g, -21, -18.2, 5);              // 🏘️ stone parade rising behind the north arm
+  // 🏪 the meadow's OWN Cotswold shops — each with a distinct roof, stone tint & awning so they stand apart
   const ML = WORLD_LAYOUT.meadow;
-  cotswoldStore(g, ML.shop.x, ML.shop.z, 0x2f6b4f, 'STACK MART', 'Village Stores', martProduce, 0);          // N side
-  cotswoldStore(g, BAKERY_POS.x, BAKERY_POS.z, 0xC85a86, 'STACK SWEETS', 'Bakery & Ice Cream', bakeryProps, 0); // N side
-  cotswoldStore(g, ML.barn.x, ML.barn.z, 0x6e2f33, 'STACK BARN', 'Furniture & Home', barnProps, -Math.PI / 2); // W side (faces east)
-  cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big showroom + forecourt cars (NE)
+  cotswoldStore(g, ML.shop.x, ML.shop.z, 0x2f6b4f, 'STACK MART', 'Village Stores', martProduce, 0, 0x5d7a4a, 0xE6CE99);          // N arm — green grocer, mossy roof
+  cotswoldStore(g, BAKERY_POS.x, BAKERY_POS.z, 0xC85a86, 'STACK SWEETS', 'Bakery & Ice Cream', bakeryProps, 0, 0xB5708A, 0xEFDCC4); // N arm — pink bakery, rosy roof
+  cotswoldStore(g, ML.barn.x, ML.barn.z, 0x6e2f33, 'STACK BARN', 'Furniture & Home', barnProps, Math.PI / 2, 0x8a5a38, 0xDFC68A);   // W arm (faces EAST) — timber-brown roof
+  cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big showroom + forecourt cars (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 16;
