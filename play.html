@@ -4207,7 +4207,11 @@ function applyWorldTheme(worldId) {
   SHOP_POS.x = L.shop.x; SHOP_POS.z = L.shop.z; shopGroup.position.set(L.shop.x, 0, L.shop.z); shopGroup.rotation.y = L.shop.r || 0;
   BARN_POS.x = L.barn.x; BARN_POS.z = L.barn.z; barnGroup.position.set(L.barn.x, 0, L.barn.z); barnGroup.rotation.y = L.barn.r || 0;
   MOTORS_POS.x = L.motors.x; MOTORS_POS.z = L.motors.z; motorsGroup.position.set(L.motors.x, 0, L.motors.z); motorsGroup.rotation.y = L.motors.r || 0;
-  if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = (worldId === 'meadow');   // the bakery is a Math Meadow shop
+  // 🏪 the meadow shows its own Cotswold-stone shops (built into worldDecor.meadow); hide the shared
+  // cartoon shops there so each world looks different. Town & Beach keep the cartoon shops.
+  const inMeadow = worldId === 'meadow';
+  shopGroup.visible = !inMeadow; barnGroup.visible = !inMeadow; motorsGroup.visible = !inMeadow;
+  if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = false;                    // replaced by the Cotswold bakery in the meadow
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
   G.furnFinish = worldId === 'city' ? 1 : worldId === 'beach' ? 2 : 0;   // default to this town's furniture style (kids can change it in the 🎒)
   updateStoreSigns(worldId);                                            // shop signs go bilingual (Español • English) in Spanish Beach
@@ -8231,6 +8235,43 @@ function cotswoldShop(g, cx, z, idx) {
 function buildCotswoldTerrace(g, x0, z, n) {                          // a continuous parade of attached Cotswold shops
   for (let i = 0; i < n; i++) cotswoldShop(g, x0 + i * 3.4, z, i);
 }
+// A Cotswold stone storefront for the Math Meadow village — these REPLACE the shared cartoon shops
+// in the meadow (the cartoon ones stay in Reading Town & the Beach), so each world feels different.
+function martProduce(S, w, fz) {                                      // baskets of fruit & veg outside the grocer
+  const cols = [[0xE53935, 0xFF7A1A, 0xFFD23E], [0xE0522B, 0x6FA85B, 0xF2C14E]];
+  [-w * 0.34, w * 0.04].forEach((px, n) => {
+    box(S, 0.72, 0.4, 0.5, 0x9a6b3a, px, 0.3, fz + 0.58);
+    for (let i = 0; i < 6; i++) box(S, 0.12, 0.12, 0.12, cols[n][i % 3], px - 0.2 + (i % 3) * 0.2, 0.56 - Math.floor(i / 3) * 0.02, fz + 0.58 - Math.floor(i / 3) * 0.12);
+  });
+}
+function cotswoldStore(g, x, z, frontCol, name, sub, prop) {
+  const STONE = 0xE0C68C, SLATE = 0x6f6657, CREAM = 0xF2EAD8, QUOIN = 0xF0E2BE;
+  const S = new THREE.Group(); const w = 3.3, d = 3.0, h = 3.5, fz = d / 2;
+  box(S, w, h, 0.2, STONE, 0, h / 2, -fz); box(S, w, h, 0.2, STONE, 0, h / 2, fz);
+  box(S, 0.2, h, d, STONE, -w / 2, h / 2, 0); box(S, 0.2, h, d, STONE, w / 2, h / 2, 0);
+  [[-w / 2, fz], [w / 2, fz]].forEach(q => { for (let k = 0; k < 7; k++) box(S, 0.26, 0.34, 0.26, QUOIN, q[0], 0.34 + k * 0.45, q[1]); });   // quoins
+  box(S, w - 0.28, 1.8, 0.18, frontCol, 0, 1.0, fz + 0.02);                 // painted shopfront
+  paneWindow(S, -w * 0.17, 1.05, fz + 0.13, 1.5, 1.3, 4, 2, CREAM);         // bay display window
+  box(S, 0.72, 1.6, 0.12, 0x4a3526, w * 0.3, 0.92, fz + 0.12);             // door
+  box(S, 0.11, 0.11, 0.1, 0xE0C24A, w * 0.3 + 0.19, 0.95, fz + 0.18);
+  box(S, w - 0.18, 0.46, 0.2, frontCol, 0, 1.97, fz + 0.04);               // fascia / sign band
+  paneWindow(S, -w * 0.2, 2.78, fz + 0.06, 0.86, 1.15, 2, 3, CREAM);       // upper sash windows
+  paneWindow(S, w * 0.2, 2.78, fz + 0.06, 0.86, 1.15, 2, 3, CREAM);
+  const sll = box(S, 0.24, 2.5, d + 0.6, SLATE, -w * 0.26, h + 0.55, 0); sll.rotation.z = -0.95;   // slate gable roof
+  const srr = box(S, 0.24, 2.5, d + 0.6, SLATE, w * 0.26, h + 0.55, 0); srr.rotation.z = 0.95;
+  box(S, w, 1.2, 0.2, STONE, 0, h + 0.5, fz); box(S, w, 1.2, 0.2, STONE, 0, h + 0.5, -fz);          // gables
+  box(S, 0.24, 0.24, d + 0.6, 0x4a4034, 0, h + 1.3, 0);                    // ridge
+  box(S, 0.5, 1.4, 0.5, STONE, w * 0.3, h + 0.95, -d * 0.1); box(S, 0.62, 0.16, 0.62, 0x3a3a3a, w * 0.3, h + 1.7, -d * 0.1);   // chimney
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d');
+  const fc = '#' + ('000000' + frontCol.toString(16)).slice(-6);
+  c.fillStyle = fc; c.fillRect(0, 0, 256, 64);
+  c.fillStyle = '#F4ECD8'; c.font = 'bold 29px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(name, 128, 24);
+  c.font = 'italic bold 15px Georgia, serif'; c.fillStyle = '#EAD9AE'; c.fillText(sub, 128, 48);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(w - 0.3, 0.46, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 1.97, fz + 0.16); S.add(sign);
+  if (prop) prop(S, w, fz);
+  S.position.set(x, 0, z); g.add(S);
+}
 // 🍕 Mama Mia Pizzeria — a honey-stone trattoria with a red-and-white awning and a tricolore sign
 function buildPizzeria(g) {
   const STONE = 0xE3D6BC, ROOF = 0x9A5A4A, RED = 0xC0392B, WHITE = 0xF5F0E6, WOOD = 0x6b4a2c, GLASS = 0xBCD6E0;
@@ -8272,6 +8313,12 @@ function buildMeadowDecor(g) {
   buildCountryRealty(g);                                // 🏡 the country estate agency (where Leo buys his mansion!)
   buildPizzeria(g);                                     // 🍕 fractions pizzeria on the high street
   buildCotswoldTerrace(g, -23, -15.4, 7);              // 🏘️ honey-stone Cotswold shop parade rising behind the high street (west)
+  // 🏪 the meadow's OWN Cotswold-stone shops (replace the shared cartoon shops, which stay in town/beach)
+  const ML = WORLD_LAYOUT.meadow;
+  cotswoldStore(g, ML.shop.x, ML.shop.z, 0x2f6b4f, 'STACK MART', 'Village Stores', martProduce);   // green grocer
+  cotswoldStore(g, BAKERY_POS.x, BAKERY_POS.z, 0xC85a86, 'STACK SWEETS', 'Bakery & Ice Cream', null);
+  cotswoldStore(g, ML.barn.x, ML.barn.z, 0x6e2f33, 'STACK BARN', 'Furniture & Home', null);          // oxblood
+  cotswoldStore(g, ML.motors.x, ML.motors.z, 0x2a3550, 'STACK MOTORS', 'Auto Showroom', null);        // navy
   buildMeadowVillage(g);                                // 🏘️ the Meadowsbury village green dressing around the shop row
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 14;
