@@ -4091,6 +4091,7 @@ function restoreGame(s) {
   });
   reorientFixtures();        // now that every wall is back, line up doors & windows with them
   if (typeof pruneOverlappingDecoTrees === 'function') pruneOverlappingDecoTrees();   // clear any tree a home/pool was built over (e.g. a tree in the pool)
+  if (typeof rebuildAllHomeExtras === 'function') rebuildAllHomeExtras();             // re-lay marble floors & driveways for premium homes
   (s.foods || []).forEach(([x, z, onTable, kind, y, variant, petName, hunger, bond]) => spawnFoodAt(x, z, !!onTable, kind, y, variant, { petName: petName, hunger: hunger, bond: bond }));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   startGame();
@@ -4121,6 +4122,7 @@ function resetWorld() {
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   poolWater = [];                                  // pool meshes are removed with the blocks above
   if (typeof slideDecors !== 'undefined') { slideDecors.forEach(g => scene.remove(g)); slideDecors = []; }   // water-slide decor (rebuilt with the pool)
+  if (typeof homeDecors !== 'undefined') { homeDecors.forEach(h => scene.remove(h.mesh)); homeDecors = []; }   // home floors/driveways (rebuilt from G.homes on load)
   pools = [];                                      // whole-pool registry, rebuilt on load
   undoStack = [];                                  // fresh undo history per world
   pets.length = 0;
@@ -6051,9 +6053,9 @@ const HOME_MODELS = [
   { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL' },
   { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
   { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!' },
-  { id: 'estate',  name: '🏞️ Country Estate',     price: 1300, stories: 2, garage: true, pool: true, poolW: 6, poolD: 4, color: 0xE3D6BC, roofStyle: 'pointed', columns: true, hw: 9, hd: 8, garW: 5, furnished: true,
-    desc: 'The grandest of all — a sprawling countryside manor: grand columns • 3-car garage • huge POOL • fully furnished',
-    cityName: '🏙️ Executive Estate', cityDesc: 'The grandest of all — a sprawling executive estate: grand columns • 3-car garage • huge POOL • fully furnished' }
+  { id: 'estate',  name: '🏞️ Country Estate',     price: 1300, stories: 2, garage: true, pool: true, poolW: 7, poolD: 5, color: 0xE3D6BC, roofStyle: 'pointed', columns: true, hw: 11, hd: 9, garW: 6, frontD: 6, furnished: true, fountain: true, kitchen: true, driveway: true, floorColor: 0xEDE6D6,
+    desc: 'The grandest of all — a sprawling countryside manor: BIGGER than the mansion • long driveway + fountain • grand columns • huge POOL • full kitchen • fully furnished',
+    cityName: '🏙️ Executive Estate', cityDesc: 'The grandest of all — bigger than the mansion: long driveway + fountain • grand columns • 3-car garage • huge POOL • full kitchen • fully furnished' }
 ];
 // suburban Reading Town uses town-flavored names/descriptions; the meadow keeps the country ones
 function homeName(m) { return (G.world === 'city' && m.cityName) ? m.cityName : m.name; }
@@ -6063,13 +6065,41 @@ function homeLayout(ox, oz, m) {
   const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
   const garW = m.garage ? (m.garW || 4) : 0, garD = 5, garH = 2;   // 2-wide interior lane + room to pull in/out (a 1-wide garage trapped the car)
   const poolD = m.pool ? (m.poolD || 3) : 0;
-  const backD = m.pool ? (poolD + 2) : 3, frontD = m.columns ? 3 : 2, margin = 1;
+  const backD = m.pool ? (poolD + 2) : 3, frontD = m.frontD || (m.columns ? 3 : 2), margin = 1;
   const lotW = margin + hw + garW + margin, lotD = margin + backD + hd + frontD + margin;
   const hx0 = ox + margin, hx1 = hx0 + hw - 1, hz0 = oz + margin + backD, hz1 = hz0 + hd - 1;
   const doorX = hx0 + (hw >> 1), frontZ = hz1, gx0 = hx1 + 1, gx1 = gx0 + garW - 1, gz1 = hz1, gz0 = gz1 - garD + 1;
   return { twoStory, stories, hw, hd, sH, wallH, garW, garD, garH, backD, frontD, margin, lotW, lotD, hx0, hx1, hz0, hz1, doorX, frontZ, gx0, gx1, gz0, gz1 };
 }
 const homeLotSize = m => { const L = homeLayout(0, 0, m); return [L.lotW, L.lotD]; };
+// ── premium-home extras: a marble floor & a long driveway, as flat (walk-over) decor meshes.
+// They're not blocks, so they're rebuilt from G.homes on load (and cleared per world / on sell). ──
+let homeDecors = [];
+function addFlatDecor(x0, x1, z0, z1, color) {
+  const fm = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0 + 1, 0.08, z1 - z0 + 1), mat(color));
+  fm.position.set((x0 + x1) / 2 + 0.5, 0.06, (z0 + z1) / 2 + 0.5);
+  scene.add(fm); homeDecors.push({ mesh: fm, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2 });
+}
+function clearHomeDecorsIn(x0, x1, z0, z1) {
+  for (let i = homeDecors.length - 1; i >= 0; i--) {
+    const h = homeDecors[i];
+    if (h.cx >= x0 - 1 && h.cx <= x1 + 1 && h.cz >= z0 - 1 && h.cz <= z1 + 1) { scene.remove(h.mesh); homeDecors.splice(i, 1); }
+  }
+}
+function buildHomeExtras(ox, oz, m) {
+  if (!m || (!m.floorColor && !m.driveway)) return;
+  const L = homeLayout(ox, oz, m), lz1 = oz + L.lotD - 1;
+  if (m.floorColor) addFlatDecor(L.hx0 + 1, L.hx1 - 1, L.hz0 + 1, L.hz1 - 1, m.floorColor);   // posh interior floor
+  if (m.driveway) addFlatDecor(L.gx0, L.gx1, L.frontZ + 1, lz1 + 5, 0x8d8b88);                 // long paved drive out from the garage
+}
+function rebuildAllHomeExtras() {   // after a save loads, recreate the flat decor for every premium home
+  (G.homes || []).forEach(h => {
+    const m = HOME_MODELS.find(x => x.id === h.id); if (!m) return;
+    const sz = homeLotSize(m);
+    if ((h.x1 - h.x0 + 1) !== sz[0] || (h.z1 - h.z0 + 1) !== sz[1]) return;   // older-version home (different size) — skip mismatched decor
+    buildHomeExtras(h.x0, h.z0, m);
+  });
+}
 function openRealty() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
@@ -6231,6 +6261,7 @@ function buildHome(ox, oz, m) {
   for (let x = lx0; x <= lx1; x++) for (let z = lz0; z <= lz1; z++) {
     if (x !== lx0 && x !== lx1 && z !== lz0 && z !== lz1) continue;              // fence the lot perimeter
     if (z === lz1 && x === L.doorX) continue;                                    // front gate gap
+    if (z === lz1 && m.driveway && x >= L.gx0 && x <= L.gx1) continue;           // driveway gap in front of the garage
     if (!blocks.has(key(x, 0, z))) placeFurnitureAt('fence', x, z, 0, 0);
   }
   [[L.hx0, L.frontZ + 1], [L.hx1, L.frontZ + 1], [L.doorX - 1, lz1 - 1], [L.doorX + 1, lz1 - 1]].forEach(p => {
@@ -6244,7 +6275,17 @@ function buildHome(ox, oz, m) {
       else placePoolWater(x, z);                                                                          // animated, swimmable water
     }
   }
-  // ---- starter furniture (the grandest home moves in fully furnished) ----
+  // ---- a grand fountain in the front yard, set to one side so the path to the door stays clear (estate) ----
+  if (m.fountain) {
+    const fcx = L.hx0 + 2, fcz = L.frontZ + 3;
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      if (dx === 0 && dz === 0) continue;                                        // centre stays open for the water
+      cell(fcx + dx, 0, fcz + dz, 0xCBB9A0);                                     // raised stone rim ring
+    }
+    placePoolWater(fcx, fcz);                                                    // water in the basin
+    cell(fcx, 1, fcz, 0xBFC4CA); cell(fcx, 2, fcz, 0xA8AEB4); cell(fcx, 3, fcz, 0xCBB9A0);   // central pedestal + cap
+  }
+  // ---- starter furniture (the grandest homes move in fully furnished) ----
   if (m.furnished) {
     const cx0 = L.hx0 + 1, cz0 = L.hz0 + 1;   // interior corner (ground floor)
     const put = (type, ix, iz, rot) => { if (!blocks.has(key(ix, 0, iz)) && !blocks.has(key(ix, 1, iz))) placeFurnitureAt(type, ix, iz, 0, rot || 0); };
@@ -6256,7 +6297,15 @@ function buildHome(ox, oz, m) {
     put('lamp', cx0 + L.hw - 4, cz0 + L.hd - 3, 0);
     put('bed', cx0 + L.hw - 4, cz0 + L.hd - 4, 0);
     put('plant', cx0 + 0, cz0 + L.hd - 3, 0);
+    // ---- a full KITCHEN down one side (estate) ----
+    if (m.kitchen) {
+      const kz = cz0 + L.hd - 3;
+      put('stove', cx0 + 2, kz, 0); put('sink', cx0 + 3, kz, 0); put('groceries', cx0 + 4, kz, 0);
+      put('dtable', cx0 + 2, kz - 2, 0); put('plates', cx0 + 2, kz - 2, 0);
+      put('pot', cx0 + 1, kz, 0);
+    }
   }
+  if (typeof buildHomeExtras === 'function') buildHomeExtras(ox, oz, m);   // marble floor + driveway (premium homes)
   // remember this home's lot so it can be demolished OR sold back later
   G.homes = G.homes || [];
   G.homes.push({ x0: lx0, x1: lx1, z0: lz0, z1: lz1, y1: L.wallH + 3, name: m.name, id: m.id, price: m.price });
@@ -6273,6 +6322,7 @@ function sellHome(i) {
   const refund = homeRefund(h);
   for (let x = h.x0; x <= h.x1; x++) for (let z = h.z0; z <= h.z1; z++)
     for (let y = 0; y <= h.y1; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
+  if (typeof clearHomeDecorsIn === 'function') clearHomeDecorsIn(h.x0, h.x1, h.z0, h.z1 + 6);   // floor + driveway
   G.homes.splice(i, 1);
   G.coins += refund; Sound.coin(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
   toast('🏡 Sold ' + (h.name || 'your home') + ' back — you got all ' + refund + ' 🪙 returned! Pick the one you really want. 😊', 5200);
@@ -6281,6 +6331,7 @@ function demolishHome(i) {
   const h = (G.homes || [])[i]; if (!h) return;
   for (let x = h.x0; x <= h.x1; x++) for (let z = h.z0; z <= h.z1; z++)
     for (let y = 0; y <= h.y1; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
+  if (typeof clearHomeDecorsIn === 'function') clearHomeDecorsIn(h.x0, h.x1, h.z0, h.z1 + 6);   // floor + driveway
   G.homes.splice(i, 1);
   refreshHUD();
   toast('🧹 Home demolished — the lot is clear again. (No coins back, so keep reading & doing math to afford the next one!)', 4600);
