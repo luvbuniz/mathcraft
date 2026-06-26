@@ -6891,7 +6891,60 @@ function startMovie(m) {
     cinema.firstRight = saved.firstRight || 0;
     (saved.tried || []).forEach(i => cinema.tried[i] = true);
   }
+  if (!profile.grammarIntroSeen) { showGrammarIntro(renderScene); return; }   // teach the big rules once, up front
   renderScene();
+}
+/* ----- 🧑‍🏫 Adaptive grammar coach -----
+   Kids here weren't taught grammar rules yet, so the game TEACHES before it tests.
+   Each scene is tagged with the rule it practices (derived from its "why"). We track a
+   per-rule mastery streak: show the rule as a tip until a kid gets that rule right on the
+   first try twice in a row; a miss resets it so the tip comes back, and a brand-new rule
+   always shows its tip — "hints fade as you get it right, and return when you hit something
+   new or slip up." */
+function grammarConcept(sc) {
+  const w = (sc.why || '').toLowerCase();
+  if (w.indexOf('question mark') >= 0) return 'question';
+  if (w.indexOf('past tense') >= 0) return 'past';
+  if (w.indexOf('vowel') >= 0 || w.indexOf('"an"') >= 0) return 'a-an';
+  if (w.indexOf('comma') >= 0) return 'commas';
+  if (w.indexOf('apostrophe') >= 0) return 'apostrophe';
+  if (w.indexOf('their') >= 0) return 'their';
+  if (w.indexOf('"i" is always') >= 0) return 'capital-i';
+  if (w.indexOf('day') >= 0 || w.indexOf('street') >= 0 || w.indexOf('place name') >= 0) return 'proper-noun';
+  if (w.indexOf('for one') >= 0 || w.indexOf('more than one') >= 0 || w.indexOf('"is"') >= 0 || w.indexOf('"are"') >= 0 || w.indexOf('"was"') >= 0 || w.indexOf('"were"') >= 0 || w.indexOf('"has"') >= 0 || w.indexOf('"have"') >= 0) return 'subject-verb';
+  if (w.indexOf('name') >= 0 && w.indexOf('capital') >= 0) return 'capital-name';
+  return 'sentence-basics';   // capital start + period — the most fundamental rule
+}
+function grammarMastery() { return (profile.grammarMastery = profile.grammarMastery || {}); }
+function grammarTipOn(sc) {
+  if ((profile.grammarFirstTotal || 0) < 4) return true;             // brand-new player → coach every line at first
+  return (grammarMastery()[grammarConcept(sc)] || 0) < 2;           // this rule not mastered yet (or just missed) → show it
+}
+function noteGrammarConcept(sc, gotItFirstTry) {                     // update the per-rule streak (first try only)
+  const c = grammarConcept(sc), mm = grammarMastery();
+  mm[c] = gotItFirstTry ? (mm[c] || 0) + 1 : 0;
+}
+// One-time "big rules" lesson the very first time a kid opens the Grammar Cinema.
+function showGrammarIntro(then) {
+  $('cinemaTitle').innerHTML = '🎬 Grammar Basics';
+  $('cinemaScene').innerHTML = '<div style="font-size:42px">✏️📖</div>';
+  $('cinemaPrompt').textContent = 'Before the show — here are the BIG rules!';
+  $('cinemaMsg').textContent = '';
+  const wrap = $('cinemaChoices'); wrap.innerHTML = '';
+  const card = document.createElement('div');
+  card.style.cssText = 'text-align:left;background:#f3ecff;border:2px solid #d9c7f5;border-radius:14px;padding:13px 15px;color:#4a3170;font-size:15px;line-height:1.55;font-weight:600;max-width:460px;margin:0 auto';
+  card.innerHTML =
+    '<div style="font-weight:800;margin-bottom:5px;color:#7a4ea0">📝 Every sentence…</div>' +
+    '🔠 <b>Starts</b> with a CAPITAL letter.<br>' +
+    '🔵 <b>Ends</b> with a period <b>.</b> &nbsp;(a question ends with <b>?</b>)<br>' +
+    '🙋 The word <b>I</b> is always a capital letter.<br>' +
+    '🏷️ <b>Names</b> (Leo, Fiona) get a capital letter too.';
+  wrap.appendChild(card);
+  const go = document.createElement('button'); go.className = 'libBtn';
+  go.style.cssText = 'background:#7a4ea0;color:#fff;font-size:17px;margin-top:10px';
+  go.textContent = "Let's fix the movie! 🎬";
+  go.onclick = () => { Sound.click(); profile.grammarIntroSeen = true; profileDirty = true; saveProfile(); then(); };
+  wrap.appendChild(go);
 }
 function renderScene() {
   if (!cinema) return;
@@ -6901,7 +6954,11 @@ function renderScene() {
   const idx = cinema.queue[0], sc = m.scenes[idx];
   const fixed = m.scenes.length - cinema.queue.length;
   $('cinemaTitle').innerHTML = m.emoji + ' ' + m.title + ' — Scene ' + (fixed + 1) + '/' + m.scenes.length;
-  $('cinemaScene').innerHTML = '<div style="font-size:34px">🎬</div>';
+  // 🧑‍🏫 show the rule as a coaching tip when the kid is new to it or has been missing it
+  $('cinemaScene').innerHTML = grammarTipOn(sc)
+    ? '<div style="font-size:28px">🎬</div>' +
+      '<div style="margin:7px auto 0;max-width:460px;background:#f3ecff;border:2px solid #d9c7f5;border-radius:12px;padding:8px 13px;color:#5a3d86;font-size:14px;font-weight:700;line-height:1.35">💡 ' + sc.why + '</div>'
+    : '<div style="font-size:34px">🎬</div>';
   $('cinemaPrompt').textContent = '🎟️ Tap the line that is written correctly!';
   $('cinemaMsg').textContent = '';
   const opts = [sc.correct].concat(sc.bad); shuffle(opts);
@@ -6923,6 +6980,7 @@ function cinemaAnswer(ans, sc, btn, idx) {
     cinema.tried[idx] = true;
     profile.grammarFirstTotal = (profile.grammarFirstTotal || 0) + 1;
     if (correct) { profile.grammarFirstRight = (profile.grammarFirstRight || 0) + 1; cinema.firstRight++; }
+    noteGrammarConcept(sc, correct);                 // 🧑‍🏫 update this rule's mastery streak → fades/returns the coaching tip
   }
   if (correct) {
     G.solved++; recordSolve({ skill: 'grammar', level: Math.max(1, Math.min(5, profile.readLevel || G.grade || 2)) }); bumpHud('solvedCount');
@@ -11474,6 +11532,30 @@ $('promoBtn').onclick = async () => {
   }
 };
 $('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('promoBtn').click(); });
+
+/* 🔙 Back-button guard — on tablets/PWA the Android back button (and exiting a video's
+   fullscreen) used to UNLOAD the page, dumping kids back at the start screen. e.g. Leo
+   watched a Library movie, pressed back, and the whole game restarted. Now back simply
+   CLOSES the open popup (reusing its own ✕ handler) and re-arms, so the game never reloads. */
+function topOpenPopup() {
+  const ps = document.querySelectorAll('.popup');
+  for (let i = 0; i < ps.length; i++) { if (getComputedStyle(ps[i]).display !== 'none') return ps[i]; }
+  return null;
+}
+function armBackGuard() { try { history.pushState({ sg: 1 }, ''); } catch (e) {} }
+addEventListener('load', armBackGuard);
+addEventListener('popstate', () => {
+  // exiting a fullscreen video counts as a "back" — just leave fullscreen, stay in the game
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fsEl) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} armBackGuard(); return; }
+  const open = topOpenPopup();
+  if (open) {                                   // close the open popup via its own ✕ (runs the right close handler) and re-arm
+    const x = open.querySelector('.closeX');
+    if (x) x.click(); else { open.style.display = 'none'; popupOpen = false; }
+    armBackGuard(); return;
+  }
+  armBackGuard();                               // nothing open — keep one guard so a stray back never reloads the game
+});
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
