@@ -1021,6 +1021,12 @@
         </button>
       </div>
 
+      <div class="panel" id="comingSoonPanel">
+        <h2 class="panelTitle">🔜 Coming soon</h2>
+        <div id="comingSoonRow" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:8px"></div>
+        <p class="muted" style="margin-top:8px; font-size:12.5px">A whole Science Park on the way — explore plants in 🌴 Costa Rica, a 🚀 Space Station &amp; the 🤠 Wild West!</p>
+      </div>
+
       <button id="grownupBtn" class="btn btn-ghost btn-block">
         <svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
         For Grown-Ups — learning progress
@@ -12763,6 +12769,20 @@ function refreshSavedList() {
     list.appendChild(row);
   });
 }
+function renderComingSoon() {
+  const row = $('comingSoonRow'); if (!row) return;
+  row.innerHTML = '';
+  WORLD_ORDER.forEach(id => {
+    const w = WORLDS[id]; if (!w || !w.comingSoon) return;
+    const card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,.72); border:2px dashed #c7b88a; border-radius:14px; padding:10px 6px 8px; text-align:center';
+    card.innerHTML = '<div style="font-size:30px; line-height:1">' + (w.emoji || '🌍') + '</div>' +
+      '<div style="font-size:12px; font-weight:800; color:#5b6b80; margin-top:3px">' + w.name + '</div>' +
+      '<div style="font-size:9.5px; font-weight:800; letter-spacing:.5px; color:#a06a2c; margin-top:2px">SOON</div>';
+    row.appendChild(card);
+  });
+}
+renderComingSoon();
 refreshSavedList();
 {
   const saves = listSaves();
