@@ -1985,31 +1985,38 @@ function makeSpanishQuestion(level) {
     hint: '“' + esp + '” is the Spanish word for “' + eng + '”.' };
 }
 
-/* 🔬 STEM / engineering questions for the Science Park worlds (building & physics, grades 2–5).
-   Gravity is saved for the Space Station, so these focus on structures, simple machines,
-   materials, forces, buoyancy & measurement. b = band (0: gr 1–2, 1: gr 3, 2: gr 4–5). */
+/* 🔬 STEM questions for the Science Park worlds, aligned to what's actually taught (NGSS K–5).
+   Band 0 (gr 1–2): everyday words — materials, push/pull, shapes, sink/float, magnets. NO jargon.
+   Band 1 (gr 3): forces & motion, friction, magnets attract/repel, ramps & simple machines.
+   Band 2 (gr 4–5): named simple machines, structures & trade-offs (jargon like "beam" is explained).
+   Gravity is saved for the Space Station. */
 const SCIENCE_Q = [
-  { b: 0, t: 'Which shape is the STRONGEST for a bridge', a: 'Triangle', d: ['Square', 'Circle', 'Heart'], h: 'Triangles don’t bend or squash — they hold their shape!' },
-  { b: 0, t: 'A ramp makes moving a heavy box', a: 'Easier', d: ['Harder', 'Heavier', 'Wetter'], h: 'A ramp lets you push up a slope instead of lifting straight up.' },
-  { b: 0, t: 'To hold up a heavy roof, which is stronger', a: 'Four posts', d: ['One post', 'No posts', 'A balloon'], h: 'More posts share the weight, so it holds more.' },
-  { b: 0, t: 'Which one FLOATS on water', a: 'A cork', d: ['A coin', 'A rock', 'An iron nail'], h: 'Light, airy things float; heavy, dense things sink.' },
-  { b: 0, t: 'Wheels help you move heavy things because they', a: 'Roll', d: ['Melt', 'Float', 'Sing'], h: 'Rolling is much easier than dragging.' },
-  { b: 0, t: 'Which material builds the STRONGEST cabin', a: 'Wood', d: ['Paper', 'Jelly', 'Cotton'], h: 'Strong, stiff materials make strong buildings.' },
-  { b: 0, t: 'Balance a beam: 6 blocks on each side. How many blocks in all', a: '12', d: ['6', '11', '8'], h: '6 + 6.' },
-  { b: 1, t: 'Triangles make bridges strong because they don’t', a: 'Bend', d: ['Shine', 'Float', 'Melt'], h: 'A triangle keeps its shape under weight.' },
-  { b: 1, t: 'On a see-saw, to lift a heavy friend you sit', a: 'Far from the middle', d: ['Right in the middle', 'On their lap', 'Under the see-saw'], h: 'Sitting farther out gives more lifting power — leverage!' },
-  { b: 1, t: 'A see-saw is an example of a', a: 'Lever', d: ['Wheel', 'Magnet', 'Battery'], h: 'A lever turns on a point to lift loads.' },
-  { b: 1, t: 'Friction is the force that', a: 'Slows sliding', d: ['Speeds sliding', 'Makes light', 'Makes rain'], h: 'Rub your hands — friction makes warmth and slows motion.' },
-  { b: 1, t: 'Which ramp is EASIER to push a cart up', a: 'A long, gentle ramp', d: ['A short, steep ramp', 'A straight-up wall', 'No ramp at all'], h: 'Gentle ramps need less force (but a longer push).' },
-  { b: 1, t: 'A magnet will stick to', a: 'A steel nail', d: ['A plastic cup', 'A wood block', 'A paper napkin'], h: 'Magnets grab iron and steel — not plastic or wood.' },
-  { b: 1, t: 'A gap is 10 ft wide. Each plank is 2 ft long. How many planks to cross it', a: '5', d: ['4', '6', '10'], h: '10 ÷ 2 = how many planks.' },
-  { b: 2, t: 'A beam 8 m long needs a support every 2 m. How many supports (counting both ends)', a: '5', d: ['4', '3', '8'], h: 'Supports at 0, 2, 4, 6, 8 metres — count them.' },
-  { b: 2, t: '800 lb rests evenly on 4 supports. Each support holds', a: '200 lb', d: ['400 lb', '800 lb', '100 lb'], h: 'Share it equally: 800 ÷ 4.' },
-  { b: 2, t: 'A truss uses triangles because a triangle is the only shape that can’t', a: 'Collapse without bending a side', d: ['Be painted', 'Float', 'Be measured'], h: 'A square can lean over; a triangle can’t unless a side changes length.' },
-  { b: 2, t: 'The cables of a suspension bridge are pulled tight. They are in', a: 'Tension', d: ['Compression', 'Floppiness', 'Silence'], h: 'Tension means being stretched or pulled.' },
-  { b: 2, t: 'An arch bridge carries weight by pushing OUT to its', a: 'Supports', d: ['Roof', 'Driver', 'Flag'], h: 'Arches squeeze (compress) and push out to the ends.' },
-  { b: 2, t: 'Doubling the thickness of a beam makes it much', a: 'Stronger', d: ['Weaker', 'Lighter', 'Colder'], h: 'Thicker beams resist bending far better.' },
-  { b: 2, t: 'A ramp lets you lift a load with less force, by trading force for', a: 'Distance', d: ['Color', 'Noise', 'Time travel'], h: 'Less force, but you push over a longer distance.' }
+  // ── Band 0 · Grades 1–2 (plain words, concrete) ──
+  { b: 0, t: 'Which one is BEST for building a strong wall', a: 'Bricks', d: ['Paper', 'Cotton balls', 'Jelly'], h: 'Strong, hard things make the strongest walls.' },
+  { b: 0, t: 'A push and a ___ are the two ways to move a wagon', a: 'pull', d: ['song', 'smell', 'color'], h: 'A push goes away from you; the other way is a pull!' },
+  { b: 0, t: 'Which shape ROLLS the best', a: 'A ball', d: ['A box', 'A brick', 'A book'], h: 'Round things roll; flat-sided things slide or stay put.' },
+  { b: 0, t: 'Which one FLOATS on water', a: 'A wooden stick', d: ['A metal spoon', 'A rock', 'A coin'], h: 'Light, airy things float; heavy, hard things sink.' },
+  { b: 0, t: 'A magnet will stick to a', a: 'metal paperclip', d: ['plastic cup', 'wooden block', 'paper towel'], h: 'Magnets grab metal — not plastic, wood, or paper.' },
+  { b: 0, t: 'You push a heavy box up a ___ so you don’t have to lift it straight up', a: 'ramp', d: ['wall', 'hole', 'tree'], h: 'A ramp is a slope — it makes lifting much easier.' },
+  { b: 0, t: 'A see-saw has 6 kids on each side. How many kids in all', a: '12', d: ['6', '8', '11'], h: '6 + 6.' },
+  { b: 0, t: 'Which is EASIER to pick up', a: 'A soft pillow', d: ['A big rock', 'A heavy log', 'A full bucket'], h: 'Lighter things take less push or pull to lift.' },
+  // ── Band 1 · Grade 3 (forces, friction, magnets) ──
+  { b: 1, t: 'When two things rub together, friction makes a sliding toy', a: 'slow down', d: ['speed up', 'float away', 'glow'], h: 'Rub your hands together — friction makes warmth and slows things.' },
+  { b: 1, t: 'Magnets can pull together (attract) or push apart. Pushing apart is called', a: 'repel', d: ['attract', 'melt', 'float'], h: 'Two magnet ends that push away from each other repel.' },
+  { b: 1, t: 'What makes a heavy box EASIEST to move across the floor', a: 'Put it on wheels', d: ['Make it heavier', 'Add glue', 'Do nothing'], h: 'Wheels roll, so there’s far less friction than dragging.' },
+  { b: 1, t: 'Triangles make towers and bridges strong because they don’t', a: 'bend or fold', d: ['shine', 'float', 'melt'], h: 'A triangle holds its shape; a square can lean over.' },
+  { b: 1, t: 'On a see-saw, to lift a heavier friend you should sit', a: 'far from the middle', d: ['right in the middle', 'on their lap', 'under the see-saw'], h: 'Sitting farther out gives you more lifting power.' },
+  { b: 1, t: 'Which ramp is EASIER to push a wagon up', a: 'A long, gentle ramp', d: ['A short, steep ramp', 'A straight-up wall', 'No ramp'], h: 'Gentle ramps need less push (but a longer way to go).' },
+  { b: 1, t: 'A push or a pull is also called a', a: 'force', d: ['color', 'sound', 'shadow'], h: 'Forces are the pushes and pulls that move things.' },
+  // ── Band 2 · Grades 4–5 (named machines, structures; jargon explained) ──
+  { b: 2, t: 'A see-saw, a crowbar, and a bottle opener are all', a: 'levers', d: ['magnets', 'wheels', 'wedges'], h: 'A lever turns on a point (the fulcrum) to lift or pry.' },
+  { b: 2, t: 'A ramp lets you lift a load with less force, but you have to push it a', a: 'longer way', d: ['shorter way', 'colder way', 'louder way'], h: 'Less force, but over a longer push — that’s the trade-off.' },
+  { b: 2, t: 'A wheel-and-axle helps move loads because rolling has much less ___ than dragging', a: 'friction', d: ['gravity', 'color', 'sound'], h: 'Friction resists sliding; wheels roll to beat it.' },
+  { b: 2, t: 'A bridge held up by 4 posts can carry ___ a bridge with just 1 post', a: 'more weight than', d: ['less weight than', 'the same as', 'no weight'], h: 'More supports share the load, so it holds more.' },
+  { b: 2, t: 'To make a beam (a long bar) bend less, you can make it', a: 'thicker', d: ['thinner', 'shorter only', 'smoother'], h: 'A thicker beam resists bending much better.' },
+  { b: 2, t: '800 lb sits evenly on a table’s 4 legs. Each leg holds about', a: '200 lb', d: ['400 lb', '800 lb', '100 lb'], h: 'Share it equally: 800 ÷ 4.' },
+  { b: 2, t: 'A pulley lifts a heavy flag up when you pull the rope', a: 'down', d: ['up', 'sideways', 'nowhere'], h: 'You pull down and the flag goes up — a pulley changes the direction.' },
+  { b: 2, t: 'A truss (a frame made of triangles) is strong because a triangle can’t', a: 'collapse', d: ['be painted', 'float', 'be counted'], h: 'A square can squash flat; a triangle can’t unless a side changes length.' }
 ];
 function makeScienceQuestion(level) {
   const band = level <= 2 ? 0 : level <= 3 ? 1 : 2;
