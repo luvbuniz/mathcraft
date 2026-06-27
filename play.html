@@ -158,9 +158,10 @@
   #hintBar { position:absolute; bottom:104px; left:50%; transform:translateX(-50%);
     background:rgba(0,0,0,.55); color:#fff; padding:7px 16px; border-radius:12px;
     font-size:clamp(14px,2.4vw,18px); display:none; white-space:nowrap; }
-  #toast { position:absolute; top:21%; left:50%; transform:translateX(-50%);
+  #toast { position:absolute; top:21%; left:50%; transform:translateX(-50%); z-index:60;
     background:rgba(47,125,39,.92); color:#fff; padding:12px 26px; border-radius:16px;
-    font-size:clamp(17px,3vw,24px); font-weight:bold; display:none; text-align:center; max-width:90vw; }
+    font-size:clamp(17px,3vw,24px); font-weight:bold; display:none; text-align:center; max-width:90vw;
+    box-shadow:0 6px 22px rgba(0,0,0,.3); }
 
   /* ---------- Math popup ---------- */
   .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
@@ -11693,6 +11694,13 @@ function thumbIcon(type, variant, emoji) {
   const url = getThumb(type, variant);
   return url ? '<img class="thumbImg" src="' + url + '" alt="">' : emoji;
 }
+function shopOwnedCount(id) {                 // how many of this item the player already has, for the shop's 🎒 count
+  if (id === 'blocks') return G.blocks;
+  if (id === 'powerBlocks') return G.powerBlocks;
+  if (id === 'door') return G.doors;
+  if (id === 'garagedoor') return G.garageDoors;
+  return (G.furniture && G.furniture[id]) || 0;
+}
 function renderShop() {
   refreshHUD();
   const title = $('shopTitle');
@@ -11720,8 +11728,10 @@ function renderShop() {
     const previewable = FURNITURE_TYPES.includes(item.id) || PET_KINDS[item.id];
     const finishVar = (PET_KINDS[item.id] ? 0 : (G.furnFinish || 0) * FURN_FINISH_MUL);   // show the catalog in the current town's finish
     const iconHTML = previewable ? thumbIcon(item.id, finishVar, item.icon) : item.icon;
+    const cnt = shopOwnedCount(item.id);
+    const bagLine = (item.kind === 'many' && cnt > 0) ? '<small style="color:#2f7d27;font-weight:800">🎒 In your backpack: ' + cnt + '</small>' : '';
     row.innerHTML = '<div class="icon">' + iconHTML + '</div>' +
-      '<div class="info"><b>' + biName(item.name, item.id) + ' — ' + priceTxt + '</b><small>' + item.desc + '</small></div>';
+      '<div class="info"><b>' + biName(item.name, item.id) + ' — ' + priceTxt + '</b><small>' + item.desc + '</small>' + bagLine + '</div>';
     const btn = document.createElement('button');
     btn.className = 'buyBtn' + (owned ? ' owned' : '');
     btn.textContent = owned ? 'Sell back +' + item.price + ' 🪙' : (item.kind === 'sell' ? 'Sell!' : 'Buy');
@@ -11761,24 +11771,25 @@ function buyItem(id) {
     G.berries = 0;
     Sound.coin();
   } else if (item.kind === 'many') {
-    if (G.coins < item.price) return;
+    if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '. Keep earning!', 3200); if (Sound.wrong) Sound.wrong(); return; }
     G.coins -= item.price;
     Sound.coin();
-    if (id === 'blocks') { G.blocks += 10; toast('🧱 +10 blocks in your backpack!', 2500); }
-    else if (id === 'powerBlocks') { G.powerBlocks += 3; toast('⚡ +3 rare Power Blocks — place them carefully!', 2800); }
-    else if (id === 'door') { G.doors++; toast('🚪 Door in your 🎒! Open the backpack (press I) and tap Place.', 3200); }
-    else if (id === 'garagedoor') { G.garageDoors++; toast('🚙 Garage door in your 🎒! Place it across a 2-wide gap in a wall.', 3400); }
-    else if (id === 'roof') { G.furniture.roof += 12; toast('🔺 +12 roof tiles in your 🎒 — enough to roof a house! Tap the top of your walls.', 3200); }
-    else if (POOL_KEYS.includes(id)) { G.furniture[id]++; toast(POOL_TIERS[id].icon + ' ' + POOL_TIERS[id].name + ' in your 🎒! Open it (press I), place it in an open yard, and dive in!', 3600); }
-    else { G.furniture[id]++; toast(item.icon + ' ' + item.name + ' in your 🎒! Open it (press I) to place it.', 3200); }
+    let extra = '';
+    if (id === 'blocks') { G.blocks += 10; extra = ' (+10 → you have ' + G.blocks + ' blocks)'; }
+    else if (id === 'powerBlocks') { G.powerBlocks += 3; extra = ' (+3 → you have ' + G.powerBlocks + ')'; }
+    else if (id === 'door') { G.doors++; extra = ' (you now have ' + G.doors + ')'; }
+    else if (id === 'garagedoor') { G.garageDoors++; extra = ' (you now have ' + G.garageDoors + ')'; }
+    else if (id === 'roof') { G.furniture.roof += 12; extra = ' (+12 tiles → you have ' + G.furniture.roof + ')'; }
+    else { G.furniture[id]++; extra = ' (you now have ' + G.furniture[id] + ')'; }
+    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 backpack' + extra + '. Press I to place it.', 4200);
   } else {
-    if (G.owned[id] || G.coins < item.price) return;
+    if (G.owned[id]) { toast('✓ You already own ' + item.icon + ' ' + item.name + ' — no need to buy it again!', 2800); return; }
+    if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '.', 3200); if (Sound.wrong) Sound.wrong(); return; }
     G.coins -= item.price;
     G.owned[id] = true;
     Sound.coin();
     if (id === 'hat' || id === 'usahat') applyHeadwear();
-    if (id === 'ladder') toast('🪜 Ladder! Hold JUMP next to a tree trunk to climb up high — great for building tall!', 4000);
-    else toast(item.icon + ' You bought ' + item.name + '!');
+    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left.' + (id === 'ladder' ? ' Hold JUMP by a tree trunk to climb!' : ''), 4000);
   }
   refreshHUD();
   renderShop();
