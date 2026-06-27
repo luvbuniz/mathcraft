@@ -1467,6 +1467,16 @@
   </div>
 </div>
 
+<!-- ================= 🏖️ SANDBOX (build sandcastles) POPUP ================= -->
+<div class="popup" id="sandPopup">
+  <div class="popupCard" style="text-align:center; width:min(480px,95vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="sandClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 style="color:#b5832a; margin:2px 0 4px; font-size:clamp(20px,4vw,28px)">🏖️ Sandbox</h2>
+    <div id="sandMsg" style="color:#7a6a35; font-weight:700; font-size:clamp(13px,2.6vw,16px); margin-bottom:10px; min-height:20px">Tap a mold to stamp a sand shape — fill the box to build a whole sand city!</div>
+    <div id="sandPad" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center"></div>
+  </div>
+</div>
+
 <!-- ================= DREAM GOAL PICKER POPUP ================= -->
 <div class="popup" id="goalPopup">
   <div class="popupCard" style="text-align:center; width:min(460px,94vw)">
@@ -3300,8 +3310,8 @@ const SHOP_ITEMS = [
   { id: 'slide',      icon: '🛝', name: 'Curly Slide', price: 20, kind: 'many', desc: 'Climb the ladder and WHOOSH down the slide — wheee! Tap ⭐ USE to ride.' },
   { id: 'springer',   icon: '🐴', name: 'Spring Rider', price: 12, kind: 'many', desc: 'A bouncy spring pony — tap ⭐ USE to boing up and down!' },
   { id: 'roundabout', icon: '🎠', name: 'Merry-Go-Round', price: 26, kind: 'many', desc: 'A spinning roundabout — tap ⭐ USE to hop on and whirl around!' },
-  { id: 'sandbox',    icon: '🏖️', name: 'Sandbox', price: 10, kind: 'many', desc: 'A sandbox with a bucket and spade — a soft spot to dig and play.' },
-  { id: 'climber',    icon: '🧗', name: 'Climbing Frame', price: 24, kind: 'many', desc: 'A colorful jungle-gym climbing frame to scramble over.' },
+  { id: 'sandbox',    icon: '🏖️', name: 'Sandbox', price: 10, kind: 'many', desc: 'A sandbox full of toys — bucket, spade, molds, an RC dump truck & crane. Tap ⭐ USE to build sandcastles!' },
+  { id: 'climber',    icon: '🧗', name: 'Climbing Frame', price: 24, kind: 'many', desc: 'A colorful jungle-gym — tap ⭐ USE to climb to the top and look out over the playground!' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -9703,7 +9713,7 @@ function toggleBedRest() {
 }
 
 /* 🎠 PLAYGROUND — the rideable pieces you build & play on. Walk up, tap ⭐ USE to hop on. */
-const PLAY_RIDE = { swingset: 1, seesaw: 1, slide: 1, springer: 1, roundabout: 1 };
+const PLAY_RIDE = { swingset: 1, seesaw: 1, slide: 1, springer: 1, roundabout: 1, climber: 1 };
 function nearestPlay(maxDist) {
   maxDist = maxDist || 2.7;
   let best = null, bestD = maxDist; const seen = new Set();
@@ -9727,7 +9737,8 @@ function startPlay(entry) {
     seesaw: '⚖️ Up… and down! Tap ⭐ USE or walk to hop off.',
     springer: '🐴 Boing boing boing! Tap ⭐ USE or walk to hop off.',
     roundabout: '🎠 Round and round we go! Tap ⭐ USE or walk to hop off.',
-    slide: '🛝 Hold on tight — wheeeee!'
+    slide: '🛝 Hold on tight — wheeeee!',
+    climber: '🧗 Up you climb! Sit up top and look around. Tap ⭐ USE or walk to climb down.'
   };
   toast(tips[entry.type] || 'Wheee!', 2600);
   if (entry.type === 'slide') { if (Sound.slide) Sound.slide(); }
@@ -9739,6 +9750,89 @@ function endPlay() {
   const d = player.avatarData, av = player.avatar;
   if (d) { if (d.legs) d.legs.forEach(l => l.rotation.x = 0); if (d.arms && d.armRest) d.arms.forEach((a, i) => { a.rotation.x = d.armRest[i].x; a.rotation.z = d.armRest[i].z; }); }
   if (av) av.rotation.set(0, player.yaw + Math.PI, 0);
+}
+
+/* 🏖️ SANDBOX — Leo's sand play. Walk up & tap USE to open the toy panel, then stamp molds to
+   build sandcastles right in the box. No avatar posing (so it works for every kind of avatar). */
+const SAND_SLOTS = [[-0.28, -0.28], [0, -0.28], [0.28, -0.28], [-0.28, 0], [0, 0], [0.28, 0], [-0.28, 0.28], [0, 0.28], [0.28, 0.28]];
+const SAND_MOLDS = [
+  { id: 'castle', icon: '🏰', label: 'Castle' },
+  { id: 'tower', icon: '🗼', label: 'Tower' },
+  { id: 'star', icon: '⭐', label: 'Star' },
+  { id: 'turtle', icon: '🐢', label: 'Turtle' },
+  { id: 'mound', icon: '🚚', label: 'Dump' }
+];
+function buildSandShape(mold) {
+  const grp = new THREE.Group(), S1 = 0xE4D09A, S2 = 0xD8C084, S3 = 0xEFE0B4;
+  if (mold === 'castle') {
+    box(grp, 0.22, 0.16, 0.22, S1, 0, 0.08, 0);
+    [[-0.1, -0.1], [0.1, -0.1], [-0.1, 0.1], [0.1, 0.1]].forEach(([x, z]) => { box(grp, 0.07, 0.22, 0.07, S2, x, 0.11, z); box(grp, 0.09, 0.05, 0.09, S3, x, 0.23, z); });   // 4 corner turrets
+    box(grp, 0.05, 0.16, 0.16, 0x8a5c33, 0, 0.06, 0.11);             // little door
+  } else if (mold === 'tower') {
+    [0, 1, 2].forEach(i => box(grp, 0.2 - i * 0.05, 0.12, 0.2 - i * 0.05, i % 2 ? S2 : S1, 0, 0.06 + i * 0.12, 0));   // stacked tiers
+    box(grp, 0.04, 0.1, 0.04, 0xE0522B, 0, 0.42, 0);                 // flag pole
+    box(grp, 0.08, 0.06, 0.02, 0xE0522B, 0.04, 0.4, 0);             // flag
+  } else if (mold === 'star') {
+    box(grp, 0.26, 0.07, 0.08, S1, 0, 0.05, 0); box(grp, 0.08, 0.07, 0.26, S1, 0, 0.05, 0);
+    const d = box(grp, 0.16, 0.07, 0.16, S3, 0, 0.05, 0); d.rotation.y = Math.PI / 4;   // 8-point sand star
+  } else if (mold === 'turtle') {
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), mat(S2)); sh.scale.y = 0.6; sh.position.y = 0.08; grp.add(sh);   // shell
+    box(grp, 0.08, 0.06, 0.08, S1, 0, 0.06, 0.16);                   // head
+    [[-0.12, 0.1], [0.12, 0.1], [-0.12, -0.1], [0.12, -0.1]].forEach(([x, z]) => box(grp, 0.06, 0.04, 0.07, S1, x, 0.04, z));   // flippers
+  } else {   // mound — a dump-truck load of sand
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), mat(S1)); m.scale.y = 0.55; m.position.y = 0.07; grp.add(m);
+    box(grp, 0.05, 0.05, 0.05, S3, 0.04, 0.16, 0.02);
+  }
+  return grp;
+}
+function nearestSandbox(maxDist) {
+  maxDist = maxDist || 2.7;
+  let best = null, bestD = maxDist; const seen = new Set();
+  blocks.forEach(b => {
+    if (b.type !== 'sandbox' || seen.has(b.mesh)) return;
+    seen.add(b.mesh);
+    const d = Math.hypot(player.pos.x - b.mesh.position.x, player.pos.z - b.mesh.position.z);
+    if (d < bestD) { bestD = d; best = b; }
+  });
+  return best;
+}
+let sandActive = null;
+function openSandbox(entry) {
+  if (!entry || popupOpen) return;
+  sandActive = entry; popupOpen = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  renderSandPad();
+  const n = (entry.mesh.userData.sandShapes || []).length;
+  $('sandMsg').textContent = n >= 9 ? '🏖️ Sandbox full — tap 🧹 Smooth Over to start fresh!' : 'Tap a mold to stamp a sand shape — fill the box to build a whole sand city!';
+  $('sandPopup').style.display = 'flex';
+}
+function closeSandbox() { $('sandPopup').style.display = 'none'; popupOpen = false; sandActive = null; }
+function renderSandPad() {
+  const pad = $('sandPad'); pad.innerHTML = '';
+  SAND_MOLDS.forEach(m => { const b = document.createElement('button'); b.className = 'bakeBtn'; b.innerHTML = m.icon + '<div style="font-size:11px;font-weight:700">' + m.label + '</div>'; b.onclick = () => stampSand(m.id); pad.appendChild(b); });
+  const sm = document.createElement('button'); sm.className = 'bakeBtn'; sm.innerHTML = '🧹<div style="font-size:11px;font-weight:700">Smooth</div>'; sm.onclick = smoothSand; pad.appendChild(sm);
+}
+function stampSand(mold) {
+  const e = sandActive; if (!e) return;
+  const ud = e.mesh.userData; ud.sandShapes = ud.sandShapes || [];
+  if (ud.sandShapes.length >= 9) { $('sandMsg').textContent = '🏖️ The box is full — tap 🧹 Smooth Over to start a new one!'; if (Sound.wrong) Sound.wrong(); return; }
+  const slot = SAND_SLOTS[ud.sandShapes.length];
+  const shape = buildSandShape(mold); shape.position.set(slot[0], 0.12, slot[1]);
+  ud.sand.add(shape); ud.sandShapes.push(shape);
+  if (Sound.place) Sound.place();
+  const n = ud.sandShapes.length;
+  if (n >= 9) {
+    if (!ud.rewarded) { ud.rewarded = true; G.coins += 3; refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); if (Sound.fanfare) Sound.fanfare(); }
+    $('sandMsg').textContent = '🏰 WOW — you built a whole sand city! +3 🪙  (tap 🧹 to start a new one)';
+  } else $('sandMsg').textContent = '🪣 Nice sandcastle! ' + n + ' / 9 — keep building!';
+}
+function smoothSand() {
+  const e = sandActive; if (!e) return;
+  const ud = e.mesh.userData;
+  (ud.sandShapes || []).forEach(s => ud.sand.remove(s));
+  ud.sandShapes = []; ud.rewarded = false;
+  if (Sound.slide) Sound.slide();
+  $('sandMsg').textContent = 'All smoothed over — fresh sand! Tap a mold to start building.';
 }
 
 function setAvatar(index) {
@@ -10238,12 +10332,17 @@ function updatePlayer(dt) {
         const dur = 1.9, u = Math.min(1, t / dur);
         lz = -0.3 + u * 1.55; ly = 1.55 - u * 1.4; ax = -0.5 - u * 0.3; ay = ry;
         if (u >= 1) pl.done = true;
+      } else if (pl.type === 'climber') {
+        const u = Math.min(1, t / 1.4);
+        ly = 0.1 + u * 1.42; lz = (1 - u) * -0.42; ax = u < 1 ? -0.25 : 0;
+        ay = ry + Math.PI + (u >= 1 ? Math.sin(t * 0.8) * 0.6 : 0);   // up top, look around
       }
       const wx = mx + lx * Math.cos(ry) + lz * Math.sin(ry), wz = mz - lx * Math.sin(ry) + lz * Math.cos(ry);
       player.pos.set(wx, 0, wz);
       av.visible = true; av.position.set(wx, ly, wz); av.rotation.set(ax, ay, az);
-      if (d && d.legs && !d.quad) d.legs.forEach(l => l.rotation.x = -1.2);
-      if (d && d.arms) d.arms.forEach(a => a.rotation.x = -0.85);
+      const seated = pl.type === 'swingset' || pl.type === 'seesaw' || pl.type === 'springer';   // only sit-style rides bend the knees
+      if (d && d.legs && !d.quad) d.legs.forEach(l => l.rotation.x = seated ? -1.2 : 0);
+      if (d && d.arms) d.arms.forEach(a => a.rotation.x = seated ? -0.85 : 0);
       pl._beat += dt;
       if (pl.type !== 'slide' && pl._beat > 1.5) { pl._beat = 0; if (Sound.creak && pl.type === 'seesaw') Sound.creak(); else if (Sound.boing) Sound.boing(); }
       const cd = pl.type === 'roundabout' ? 4.4 : 3.2;
@@ -11969,11 +12068,26 @@ function buildFurnitureMesh(type, variant) {
     for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2; const bar = box(sp, 0.05, 0.05, 0.86, POLE, Math.cos(a) * 0.42, 0.64, Math.sin(a) * 0.42); bar.rotation.y = a; box(sp, 0.09, 0.4, 0.09, POLE, Math.cos(a) * 0.82, 0.32, Math.sin(a) * 0.82); }   // grab bars
     g.userData.spin = sp;
   } else if (type === 'sandbox') {
-    const FRAME = 0x8a5c33, SAND = 0xEAD9A0;
-    [[-0.45, 0, 0.06, 0.96], [0.45, 0, 0.06, 0.96], [0, -0.45, 0.96, 0.06], [0, 0.45, 0.96, 0.06]].forEach(([x, z, w, d]) => box(g, w, 0.2, d, FRAME, x, 0.1, z));   // frame
-    box(g, 0.86, 0.1, 0.86, SAND, 0, 0.08, 0);                         // sand
-    box(g, 0.16, 0.13, 0.16, 0xE0522B, 0.2, 0.18, 0.2);               // bucket
-    box(g, 0.04, 0.24, 0.04, 0x4a8fd0, -0.18, 0.18, -0.14); box(g, 0.12, 0.04, 0.14, 0x4a8fd0, -0.18, 0.07, -0.22);   // spade
+    const FRAME = 0x8a5c33, FRAME2 = 0x6e4626, SAND = 0xEAD9A0;
+    [[-0.48, 0, 0.08, 1.0], [0.48, 0, 0.08, 1.0], [0, -0.48, 1.0, 0.08], [0, 0.48, 1.0, 0.08]].forEach(([x, z, w, d]) => { box(g, w, 0.22, d, FRAME, x, 0.11, z); box(g, w, 0.05, d, FRAME2, x, 0.23, z); });   // frame + corner caps to sit on
+    box(g, 0.9, 0.1, 0.9, SAND, 0, 0.08, 0);                           // sand bed
+    const sand = new THREE.Group(); sand.position.set(0, 0.08, 0); g.add(sand); g.userData.sand = sand; g.userData.sandShapes = [];   // sandcastles get stamped in here
+    // 🪣 toys: bucket, spade, a star mold and a castle mold sitting in the sand
+    box(g, 0.17, 0.14, 0.17, 0xE0522B, 0.3, 0.18, 0.3); box(g, 0.04, 0.02, 0.19, 0xC0392B, 0.3, 0.26, 0.3);   // red bucket + handle
+    box(g, 0.04, 0.26, 0.04, 0x4a8fd0, -0.3, 0.2, -0.18); box(g, 0.12, 0.04, 0.15, 0x4a8fd0, -0.3, 0.08, -0.26);   // blue spade
+    box(g, 0.15, 0.07, 0.15, 0xF2C84B, -0.28, 0.13, 0.28); box(g, 0.05, 0.05, 0.05, 0xF2C84B, -0.28, 0.18, 0.28);   // yellow star mold
+    box(g, 0.14, 0.1, 0.14, 0x57b06a, 0.26, 0.14, -0.3);              // green castle mold
+    // 🚚 RC dump truck parked on the front rim
+    const TBODY = 0xE0a23a, TCAB = 0xE0522B, TBED = 0x4a8fd0, TIRE = 0x2a2a2a;
+    box(g, 0.5, 0.12, 0.28, TBODY, 0.0, 0.36, 0.62); box(g, 0.16, 0.16, 0.26, TCAB, 0.18, 0.46, 0.62);   // chassis + cab
+    const bed = box(g, 0.3, 0.14, 0.26, TBED, -0.08, 0.49, 0.62); bed.rotation.z = 0.18;                  // tipped dump bed
+    [[-0.16, 0.5], [-0.16, 0.74], [0.16, 0.5], [0.16, 0.74]].forEach(([x, z]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 10), mat(TIRE)); w.rotation.x = Math.PI / 2; w.position.set(x, 0.3, z); g.add(w); });
+    box(g, 0.015, 0.18, 0.015, 0x9aa0a6, 0.24, 0.62, 0.62); box(g, 0.05, 0.05, 0.05, 0xE8556B, 0.24, 0.72, 0.62);   // RC antenna
+    // 🏗️ RC crane beside the box
+    const CR = 0xF2C84B, CR2 = 0x4a8fd0;
+    box(g, 0.26, 0.1, 0.26, CR2, -0.62, 0.05, 0.5); box(g, 0.14, 0.5, 0.14, CR, -0.62, 0.3, 0.5);          // base + tower
+    const jib = box(g, 0.6, 0.06, 0.08, CR, -0.46, 0.56, 0.5); jib.rotation.y = 0.5;                       // jib arm
+    box(g, 0.02, 0.2, 0.02, 0x9aa0a6, -0.18, 0.46, 0.66); box(g, 0.06, 0.06, 0.06, 0x2a2a2a, -0.18, 0.36, 0.66);   // cable + hook
   } else if (type === 'climber') {
     const cols = [0xE0522B, 0x4a8fd0, 0xF2C84B, 0x57a53c];
     [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]].forEach(([x, z], i) => box(g, 0.08, 1.4, 0.08, cols[i], x, 0.7, z));   // 4 corner posts
@@ -13356,7 +13470,8 @@ function tryUse() {
   else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
   else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
   else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
-  else if (nearestPlay()) { Sound.click(); startPlay(nearestPlay()); }   // 🎠 hop on a swing / see-saw / slide / spring rider / roundabout
+  else if (nearestSandbox()) { Sound.click(); openSandbox(nearestSandbox()); }   // 🏖️ play in the sandbox — build sandcastles!
+  else if (nearestPlay()) { Sound.click(); startPlay(nearestPlay()); }   // 🎠 hop on a swing / see-saw / slide / spring rider / roundabout / climbing frame
   else if (nearestChair()) { Sound.click(); toggleSit(); }
   else if (nearestBed()) { Sound.click(); toggleBedRest(); }
   else { toast('⭐ Walk up to a shop, car, or chair, then tap USE!', 1800); }
@@ -13720,6 +13835,7 @@ $('invBtn').onclick = () => { Sound.click(); openInv(); };
 $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
+$('sandClose').onclick = () => { Sound.click(); closeSandbox(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
