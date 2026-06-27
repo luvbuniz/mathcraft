@@ -3312,6 +3312,10 @@ const SHOP_ITEMS = [
   { id: 'roundabout', icon: '🎠', name: 'Merry-Go-Round', price: 26, kind: 'many', desc: 'A spinning roundabout — tap ⭐ USE to hop on and whirl around!' },
   { id: 'sandbox',    icon: '🏖️', name: 'Sandbox', price: 10, kind: 'many', desc: 'A sandbox full of toys — bucket, spade, molds, an RC dump truck & crane. Tap ⭐ USE to build sandcastles!' },
   { id: 'climber',    icon: '🧗', name: 'Climbing Frame', price: 24, kind: 'many', desc: 'A colorful jungle-gym — tap ⭐ USE to climb to the top and look out over the playground!' },
+  { id: 'sandtoys',   icon: '🪣', name: 'Bucket & Spade', price: 5, kind: 'many', desc: 'A bucket, spade and a sand mold to set out by the sandbox.' },
+  { id: 'sandmolds',  icon: '🏰', name: 'Sand Molds', price: 5, kind: 'many', desc: 'A set of shaped molds — star, castle and crescent — for sandcastles.' },
+  { id: 'rccrane',    icon: '🏗️', name: 'RC Crane', price: 15, kind: 'many', desc: 'A remote-control toy crane with a boom and hook for the sandbox.' },
+  { id: 'rcdump',     icon: '🚚', name: 'RC Dump Truck', price: 15, kind: 'many', desc: 'A remote-control toy dump truck loaded with sand.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -3350,7 +3354,8 @@ const ITEM_CAT = {
   bathtub: 'bath', shower: 'bath',
   table: 'outdoor', umbrella: 'outdoor', lounger: 'outdoor', bbq: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolslide: 'outdoor', poolmega: 'outdoor',
   // 🎠 Stack Barn — Build-Your-Own Playground
-  swingset: 'play', seesaw: 'play', slide: 'play', springer: 'play', roundabout: 'play', sandbox: 'play', climber: 'play'
+  swingset: 'play', seesaw: 'play', slide: 'play', springer: 'play', roundabout: 'play', sandbox: 'play', climber: 'play',
+  sandtoys: 'play', sandmolds: 'play', rccrane: 'play', rcdump: 'play'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
@@ -4245,7 +4250,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -11681,7 +11686,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -12072,22 +12077,37 @@ function buildFurnitureMesh(type, variant) {
     [[-0.48, 0, 0.08, 1.0], [0.48, 0, 0.08, 1.0], [0, -0.48, 1.0, 0.08], [0, 0.48, 1.0, 0.08]].forEach(([x, z, w, d]) => { box(g, w, 0.22, d, FRAME, x, 0.11, z); box(g, w, 0.05, d, FRAME2, x, 0.23, z); });   // frame + corner caps to sit on
     box(g, 0.9, 0.1, 0.9, SAND, 0, 0.08, 0);                           // sand bed
     const sand = new THREE.Group(); sand.position.set(0, 0.08, 0); g.add(sand); g.userData.sand = sand; g.userData.sandShapes = [];   // sandcastles get stamped in here
-    // 🪣 toys: bucket, spade, a star mold and a castle mold sitting in the sand
+    // a bucket & spade so it reads as a sandbox — extra toys (molds, RC crane & dump truck) are sold separately
     box(g, 0.17, 0.14, 0.17, 0xE0522B, 0.3, 0.18, 0.3); box(g, 0.04, 0.02, 0.19, 0xC0392B, 0.3, 0.26, 0.3);   // red bucket + handle
     box(g, 0.04, 0.26, 0.04, 0x4a8fd0, -0.3, 0.2, -0.18); box(g, 0.12, 0.04, 0.15, 0x4a8fd0, -0.3, 0.08, -0.26);   // blue spade
-    box(g, 0.15, 0.07, 0.15, 0xF2C84B, -0.28, 0.13, 0.28); box(g, 0.05, 0.05, 0.05, 0xF2C84B, -0.28, 0.18, 0.28);   // yellow star mold
-    box(g, 0.14, 0.1, 0.14, 0x57b06a, 0.26, 0.14, -0.3);              // green castle mold
-    // 🚚 RC dump truck parked on the front rim
-    const TBODY = 0xE0a23a, TCAB = 0xE0522B, TBED = 0x4a8fd0, TIRE = 0x2a2a2a;
-    box(g, 0.5, 0.12, 0.28, TBODY, 0.0, 0.36, 0.62); box(g, 0.16, 0.16, 0.26, TCAB, 0.18, 0.46, 0.62);   // chassis + cab
-    const bed = box(g, 0.3, 0.14, 0.26, TBED, -0.08, 0.49, 0.62); bed.rotation.z = 0.18;                  // tipped dump bed
-    [[-0.16, 0.5], [-0.16, 0.74], [0.16, 0.5], [0.16, 0.74]].forEach(([x, z]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 10), mat(TIRE)); w.rotation.x = Math.PI / 2; w.position.set(x, 0.3, z); g.add(w); });
-    box(g, 0.015, 0.18, 0.015, 0x9aa0a6, 0.24, 0.62, 0.62); box(g, 0.05, 0.05, 0.05, 0xE8556B, 0.24, 0.72, 0.62);   // RC antenna
-    // 🏗️ RC crane beside the box
-    const CR = 0xF2C84B, CR2 = 0x4a8fd0;
-    box(g, 0.26, 0.1, 0.26, CR2, -0.62, 0.05, 0.5); box(g, 0.14, 0.5, 0.14, CR, -0.62, 0.3, 0.5);          // base + tower
-    const jib = box(g, 0.6, 0.06, 0.08, CR, -0.46, 0.56, 0.5); jib.rotation.y = 0.5;                       // jib arm
-    box(g, 0.02, 0.2, 0.02, 0x9aa0a6, -0.18, 0.46, 0.66); box(g, 0.06, 0.06, 0.06, 0x2a2a2a, -0.18, 0.36, 0.66);   // cable + hook
+  } else if (type === 'sandtoys') {
+    box(g, 0.22, 0.18, 0.22, 0xE0522B, -0.12, 0.1, 0); box(g, 0.05, 0.02, 0.24, 0xC0392B, -0.12, 0.2, 0);   // bucket + handle
+    box(g, 0.14, 0.13, 0.14, 0xEAD9A0, -0.12, 0.18, 0);                // sand heaped in the bucket
+    box(g, 0.05, 0.34, 0.05, 0x4a8fd0, 0.2, 0.18, 0.06); box(g, 0.14, 0.05, 0.18, 0x4a8fd0, 0.2, 0.03, 0.12);   // spade
+    box(g, 0.14, 0.07, 0.14, 0x57b06a, 0.14, 0.04, -0.2);             // a spare green mold
+  } else if (type === 'sandmolds') {
+    const star = box(g, 0.16, 0.08, 0.16, 0xF2C84B, -0.2, 0.04, 0.02); star.rotation.y = 0.5; box(g, 0.06, 0.06, 0.06, 0xF2C84B, -0.2, 0.1, 0.02);   // star mold
+    box(g, 0.16, 0.1, 0.16, 0xE0522B, 0.12, 0.05, 0.12);              // castle mold base
+    [[-0.05, -0.05], [0.05, -0.05], [-0.05, 0.05], [0.05, 0.05]].forEach(([x, z]) => box(g, 0.04, 0.14, 0.04, 0xE0522B, 0.12 + x, 0.07, 0.12 + z));   // turret pegs
+    box(g, 0.16, 0.08, 0.1, 0x9B6FE0, 0.06, 0.04, -0.22);             // crescent mold
+  } else if (type === 'rccrane') {
+    const Y = 0xF2C84B, B = 0x4a8fd0, K = 0x2a2a2a, MET = 0x9aa0a6, R = 0xE8556B;
+    box(g, 0.5, 0.12, 0.6, B, 0, 0.18, 0);                            // crawler chassis
+    [-0.18, 0.18].forEach(x => { const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.56, 12), mat(K)); tr.rotation.x = Math.PI / 2; tr.position.set(x, 0.1, 0); g.add(tr); });   // 2 rubber tracks
+    box(g, 0.34, 0.28, 0.32, Y, 0, 0.4, -0.06);                       // operator cab
+    box(g, 0.2, 0.15, 0.05, B, 0, 0.46, 0.11);                        // window
+    box(g, 0.12, 0.7, 0.12, Y, 0, 0.78, -0.06);                       // mast
+    const jib = box(g, 0.9, 0.09, 0.12, Y, 0.32, 1.0, -0.06); jib.rotation.z = -0.5;   // diagonal boom
+    box(g, 0.02, 0.45, 0.02, MET, 0.66, 0.92, -0.06); box(g, 0.1, 0.08, 0.1, K, 0.66, 0.66, -0.06);   // cable + hook
+    box(g, 0.02, 0.22, 0.02, R, -0.1, 0.62, -0.06);                   // RC antenna
+  } else if (type === 'rcdump') {
+    const O = 0xE0a23a, C = 0xE0522B, BED = 0x4a8fd0, K = 0x2a2a2a, R = 0xE8556B;
+    box(g, 0.7, 0.16, 0.4, O, 0, 0.28, 0);                            // chassis
+    box(g, 0.22, 0.24, 0.38, C, 0.26, 0.42, 0); box(g, 0.18, 0.14, 0.34, 0x9fd4e8, 0.28, 0.5, 0);   // cab + windshield
+    const bed = box(g, 0.42, 0.22, 0.36, BED, -0.14, 0.5, 0); bed.rotation.z = 0.22;   // tipped dump bed
+    box(g, 0.3, 0.1, 0.3, 0xEAD9A0, -0.2, 0.56, 0);                   // sand load
+    [[-0.2, -0.24], [-0.2, 0.24], [0.22, -0.24], [0.22, 0.24]].forEach(([x, z]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.08, 12), mat(K)); w.rotation.x = Math.PI / 2; w.position.set(x, 0.16, z); g.add(w); });   // 4 chunky tires
+    box(g, 0.02, 0.24, 0.02, R, 0.34, 0.66, 0.12); box(g, 0.05, 0.05, 0.05, R, 0.34, 0.78, 0.12);   // RC antenna
   } else if (type === 'climber') {
     const cols = [0xE0522B, 0x4a8fd0, 0xF2C84B, 0x57a53c];
     [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]].forEach(([x, z], i) => box(g, 0.08, 1.4, 0.08, cols[i], x, 0.7, z));   // 4 corner posts
@@ -13526,7 +13546,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -13684,6 +13704,10 @@ function renderInv() {
     ['🐴', 'Spring Riders', G.furniture.springer, 'springer'],
     ['🎠', 'Merry-Go-Rounds', G.furniture.roundabout, 'roundabout'],
     ['🏖️', 'Sandboxes', G.furniture.sandbox, 'sandbox'],
+    ['🪣', 'Bucket & Spade', G.furniture.sandtoys, 'sandtoys'],
+    ['🏰', 'Sand Molds', G.furniture.sandmolds, 'sandmolds'],
+    ['🏗️', 'RC Cranes', G.furniture.rccrane, 'rccrane'],
+    ['🚚', 'RC Dump Trucks', G.furniture.rcdump, 'rcdump'],
     ['🧗', 'Climbing Frames', G.furniture.climber, 'climber'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
