@@ -3615,8 +3615,7 @@ function travelToWorld(id) {
     startGame();
   }
   // pop your vehicle out right beside you so it travelled through with you
-  // (NOT in the Country Western world — a modern car would break the frontier theme; you walk or take a buggy there)
-  if (broughtCar && cars[broughtCar] && G.world !== 'west' && (!cars[broughtCar].def.water || G.world === 'beach')) {
+  if (broughtCar && cars[broughtCar] && (!cars[broughtCar].def.water || G.world === 'beach')) {
     summonVehicle(broughtCar);
     if (wasDriving) toggleDrive();              // keep driving if you drove through
   }
@@ -4397,9 +4396,9 @@ function applyWorldTheme(worldId) {
   // cartoon shops there so each world looks different. Town & Beach keep the cartoon shops.
   const ownShops = worldId === 'meadow' || worldId === 'west';   // these worlds have their OWN themed buildings — hide the shared cartoon shops
   shopGroup.visible = !ownShops; barnGroup.visible = !ownShops; motorsGroup.visible = !ownShops;
-  if (typeof cars !== 'undefined' && worldId === 'west') for (const id in cars) { cars[id].group.visible = false; cars[id].spawned = false; }   // no modern cars in the Old West
   if (typeof bakeryGroup !== 'undefined') bakeryGroup.visible = false;                    // replaced by the Cotswold bakery in the meadow
   if (typeof worldDecor !== 'undefined') for (const id in worldDecor) worldDecor[id].visible = (id === worldId);
+  if (worldId !== 'west' && player.ridingBuggy) { player.ridingBuggy = null; if (player.avatar) player.avatar.visible = !G.firstPerson; }   // dismount when you leave the Western
   G.furnFinish = worldId === 'city' ? 1 : worldId === 'beach' ? 2 : 0;   // default to this town's furniture style (kids can change it in the 🎒)
   updateStoreSigns(worldId);                                            // shop signs go bilingual (Español • English) in Spanish Beach
   if (typeof setDealerDisplay === 'function') setDealerDisplay(worldId); // each town shows off its own vehicles
@@ -5479,7 +5478,6 @@ function carDist() { const a = activeCarObj(); return (a && a.spawned) ? Math.hy
 function setActiveCar(id) { G.activeCar = id; recolorCar(id, carDefColor(id)); parkActiveCar(); saveGarageState(); }
 // Take a vehicle out of the backpack right next to the player (so you can hop straight in).
 function summonVehicle(id) {
-  if (G.world === 'west') { toast('🐴 No motorcars in the Old West! Hitch up a horse & buggy instead. 🤠', 2800); return; }
   if (player.driving) toggleDrive();
   G.activeCar = id; recolorCar(id, carDefColor(id));
   for (const cid in cars) { cars[cid].group.visible = false; cars[cid].spawned = false; }
@@ -6144,6 +6142,34 @@ function updateTrainRide(dt) {
   camera.position.set(13.0, 2.8, tz - 2.6);                   // ride just behind the cab, looking forward
   camera.lookAt(13.0, 1.3, tz + 5);
   if (trainRide.t >= trainRide.dur) endTrainRide();
+}
+/* 🐴 Horse & buggy RENTAL — pay coins, then trot around the Western on your own four hooves */
+const BUGGY_POS = { x: -2, z: -7 };
+const BUGGY_RENT = 10;
+function buggyDist() { return (G.world === 'west' && rentalBuggy && !player.ridingBuggy) ? Math.hypot(player.pos.x - BUGGY_POS.x, player.pos.z - BUGGY_POS.z) : 999; }
+function rentBuggy() {
+  if (player.ridingBuggy || !rentalBuggy || trainRide) return;
+  if ((G.coins || 0) < BUGGY_RENT) { toast('🐴 The buggy rents for ' + BUGGY_RENT + ' 🪙 — earn a few more coins first!', 3200); return; }
+  G.coins -= BUGGY_RENT; refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); if (Sound.coin) Sound.coin();
+  player._buggyHome = { x: rentalBuggy.position.x, z: rentalBuggy.position.z, rot: rentalBuggy.rotation.y };
+  player.ridingBuggy = rentalBuggy;
+  player.pos.set(BUGGY_POS.x, 0, BUGGY_POS.z); player.vel.set(0, 0, 0);
+  toast('🐴 Giddy up! Rented the horse & buggy (−' + BUGGY_RENT + ' 🪙). Drag to ride • tap ⭐ USE to hop off.', 4600);
+}
+function endBuggyRide() {
+  if (!player.ridingBuggy) return;
+  const h = player._buggyHome;
+  if (h && rentalBuggy) { rentalBuggy.position.set(h.x, 0, h.z); rentalBuggy.rotation.y = h.rot; }
+  player.ridingBuggy = null;
+  if (player.avatar) player.avatar.visible = !G.firstPerson;
+  toast('🤠 Whoa there — back on your own two feet!', 1800);
+}
+function updateBuggyRide() {
+  const b = player.ridingBuggy; if (!b) return;
+  const moving = Math.hypot(player.vel.x, player.vel.z) > 0.3;
+  b.position.set(player.pos.x, player.pos.y + (moving ? Math.abs(Math.sin(performance.now() / 110)) * 0.05 : 0), player.pos.z);
+  b.rotation.y = player.yaw + Math.PI / 2;            // the horse (mesh +x) faces the way you move
+  if (player.avatar) player.avatar.visible = false;   // you're up on the buggy
 }
 function endTrainRide() {
   if (westTrainGroup && trainRide) westTrainGroup.position.z = trainRide.baseZ;
@@ -8166,6 +8192,7 @@ function finishSchool() {
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group(), west: new THREE.Group() };
 let westTrainGroup = null, trainRide = null;   // 🚂 the Western steam train + its ride state
+let rentalBuggy = null;   // 🐴 the rentable horse-and-buggy (Country Western)
 function cityTexture(bodyN, litN) {
   const hx = n => '#' + n.toString(16).padStart(6, '0');
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 128;
@@ -9298,6 +9325,7 @@ function buildHorseBuggy(g, x, z, rot) {
   box(P, 0.06, 0.22, 0.06, DARK, -0.1, 1.55, 0.62); box(P, 0.15, 0.18, 0.15, 0xF7E08A, -0.1, 1.36, 0.62);   // lantern
   [[0.35, 0.62], [0.35, -0.62], [-0.95, 0.66], [-0.95, -0.66]].forEach(([wx, wz]) => { const r = wx < 0 ? 0.42 : 0.3; const wh = new THREE.Mesh(new THREE.TorusGeometry(r, 0.07, 8, 16), mat(WOOD2)); wh.position.set(wx, r, wz); P.add(wh); const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.14, 8), mat(WOOD)); hub.rotation.x = Math.PI / 2; hub.position.set(wx, r, wz); P.add(hub); });
   P.position.set(x, 0, z); P.rotation.y = rot || 0; g.add(P);
+  return P;
 }
 function buildSaloon(g, x, z, rot) {
   const S = new THREE.Group();
@@ -9432,7 +9460,8 @@ function buildWestDecor(g) {
   buildGeneralStore(g, -10, -16.8, 0);
   buildSheriff(g, -5.5, -16.8, 0);
   buildHorseBuggy(g, -12.5, -12.5, 2.6);                    // a hitched buggy out front of the saloon
-  buildHorseBuggy(g, 6.5, -10.5, -0.5);                     // another on the street
+  rentalBuggy = buildHorseBuggy(g, -2, -7, -0.3);           // 🐴 the RENTAL buggy near the entrance — rent it to ride!
+  box(g, 0.12, 1.4, 0.12, 0x6b4a2c, -3.4, 0.7, -6); signOn(g, 'BUGGY RENTAL', 'Ride for 10 🪙!', 0x6b3a1a, 1.5, 0.7, -3.4, 1.55, -5.9);   // rental sign
   buildFoodStall(g, -1, -12.5, 0, 'FUNNEL CAKES', 0xE07B2A, 0xE8C24A);
   buildFoodStall(g, 2.6, -12.5, 0, 'CORN DOGS', 0xC0392B, 0x9a6b2a);
   buildDepot(g, 9.6, -13, Math.PI / 2);                     // station set beside the track, platform facing it
@@ -10015,6 +10044,7 @@ function updatePlayer(dt) {
 
   let speed = G.owned.shoes ? 7 : 5;
   if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
+  if (player.ridingBuggy) speed *= 1.7;                                 // 🐴 a trotting horse is faster than walking!
   // 🏊 in the pool? wade/swim — a little slower, with a splash the moment you jump in
   const _wb = blocks.get(key(Math.floor(player.pos.x), 0, Math.floor(player.pos.z)));
   const inWater = !!(_wb && _wb.type === 'water');
@@ -13035,6 +13065,7 @@ const keys = {};
 function tryUse() {
   if (!G.running || popupOpen) return;
   if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
+  else if (player.ridingBuggy) { Sound.click(); endBuggyRide(); }       // 🐴 hop off the buggy
   else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
   else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
   else if (player.sittingChair) { Sound.click(); toggleSit(); }
@@ -13047,6 +13078,7 @@ function tryUse() {
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
   else if (feedDist() < 3.8) { Sound.click(); openFeed(); }       // 🌾 feed store cashier — count change (Math Meadow)
   else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
+  else if (buggyDist() < 3.4) { Sound.click(); rentBuggy(); }     // 🐴 rent the horse & buggy (Country Western)
   else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
   else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
   else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -13615,6 +13647,7 @@ if (isTouch) {
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
     if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
+    else if (player.ridingBuggy) { Sound.click(); endBuggyRide(); }       // 🐴 hop off the buggy
     else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
     else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
     else if (player.sittingChair) { Sound.click(); toggleSit(); }
@@ -13627,6 +13660,7 @@ if (isTouch) {
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
     else if (feedDist() < 3.8) { Sound.click(); openFeed(); }       // 🌾 feed store cashier — count change (Math Meadow)
     else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
+    else if (buggyDist() < 3.4) { Sound.click(); rentBuggy(); }     // 🐴 rent the horse & buggy (Country Western)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -14267,6 +14301,7 @@ function loop(now) {
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
 
   if (!popupOpen && !G.over) updatePlayer(dt);
+  if (player.ridingBuggy) updateBuggyRide();   // 🐴 keep the rented buggy under the rider
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
   if (poolWater.length) { const tw = performance.now() / 480; for (const w of poolWater) if (w.mesh.parent) w.mesh.position.y = w.baseY + Math.sin(tw + (w.x + w.z) * 0.7) * 0.05; }   // rippling pool water
   if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
@@ -14401,6 +14436,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (trainDist() < 4.4) {
       hint.textContent = (G.tickets > 0 ? '🚂 Tap ⭐ USE — ride the steam train! (🎟️ ' + G.tickets + ')' : '🚂 Earn a 🎟️ ride ticket (answer ❓ STEM) then USE to ride!');
+      hint.style.display = 'block';
+    } else if (buggyDist() < 3.4) {
+      hint.textContent = isTouch ? '🐴 Tap ⭐ USE — rent the horse & buggy (10 🪙)!' : '🐴 ⭐ USE (or E) — rent the horse & buggy (10 🪙)!';
       hint.style.display = 'block';
     } else if (libraryDist() < 4.2) {
       hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 ⭐ USE (or E) — read a story at the Library!';
