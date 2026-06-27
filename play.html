@@ -3114,7 +3114,7 @@ const WORLDS = {
   beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] },
   // 🔬 Science Park — three themed STEM/science worlds (groundwork; built out later)
-  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', park: 'science', blurb: '🌉 Build bridges across the canyon — engineering, measuring & forces!',
+  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', comingSoon: true, park: 'science', blurb: '🌉 Build bridges across the canyon — engineering, measuring & forces!',
             sky: 0x7CC4F0, fog: 0xCFE6F2, ground: [0xD9A86A, 0xCF9E60, 0xE3B878] },   // bright blue desert sky over the sandy ground
   costa:  { id: 'costa',  name: 'Costa Rica',     emoji: '🌴', subject: 'science', chip: 'Nature', comingSoon: true, park: 'science', blurb: '🦜 Explore the rainforest — discover plants & animals in your field journal!',
             sky: 0x8FD9C9, fog: 0xCDEEE4, ground: [0x4FAE52, 0x429646, 0x5FBF5F] },
@@ -8583,8 +8583,24 @@ function buildDogParkZone(g, cx, cz) {
   box(g, 0.8, 0.04, 0.8, 0xF2C84B, cx, 0.03, cz + 2.0);
   box(g, 0.12, 0.05, 0.12, 0x6b4a2c, cx, 0.06, cz + 2.1); [[-0.12, 0.04], [0.12, 0.04], [0, 0.16]].forEach(([dx, dz]) => box(g, 0.07, 0.05, 0.07, 0x6b4a2c, cx + dx, 0.06, cz + 2.1 - dz));   // paw print
 }
+/* 🎂 a festive birthday display — a HAPPY BIRTHDAY banner, balloon bunches & a candle cake.
+   Decor only (no collision), dropped near spawn so the party feels special the moment kids load in. */
+function buildBirthdayDecor(g, cx, cz) {
+  [-2.4, 2.4].forEach(dx => box(g, 0.14, 2.5, 0.14, 0x6b4a2c, cx + dx, 1.25, cz));   // banner posts
+  signOn(g, 'HAPPY BIRTHDAY!', '🎉 Welcome to the party! 🎂', 0xC0398B, 4.5, 0.72, cx, 2.15, cz + 0.06);
+  [[-2.4, [0xE0392B, 0x4a9ad8, 0xF2C84B]], [2.4, [0x57b06a, 0xC0398B, 0xF2A93B]]].forEach(([dx, cols]) => {
+    [[-0.2, 2.78], [0.2, 2.9], [0, 3.16]].forEach(([bx, by], i) => {
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), mat(cols[i])); ball.scale.y = 1.22; ball.position.set(cx + dx + bx, by, cz); g.add(ball);
+      box(g, 0.015, by - 2.5, 0.015, 0xBFC6CC, cx + dx + bx, (by + 2.5) / 2 - 0.13, cz);   // string down to the post
+    });
+  });
+  box(g, 0.66, 0.5, 0.66, 0xE9DEC6, cx, 0.25, cz - 1.7);                          // cake table
+  box(g, 0.5, 0.22, 0.5, 0xF3D9E6, cx, 0.61, cz - 1.7); box(g, 0.34, 0.2, 0.34, 0xFFF3F8, cx, 0.82, cz - 1.7);   // two frosted tiers
+  [[-0.08, -0.08], [0.08, -0.08], [-0.08, 0.08], [0.08, 0.08]].forEach(([dx, dz]) => { box(g, 0.02, 0.12, 0.02, 0xF2C84B, cx + dx, 0.98, cz - 1.7 + dz); box(g, 0.04, 0.05, 0.04, 0xE0522B, cx + dx, 1.06, cz - 1.7 + dz); });   // candles + flames
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
+  buildBirthdayDecor(g, -5, 5);              // 🎂 birthday party display near the Reading Town spawn
   buildPlaygroundZone(g, 12, 9);             // 🎠 Reading Town playground build-spot (south-east lawn)
   buildDogParkZone(g, -12, 10);              // 🐕 Reading Town dog park (south-west lawn)
   buildPostOffice(g);
@@ -9322,6 +9338,7 @@ function buildMeadowDecor(g) {
   americanBarn(g, ML.barn.x, ML.barn.z, Math.PI / 2, 'STACK BARN', 'Furniture & Home');                       // W arm (faces EAST) — red gambrel barn
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
+  buildBirthdayDecor(g, 5, 5);                          // 🎂 birthday party display near the Math Meadow spawn
   buildPlaygroundZone(g, 14, 10);                       // 🎠 Math Meadow playground build-spot (south-east meadow)
   buildDogParkZone(g, -14, 11);                         // 🐕 Math Meadow dog park (south-west meadow)
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
@@ -11770,6 +11787,7 @@ function sellbackValue(price) { return Math.max(1, Math.floor(price * SELLBACK_R
 function canSellBack(id) {
   const item = SHOP_ITEMS.find(i => i.id === id);
   if (!item || item.kind !== 'many' || NO_SELLBACK[id]) return false;
+  if (catOf(id) === 'food') return false;          // 🍎 nothing in the Food dept is ever sellable (apples, groceries, meals…)
   return shopOwnedCount(id) > 0;
 }
 function sellFurniture(id) {
