@@ -1691,8 +1691,18 @@ const Sound = {
   correct() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.16, 'sine', 0.18, i * 0.09)); },
   wrong()   { this.tone(330, 0.18, 'sine', 0.12); this.tone(262, 0.22, 'sine', 0.1, 0.16); },
   coin()    { this.tone(900, 0.08, 'square', 0.1); this.tone(1350, 0.18, 'square', 0.1, 0.07); },
-  whistle() { this.tone(560, 0.3, 'sine', 0.16, 0, 760); this.tone(820, 0.5, 'sine', 0.13, 0.12); this.noise(0.45, 0.05, 2200); },   // 🚂 train whistle
-  chuff()   { this.noise(0.16, 0.13, 700); this.tone(110, 0.1, 'sawtooth', 0.06, 0, 70); },                                       // 🚂 steam chuff
+  whistle() {   // 🚂 a long, doubled steam whistle — WHOOO-WHooo (two chords, breathy tail)
+    [[523, 0.10], [659, 0.13], [784, 0.09]].forEach(([f, v]) => this.tone(f, 0.62, 'sine', v, 0, f * 1.18));
+    [[494, 0.10], [622, 0.12], [740, 0.08]].forEach(([f, v]) => this.tone(f, 0.5, 'sine', v, 0.5, f * 1.12));
+    this.noise(1.0, 0.04, 2600);
+  },
+  chuff(power)  {   // 🚂 one "chuff" of steam, louder & sharper the harder the engine works (power 0..1)
+    const p = power || 0, v = 0.1 + p * 0.11;
+    this.noise(0.15, v, 480 + p * 320);
+    this.noise(0.06, v * 0.55, 1700, 0.015);
+    this.tone(92, 0.12, 'sawtooth', v * 0.5, 0, 58);
+  },
+  bell()    { [1318, 1976].forEach((f, i) => { this.tone(f, 0.7, 'sine', 0.07 - i * 0.02, 0); this.tone(f, 0.6, 'sine', 0.05, 0.28); }); },   // 🔔 station bell ding-ding
   chaching() {   // 💵 cash register: a quick drawer "cha" then a bright ringing "ching"
     this.noise(0.05, 0.13, 2600);
     this.tone(1180, 0.1, 'square', 0.13, 0.02, 1500);
@@ -6106,7 +6116,7 @@ function submitFeed(val) {
 }
 
 /* ════════════ 🚂 STEAM TRAIN RIDE (Country Western) — spend a ride ticket, load the coal, take a ride ════════════ */
-const TRAIN_POS = { x: 11, z: -11 };
+let TRAIN_POS = { x: 11, z: -11 };   // boarding point on the loop (set when the Western decor is built)
 function trainDist() { return G.world === 'west' ? Math.hypot(player.pos.x - TRAIN_POS.x, player.pos.z - TRAIN_POS.z) : 999; }
 let coalNeed = 0;
 function openTrainRide() {
@@ -6133,21 +6143,30 @@ function answerCoal(v) {
   }
 }
 function startTrainRide() {
-  if (!westTrainGroup) { endTrainRide(); return; }
-  trainRide = { t: 0, dur: 8.5, baseZ: westTrainGroup.position.z };
+  if (!westTrainGroup || !westLoop) { endTrainRide(); return; }
+  trainRide = { t: 0, dur: 16, lastS: trainStartS, chuff: 0, whistled: false };
   if (Sound.whistle) Sound.whistle();
-  toast('🚂 WHOO-WHOO! Hold on tight!', 2600);
+  toast('🚂 WHOOO-WHOO! All aboard the Silver Creek Express — hold on tight for a lap around town!', 3200);
 }
 function updateTrainRide(dt) {
-  if (!trainRide || !westTrainGroup) return;
+  if (!trainRide || !westTrainGroup || !westLoop) return;
   trainRide.t += dt;
   const u = Math.min(1, trainRide.t / trainRide.dur);
-  const offset = -Math.sin(u * Math.PI) * 24;                 // roll out into the open desert and back
-  const T = westTrainGroup; T.position.z = trainRide.baseZ + offset;
-  if (Math.floor(trainRide.t * 2) !== Math.floor((trainRide.t - dt) * 2) && Sound.chuff) Sound.chuff();
-  const tz = T.position.z;
-  camera.position.set(13.0, 2.8, tz - 2.6);                   // ride just behind the cab, looking forward
-  camera.lookAt(13.0, 1.3, tz + 5);
+  const eased = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;   // ease in (pull out) + ease out (into the station)
+  const s = trainStartS + eased * westLoop.total;                       // exactly one full lap of the loop
+  const sp = loopSample(westLoop, s);
+  const T = westTrainGroup; T.position.set(sp.x, 0, sp.z); T.rotation.y = sp.h;
+  const power = Math.min(1, Math.abs(s - trainRide.lastS) / dt / 9); trainRide.lastS = s;   // 0..1 how hard she's working
+  // rhythmic choo-choo synced to speed — quick chuffs at full steam, lazy ones pulling in
+  trainRide.chuff -= dt;
+  if (trainRide.chuff <= 0 && power > 0.03) { trainRide.chuff = 0.64 - power * 0.36; if (Sound.chuff) Sound.chuff(power); }
+  if (!trainRide.whistled && u > 0.82) { trainRide.whistled = true; if (Sound.whistle) Sound.whistle(); }   // toot coming into the station
+  // billowing steam out of the stack (local ~(1.05, 3.3) on the engine)
+  const hd = sp.h, sx = sp.x + 1.05 * Math.cos(hd), sz = sp.z - 1.05 * Math.sin(hd);
+  updateTrainSteam(dt, sx, 3.3, sz, hd, power);
+  // chase-cam: ride just behind & above the cab, looking forward down the track at the scenery rolling by
+  camera.position.set(sp.x - Math.cos(hd) * 7.2, 4.4, sp.z + Math.sin(hd) * 7.2);
+  camera.lookAt(sp.x + Math.cos(hd) * 7, 1.5, sp.z - Math.sin(hd) * 7);
   if (trainRide.t >= trainRide.dur) endTrainRide();
 }
 /* 🐴 Horse & buggy RENTAL — pay coins, then trot around the Western on your own four hooves */
@@ -6179,13 +6198,14 @@ function updateBuggyRide() {
   if (player.avatar) player.avatar.visible = false;   // you're up on the buggy
 }
 function endTrainRide() {
-  if (westTrainGroup && trainRide) westTrainGroup.position.z = trainRide.baseZ;
+  if (westTrainGroup && westLoop) { const sp = loopSample(westLoop, trainStartS); westTrainGroup.position.set(sp.x, 0, sp.z); westTrainGroup.rotation.y = sp.h; }   // park back at the depot
+  if (trainSteam) trainSteam._puffs.forEach(p => { p.life = 0; p.mesh.visible = false; });
   trainRide = null;
-  player.pos.set(TRAIN_POS.x - 2, 0, TRAIN_POS.z + 1.5); player.vel.set(0, 0, 0);
+  player.pos.set(TRAIN_POS.x, 0, TRAIN_POS.z + 2.4); player.vel.set(0, 0, 0);
   profile.trainRides = (profile.trainRides || 0) + 1; profileDirty = true;
   G.coins += 12; refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
-  if (Sound.fanfare) Sound.fanfare();
-  toast('🚂 What a ride — round the track and back! +12 🪙', 4200);
+  if (Sound.bell) Sound.bell();
+  toast('🚂 Back at the depot — what a tour all the way around Silver Creek! +12 🪙', 4200);
   if (typeof checkQuests === 'function') checkQuests();
 }
 
@@ -8199,6 +8219,7 @@ function finishSchool() {
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group(), west: new THREE.Group() };
 let westTrainGroup = null, trainRide = null;   // 🚂 the Western steam train + its ride state
+let westLoop = null, trainSteam = null, trainStartS = 0;   // 🚆 the big tour-loop track, billowing-steam puffs, boarding point
 let rentalBuggy = null;   // 🐴 the rentable horse-and-buggy (Country Western)
 function cityTexture(bodyN, litN) {
   const hx = n => '#' + n.toString(16).padStart(6, '0');
@@ -9266,6 +9287,66 @@ function trainCarriage(T, cx, col, col2, GLASS) {
   box(T, 3.0, 0.1, 0.03, 0xC9A24A, cx, 0.82, 0.65); box(T, 3.0, 0.1, 0.03, 0xC9A24A, cx, 0.82, -0.65);   // gold body stripe
   [-1.0, 1.0].forEach(wx => [-0.5, 0.5].forEach(wz => { const w = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.07, 8, 14), mat(0x262626)); w.position.set(cx + wx, 0.3, wz); T.add(w); }));
 }
+/* 🚆 a big "tour loop" the steam train rides all the way around the Western. It's a rounded-rectangle
+   (squircle, n=4) so the straight-ish sides keep the long rigid train from clipping on the corners.
+   Returns sampled points with heading + cumulative arc-length so the train rides it at a smooth eased speed. */
+function buildLoopPath(cx, cz, a, b, n, steps) {
+  const pts = [], sq = c => Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
+  for (let i = 0; i < steps; i++) { const t = (i / steps) * Math.PI * 2; pts.push({ x: cx + a * sq(Math.cos(t)), z: cz + b * sq(Math.sin(t)) }); }
+  let total = 0; const cum = [0];
+  for (let i = 0; i < steps; i++) {
+    const p = pts[i], q = pts[(i + 1) % steps];
+    p.h = Math.atan2(-(q.z - p.z), (q.x - p.x));                 // heading so engine's local +x faces travel
+    total += Math.hypot(q.x - p.x, q.z - p.z); cum.push(total);
+  }
+  return { pts, cum, total, steps };
+}
+function loopSample(loop, s) {   // position + interpolated heading at arc-length s (wraps around the loop)
+  const total = loop.total; s = ((s % total) + total) % total;
+  let lo = 0, hi = loop.steps;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; loop.cum[mid] <= s ? lo = mid : hi = mid; }
+  const seg = loop.cum[lo + 1] - loop.cum[lo] || 1, f = (s - loop.cum[lo]) / seg;
+  const p = loop.pts[lo], q = loop.pts[(lo + 1) % loop.steps];
+  let dh = q.h - p.h; while (dh > Math.PI) dh -= Math.PI * 2; while (dh < -Math.PI) dh += Math.PI * 2;
+  return { x: p.x + (q.x - p.x) * f, z: p.z + (q.z - p.z) * f, h: p.h + dh * f };
+}
+/* 💨 a pool of recycled steam puffs that billow out of the smokestack during the ride */
+function buildTrainSteam(g) {
+  const grp = new THREE.Group(), puffs = [];
+  for (let i = 0; i < 26; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), new THREE.MeshBasicMaterial({ color: 0xF6F6F4, transparent: true, opacity: 0, depthWrite: false }));
+    m.visible = false; grp.add(m); puffs.push({ mesh: m, life: 0, max: 1, vx: 0, vy: 0, vz: 0 });
+  }
+  grp._puffs = puffs; grp._emit = 0; g.add(grp); return grp;
+}
+function updateTrainSteam(dt, sx, sy, sz, hd, power) {
+  if (!trainSteam) return;
+  const puffs = trainSteam._puffs;
+  trainSteam._emit -= dt;
+  if (trainSteam._emit <= 0 && power > 0.02) {
+    trainSteam._emit = 0.055;
+    const p = puffs.find(q => q.life <= 0);
+    if (p) {
+      p.mesh.position.set(sx, sy, sz);
+      p.life = p.max = 1.7 + Math.random() * 0.9;
+      const bx = -Math.cos(hd), bz = Math.sin(hd);                // drift back over the cars, opposite to travel
+      p.vx = bx * (0.5 + power * 1.6) + (Math.random() - 0.5) * 0.5;
+      p.vz = bz * (0.5 + power * 1.6) + (Math.random() - 0.5) * 0.5;
+      p.vy = 1.5 + Math.random() * 0.7;
+      p.mesh.scale.setScalar(0.4); p.mesh.visible = true;
+    }
+  }
+  for (const p of puffs) {
+    if (p.life <= 0) continue;
+    p.life -= dt;
+    if (p.life <= 0) { p.mesh.visible = false; continue; }
+    p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
+    p.vy *= 0.95; p.vx *= 0.98; p.vz *= 0.98;
+    const age = 1 - p.life / p.max;
+    p.mesh.scale.setScalar(0.4 + age * 2.4);                      // billow outward as it rises
+    p.mesh.material.opacity = Math.min(0.8, (1 - age) * 0.9);
+  }
+}
 function buildSteamTrain(g, x, z, rot) {
   const T = new THREE.Group();
   const BLACK = 0x262626, BLACK2 = 0x1b1b1b, GOLD = 0xC9A24A, RED = 0xB23A2E, RED2 = 0x8E2E23, GREEN = 0x2f6b3a, STEAM = 0xF4F4F4, GLASS = 0x9fd4e8;
@@ -9471,11 +9552,24 @@ function buildWestDecor(g) {
   box(g, 0.12, 1.4, 0.12, 0x6b4a2c, -3.4, 0.7, -6); signOn(g, 'BUGGY RENTAL', 'Ride for 10 🪙!', 0x6b3a1a, 1.5, 0.7, -3.4, 1.55, -5.9);   // rental sign
   buildFoodStall(g, -1, -12.5, 0, 'FUNNEL CAKES', 0xE07B2A, 0xE8C24A);
   buildFoodStall(g, 2.6, -12.5, 0, 'CORN DOGS', 0xC0392B, 0x9a6b2a);
-  buildDepot(g, 9.6, -13, Math.PI / 2);                     // station set beside the track, platform facing it
-  // train track running north–south + the steam train waiting at the platform
-  for (let i = 0; i < 24; i++) box(g, 1.7, 0.08, 0.16, 0x5e3f24, 13, 0.04, -18 + i * 0.7);
-  box(g, 0.1, 0.1, 18, 0x6a6a6a, 12.5, 0.12, -9); box(g, 0.1, 0.1, 18, 0x6a6a6a, 13.5, 0.12, -9);
-  westTrainGroup = buildSteamTrain(g, 13, -7, -Math.PI / 2);
+  buildDepot(g, 9.6, -15.8, 0);                             // station on the north strip, platform facing SOUTH onto the loop
+  // 🚆 the big TOUR LOOP — track that circles the whole town so the train rides all the way around past the scenery
+  westLoop = buildLoopPath(0, -2, 20, 12, 4, 132);
+  for (let i = 0; i < westLoop.steps; i++) {
+    const p = westLoop.pts[i], q = westLoop.pts[(i + 1) % westLoop.steps], h = p.h;
+    if (i % 2 === 0) { const tie = box(g, 1.9, 0.08, 0.34, 0x5e3f24, p.x, 0.04, p.z); tie.rotation.y = h; }   // wooden cross-ties
+    const len = Math.hypot(q.x - p.x, q.z - p.z) + 0.06, mx = (p.x + q.x) / 2, mz = (p.z + q.z) / 2;
+    const px = Math.sin(h) * 0.55, pz = Math.cos(h) * 0.55;     // perpendicular offset for the two steel rails
+    [-1, 1].forEach(s => { const r = box(g, len, 0.1, 0.1, 0x6a6a6a, mx + px * s, 0.12, mz + pz * s); r.rotation.y = h; });
+  }
+  // park the engine on the loop's north run right in front of the depot platform — that's the boarding point
+  let bi = 0, bd = 1e9;
+  for (let i = 0; i < westLoop.steps; i++) { const d = Math.hypot(westLoop.pts[i].x - 9.6, westLoop.pts[i].z - (-13)); if (d < bd) { bd = d; bi = i; } }
+  trainStartS = westLoop.cum[bi];
+  const sp = loopSample(westLoop, trainStartS);
+  TRAIN_POS = { x: sp.x, z: sp.z };
+  westTrainGroup = buildSteamTrain(g, sp.x, sp.z, sp.h);
+  trainSteam = buildTrainSteam(g);
   buildWaterTower(g, -23, -19);
   buildWindmill(g, 23, -18);
   buildMineEntrance(g, 19, -20);
