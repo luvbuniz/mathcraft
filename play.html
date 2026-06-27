@@ -4228,6 +4228,7 @@ function resetWorld() {
   doorList.length = 0;
   gloomies.forEach(g => scene.remove(g)); gloomies.length = 0;
   projectiles.forEach(p => scene.remove(p.mesh)); projectiles.length = 0;
+  if (typeof cancelFetch === 'function') cancelFetch(true);   // 🐕 pack up any dog-park fetch game
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   poolWater = [];                                  // pool meshes are removed with the blocks above
@@ -8553,9 +8554,34 @@ function buildPlaygroundZone(g, cx, cz) {
   signOn(g, 'PLAYGROUND', 'Build & Play! 🎠', 0x2f6b4f, 3.4, 0.62, cx, 2.0, cz - 2.45);
   [[-2.3, 2.3, POST2], [2.3, 2.3, POST]].forEach(([dx, dz, c]) => { box(g, 0.28, 0.5, 0.28, c, cx + dx, 0.27, cz + dz); box(g, 0.34, 0.12, 0.34, 0xF2C84B, cx + dx, 0.56, cz + dz); });   // corner marker cones
 }
+/* 🐕 the Dog Park — a fenced grassy run with agility props where you play FETCH for coins. */
+function pickFence(g, x, z, horiz) {
+  const p = box(g, horiz ? 0.5 : 0.06, 0.5, horiz ? 0.06 : 0.5, 0xF2ECDC, x, 0.28, z);
+  box(g, horiz ? 0.5 : 0.08, 0.08, horiz ? 0.08 : 0.5, 0x8a6a4a, x, 0.42, z);
+}
+function buildDogParkZone(g, cx, cz) {
+  const GRASS = 0x6FBF4B, SIGN = 0x6b4a2c, RED = 0xC0392B;
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) box(g, 1.0, 0.03, 1.0, (i + j) % 2 ? GRASS : shade(GRASS, 1.08), cx + i, 0.015, cz + j);   // grass pad
+  for (let i = -2; i <= 2; i++) { pickFence(g, cx - 2.4, cz + i, false); pickFence(g, cx + 2.4, cz + i, false); pickFence(g, cx + i, cz - 2.4, true); if (i !== 0) pickFence(g, cx + i, cz + 2.4, true); }   // fence (front gap = entrance)
+  [-1.6, 1.6].forEach(dx => box(g, 0.14, 2.0, 0.14, SIGN, cx + dx, 1.0, cz - 2.55));   // sign posts
+  box(g, 3.6, 0.26, 0.26, SIGN, cx, 2.0, cz - 2.55);
+  signOn(g, 'DOG PARK', 'Play fetch! 🐾', 0x2f6b4f, 3.0, 0.56, cx, 1.6, cz - 2.4);
+  // 🎯 agility props
+  [-0.5, 0.5].forEach(dx => box(g, 0.08, 0.9, 0.08, RED, cx - 1.2 + dx, 0.45, cz + 0.4));   // jump-hoop posts
+  const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 8, 18), mat(0xF2C84B)); hoop.position.set(cx - 1.2, 0.7, cz + 0.4); g.add(hoop);
+  const r1 = box(g, 0.7, 0.06, 0.85, 0x4a8fd0, cx + 1.4, 0.38, cz - 0.7); r1.rotation.x = 0.5; const r2 = box(g, 0.7, 0.06, 0.85, 0x57b06a, cx + 1.4, 0.38, cz - 0.05); r2.rotation.x = -0.5;   // A-frame ramp
+  for (let k = 0; k < 4; k++) box(g, 0.07, 0.66, 0.07, 0xE0522B, cx - 0.45 + k * 0.3, 0.33, cz + 1.5);   // weave poles
+  const tun = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.1, 14, 1, true, 0, Math.PI), new THREE.MeshLambertMaterial({ color: 0x4a8fd0, side: THREE.DoubleSide })); tun.rotation.z = Math.PI / 2; tun.position.set(cx + 1.5, 0.4, cz + 1.4); g.add(tun);   // tunnel
+  box(g, 0.16, 0.34, 0.16, RED, cx - 2.0, 0.17, cz + 1.7); box(g, 0.22, 0.08, 0.22, RED, cx - 2.0, 0.36, cz + 1.7);   // fire hydrant
+  box(g, 0.34, 0.08, 0.34, 0x9a8e80, cx + 0.3, 0.03, cz + 1.9); box(g, 0.26, 0.06, 0.26, 0x5aa7e8, cx + 0.3, 0.07, cz + 1.9);   // water bowl
+  // 🐾 throw pad at the entrance — stand here & tap USE to play
+  box(g, 0.8, 0.04, 0.8, 0xF2C84B, cx, 0.03, cz + 2.0);
+  box(g, 0.12, 0.05, 0.12, 0x6b4a2c, cx, 0.06, cz + 2.1); [[-0.12, 0.04], [0.12, 0.04], [0, 0.16]].forEach(([dx, dz]) => box(g, 0.07, 0.05, 0.07, 0x6b4a2c, cx + dx, 0.06, cz + 2.1 - dz));   // paw print
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
   buildPlaygroundZone(g, 12, 9);             // 🎠 Reading Town playground build-spot (south-east lawn)
+  buildDogParkZone(g, -12, 10);              // 🐕 Reading Town dog park (south-west lawn)
   buildPostOffice(g);
   buildRealty(g);
   buildCinema(g);
@@ -9292,6 +9318,7 @@ function buildMeadowDecor(g) {
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
   buildPlaygroundZone(g, 14, 10);                       // 🎠 Math Meadow playground build-spot (south-east meadow)
+  buildDogParkZone(g, -14, 11);                         // 🐕 Math Meadow dog park (south-west meadow)
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 16;
   for (let i = 0; i < HN; i++) {
@@ -9838,6 +9865,86 @@ function smoothSand() {
   ud.sandShapes = []; ud.rewarded = false;
   if (Sound.slide) Sound.slide();
   $('sandMsg').textContent = 'All smoothed over — fresh sand! Tap a mold to start building.';
+}
+
+/* 🐕 DOG PARK — play fetch for coins. Walk to the 🐾 throw pad, tap ⭐ USE to start, then tap USE
+   to throw the ball; a friendly park pup runs it down and brings it back. Pets are the hook! */
+const DOGPARK = { meadow: { x: -14, z: 11 }, city: { x: -12, z: 10 } };
+const FETCH_BALLS = [{ n: 'Tennis Ball', c: 0xC9E04A }, { n: 'Basketball', c: 0xE07B2A }, { n: 'Beach Ball', c: 0x4a9ad8 }];
+let fetchGame = null;
+function dogParkDist() { const P = DOGPARK[G.world]; return P ? Math.hypot(player.pos.x - P.x, player.pos.z - (P.z + 2)) : 999; }
+function startFetch() {
+  if (fetchGame || popupOpen) return;
+  const P = DOGPARK[G.world]; if (!P) return;
+  const dog = buildPetMesh('dog', ri(0, 5)); dog.position.set(P.x, 0, P.z - 0.5); scene.add(dog);
+  const bt = ri(0, FETCH_BALLS.length - 1);
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), mat(FETCH_BALLS[bt].c)); ball.visible = false; scene.add(ball);
+  fetchGame = { dog, ball, bt, phase: 'ready', score: 0, throws: 6, legP: 0 };
+  toast('🎾 Fetch with the ' + FETCH_BALLS[bt].n + '! Tap ⭐ USE to throw — your buddy brings it back. 6 throws!', 4600);
+  if (Sound.bark) Sound.bark();
+}
+function cancelFetch(silent) {
+  if (!fetchGame) return;
+  scene.remove(fetchGame.dog); scene.remove(fetchGame.ball); fetchGame = null;
+  if (!silent) toast('🐾 Thanks for playing fetch — come back any time!', 2000);
+}
+function throwForward() {
+  const fg = fetchGame; if (!fg || fg.phase !== 'ready') return;
+  const dist = 4.5 + Math.random() * 2.2;
+  throwFetchBall(player.pos.x - Math.sin(player.yaw) * dist, player.pos.z - Math.cos(player.yaw) * dist);
+}
+function throwFetchBall(tx, tz) {
+  const fg = fetchGame; if (!fg || fg.phase !== 'ready') return;
+  fg.ball.position.set(player.pos.x, 1.3, player.pos.z); fg.ball.visible = true;
+  fg.from = { x: player.pos.x, z: player.pos.z }; fg.to = { x: tx, z: tz };
+  fg.dist = Math.hypot(tx - player.pos.x, tz - player.pos.z) || 1; fg.bt2 = 0; fg.phase = 'thrown';
+  if (Sound.throw_) Sound.throw_();
+}
+function runDogToward(m, tx, tz, dt, speed, wag) {
+  const dx = tx - m.position.x, dz = tz - m.position.z, d = Math.hypot(dx, dz);
+  if (d > 0.06) { const nx = dx / d, nz = dz / d, step = Math.min(d, speed * dt); m.position.x += nx * step; m.position.z += nz * step; m.rotation.y = Math.atan2(nx, nz); fetchGame.legP += dt * speed * 2.0; }
+  const ud = m.userData, sw = Math.sin(fetchGame.legP) * 0.7;
+  if (ud.legs) { if (ud.legs[0]) ud.legs[0].rotation.x = sw; if (ud.legs[3]) ud.legs[3].rotation.x = sw; if (ud.legs[1]) ud.legs[1].rotation.x = -sw; if (ud.legs[2]) ud.legs[2].rotation.x = -sw; }
+  m.position.y = Math.abs(Math.sin(fetchGame.legP)) * 0.04;
+  if (ud.tail) ud.tail.rotation.z = Math.sin(fetchGame.legP * 1.6) * (wag ? 0.5 : 0.3);
+  return d;
+}
+function updateFetch(dt) {
+  const fg = fetchGame; if (!fg) return;
+  const P = DOGPARK[G.world];
+  if (P && Math.hypot(player.pos.x - P.x, player.pos.z - P.z) > 18) { cancelFetch(true); return; }   // wandered off — pack up
+  const dog = fg.dog, ball = fg.ball;
+  if (fg.phase === 'ready') { const d = runDogToward(dog, player.pos.x, player.pos.z - 1.1, dt, 2.6, true); if (d < 0.2) dog.rotation.y = player.yaw + Math.PI; return; }   // trot in front & wag, facing you, waiting for a throw
+  if (fg.phase === 'thrown') {
+    fg.bt2 = Math.min(1, fg.bt2 + dt / Math.max(0.5, fg.dist / 9));
+    const u = fg.bt2;
+    ball.position.x = fg.from.x + (fg.to.x - fg.from.x) * u;
+    ball.position.z = fg.from.z + (fg.to.z - fg.from.z) * u;
+    ball.position.y = 0.16 + Math.sin(u * Math.PI) * Math.min(2.2, fg.dist * 0.4);
+    const dd = runDogToward(dog, fg.to.x, fg.to.z, dt, 5.2);
+    if (u >= 1) ball.position.y = 0.16;
+    if (u >= 1 && dd < 0.55) { fg.phase = 'return'; if (Sound.bark) Sound.bark(); }
+    return;
+  }
+  if (fg.phase === 'return') {
+    const dd = runDogToward(dog, player.pos.x, player.pos.z, dt, 5.2);
+    ball.position.set(dog.position.x + Math.sin(dog.rotation.y) * 0.34, 0.42, dog.position.z + Math.cos(dog.rotation.y) * 0.34);   // carried in the mouth
+    if (dd < 1.4) {
+      fg.score++; fg.throws--; G.coins += 2; refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+      ball.visible = false; if (Sound.coin) Sound.coin(); if (Sound.bark) Sound.bark();
+      if (fg.throws <= 0) { endFetch(); return; }
+      fg.phase = 'ready'; toast('🎾 Good boy! +2 🪙 — ' + fg.throws + ' throws left.', 1700);
+    }
+    return;
+  }
+}
+function endFetch() {
+  const fg = fetchGame; if (!fg) return;
+  const bonus = 4 + fg.score;
+  G.coins += bonus; refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+  if (Sound.fanfare) Sound.fanfare();
+  toast('🏆 What a fetch session — ' + fg.score + ' catches! Bonus +' + bonus + ' 🪙. Tap the 🐾 pad to play again!', 4800);
+  cancelFetch(true);
 }
 
 function setAvatar(index) {
@@ -13466,6 +13573,7 @@ const keys = {};
 // Shared by the E key AND the on-screen ⭐ USE button (so mouse-only players aren't stuck).
 function tryUse() {
   if (!G.running || popupOpen) return;
+  if (fetchGame) { Sound.click(); throwForward(); return; }         // 🎾 while playing fetch, USE throws the ball
   if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
   else if (player.ridingBuggy) { Sound.click(); endBuggyRide(); }       // 🐴 hop off the buggy
   else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
@@ -13490,6 +13598,7 @@ function tryUse() {
   else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
   else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
   else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
+  else if (dogParkDist() < 3.6) { Sound.click(); startFetch(); }   // 🐕 dog park — play fetch for coins!
   else if (nearestSandbox()) { Sound.click(); openSandbox(nearestSandbox()); }   // 🏖️ play in the sandbox — build sandcastles!
   else if (nearestPlay()) { Sound.click(); startPlay(nearestPlay()); }   // 🎠 hop on a swing / see-saw / slide / spring rider / roundabout / climbing frame
   else if (nearestChair()) { Sound.click(); toggleSit(); }
@@ -14719,6 +14828,7 @@ function loop(now) {
 
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (player.ridingBuggy) updateBuggyRide();   // 🐴 keep the rented buggy under the rider
+  if (fetchGame) updateFetch(dt);              // 🐕 dog-park fetch game
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
   if (poolWater.length) { const tw = performance.now() / 480; for (const w of poolWater) if (w.mesh.parent) w.mesh.position.y = w.baseY + Math.sin(tw + (w.x + w.z) * 0.7) * 0.05; }   // rippling pool water
   if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
