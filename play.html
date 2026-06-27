@@ -8598,11 +8598,70 @@ function buildBirthdayDecor(g, cx, cz) {
   box(g, 0.5, 0.22, 0.5, 0xF3D9E6, cx, 0.61, cz - 1.7); box(g, 0.34, 0.2, 0.34, 0xFFF3F8, cx, 0.82, cz - 1.7);   // two frosted tiers
   [[-0.08, -0.08], [0.08, -0.08], [-0.08, 0.08], [0.08, 0.08]].forEach(([dx, dz]) => { box(g, 0.02, 0.12, 0.02, 0xF2C84B, cx + dx, 0.98, cz - 1.7 + dz); box(g, 0.04, 0.05, 0.04, 0xE0522B, cx + dx, 1.06, cz - 1.7 + dz); });   // candles + flames
 }
+/* 🏞️ ONE BIG TOWN PARK — a main entrance arch, then two gated sections inside: a roomy fenced
+   🐕 Dog Park (fetch + agility) on the west and a 🎠 Playground build-spot on the east. */
+function parkGate(g, cx, cz, w, name, sub, bg, faceY) {
+  const grp = new THREE.Group();
+  [-w / 2, w / 2].forEach(dx => box(grp, 0.22, 2.8, 0.22, 0x6b4a2c, dx, 1.4, 0));
+  box(grp, w + 0.7, 0.42, 0.42, 0x5b3f24, 0, 2.78, 0); box(grp, w + 0.7, 0.14, 0.52, 0x4a3018, 0, 3.04, 0);
+  signOn(grp, name, sub, bg, w, 0.9, 0, 2.05, 0.27);
+  grp.position.set(cx, 0, cz); grp.rotation.y = faceY || 0; g.add(grp);   // rotate so the sign faces the approach
+}
+function parkLamp(g, x, z) { box(g, 0.12, 2.2, 0.12, 0x2a2a2a, x, 1.1, z); box(g, 0.28, 0.28, 0.28, 0xF7E08A, x, 2.32, z); box(g, 0.16, 0.14, 0.16, 0x2a2a2a, x, 2.52, z); }
+function parkBench(g, x, z, rot) {
+  const b = new THREE.Group();
+  box(b, 1.3, 0.1, 0.42, 0x9a6a3a, 0, 0.42, 0); box(b, 1.3, 0.42, 0.1, 0x8a5c33, 0, 0.62, -0.16);
+  [-0.55, 0.55].forEach(dx => box(b, 0.1, 0.42, 0.42, 0x6b4a2c, dx, 0.21, 0));
+  b.position.set(x, 0, z); b.rotation.y = rot || 0; g.add(b);
+}
+function parkFountain(g, x, z) {
+  const STONE = 0xAEB4BC, W = 0x6cb6ec;
+  for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2; box(g, 0.42, 0.42, 0.42, STONE, x + Math.cos(a) * 1.35, 0.2, z + Math.sin(a) * 1.35); }
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.18, 18), new THREE.MeshLambertMaterial({ color: W, transparent: true, opacity: 0.85 })); water.position.set(x, 0.32, z); g.add(water);
+  box(g, 0.34, 1.0, 0.34, STONE, x, 0.7, z);
+  const sp = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), new THREE.MeshLambertMaterial({ color: W, transparent: true, opacity: 0.7 })); sp.position.set(x, 1.3, z); g.add(sp);
+}
+function trashCan(g, x, z) { box(g, 0.42, 0.5, 0.42, 0x2f7d4a, x, 0.27, z); box(g, 0.46, 0.06, 0.46, 0x256238, x, 0.54, z); }
+function parkRulesSign(g, x, z) {
+  box(g, 0.12, 1.5, 0.12, 0x6b4a2c, x - 0.75, 0.75, z); box(g, 0.12, 1.5, 0.12, 0x6b4a2c, x + 0.75, 0.75, z);
+  box(g, 1.8, 1.15, 0.1, 0xF4ECD8, x, 1.5, z);
+  signOn(g, 'PARK RULES', 'Be kind • Pick up • Have fun!', 0x3a6b3a, 1.55, 0.95, x, 1.5, z + 0.07);
+}
+function buildTownPark(g, cx, cz, name) {
+  for (let j = 0; j <= 14; j++) box(g, 2.2, 0.03, 1.0, 0xCBB890, cx, 0.02, cz + j);   // central path
+  for (let i = -12; i <= 12; i++) if (Math.abs(i) > 3) pickFence(g, cx + i, cz, true);   // front fence (center gap = main gate)
+  parkLamp(g, cx - 12, cz + 0.4); parkLamp(g, cx + 12, cz + 0.4); parkLamp(g, cx - 12, cz + 13.6); parkLamp(g, cx + 12, cz + 13.6);
+  parkGate(g, cx, cz, 7, name, '🐾 Dog Park   •   🎠 Playground', 0x2f6b4f, Math.PI);
+  if (typeof decoTree === 'function') { decoTree(g, cx - 15, cz + 3, 1.0); decoTree(g, cx + 15, cz + 4, 0.95); decoTree(g, cx - 15, cz + 12, 0.92); decoTree(g, cx + 15, cz + 11, 1.0); decoTree(g, cx, cz + 16.5, 1.1); }
+  // ── 🐕 DOG PARK (west) — a roomy fenced run ──
+  const dx = cx - 8, dz = cz + 8;
+  for (let i = -5; i <= 5; i++) { if (i < -1 || i > 1) pickFence(g, dx + i, dz - 5, true); pickFence(g, dx + i, dz + 5, true); }
+  for (let j = -4; j <= 4; j++) { pickFence(g, dx - 5, dz + j, false); pickFence(g, dx + 5, dz + j, false); }
+  parkGate(g, dx, dz - 5, 4, 'DOG PARK', 'Play fetch! 🐾', 0x3a6b3a, Math.PI);
+  [-0.5, 0.5].forEach(o => box(g, 0.08, 0.95, 0.08, 0xC0392B, dx - 2.6 + o, 0.47, dz - 3.4));   // jump-hoop posts
+  const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.07, 8, 18), mat(0xF2C84B)); hoop.position.set(dx - 2.6, 0.75, dz - 3.4); g.add(hoop);
+  const r1 = box(g, 1.0, 0.08, 1.4, 0x4a8fd0, dx - 2.6, 0.5, dz - 1.4); r1.rotation.x = 0.5; const r2 = box(g, 1.0, 0.08, 1.4, 0x57b06a, dx - 2.6, 0.5, dz - 0.25); r2.rotation.x = -0.5;   // A-frame ramp
+  const tun = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.7, 16, 1, true, 0, Math.PI), new THREE.MeshLambertMaterial({ color: 0x4a8fd0, side: THREE.DoubleSide })); tun.rotation.z = Math.PI / 2; tun.position.set(dx + 2.6, 0.55, dz - 2.4); g.add(tun);   // tunnel
+  for (let k = 0; k < 5; k++) box(g, 0.08, 0.85, 0.08, 0xE0522B, dx + 1.4 + k * 0.4, 0.42, dz + 0.2);   // weave poles
+  box(g, 0.22, 0.55, 0.22, 0xC0392B, dx + 3.4, 0.27, dz - 0.6); box(g, 0.3, 0.1, 0.3, 0xC0392B, dx + 3.4, 0.55, dz - 0.6);   // fire hydrant
+  parkFountain(g, dx + 2.6, dz + 3);
+  box(g, 0.34, 0.08, 0.34, 0x9a8e80, dx - 3.2, 0.03, dz + 3); box(g, 0.26, 0.06, 0.26, 0x5aa7e8, dx - 3.2, 0.07, dz + 3);   // water bowl
+  trashCan(g, dx - 4.2, dz - 3.6); parkBench(g, dx - 4, dz + 1, 1.2); parkRulesSign(g, dx + 0.2, dz - 4.3);
+  box(g, 0.9, 0.04, 0.9, 0xF2C84B, dx, 0.03, dz + 2);   // 🐾 throw pad (matches the fetch trigger at DOGPARK z+2)
+  box(g, 0.12, 0.05, 0.12, 0x6b4a2c, dx, 0.06, dz + 2.1); [[-0.12, 0.04], [0.12, 0.04], [0, 0.16]].forEach(([bx, bz]) => box(g, 0.07, 0.05, 0.07, 0x6b4a2c, dx + bx, 0.06, dz + 2.1 - bz));   // paw print
+  // ── 🎠 PLAYGROUND (east) — a big build-it mat ──
+  const px = cx + 8, pz = cz + 8;
+  parkGate(g, px, pz - 5, 4, 'PLAYGROUND', 'Build & Play! 🎠', 0x2f6b4f, Math.PI);
+  for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) box(g, 0.98, 0.04, 0.98, (i + j) % 2 ? 0x53b0c0 : 0xE0a23a, px + i, 0.03, pz + j);   // checker play-mat
+  box(g, 3.0, 1.9, 0.3, 0xEDE3C8, px, 0.95, pz - 4.6);   // climbing-wall backdrop
+  const holds = [0xE0392B, 0x4a9ad8, 0xF2C84B, 0x57b06a, 0xC0398B];
+  for (let k = 0; k < 15; k++) box(g, 0.18, 0.18, 0.14, holds[k % 5], px - 1.4 + (k % 5) * 0.7, 0.55 + Math.floor(k / 5) * 0.55, pz - 4.42);   // colorful holds
+  parkBench(g, px - 3.8, pz + 4, 0.3); parkBench(g, px + 3.8, pz + 4, -0.3); parkLamp(g, px, pz + 5);
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
   buildBirthdayDecor(g, -5, 5);              // 🎂 birthday party display near the Reading Town spawn
-  buildPlaygroundZone(g, 12, 9);             // 🎠 Reading Town playground build-spot (south-east lawn)
-  buildDogParkZone(g, -12, 10);              // 🐕 Reading Town dog park (south-west lawn)
+  buildTownPark(g, 0, 9, 'READING TOWN PARK');   // 🏞️ one big park: gated Dog Park + Playground
   buildPostOffice(g);
   buildRealty(g);
   buildCinema(g);
@@ -9339,8 +9398,7 @@ function buildMeadowDecor(g) {
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
   buildBirthdayDecor(g, 5, 5);                          // 🎂 birthday party display near the Math Meadow spawn
-  buildPlaygroundZone(g, 14, 10);                       // 🎠 Math Meadow playground build-spot (south-east meadow)
-  buildDogParkZone(g, -14, 11);                         // 🐕 Math Meadow dog park (south-west meadow)
+  buildTownPark(g, 0, 9, 'MEADOW PARK');                // 🏞️ one big park: gated Dog Park + Playground
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 16;
   for (let i = 0; i < HN; i++) {
@@ -9891,7 +9949,7 @@ function smoothSand() {
 
 /* 🐕 DOG PARK — play fetch for coins. Walk to the 🐾 throw pad, tap ⭐ USE to start, then tap USE
    to throw the ball; a friendly park pup runs it down and brings it back. Pets are the hook! */
-const DOGPARK = { meadow: { x: -14, z: 11 }, city: { x: -12, z: 10 } };
+const DOGPARK = { meadow: { x: -8, z: 17 }, city: { x: -8, z: 17 } };   // dog-park section center inside the big Town Park (throw pad at z+2)
 const FETCH_BALLS = [{ n: 'Tennis Ball', c: 0xC9E04A }, { n: 'Basketball', c: 0xE07B2A }, { n: 'Beach Ball', c: 0x4a9ad8 }];
 let fetchGame = null;
 function dogParkDist() { const P = DOGPARK[G.world]; return P ? Math.hypot(player.pos.x - P.x, player.pos.z - (P.z + 2)) : 999; }
