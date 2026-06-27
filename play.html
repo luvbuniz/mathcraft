@@ -8649,14 +8649,10 @@ function buildTownPark(g, cx, cz, name) {
   trashCan(g, dx - 4.2, dz - 3.6); parkBench(g, dx - 4, dz + 1, 1.2); parkRulesSign(g, dx + 0.2, dz - 4.3);
   box(g, 0.9, 0.04, 0.9, 0xF2C84B, dx, 0.03, dz + 2);   // 🐾 throw pad (matches the fetch trigger at DOGPARK z+2)
   box(g, 0.12, 0.05, 0.12, 0x6b4a2c, dx, 0.06, dz + 2.1); [[-0.12, 0.04], [0.12, 0.04], [0, 0.16]].forEach(([bx, bz]) => box(g, 0.07, 0.05, 0.07, 0x6b4a2c, dx + bx, 0.06, dz + 2.1 - bz));   // paw print
-  // ── 🎠 PLAYGROUND (east) — a big build-it mat ──
+  // ── 🎠 PLAYGROUND (east) — just the gate + an EMPTY build-it mat; kids fill it with the gear they buy ──
   const px = cx + 8, pz = cz + 8;
   parkGate(g, px, pz - 5, 4, 'PLAYGROUND', 'Build & Play! 🎠', 0x2f6b4f, Math.PI);
-  for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) box(g, 0.98, 0.04, 0.98, (i + j) % 2 ? 0x53b0c0 : 0xE0a23a, px + i, 0.03, pz + j);   // checker play-mat
-  box(g, 3.0, 1.9, 0.3, 0xEDE3C8, px, 0.95, pz - 4.6);   // climbing-wall backdrop
-  const holds = [0xE0392B, 0x4a9ad8, 0xF2C84B, 0x57b06a, 0xC0398B];
-  for (let k = 0; k < 15; k++) box(g, 0.18, 0.18, 0.14, holds[k % 5], px - 1.4 + (k % 5) * 0.7, 0.55 + Math.floor(k / 5) * 0.55, pz - 4.42);   // colorful holds
-  parkBench(g, px - 3.8, pz + 4, 0.3); parkBench(g, px + 3.8, pz + 4, -0.3); parkLamp(g, px, pz + 5);
+  for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) box(g, 0.98, 0.04, 0.98, (i + j) % 2 ? 0x53b0c0 : 0xE0a23a, px + i, 0.03, pz + j);   // checker play-mat (left empty on purpose)
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
