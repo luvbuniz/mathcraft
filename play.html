@@ -3321,6 +3321,14 @@ const SHOP_ITEMS = [
   { id: 'sandmolds',  icon: '🏰', name: 'Sand Molds', price: 5, kind: 'many', desc: 'A set of shaped molds — star, castle and crescent — for sandcastles.' },
   { id: 'rccrane',    icon: '🏗️', name: 'RC Crane', price: 15, kind: 'many', desc: 'A remote-control toy crane with a boom and hook for the sandbox.' },
   { id: 'rcdump',     icon: '🚚', name: 'RC Dump Truck', price: 15, kind: 'many', desc: 'A remote-control toy dump truck loaded with sand.' },
+  // 🐕 Dog-park agility gear + park furniture — fill your empty park however you like!
+  { id: 'agilityramp', icon: '📐', name: 'Agility Ramp', price: 10, kind: 'many', desc: 'An A-frame ramp for the dog park — pups climb up and over!' },
+  { id: 'dogtunnel',   icon: '🕳️', name: 'Crawl Tunnel', price: 10, kind: 'many', desc: 'A tunnel for the dog park — dogs dash right through!' },
+  { id: 'jumphoop',    icon: '⭕', name: 'Jump Hoop', price: 8, kind: 'many', desc: 'A hoop on posts for dogs to leap through.' },
+  { id: 'weavepoles',  icon: '〰️', name: 'Weave Poles', price: 8, kind: 'many', desc: 'A row of weave poles for agility training.' },
+  { id: 'hydrant',     icon: '🚒', name: 'Fire Hydrant', price: 5, kind: 'many', desc: 'A classic red fire hydrant for the dog park.' },
+  { id: 'parkbench',   icon: '🪑', name: 'Park Bench', price: 8, kind: 'many', desc: 'A wooden park bench to sit and watch the fun.' },
+  { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -3341,7 +3349,7 @@ const SHOP_ITEMS = [
 ];
 /* Two stores: 🛒 Stack Mart (general goods) and 🏚️ Stack Barn (build + home: everything you build a house with). */
 const MART_CATS = [['food', '🍎 Food'], ['july4', '🎆 July 4th'], ['pets', '🐾 Pets'], ['gear', '⭐ Gear']];
-const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden'], ['play', '🎠 Playground']];
+const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden'], ['play', '🏞️ Park & Playground']];
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🏚️ Stack Barn — Building dept (blocks, doors, garage doors, windows, roof — all the build materials)
@@ -3360,7 +3368,8 @@ const ITEM_CAT = {
   table: 'outdoor', umbrella: 'outdoor', lounger: 'outdoor', bbq: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolslide: 'outdoor', poolmega: 'outdoor',
   // 🎠 Stack Barn — Build-Your-Own Playground
   swingset: 'play', seesaw: 'play', slide: 'play', springer: 'play', roundabout: 'play', sandbox: 'play', climber: 'play',
-  sandtoys: 'play', sandmolds: 'play', rccrane: 'play', rcdump: 'play'
+  sandtoys: 'play', sandmolds: 'play', rccrane: 'play', rcdump: 'play',
+  agilityramp: 'play', dogtunnel: 'play', jumphoop: 'play', weavepoles: 'play', hydrant: 'play', parkbench: 'play', fountain: 'play'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
@@ -4256,7 +4265,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -8633,21 +8642,12 @@ function buildTownPark(g, cx, cz, name) {
   parkLamp(g, cx - 12, cz + 0.4); parkLamp(g, cx + 12, cz + 0.4); parkLamp(g, cx - 12, cz + 13.6); parkLamp(g, cx + 12, cz + 13.6);
   parkGate(g, cx, cz, 7, name, '🐾 Dog Park   •   🎠 Playground', 0x2f6b4f, Math.PI);
   if (typeof decoTree === 'function') { decoTree(g, cx - 15, cz + 3, 1.0); decoTree(g, cx + 15, cz + 4, 0.95); decoTree(g, cx - 15, cz + 12, 0.92); decoTree(g, cx + 15, cz + 11, 1.0); decoTree(g, cx, cz + 16.5, 1.1); }
-  // ── 🐕 DOG PARK (west) — a roomy fenced run ──
+  // ── 🐕 DOG PARK (west) — a roomy fenced run, left EMPTY so kids buy & place their own agility gear ──
   const dx = cx - 8, dz = cz + 8;
   for (let i = -5; i <= 5; i++) { if (i < -1 || i > 1) pickFence(g, dx + i, dz - 5, true); pickFence(g, dx + i, dz + 5, true); }
   for (let j = -4; j <= 4; j++) { pickFence(g, dx - 5, dz + j, false); pickFence(g, dx + 5, dz + j, false); }
   parkGate(g, dx, dz - 5, 4, 'DOG PARK', 'Play fetch! 🐾', 0x3a6b3a, Math.PI);
-  [-0.5, 0.5].forEach(o => box(g, 0.08, 0.95, 0.08, 0xC0392B, dx - 2.6 + o, 0.47, dz - 3.4));   // jump-hoop posts
-  const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.07, 8, 18), mat(0xF2C84B)); hoop.position.set(dx - 2.6, 0.75, dz - 3.4); g.add(hoop);
-  const r1 = box(g, 1.0, 0.08, 1.4, 0x4a8fd0, dx - 2.6, 0.5, dz - 1.4); r1.rotation.x = 0.5; const r2 = box(g, 1.0, 0.08, 1.4, 0x57b06a, dx - 2.6, 0.5, dz - 0.25); r2.rotation.x = -0.5;   // A-frame ramp
-  const tun = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.7, 16, 1, true, 0, Math.PI), new THREE.MeshLambertMaterial({ color: 0x4a8fd0, side: THREE.DoubleSide })); tun.rotation.z = Math.PI / 2; tun.position.set(dx + 2.6, 0.55, dz - 2.4); g.add(tun);   // tunnel
-  for (let k = 0; k < 5; k++) box(g, 0.08, 0.85, 0.08, 0xE0522B, dx + 1.4 + k * 0.4, 0.42, dz + 0.2);   // weave poles
-  box(g, 0.22, 0.55, 0.22, 0xC0392B, dx + 3.4, 0.27, dz - 0.6); box(g, 0.3, 0.1, 0.3, 0xC0392B, dx + 3.4, 0.55, dz - 0.6);   // fire hydrant
-  parkFountain(g, dx + 2.6, dz + 3);
-  box(g, 0.34, 0.08, 0.34, 0x9a8e80, dx - 3.2, 0.03, dz + 3); box(g, 0.26, 0.06, 0.26, 0x5aa7e8, dx - 3.2, 0.07, dz + 3);   // water bowl
-  trashCan(g, dx - 4.2, dz - 3.6); parkBench(g, dx - 4, dz + 1, 1.2); parkRulesSign(g, dx + 0.2, dz - 4.3);
-  box(g, 0.9, 0.04, 0.9, 0xF2C84B, dx, 0.03, dz + 2);   // 🐾 throw pad (matches the fetch trigger at DOGPARK z+2)
+  box(g, 0.9, 0.04, 0.9, 0xF2C84B, dx, 0.03, dz + 2);   // 🐾 fetch pad (matches the DOGPARK trigger at z+2) — kept so you can still play fetch
   box(g, 0.12, 0.05, 0.12, 0x6b4a2c, dx, 0.06, dz + 2.1); [[-0.12, 0.04], [0.12, 0.04], [0, 0.16]].forEach(([bx, bz]) => box(g, 0.07, 0.05, 0.07, 0x6b4a2c, dx + bx, 0.06, dz + 2.1 - bz));   // paw print
   // ── 🎠 PLAYGROUND (east) — just the gate + an EMPTY build-it mat; kids fill it with the gear they buy ──
   const px = cx + 8, pz = cz + 8;
@@ -11915,7 +11915,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'birdfood', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'birdfood', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -12242,6 +12242,32 @@ function buildFurnitureMesh(type, variant) {
     for (let i = 0; i < 8; i++) box(g, 0.24, 0.04, 0.24, TRIM, 0, 0.22 + i * 0.12, 0);   // sisal wrap rings
     box(g, 0.26, 0.07, 0.26, BASE, 0, 1.18, 0);                         // top cap
     box(g, 0.02, 0.24, 0.02, BASE, 0, 1.34, 0.1); box(g, 0.13, 0.13, 0.13, TOY, 0, 1.18, 0.18);   // dangly ball
+  } else if (type === 'agilityramp') {
+    const A = box(g, 0.92, 0.07, 1.0, 0x4a8fd0, 0, 0.42, -0.46); A.rotation.x = 0.6;
+    const B = box(g, 0.92, 0.07, 1.0, 0x57b06a, 0, 0.42, 0.46); B.rotation.x = -0.6;
+    box(g, 0.96, 0.07, 0.14, 0xF2C84B, 0, 0.78, 0);                  // apex ridge
+    for (let i = 0; i < 4; i++) { box(g, 0.92, 0.03, 0.04, 0xFFFFFF, 0, 0.3 + i * 0.13, -0.18 - i * 0.16).rotation.x = 0.6; }   // grip slats
+  } else if (type === 'dogtunnel') {
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.5, 16, 1, true, 0, Math.PI), new THREE.MeshLambertMaterial({ color: 0x4a8fd0, side: THREE.DoubleSide })); t.rotation.z = Math.PI / 2; t.position.y = 0.5; g.add(t);
+    [-0.74, 0.74].forEach(z => { const r = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.05, 8, 16, Math.PI), mat(0x3f7ab4)); r.rotation.y = Math.PI / 2; r.position.set(0, 0.5, z); g.add(r); });   // rim hoops
+  } else if (type === 'jumphoop') {
+    [-0.5, 0.5].forEach(o => box(g, 0.08, 1.0, 0.08, 0xC0392B, o, 0.5, 0));
+    const h = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.07, 8, 18), mat(0xF2C84B)); h.position.set(0, 0.82, 0); g.add(h);
+  } else if (type === 'weavepoles') {
+    box(g, 1.05, 0.06, 0.12, 0x8a5c33, 0, 0.03, 0);                  // base rail
+    for (let k = 0; k < 5; k++) box(g, 0.08, 0.9, 0.08, k % 2 ? 0xF2C84B : 0xE0522B, -0.42 + k * 0.21, 0.48, 0);
+  } else if (type === 'hydrant') {
+    box(g, 0.2, 0.5, 0.2, 0xC0392B, 0, 0.25, 0); box(g, 0.28, 0.1, 0.28, 0xC0392B, 0, 0.5, 0); box(g, 0.1, 0.12, 0.1, 0xC0392B, 0, 0.61, 0);
+    box(g, 0.36, 0.1, 0.1, 0x9a2a22, 0, 0.32, 0); box(g, 0.1, 0.1, 0.36, 0x9a2a22, 0, 0.32, 0);   // side nozzles
+  } else if (type === 'parkbench') {
+    box(g, 1.3, 0.1, 0.42, 0x9a6a3a, 0, 0.42, 0); box(g, 1.3, 0.42, 0.1, 0x8a5c33, 0, 0.62, -0.16);
+    [-0.55, 0.55].forEach(o => box(g, 0.1, 0.42, 0.42, 0x6b4a2c, o, 0.21, 0));
+  } else if (type === 'fountain') {
+    const STONE = 0xAEB4BC, W = 0x6cb6ec;
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; box(g, 0.32, 0.32, 0.32, STONE, Math.cos(a) * 1.0, 0.16, Math.sin(a) * 1.0); }
+    const water = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.16, 16), new THREE.MeshLambertMaterial({ color: W, transparent: true, opacity: 0.85 })); water.position.y = 0.26; g.add(water);
+    box(g, 0.28, 0.8, 0.28, STONE, 0, 0.55, 0);
+    const sp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), new THREE.MeshLambertMaterial({ color: W, transparent: true, opacity: 0.7 })); sp.position.y = 1.05; g.add(sp);
   } else if (type === 'birdcage') {
     const BAR = 0xF2C84B, BASE = 0x8a5c33, PERCH = 0x6b4a2c, SEED = 0xE0a23a;
     box(g, 0.44, 0.08, 0.44, BASE, 0, 0.04, 0); box(g, 0.36, 0.04, 0.36, shade(BASE, 1.2), 0, 0.09, 0);   // base tray
@@ -13891,7 +13917,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -14056,6 +14082,13 @@ function renderInv() {
     ['🏰', 'Sand Molds', G.furniture.sandmolds, 'sandmolds'],
     ['🏗️', 'RC Cranes', G.furniture.rccrane, 'rccrane'],
     ['🚚', 'RC Dump Trucks', G.furniture.rcdump, 'rcdump'],
+    ['📐', 'Agility Ramps', G.furniture.agilityramp, 'agilityramp'],
+    ['🕳️', 'Crawl Tunnels', G.furniture.dogtunnel, 'dogtunnel'],
+    ['⭕', 'Jump Hoops', G.furniture.jumphoop, 'jumphoop'],
+    ['〰️', 'Weave Poles', G.furniture.weavepoles, 'weavepoles'],
+    ['🚒', 'Fire Hydrants', G.furniture.hydrant, 'hydrant'],
+    ['🪑', 'Park Benches', G.furniture.parkbench, 'parkbench'],
+    ['⛲', 'Park Fountains', G.furniture.fountain, 'fountain'],
     ['🧗', 'Climbing Frames', G.furniture.climber, 'climber'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
