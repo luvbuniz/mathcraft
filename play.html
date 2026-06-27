@@ -11738,6 +11738,14 @@ function renderShop() {
     btn.disabled = item.kind === 'sell' ? G.berries === 0 : (!owned && G.coins < item.price);
     btn.onclick = () => owned ? sellItem(item.id) : buyItem(item.id);
     row.appendChild(btn);
+    // 💰 durable goods you own can be sold back for a little less than you paid (no perishables)
+    if (canSellBack(item.id)) {
+      const sb = document.createElement('button');
+      sb.className = 'buyBtn owned';
+      sb.textContent = 'Sell 1 (+' + sellbackValue(item.price) + ' 🪙)';
+      sb.onclick = () => sellFurniture(item.id);
+      row.appendChild(sb);
+    }
     // roof tiles can be refunded (full price per tile, for now)
     if (item.id === 'roof' && G.furniture.roof > 0) {
       const sb = document.createElement('button');
@@ -11753,6 +11761,27 @@ function renderShop() {
     }
     wrap.appendChild(row);
   });
+}
+/* 💰 Sell-back for DURABLE goods only (furniture, playground gear, pets & their kit). You get a
+   little less than you paid. Perishables/consumables can NEVER be sold back — no apple/pet-food loophole. */
+const NO_SELLBACK = { food: 1, petfood: 1, groceries: 1, hotdog: 1, sausage: 1, ribs: 1, corn: 1, bacon: 1, pie: 1, blocks: 1, powerBlocks: 1, roof: 1 };
+const SELLBACK_RATE = 0.7;
+function sellbackValue(price) { return Math.max(1, Math.floor(price * SELLBACK_RATE)); }
+function canSellBack(id) {
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  if (!item || item.kind !== 'many' || NO_SELLBACK[id]) return false;
+  return shopOwnedCount(id) > 0;
+}
+function sellFurniture(id) {
+  if (!canSellBack(id)) return;
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  const val = sellbackValue(item.price);
+  if (id === 'door') G.doors--;
+  else if (id === 'garagedoor') G.garageDoors--;
+  else G.furniture[id]--;
+  G.coins += val; Sound.coin();
+  toast('💰 Sold back ' + item.icon + ' ' + item.name + ' for +' + val + ' 🪙 · ' + G.coins + ' total. (you have ' + shopOwnedCount(id) + ' left)', 3600);
+  refreshHUD(); renderShop();
 }
 function buyItem(id) {
   const item = SHOP_ITEMS.find(i => i.id === id);
