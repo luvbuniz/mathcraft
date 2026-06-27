@@ -1059,6 +1059,7 @@
           <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
           <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏘️ Reading Town</b><small>Reading &amp; grammar</small></button>
           <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish</small></button>
+          <button class="choice" data-world="west" data-desc="STEM building &amp; rides"><b>🔬 Science Park</b><small>🤠 Western — STEM, bridges &amp; rides!</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
       </div>
@@ -13657,7 +13658,8 @@ function syncGloomyMenu() {
 const GRADE_DESCS = {
   meadow: { 2: 'Add & subtract to 100', 3: 'To 1,000 & times tables', 4: 'Multi-digit × and ÷', 5: 'Fractions & decimals' },
   city:   { 2: 'Short stories • who & what', 3: 'Longer stories • the main idea', 4: 'Similes & describing words', 5: 'Metaphors & author\'s craft' },
-  beach:  { 2: 'First words & greetings', 3: 'Colors, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' }
+  beach:  { 2: 'First words & greetings', 3: 'Colors, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' },
+  west:   { 2: 'Shapes & simple machines', 3: 'Forces, ramps & materials', 4: 'Bridges, levers & measuring', 5: 'Trusses, loads & balance' }
 };
 function updateGradeDescs(world) {
   const map = GRADE_DESCS[world] || GRADE_DESCS.meadow;
