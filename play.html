@@ -9145,20 +9145,41 @@ function buildWaterTower(g, x, z) {
   const roof = new THREE.Mesh(new THREE.ConeGeometry(1.18, 0.7, 16), mat(0x6b4a2c)); roof.position.set(x, 5.35, z); g.add(roof);
   box(g, 0.12, 1.0, 0.12, WOOD2, x + 0.7, 3.3, z + 0.95);   // down-spout
 }
+function trainCarriage(T, cx, col, col2, GLASS) {
+  box(T, 3.0, 1.3, 1.25, col, cx, 1.08, 0);                      // body
+  box(T, 3.16, 0.22, 1.4, col2, cx, 1.8, 0);                     // arched roof
+  box(T, 3.06, 0.22, 1.32, col2, cx, 0.48, 0);                   // underframe skirt
+  for (let i = 0; i < 5; i++) { box(T, 0.34, 0.6, 0.05, GLASS, cx - 1.0 + i * 0.5, 1.2, 0.64); box(T, 0.34, 0.6, 0.05, GLASS, cx - 1.0 + i * 0.5, 1.2, -0.64); }
+  box(T, 3.0, 0.1, 0.03, 0xC9A24A, cx, 0.82, 0.65); box(T, 3.0, 0.1, 0.03, 0xC9A24A, cx, 0.82, -0.65);   // gold body stripe
+  [-1.0, 1.0].forEach(wx => [-0.5, 0.5].forEach(wz => { const w = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.07, 8, 14), mat(0x262626)); w.position.set(cx + wx, 0.3, wz); T.add(w); }));
+}
 function buildSteamTrain(g, x, z, rot) {
-  const T = new THREE.Group(), BODY = 0x2f6b4f, BODY2 = 0x24513c, RED = 0xB23A2E, BLACK = 0x2a2a2a, BRASS = 0xC9A24A;
-  const boiler = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2.6, 16), mat(BODY)); boiler.rotation.z = Math.PI / 2; boiler.position.set(0.2, 0.98, 0); T.add(boiler);
-  box(T, 2.9, 0.18, 1.05, BLACK, 0, 0.4, 0);                 // frame
-  box(T, 0.8, 0.95, 1.04, BODY2, -1.45, 1.0, 0);             // cab
-  box(T, 0.7, 0.5, 0.06, 0x9fd4e8, -1.45, 1.25, 0.52); box(T, 0.7, 0.5, 0.06, 0x9fd4e8, -1.45, 1.25, -0.52);   // cab windows
-  box(T, 0.9, 0.7, 1.1, BODY2, -1.45, 1.85, 0);              // cab roof
-  box(T, 0.34, 0.7, 0.34, BLACK, 1.0, 1.7, 0); box(T, 0.5, 0.18, 0.5, BLACK, 1.0, 2.05, 0);   // smokestack
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 8), mat(BRASS)); dome.position.set(0.3, 1.6, 0); T.add(dome);
-  box(T, 0.5, 0.55, 1.0, RED, 1.55, 0.5, 0); const cc = box(T, 0.5, 0.5, 1.0, RED, 1.85, 0.32, 0); cc.rotation.z = 0.5;   // cowcatcher
-  box(T, 0.22, 0.36, 0.22, 0xF2E08A, 1.45, 1.35, 0);          // headlamp
-  [-0.85, -0.1, 0.75].forEach(wx => [-0.58, 0.58].forEach(wz => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.12, 14), mat(RED)); w.rotation.x = Math.PI / 2; w.position.set(wx, 0.4, wz); T.add(w); box(T, 0.1, 0.1, 0.1, BRASS, wx, 0.4, wz + 0.62); }));
-  box(T, 1.3, 0.85, 1.05, BODY2, -2.75, 0.75, 0);            // coal tender
-  for (let i = 0; i < 6; i++) box(T, 0.22, 0.22, 0.22, BLACK, -3.1 + (i % 3) * 0.25, 1.2, -0.2 + Math.floor(i / 3) * 0.3, 0);   // coal heap
+  const T = new THREE.Group();
+  const BLACK = 0x262626, BLACK2 = 0x1b1b1b, GOLD = 0xC9A24A, RED = 0xB23A2E, RED2 = 0x8E2E23, GREEN = 0x2f6b3a, STEAM = 0xF4F4F4, GLASS = 0x9fd4e8;
+  box(T, 3.0, 0.2, 1.2, BLACK2, 0.25, 0.46, 0);                  // footplate / frame
+  const boiler = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 2.3, 16), mat(BLACK)); boiler.rotation.z = Math.PI / 2; boiler.position.set(0.5, 1.1, 0); T.add(boiler);
+  [-0.3, 0.5, 1.2].forEach(bx => { const band = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.1, 16), mat(GOLD)); band.rotation.z = Math.PI / 2; band.position.set(bx, 1.1, 0); T.add(band); });   // gold boiler bands
+  box(T, 0.6, 0.68, 0.68, BLACK, 1.6, 1.1, 0);                   // smokebox front
+  box(T, 0.3, 0.3, 0.18, GOLD, 1.9, 1.32, 0); box(T, 0.18, 0.18, 0.06, 0xF7F0B0, 2.0, 1.32, 0);   // headlamp
+  box(T, 0.3, 0.3, 0.05, GOLD, 1.9, 0.92, 0);                    // number plate
+  box(T, 0.3, 0.5, 0.3, BLACK, 1.05, 1.75, 0); box(T, 0.5, 0.22, 0.5, BLACK, 1.05, 2.06, 0);   // flared smokestack
+  [[0, 2.42, 0.42], [0.18, 2.8, 0.36], [-0.12, 3.14, 0.3], [0.12, 3.46, 0.24]].forEach(([sx, sy, sr]) => { const p = new THREE.Mesh(new THREE.SphereGeometry(sr, 8, 6), mat(STEAM)); p.position.set(1.05 + sx, sy, 0); T.add(p); });   // steam
+  const sdome = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), mat(GOLD)); sdome.position.set(0.25, 1.66, 0); T.add(sdome); box(T, 0.36, 0.3, 0.36, GOLD, -0.35, 1.6, 0);   // domes
+  box(T, 1.0, 1.05, 1.25, RED2, -1.2, 1.18, 0); box(T, 1.12, 0.2, 1.36, BLACK, -1.2, 1.8, 0);   // cab + roof
+  box(T, 0.52, 0.52, 0.06, GLASS, -1.2, 1.34, 0.64); box(T, 0.52, 0.52, 0.06, GLASS, -1.2, 1.34, -0.64);
+  box(T, 0.4, 0.7, 0.95, RED, 1.98, 0.52, 0); const pilot = box(T, 0.6, 0.55, 0.95, RED, 2.28, 0.36, 0); pilot.rotation.z = 0.6;   // red cowcatcher
+  [-0.72, 0.05, 0.82].forEach(wx => [-0.5, 0.5].forEach(wz => {
+    const w = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.09, 8, 18), mat(RED)); w.position.set(wx, 0.44, wz); T.add(w);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.16, 10), mat(GOLD)); hub.rotation.x = Math.PI / 2; hub.position.set(wx, 0.44, wz); T.add(hub);
+  }));   // big red spoked drivers w/ gold hubs
+  box(T, 1.7, 0.08, 0.06, 0x8a8f96, 0.05, 0.44, 0.56);          // coupling rod
+  // coal tender
+  const tx = -2.9;
+  box(T, 1.4, 0.9, 1.2, BLACK2, tx, 0.84, 0); box(T, 1.0, 0.5, 0.06, RED, tx, 0.92, 0.62); box(T, 0.78, 0.28, 0.04, GOLD, tx, 0.92, 0.66);   // tender + RR panel
+  for (let i = 0; i < 6; i++) box(T, 0.24, 0.24, 0.24, BLACK, tx - 0.34 + (i % 3) * 0.34, 1.32, -0.22 + Math.floor(i / 3) * 0.34);
+  [-0.45, 0.45].forEach(wx => [-0.5, 0.5].forEach(wz => { const w = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.07, 8, 14), mat(RED)); w.position.set(tx + wx, 0.3, wz); T.add(w); }));
+  trainCarriage(T, -5.9, RED, RED2, GLASS);                      // red passenger car
+  trainCarriage(T, -9.5, GREEN, 0x24513c, GLASS);               // green observation car
   T.position.set(x, 0, z); T.rotation.y = rot || 0; g.add(T); return T;
 }
 function buildDepot(g, x, z, rot) {
@@ -9257,13 +9278,23 @@ function buildSheriff(g, x, z, rot) {
   wLantern(S, 1.2, 1.7, 1.5);
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
-function buildFoodStall(g, x, z, rot, name, col) {
-  const F = new THREE.Group(), WOOD = 0x8a5c33, WHITE = 0xF5F0E6;
-  box(F, 2.2, 0.9, 1.2, WOOD, 0, 0.5, 0); box(F, 2.3, 0.14, 1.3, 0x6b4a2c, 0, 0.98, 0);   // counter + top
-  [-1.0, 1.0].forEach(px => box(F, 0.1, 2.0, 0.1, WOOD, px, 1.5, -0.5));   // back posts
-  box(F, 2.2, 0.6, 0.12, col, 0, 2.4, -0.5);   // sign board
-  for (let i = 0; i < 9; i++) { const a = box(F, 0.26, 0.1, 0.6, i % 2 ? col : WHITE, -1.04 + i * 0.26, 1.9, 0.55); a.rotation.x = 0.4; }   // striped awning
-  signOn(F, name, '', col, 2.0, 0.5, 0, 2.4, -0.43);
+function buildFoodStall(g, x, z, rot, name, col, foodCol) {
+  const F = new THREE.Group(), WOOD2 = 0x6b4a2c, WHITE = 0xF5F0E6, CREAM = 0xF2E6C2, RED = 0xC0392B;
+  box(F, 2.6, 1.0, 1.3, CREAM, 0, 0.5, 0); box(F, 2.72, 0.16, 1.42, RED, 0, 1.04, 0);        // counter base + red top
+  box(F, 2.4, 0.46, 0.06, col, 0, 0.45, 0.66);                                                // decorative front panel
+  [-1.2, 1.2].forEach(px => box(F, 0.14, 2.4, 0.14, WOOD2, px, 1.7, -0.5));                   // back posts
+  // big sign board with a rounded crown
+  box(F, 2.7, 0.95, 0.2, col, 0, 2.92, -0.48); box(F, 2.0, 0.4, 0.2, col, 0, 3.52, -0.48); box(F, 1.2, 0.3, 0.2, col, 0, 3.82, -0.48);
+  box(F, 2.78, 0.1, 0.22, WHITE, 0, 3.45, -0.47); box(F, 2.78, 0.1, 0.22, WHITE, 0, 2.42, -0.47);
+  signOn(F, name, '', shade(col, 0.62), 2.4, 0.66, 0, 2.92, -0.36);
+  // red & white striped awning + a row of hanging lights
+  for (let i = 0; i < 11; i++) { const a = box(F, 0.26, 0.1, 0.64, i % 2 ? RED : WHITE, -1.3 + i * 0.26, 2.02, 0.55); a.rotation.x = 0.4; }
+  box(F, 2.86, 0.22, 0.06, RED, 0, 1.8, 0.86);
+  for (let i = 0; i < 5; i++) box(F, 0.12, 0.18, 0.12, 0xF7E08A, -0.96 + i * 0.48, 1.74, 0.82);   // string lights
+  // treats on plates along the counter
+  [-0.7, 0, 0.7].forEach(px => { box(F, 0.42, 0.04, 0.42, WHITE, px, 1.14, 0.32); const d = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.075, 8, 14), mat(foodCol || 0xE0B53A)); d.rotation.x = Math.PI / 2; d.position.set(px, 1.2, 0.32); F.add(d); box(F, 0.1, 0.06, 0.1, 0xFBF0D8, px, 1.24, 0.32); });
+  // a little side "menu / fresh-hot" board
+  box(F, 0.06, 0.7, 0.06, WOOD2, 1.55, 0.95, 0.5); box(F, 0.6, 0.74, 0.05, WHITE, 1.55, 1.56, 0.5);
   F.position.set(x, 0, z); F.rotation.y = rot || 0; g.add(F);
 }
 function buildMineEntrance(g, x, z) {
@@ -9288,13 +9319,13 @@ function buildWestDecor(g) {
   buildSaloon(g, -15.5, -17, 0);
   buildGeneralStore(g, -10, -16.8, 0);
   buildSheriff(g, -5.5, -16.8, 0);
-  buildFoodStall(g, -1, -12.5, 0, '🍩 Funnel Cake', 0xE07B2A);
-  buildFoodStall(g, 2.4, -12.5, 0, '🌭 Corn Dogs', 0xC0392B);
-  buildDepot(g, 10, -17, 0);
-  // train track + the steam train waiting at the platform
-  for (let i = 0; i < 22; i++) box(g, 1.4, 0.08, 0.16, 0x5e3f24, 10, 0.04, -14 + i * 0.7);
-  box(g, 0.1, 0.1, 15, 0x6a6a6a, 9.5, 0.12, -7); box(g, 0.1, 0.1, 15, 0x6a6a6a, 10.5, 0.12, -7);
-  buildSteamTrain(g, 10, -10, Math.PI);
+  buildFoodStall(g, -1, -12.5, 0, 'FUNNEL CAKES', 0xE07B2A, 0xE8C24A);
+  buildFoodStall(g, 2.6, -12.5, 0, 'CORN DOGS', 0xC0392B, 0x9a6b2a);
+  buildDepot(g, 9.6, -13, Math.PI / 2);                     // station set beside the track, platform facing it
+  // train track running north–south + the steam train waiting at the platform
+  for (let i = 0; i < 24; i++) box(g, 1.7, 0.08, 0.16, 0x5e3f24, 13, 0.04, -18 + i * 0.7);
+  box(g, 0.1, 0.1, 18, 0x6a6a6a, 12.5, 0.12, -9); box(g, 0.1, 0.1, 18, 0x6a6a6a, 13.5, 0.12, -9);
+  buildSteamTrain(g, 13, -7, -Math.PI / 2);
   buildWaterTower(g, -23, -19);
   buildWindmill(g, 23, -18);
   buildMineEntrance(g, 19, -20);
