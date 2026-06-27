@@ -9171,19 +9171,90 @@ function buildDepot(g, x, z, rot) {
   signOn(D, 'STACKADOO', 'Western Depot', 0x5e3f24, 3.2, 0.62, 0, 2.18, 1.26);
   D.position.set(x, 0, z); D.rotation.y = rot || 0; g.add(D);
 }
+function wBarrel(g, x, z) {   // a little wooden barrel (works in local or world coords)
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.62, 14), mat(0x8a5a32)); b.position.set(x, 0.31, z); g.add(b);
+  [0.13, 0.5].forEach(yy => { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.05, 14), mat(0x4a3520)); h.position.set(x, yy, z); g.add(h); });
+}
+function wLantern(g, x, y, z) { box(g, 0.06, 0.22, 0.06, 0x2a2a2a, x, y, z); box(g, 0.16, 0.22, 0.16, 0xF7E08A, x, y - 0.2, z); }
 function buildSaloon(g, x, z, rot) {
-  const S = new THREE.Group(), WOOD = 0xC2622E, WOOD2 = 0xA9521F, TRIM = 0xF4ECD8, ROOF = 0x6b4a2c;
-  box(S, 3.8, 3.6, 3.0, WOOD, 0, 1.8, 0);
-  for (let i = 0; i < 12; i++) box(S, 3.8, 0.04, 0.02, WOOD2, 0, 0.4 + i * 0.28, 1.51);   // clapboard
-  box(S, 4.3, 1.5, 0.32, WOOD, 0, 4.35, 1.4);               // tall false front
-  box(S, 4.5, 0.18, 0.42, WOOD2, 0, 5.05, 1.42); box(S, 4.5, 0.18, 0.42, WOOD2, 0, 3.62, 1.42);   // cornices
-  [-1.7, 1.7].forEach(px => box(S, 0.16, 2.2, 0.16, WOOD2, px, 1.1, 1.95));   // porch posts
-  box(S, 4.2, 0.16, 1.2, ROOF, 0, 2.2, 1.55); box(S, 4.0, 0.1, 1.0, WOOD2, 0, 2.3, 1.55);   // balcony deck
-  for (let i = 0; i < 9; i++) box(S, 0.04, 0.34, 0.04, TRIM, -1.8 + i * 0.45, 2.55, 2.05);   // balcony rail spindles
-  box(S, 4.0, 0.06, 0.06, TRIM, 0, 2.74, 2.05);
-  box(S, 0.42, 1.1, 0.08, 0x8a5a32, -0.25, 0.75, 1.53); box(S, 0.42, 1.1, 0.08, 0x8a5a32, 0.25, 0.75, 1.53);   // batwing doors
-  paneWindow(S, -1.1, 2.95, 1.52, 0.7, 0.9, 2, 2, TRIM); paneWindow(S, 1.1, 2.95, 1.52, 0.7, 0.9, 2, 2, TRIM);
-  signOn(S, 'SALOON', 'Sarsaparilla & Lemonade', 0x6b3a1a, 3.4, 0.7, 0, 4.35, 1.59);
+  const S = new THREE.Group(), RED = 0xA8392C, RED2 = 0x8E2E23, WOOD = 0x6b4a2c, TRIM = 0xE9C77A, DECK = 0x8a6a4a;
+  box(S, 3.8, 3.6, 3.0, RED, 0, 1.8, 0);
+  for (let i = 0; i < 12; i++) box(S, 3.82, 0.05, 0.02, RED2, 0, 0.4 + i * 0.28, 1.51);   // clapboard lines
+  box(S, 4.3, 1.6, 0.32, RED, 0, 4.4, 1.4);                 // tall false front
+  box(S, 4.5, 0.2, 0.42, WOOD, 0, 5.2, 1.42); box(S, 4.5, 0.2, 0.42, WOOD, 0, 3.6, 1.42);   // cornices
+  box(S, 0.2, 1.6, 0.36, WOOD, -2.05, 4.4, 1.42); box(S, 0.2, 1.6, 0.36, WOOD, 2.05, 4.4, 1.42);   // false-front side trim
+  // 🐂 bull-skull crest
+  box(S, 0.5, 0.42, 0.14, 0xF2ECDC, 0, 5.02, 1.6); box(S, 0.22, 0.26, 0.12, 0xF2ECDC, 0, 4.8, 1.62);
+  box(S, 0.46, 0.12, 0.1, 0xE7DCC0, -0.4, 5.12, 1.6); box(S, 0.46, 0.12, 0.1, 0xE7DCC0, 0.4, 5.12, 1.6);   // horns
+  box(S, 0.1, 0.1, 0.06, 0x2a2a2a, -0.12, 5.04, 1.68); box(S, 0.1, 0.1, 0.06, 0x2a2a2a, 0.12, 5.04, 1.68);   // eyes
+  box(S, 3.5, 0.82, 0.05, TRIM, 0, 4.32, 1.58);            // gold sign frame
+  signOn(S, 'SALOON', 'Sarsaparilla & Lemonade', 0x4a2a14, 3.3, 0.7, 0, 4.32, 1.62);
+  // porch posts + balcony
+  [-1.7, 1.7].forEach(px => box(S, 0.18, 2.2, 0.18, WOOD, px, 1.1, 1.95));
+  box(S, 4.2, 0.16, 1.2, WOOD, 0, 2.2, 1.55); box(S, 4.0, 0.1, 1.0, DECK, 0, 2.3, 1.55);   // balcony deck
+  for (let i = 0; i < 9; i++) box(S, 0.05, 0.34, 0.05, WOOD, -1.8 + i * 0.45, 2.55, 2.05);   // balcony rail
+  box(S, 4.0, 0.06, 0.06, WOOD, 0, 2.74, 2.05);
+  box(S, 0.74, 0.06, 0.12, WOOD, 0, 1.95, 1.55);           // door header
+  box(S, 0.42, 1.0, 0.08, 0x9a6a3a, -0.24, 0.7, 1.54); box(S, 0.42, 1.0, 0.08, 0x9a6a3a, 0.24, 0.7, 1.54);   // batwing doors
+  paneWindow(S, -1.2, 2.95, 1.52, 0.7, 0.9, 2, 2, 0xE9C77A); paneWindow(S, 1.2, 2.95, 1.52, 0.7, 0.9, 2, 2, 0xE9C77A);
+  wLantern(S, -1.7, 1.95, 2.0); wLantern(S, 1.7, 1.95, 2.0);   // 🏮 porch lanterns
+  wBarrel(S, -1.5, 2.55); wBarrel(S, -1.05, 2.7);             // 🛢️ barrels
+  box(S, 0.66, 0.6, 0.05, 0x2c2c2c, 1.45, 0.66, 2.7); box(S, 0.78, 0.06, 0.5, 0x6b4a2c, 1.45, 0.37, 2.7);   // A-frame chalkboard
+  signOn(S, 'SODA POP', 'Lemonade · Rooms', 0x2c2c2c, 0.6, 0.48, 1.45, 0.68, 2.73);
+  S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
+}
+function buildGeneralStore(g, x, z, rot) {
+  const S = new THREE.Group(), BODY = 0xE3D6BC, GREEN = 0x3f7d4a, GREEN2 = 0x2f6b3a, WOOD = 0x8a5c33, WHITE = 0xF5F0E6, RED = 0xC0392B, TRIM = 0xEDE3C8;
+  box(S, 3.8, 2.8, 3.0, BODY, 0, 1.4, 0);
+  for (let i = 0; i < 9; i++) box(S, 3.82, 0.05, 0.02, shade(BODY, 0.88), 0, 0.35 + i * 0.28, 1.51);   // clapboard
+  box(S, 4.2, 1.5, 0.3, BODY, 0, 3.6, 1.42);               // false front
+  box(S, 4.4, 0.22, 0.4, GREEN, 0, 4.32, 1.43); box(S, 4.4, 0.22, 0.4, GREEN, 0, 2.86, 1.43);   // green cornices
+  box(S, 0.22, 1.5, 0.34, GREEN, -2.0, 3.6, 1.43); box(S, 0.22, 1.5, 0.34, GREEN, 2.0, 3.6, 1.43);   // green side trim
+  box(S, 3.5, 0.82, 0.05, GREEN2, 0, 3.6, 1.57);          // sign backing
+  signOn(S, 'GENERAL STORE', 'Dry Goods · Food · Tools', GREEN2, 3.3, 0.72, 0, 3.6, 1.61);
+  [-1.7, 1.7].forEach(px => box(S, 0.16, 1.95, 0.16, WOOD, px, 0.97, 1.95));   // awning posts
+  for (let i = 0; i < 12; i++) { const a = box(S, 0.3, 0.1, 0.55, i % 2 ? RED : WHITE, -1.7 + i * 0.31, 1.96, 1.72); a.rotation.x = 0.42; }   // red-and-white awning
+  box(S, 3.7, 0.24, 0.06, RED, 0, 1.78, 2.0);
+  box(S, 0.74, 1.5, 0.12, WOOD, 0, 0.84, 1.53); box(S, 0.1, 0.1, 0.1, 0xE0C24A, 0.22, 0.86, 1.6);   // door
+  paneWindow(S, -1.2, 1.2, 1.52, 0.78, 0.95, 3, 2, TRIM); paneWindow(S, 1.2, 1.2, 1.52, 0.78, 0.95, 3, 2, TRIM);
+  // produce crates, barrels & a leaning wagon wheel out front
+  const fr = [0xE53935, 0xFF8A1E, 0xFFD23E, 0x6FA85B];
+  [-1.5, -1.02].forEach((px, n) => { box(S, 0.5, 0.34, 0.46, WOOD, px, 0.25, 2.5); for (let i = 0; i < 4; i++) box(S, 0.13, 0.13, 0.13, fr[(n * 2 + i) % 4], px - 0.12 + (i % 2) * 0.24, 0.5, 2.4 + Math.floor(i / 2) * 0.2); });
+  wBarrel(S, 1.5, 2.5); wBarrel(S, 1.04, 2.55);
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 8, 16), mat(WOOD)); wheel.position.set(-2.0, 0.36, 2.1); wheel.rotation.y = 0.5; S.add(wheel);
+  box(S, 0.5, 0.5, 0.04, 0x2c2c2c, 1.95, 0.65, 2.2);       // little "dry goods" chalkboard
+  wLantern(S, 1.7, 1.85, 2.0);
+  S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
+}
+function buildCoveredWagon(g, x, z, rot) {
+  const W = new THREE.Group(), WOOD = 0x8a5c33, WOOD2 = 0x6b4a2c, CANVAS = 0xEDE8DA;
+  box(W, 2.2, 0.5, 1.1, WOOD, 0, 0.62, 0);
+  box(W, 2.2, 0.3, 0.1, WOOD2, 0, 0.9, 0.55); box(W, 2.2, 0.3, 0.1, WOOD2, 0, 0.9, -0.55);   // sideboards
+  box(W, 1.9, 0.55, 1.0, CANVAS, 0, 1.35, 0); box(W, 1.9, 0.34, 1.2, CANVAS, 0, 1.66, 0);     // arched canvas cover
+  box(W, 1.92, 0.5, 0.06, shade(CANVAS, 0.9), 0, 1.4, 0.5); box(W, 1.92, 0.5, 0.06, shade(CANVAS, 0.9), 0, 1.4, -0.5);
+  [[-0.7, 0.62], [0.7, 0.62], [-0.7, -0.62], [0.7, -0.62]].forEach(([wx, wz]) => { const wh = new THREE.Mesh(new THREE.TorusGeometry(wz > 0 ? 0.4 : 0.34, 0.07, 8, 16), mat(WOOD2)); wh.position.set(wx, wz > 0 ? 0.4 : 0.34, wz); W.add(wh); });
+  W.position.set(x, 0, z); W.rotation.y = rot || 0; g.add(W);
+}
+function buildWindmill(g, x, z) {
+  const M = 0x8a8f96, M2 = 0xC8CCD2, H = 5.0;
+  [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]].forEach(([lx, lz]) => box(g, 0.1, H, 0.1, M, x + lx, H / 2, z + lz));
+  for (let y = 1; y < 5; y++) { box(g, 1.1, 0.06, 0.06, M, x, y, z - 0.5); box(g, 1.1, 0.06, 0.06, M, x, y, z + 0.5); box(g, 0.06, 0.06, 1.1, M, x - 0.5, y, z); box(g, 0.06, 0.06, 1.1, M, x + 0.5, y, z); }
+  box(g, 1.3, 0.12, 1.3, M, x, H, z);                       // platform
+  const fz = z + 0.65;
+  box(g, 0.24, 0.24, 0.3, M2, x, H + 0.5, fz);              // hub
+  for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; const bl = box(g, 0.07, 0.7, 0.03, i % 2 ? 0xEDEDED : M2, x + Math.cos(a) * 0.45, H + 0.5 + Math.sin(a) * 0.45, fz + 0.18); bl.rotation.z = a; }
+  box(g, 0.05, 0.6, 0.8, M, x, H + 0.5, z - 0.5);           // tail vane
+}
+function buildSheriff(g, x, z, rot) {
+  const S = new THREE.Group(), BODY = 0xCBB081, WOOD = 0x6b4a2c, GREEN = 0x3f5d4a;
+  box(S, 3.0, 2.6, 2.6, BODY, 0, 1.3, 0);
+  for (let i = 0; i < 8; i++) box(S, 3.02, 0.05, 0.02, shade(BODY, 0.86), 0, 0.35 + i * 0.28, 1.31);
+  box(S, 3.3, 1.2, 0.28, BODY, 0, 3.2, 1.32); box(S, 3.5, 0.18, 0.36, WOOD, 0, 3.74, 1.33); box(S, 3.5, 0.18, 0.36, WOOD, 0, 2.66, 1.33);
+  signOn(S, 'SHERIFF', '', GREEN, 2.4, 0.6, 0, 3.2, 1.48);
+  box(S, 0.34, 0.34, 0.06, 0xF2C037, 0, 3.2, 1.5);          // gold star (behind/over the sign edge)
+  box(S, 0.74, 1.5, 0.12, WOOD, 0, 0.84, 1.33); box(S, 0.1, 0.1, 0.1, 0xE0C24A, 0.22, 0.86, 1.4);
+  paneWindow(S, -0.9, 1.2, 1.32, 0.7, 0.9, 2, 2, 0xEDE3C8); paneWindow(S, 0.9, 1.2, 1.32, 0.7, 0.9, 2, 2, 0xEDE3C8);
+  wLantern(S, 1.2, 1.7, 1.5);
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
 function buildFoodStall(g, x, z, rot, name, col) {
@@ -9214,22 +9285,25 @@ function buildWestDecor(g) {
   box(g, 7, 0.06, 18, 0xCBA06A, 7, 0.05, -6);              // a side road toward the depot/mine
   // ── the frontier main street (north side, buildings face SOUTH toward the player) ──
   buildWelcomeArch(g, -4, -4.5, Math.PI / 2, 'WESTERN');
-  buildSaloon(g, -15, -17, 0);
-  americanGeneralStore(g, -9, -16.5, 0, 0xCBB081, 0x8a3a2a, 'STACK GIFTS', 'Country Gift Shop');
-  buildFoodStall(g, -3.5, -12, 0, '🍩 Funnel Cake', 0xE07B2A);
-  buildFoodStall(g, 0, -12, 0, '🌭 Corn Dogs', 0xC0392B);
-  buildDepot(g, 9, -17, 0);
+  buildSaloon(g, -15.5, -17, 0);
+  buildGeneralStore(g, -10, -16.8, 0);
+  buildSheriff(g, -5.5, -16.8, 0);
+  buildFoodStall(g, -1, -12.5, 0, '🍩 Funnel Cake', 0xE07B2A);
+  buildFoodStall(g, 2.4, -12.5, 0, '🌭 Corn Dogs', 0xC0392B);
+  buildDepot(g, 10, -17, 0);
   // train track + the steam train waiting at the platform
-  for (let i = 0; i < 22; i++) box(g, 1.4, 0.08, 0.16, 0x5e3f24, 9, 0.04, -14 + i * 0.7);
-  box(g, 0.1, 0.1, 15, 0x6a6a6a, 8.5, 0.12, -7); box(g, 0.1, 0.1, 15, 0x6a6a6a, 9.5, 0.12, -7);
-  buildSteamTrain(g, 9, -10, Math.PI);
-  buildWaterTower(g, -22, -19);
-  buildMineEntrance(g, 20, -19);
+  for (let i = 0; i < 22; i++) box(g, 1.4, 0.08, 0.16, 0x5e3f24, 10, 0.04, -14 + i * 0.7);
+  box(g, 0.1, 0.1, 15, 0x6a6a6a, 9.5, 0.12, -7); box(g, 0.1, 0.1, 15, 0x6a6a6a, 10.5, 0.12, -7);
+  buildSteamTrain(g, 10, -10, Math.PI);
+  buildWaterTower(g, -23, -19);
+  buildWindmill(g, 23, -18);
+  buildMineEntrance(g, 19, -20);
+  buildCoveredWagon(g, 5, -8, -0.4);
   // props
-  [[-25, -7, 1.3], [24, -5, 1.0], [-19, 6, 0.95], [16, 4, 1.15], [-7, 8, 0.8], [12, 10, 1.05], [4, 6, 0.9]].forEach(([cx, cz, cs]) => cactus(g, cx, cz, cs));
-  hitchingPost(g, -15, -14.5); hitchingPost(g, -9, -14.2); hitchingPost(g, -2, -9.5);
-  if (typeof decoTree === 'function') { decoTree(g, -28, 2, 1.0); decoTree(g, 22, 8, 0.9); }   // a couple of cottonwoods at the edges
-  for (let i = 0; i < 5; i++) { box(g, 0.74, 0.5, 0.52, 0xE3C34A, -18 + i * 0.1, 0.27 + (i % 2) * 0.5, -14); }   // a stack of hay bales by the saloon
+  [[-26, -7, 1.3], [25, -5, 1.0], [-20, 6, 0.95], [16, 5, 1.15], [-8, 9, 0.8], [13, 11, 1.05], [4, 3, 0.9]].forEach(([cx, cz, cs]) => cactus(g, cx, cz, cs));
+  hitchingPost(g, -15.5, -14.5); hitchingPost(g, -10, -14.4); hitchingPost(g, -2, -9.8);
+  if (typeof decoTree === 'function') { decoTree(g, -29, 2, 1.0); decoTree(g, 24, 9, 0.9); }   // a couple of cottonwoods at the edges
+  for (let i = 0; i < 5; i++) box(g, 0.74, 0.5, 0.52, 0xE3C34A, -19 + (i % 3) * 0.1, 0.27 + Math.floor(i / 3) * 0.5, -14.5);   // hay bales by the saloon
 }
 buildMeadowDecor(worldDecor.meadow);
 buildCityDecor(worldDecor.city);
