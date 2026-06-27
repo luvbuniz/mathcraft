@@ -9217,13 +9217,17 @@ function cotswoldDealership(g, x, z, rot) {
   const STONE = 0xD8C29A, TIMBER = 0x7a5230, TIMBER2 = 0x624327, SLATE = 0x46413a, CREAM = 0xF2EAD8, BEAM = 0x5a3f24;
   const S = new THREE.Group(); const w = 6.2, d = 4.2, h = 3.0, fz = d / 2;
   box(S, w, 0.6, d, STONE, 0, 0.3, 0);                                              // stone plinth base
-  box(S, w, h, 0.26, TIMBER, 0, 0.6 + h / 2, -fz);                                  // timber back wall
-  box(S, 0.26, h, d, TIMBER, -w / 2, 0.6 + h / 2, 0); box(S, 0.26, h, d, TIMBER, w / 2, 0.6 + h / 2, 0);   // side walls
-  for (let i = 0; i < 6; i++) box(S, w, 0.06, 0.04, BEAM, 0, 0.9 + i * 0.46, -fz - 0.14);  // log-cabin seams on the back
-  // OPEN showroom front: a low sill + timber posts, open above so you see the cars inside
-  box(S, w, 0.55, 0.3, STONE, 0, 0.875, fz);
-  [-w / 2 + 0.3, -w * 0.18, w * 0.18, w / 2 - 0.3].forEach(px => { box(S, 0.34, h - 0.1, 0.34, TIMBER2, px, 0.6 + (h - 0.1) / 2, fz); });
-  box(S, w, 0.3, 0.3, BEAM, 0, 0.6 + h - 0.1, fz);                                  // header beam across the posts
+  box(S, w, h, 0.26, CREAM, 0, 0.6 + h / 2, -fz);                                   // light render back wall (showroom backdrop)
+  box(S, 0.26, h, d, TIMBER, -w / 2, 0.6 + h / 2, 0); box(S, 0.26, h, d, TIMBER, w / 2, 0.6 + h / 2, 0);   // timber corner walls
+  for (let i = 0; i < 6; i++) box(S, w, 0.06, 0.04, BEAM, 0, 0.9 + i * 0.46, -fz - 0.14);  // timber accent seams on the back
+  // MODERN GLASS SHOWROOM FRONT: big display windows so the cars show through, like a real showroom
+  box(S, w, 0.55, 0.3, 0xCFC6B4, 0, 0.875, fz);                                     // low light-stone sill
+  const GLASS = 0x8fb8d6, FRAME = 0x33312c, gH = h - 0.7, gY = 0.6 + 0.55 + gH / 2;
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.5, gH, 0.06), new THREE.MeshLambertMaterial({ color: GLASS, transparent: true, opacity: 0.5 }));
+  glass.position.set(0, gY, fz + 0.02); S.add(glass);
+  [-w / 2 + 0.28, -w * 0.17, w * 0.17, w / 2 - 0.28].forEach(px => box(S, 0.12, gH, 0.12, FRAME, px, gY, fz + 0.07));   // window mullions
+  box(S, w - 0.4, 0.12, 0.16, FRAME, 0, gY + gH / 2, fz + 0.07); box(S, w - 0.4, 0.12, 0.16, FRAME, 0, gY - gH / 2, fz + 0.07);   // top & bottom window rails
+  box(S, w, 0.3, 0.34, BEAM, 0, 0.6 + h - 0.1, fz + 0.04);                          // header beam across the front
   // wide gable slate roof with a big overhang that shades the forecourt like a porch
   const sl = box(S, 0.3, 3.6, d + 1.4, SLATE, -w * 0.2, h + 1.3, 0); sl.rotation.z = -0.74;
   const sr = box(S, 0.3, 3.6, d + 1.4, SLATE, w * 0.2, h + 1.3, 0); sr.rotation.z = 0.74;
