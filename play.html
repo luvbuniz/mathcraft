@@ -750,8 +750,10 @@
     --font-body:'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
   #startScreen {
-    position:fixed; inset:0; z-index:50; overflow-y:auto;
-    display:flex; align-items:center; justify-content:center; padding:24px 16px;
+    position:fixed; inset:0; z-index:50; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    /* top-anchored + the card uses margin:auto, so it CENTERS when it fits but stays fully
+       scrollable (top never clipped) when the card is taller than the screen — in any orientation. */
+    display:flex; align-items:center; justify-content:flex-start; padding:24px 16px;
     font-family:var(--font-body); color:var(--ink); -webkit-font-smoothing:antialiased;
     background:
       radial-gradient(900px 420px at 50% -6%, rgba(255,255,255,.65), rgba(255,255,255,0) 60%),
@@ -759,7 +761,7 @@
   }
   #bgScene { position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; }
   #setupCard {
-    position:relative; z-index:1;
+    position:relative; z-index:1; margin:auto;   /* centers when it fits; collapses so the top stays reachable when it overflows */
     width:min(720px,100%); background:#fff; border:1px solid var(--line);
     border-radius:28px; box-shadow:var(--sh-raised); padding:clamp(20px,3.2vw,30px);
   }
