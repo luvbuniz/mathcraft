@@ -1158,6 +1158,7 @@
       <span class="stat" title="Build Blocks">🧱 <span id="blockCount">0</span></span>
       <span class="stat" id="powerRow" style="display:none" title="Power Blocks">⚡ <span id="powerCount">0</span></span>
       <span class="stat" id="coinRow" style="display:none" title="Coins">🪙 <span id="coinCount">0</span></span>
+      <span class="stat" id="ticketRow" style="display:none" title="Ride Tickets — earn them by answering STEM questions in the Western!">🎟️ <span id="ticketCount">0</span></span>
       <span class="stat" id="berryRow" style="display:none" title="Berries">🍓 <span id="berryCount">0</span></span>
       <span class="stat" id="ballRow" style="display:none" title="Softballs">⚽ <span id="ballCount">0</span></span>
       <span class="stat" id="solvedRow" style="display:none" title="Problems solved">✅ <span id="solvedCount">0</span><span id="solvedGoal"></span></span>
@@ -1452,6 +1453,17 @@
   </div>
 </div>
 
+<!-- ================= 🚂 STEAM TRAIN RIDE (load the coal) POPUP ================= -->
+<div class="popup" id="trainPopup">
+  <div class="popupCard" style="text-align:center; width:min(420px,95vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="trainClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="trainTitle" style="color:#7a4a3a; margin:2px 0 6px; font-size:clamp(20px,4vw,28px)">🚂 Steam Train Ride</h2>
+    <div id="trainQ" style="font-size:clamp(15px,2.8vw,19px); color:#34495e; font-weight:bold; background:#FBF3DE; border:3px solid #E2C892; border-radius:14px; padding:11px 13px; margin-bottom:10px; line-height:1.4"></div>
+    <div id="trainPad" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center"></div>
+    <div id="trainMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
 <!-- ================= DREAM GOAL PICKER POPUP ================= -->
 <div class="popup" id="goalPopup">
   <div class="popupCard" style="text-align:center; width:min(460px,94vw)">
@@ -1676,6 +1688,8 @@ const Sound = {
   correct() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.16, 'sine', 0.18, i * 0.09)); },
   wrong()   { this.tone(330, 0.18, 'sine', 0.12); this.tone(262, 0.22, 'sine', 0.1, 0.16); },
   coin()    { this.tone(900, 0.08, 'square', 0.1); this.tone(1350, 0.18, 'square', 0.1, 0.07); },
+  whistle() { this.tone(560, 0.3, 'sine', 0.16, 0, 760); this.tone(820, 0.5, 'sine', 0.13, 0.12); this.noise(0.45, 0.05, 2200); },   // 🚂 train whistle
+  chuff()   { this.noise(0.16, 0.13, 700); this.tone(110, 0.1, 'sawtooth', 0.06, 0, 70); },                                       // 🚂 steam chuff
   chaching() {   // 💵 cash register: a quick drawer "cha" then a bright ringing "ching"
     this.noise(0.05, 0.13, 2600);
     this.tone(1180, 0.1, 'square', 0.13, 0.02, 1500);
@@ -3038,7 +3052,7 @@ const AVATARS = [
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
-  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
+  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, berries: 0, solved: 0, balls: 0,
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
@@ -3335,7 +3349,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 }
 /* Per-player progress, kept in the browser so grown-ups can track it. */
 function freshProfile() {
-  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, wrongByDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
+  return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, wrongByDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, stemSolved: 0, ticketsEarned: 0, trainRides: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
     garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
     pack: null, packMigrated: false, level: null, grade: null };
 }
@@ -4028,7 +4042,7 @@ function saveGame() {
   try {
     localStorage.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
-      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved, goal: G.goal,
+      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
@@ -4087,7 +4101,7 @@ function restoreGame(s) {
   G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = s.homes || [];
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
-  G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
+  G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0; G.tickets = s.tickets || 0;
   G.goal = s.goal || null; G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
@@ -4187,7 +4201,7 @@ function resetWorld() {
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
-  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
+  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
   G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
@@ -6079,6 +6093,62 @@ function submitFeed(val) {
     $('feedMsg').innerHTML = '✗ Not quite — count UP from <b>' + o.total + '</b> to <b>' + o.bill + '</b>. Try again!';
     if (o.manual) { feed.entry = ''; updateFeedEntry(); }
   }
+}
+
+/* ════════════ 🚂 STEAM TRAIN RIDE (Country Western) — spend a ride ticket, load the coal, take a ride ════════════ */
+const TRAIN_POS = { x: 11, z: -11 };
+function trainDist() { return G.world === 'west' ? Math.hypot(player.pos.x - TRAIN_POS.x, player.pos.z - TRAIN_POS.z) : 999; }
+let coalNeed = 0;
+function openTrainRide() {
+  if (popupOpen || G.over || !G.running || trainRide) return;
+  if ((G.tickets || 0) < 1) { toast('🎟️ You need a Ride Ticket! Answer ❓ STEM questions around the Western to earn one.', 3800); return; }
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  const lvl = Math.max(1, Math.min(5, G.mathLevel || G.grade || 2));
+  const need = ri(lvl <= 2 ? 6 : 9, lvl <= 2 ? 10 : 18), have = ri(1, need - 1);
+  coalNeed = need - have;
+  $('trainQ').innerHTML = '🚂 <b>All aboard!</b> The boiler needs <b>' + need + '</b> lumps of coal and you\'ve shoveled <b>' + have + '</b>.<br>How many <b>more</b> lumps to fill it up?';
+  const wrap = $('trainPad'); wrap.innerHTML = ''; $('trainMsg').textContent = '';
+  changeChoices(coalNeed).forEach(c => { const b = document.createElement('button'); b.className = 'bakeBtn'; b.textContent = '🪨 ' + c; b.onclick = () => answerCoal(c); wrap.appendChild(b); });
+  $('trainPopup').style.display = 'flex';
+}
+function closeTrainRide() { $('trainPopup').style.display = 'none'; popupOpen = false; }
+function answerCoal(v) {
+  if (v === coalNeed) {
+    G.tickets = Math.max(0, (G.tickets || 0) - 1); refreshHUD();
+    $('trainMsg').style.color = '#2f8a52'; $('trainMsg').innerHTML = '✓ Boiler full — chuff chuff! 🎟️ −1';
+    if (Sound.correct) Sound.correct();
+    setTimeout(() => { closeTrainRide(); startTrainRide(); }, 750);
+  } else {
+    if (Sound.wrong) Sound.wrong(); $('trainMsg').style.color = '#c0392b'; $('trainMsg').textContent = '✗ Not quite — count up to fill the boiler!';
+  }
+}
+function startTrainRide() {
+  if (!westTrainGroup) { endTrainRide(); return; }
+  trainRide = { t: 0, dur: 8.5, baseZ: westTrainGroup.position.z };
+  if (Sound.whistle) Sound.whistle();
+  toast('🚂 WHOO-WHOO! Hold on tight!', 2600);
+}
+function updateTrainRide(dt) {
+  if (!trainRide || !westTrainGroup) return;
+  trainRide.t += dt;
+  const u = Math.min(1, trainRide.t / trainRide.dur);
+  const offset = -Math.sin(u * Math.PI) * 24;                 // roll out into the open desert and back
+  const T = westTrainGroup; T.position.z = trainRide.baseZ + offset;
+  if (Math.floor(trainRide.t * 2) !== Math.floor((trainRide.t - dt) * 2) && Sound.chuff) Sound.chuff();
+  const tz = T.position.z;
+  camera.position.set(13.0, 2.8, tz - 2.6);                   // ride just behind the cab, looking forward
+  camera.lookAt(13.0, 1.3, tz + 5);
+  if (trainRide.t >= trainRide.dur) endTrainRide();
+}
+function endTrainRide() {
+  if (westTrainGroup && trainRide) westTrainGroup.position.z = trainRide.baseZ;
+  trainRide = null;
+  player.pos.set(TRAIN_POS.x - 2, 0, TRAIN_POS.z + 1.5); player.vel.set(0, 0, 0);
+  profile.trainRides = (profile.trainRides || 0) + 1; profileDirty = true;
+  G.coins += 12; refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+  if (Sound.fanfare) Sound.fanfare();
+  toast('🚂 What a ride — round the track and back! +12 🪙', 4200);
+  if (typeof checkQuests === 'function') checkQuests();
 }
 
 /* ============================ 📚 THE LIBRARY (Reading Town): pick a story, then answer about it ============================
@@ -8090,6 +8160,7 @@ function finishSchool() {
 
 /* ---- per-world decor: a skyline for Reading Town, palms + ocean for Spanish Beach ---- */
 const worldDecor = { meadow: new THREE.Group(), city: new THREE.Group(), beach: new THREE.Group(), west: new THREE.Group() };
+let westTrainGroup = null, trainRide = null;   // 🚂 the Western steam train + its ride state
 function cityTexture(bodyN, litN) {
   const hx = n => '#' + n.toString(16).padStart(6, '0');
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 128;
@@ -9363,7 +9434,7 @@ function buildWestDecor(g) {
   // train track running north–south + the steam train waiting at the platform
   for (let i = 0; i < 24; i++) box(g, 1.7, 0.08, 0.16, 0x5e3f24, 13, 0.04, -18 + i * 0.7);
   box(g, 0.1, 0.1, 18, 0x6a6a6a, 12.5, 0.12, -9); box(g, 0.1, 0.1, 18, 0x6a6a6a, 13.5, 0.12, -9);
-  buildSteamTrain(g, 13, -7, -Math.PI / 2);
+  westTrainGroup = buildSteamTrain(g, 13, -7, -Math.PI / 2);
   buildWaterTower(g, -23, -19);
   buildWindmill(g, 23, -18);
   buildMineEntrance(g, 19, -20);
@@ -10667,6 +10738,8 @@ function refreshHUD() {
   $('blockCount').textContent = G.blocks;
   $('powerCount').textContent = G.powerBlocks;
   $('coinCount').textContent = G.coins;
+  $('ticketCount').textContent = G.tickets || 0;
+  const tr = $('ticketRow'); if (tr) tr.style.display = (G.world === 'west' || (G.tickets || 0) > 0) ? 'inline-block' : 'none';   // 🎟️ tickets matter in the Western
   $('berryCount').textContent = G.berries;
   $('ballCount').textContent = G.balls;
   // show lifetime problems solved and the next goal (no more "16/10"!)
@@ -10677,6 +10750,13 @@ function refreshHUD() {
   $('solvedGoal').textContent = nextBadge ? '→' + nextBadge.icon + nextBadge.n : '🏅✓';
   $('shopCoins').textContent = G.coins;
   updateGoalBar();
+}
+// 🎟️ Ride tickets — the Western theme-park currency, earned by answering STEM questions, spent on rides.
+function awardTicket(n) {
+  n = n || 1;
+  G.tickets = (G.tickets || 0) + n;
+  profile.ticketsEarned = (profile.ticketsEarned || 0) + n; profileDirty = true;
+  refreshHUD(); if (typeof bumpHud === 'function') bumpHud('ticketCount');
 }
 /* 🎯 Dream Goal tracker — pick a big thing to save for and watch the coins climb toward it.
    Turns "do a math problem" into visible progress toward something a kid actually wants. */
@@ -11027,6 +11107,11 @@ function answerPicked(btn, opt) {
       updateMathNote();        // refresh the X/3-toward-a-shield reminder
     }
     recordSolve(currentEq);
+    if (curWorld().subject === 'science') {   // 🎟️ STEM answers in the Science Park earn a Ride Ticket
+      profile.stemSolved = (profile.stemSolved || 0) + 1; profileDirty = true;
+      awardTicket(1);
+      setTimeout(() => toast('🎟️ +1 Ride Ticket! Spend it on the 🚂 steam train at the depot.', 2800), 700);
+    }
     // every correct answer: pick your reward. If they wander off without picking,
     // closeMath() quietly gives them the build blocks so a prize is never lost.
     pendingReward = reward;
@@ -12568,6 +12653,14 @@ const QUESTS = [
   { id: 'r_spell15',world:'city', icon: '✏️', title: 'Spell 15 words right', reward: 18, check: () => (profile.spellFirstRight || 0) >= 15 },
   { id: 'r_slevel3',world:'city', icon: '🔤', title: 'Reach Spelling Level 3', reward: 14, check: () => (profile.spellLevel || 0) >= 3 },
   { id: 'r_q40',   world: 'city', icon: '🏆', title: 'Answer 40 reading questions', reward: 28, check: () => (profile.readFirstTotal || 0) >= 40 },
+  // 🤠 Country Western (Science Park) — STEM building & the rides
+  { id: 'w_stem1', world: 'west', icon: '🧰', title: 'Answer a STEM building question', reward: 8,  check: () => (profile.stemSolved || 0) >= 1 },
+  { id: 'w_ticket',world: 'west', icon: '🎟️', title: 'Earn your first ride ticket', reward: 10, check: () => (profile.ticketsEarned || 0) >= 1 },
+  { id: 'w_stem5', world: 'west', icon: '🌉', title: 'Answer 5 STEM questions', reward: 12, check: () => (profile.stemSolved || 0) >= 5 },
+  { id: 'w_ride',  world: 'west', icon: '🚂', title: 'Ride the steam train', reward: 14, check: () => (profile.trainRides || 0) >= 1 },
+  { id: 'w_t3',    world: 'west', icon: '🎫', title: 'Earn 3 ride tickets', reward: 12, check: () => (profile.ticketsEarned || 0) >= 3 },
+  { id: 'w_stem15',world: 'west', icon: '🏆', title: 'Answer 15 STEM questions', reward: 22, check: () => (profile.stemSolved || 0) >= 15 },
+  { id: 'w_ride3', world: 'west', icon: '🎢', title: 'Ride the train 3 times', reward: 20, check: () => (profile.trainRides || 0) >= 3 },
   // 🌟 Anywhere — these need coins/blocks you earn by learning
   { id: 'score75',world: 'any', icon: '⭐', title: 'Reach a Learning Score of 75', reward: 12, check: () => (profile.stars != null ? profile.stars : 0) >= 75 },
   { id: 'coins',  world: 'any', icon: '🪙', title: 'Earn 60 coins by learning', reward: 12, check: () => G.coins >= 60 },
@@ -12935,6 +13028,7 @@ function tryUse() {
   else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
   else if (feedDist() < 3.8) { Sound.click(); openFeed(); }       // 🌾 feed store cashier — count change (Math Meadow)
+  else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
   else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
   else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
   else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -13301,6 +13395,7 @@ $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
 $('feedClose').onclick = () => { Sound.click(); closeFeed(); };
+$('trainClose').onclick = () => { Sound.click(); closeTrainRide(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
 $('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
@@ -13511,6 +13606,7 @@ if (isTouch) {
     else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
     else if (feedDist() < 3.8) { Sound.click(); openFeed(); }       // 🌾 feed store cashier — count change (Math Meadow)
+    else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
@@ -14147,6 +14243,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
+  if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
 
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
@@ -14280,6 +14377,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (feedDist() < 3.8) {
       hint.textContent = isTouch ? '🌾 Tap ⭐ USE — be the cashier at the Feed Store!' : '🌾 ⭐ USE (or E) — be the cashier at the Feed Store!';
+      hint.style.display = 'block';
+    } else if (trainDist() < 4.4) {
+      hint.textContent = (G.tickets > 0 ? '🚂 Tap ⭐ USE — ride the steam train! (🎟️ ' + G.tickets + ')' : '🚂 Earn a 🎟️ ride ticket (answer ❓ STEM) then USE to ride!');
       hint.style.display = 'block';
     } else if (libraryDist() < 4.2) {
       hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 ⭐ USE (or E) — read a story at the Library!';
