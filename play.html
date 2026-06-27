@@ -1703,6 +1703,8 @@ const Sound = {
     this.tone(92, 0.12, 'sawtooth', v * 0.5, 0, 58);
   },
   bell()    { [1318, 1976].forEach((f, i) => { this.tone(f, 0.7, 'sine', 0.07 - i * 0.02, 0); this.tone(f, 0.6, 'sine', 0.05, 0.28); }); },   // 🔔 station bell ding-ding
+  boing()   { this.tone(180, 0.2, 'sine', 0.14, 0, 540); this.tone(540, 0.12, 'sine', 0.06, 0.05, 220); },   // 🤸 springy swing/spring-rider boing
+  creak()   { this.tone(150, 0.24, 'sawtooth', 0.05, 0, 110); this.noise(0.12, 0.04, 600); },                // ⚖️ see-saw creak
   chaching() {   // 💵 cash register: a quick drawer "cha" then a bright ringing "ching"
     this.noise(0.05, 0.13, 2600);
     this.tone(1180, 0.1, 'square', 0.13, 0.02, 1500);
@@ -3292,6 +3294,14 @@ const SHOP_ITEMS = [
   { id: 'leash',  icon: '🦮', name: 'Dog Leash', price: 7,    kind: 'own',   desc: 'Own a leash and your dog will follow you on a Walk!' },
   { id: 'cattree', icon: '🐈', name: 'Cat Tree', price: 14,   kind: 'many',  desc: 'A cozy carpeted cat tower with perches & a hideaway — cats love to climb and nap up high!' },
   { id: 'scratchpost', icon: '🐾', name: 'Scratching Post', price: 8, kind: 'many', desc: 'A sisal scratching post with a dangly toy on top — keeps kitty\'s claws happy.' },
+  // 🎠 Build-Your-Own Playground — buy the gear, place it anywhere, then walk up & tap ⭐ USE to PLAY on it!
+  { id: 'swingset',   icon: '🤸', name: 'Swing Set', price: 22, kind: 'many', desc: 'A two-seat A-frame swing — place it, walk up and tap ⭐ USE to hop on and swing up high!' },
+  { id: 'seesaw',     icon: '⚖️', name: 'See-Saw', price: 16, kind: 'many', desc: 'A teeter-totter — tap ⭐ USE to ride it and bob up and down!' },
+  { id: 'slide',      icon: '🛝', name: 'Curly Slide', price: 20, kind: 'many', desc: 'Climb the ladder and WHOOSH down the slide — wheee! Tap ⭐ USE to ride.' },
+  { id: 'springer',   icon: '🐴', name: 'Spring Rider', price: 12, kind: 'many', desc: 'A bouncy spring pony — tap ⭐ USE to boing up and down!' },
+  { id: 'roundabout', icon: '🎠', name: 'Merry-Go-Round', price: 26, kind: 'many', desc: 'A spinning roundabout — tap ⭐ USE to hop on and whirl around!' },
+  { id: 'sandbox',    icon: '🏖️', name: 'Sandbox', price: 10, kind: 'many', desc: 'A sandbox with a bucket and spade — a soft spot to dig and play.' },
+  { id: 'climber',    icon: '🧗', name: 'Climbing Frame', price: 24, kind: 'many', desc: 'A colorful jungle-gym climbing frame to scramble over.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -3312,7 +3322,7 @@ const SHOP_ITEMS = [
 ];
 /* Two stores: 🛒 Stack Mart (general goods) and 🏚️ Stack Barn (build + home: everything you build a house with). */
 const MART_CATS = [['food', '🍎 Food'], ['july4', '🎆 July 4th'], ['pets', '🐾 Pets'], ['gear', '⭐ Gear']];
-const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden']];
+const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden'], ['play', '🎠 Playground']];
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🏚️ Stack Barn — Building dept (blocks, doors, garage doors, windows, roof — all the build materials)
@@ -3328,7 +3338,9 @@ const ITEM_CAT = {
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
-  table: 'outdoor', umbrella: 'outdoor', lounger: 'outdoor', bbq: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolslide: 'outdoor', poolmega: 'outdoor'
+  table: 'outdoor', umbrella: 'outdoor', lounger: 'outdoor', bbq: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolslide: 'outdoor', poolmega: 'outdoor',
+  // 🎠 Stack Barn — Build-Your-Own Playground
+  swingset: 'play', seesaw: 'play', slide: 'play', springer: 'play', roundabout: 'play', sandbox: 'play', climber: 'play'
 };
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
@@ -4216,14 +4228,14 @@ function resetWorld() {
   fireworkLaunchers.length = 0;
   fireworkSparks.forEach(s => scene.remove(s.mesh)); fireworkSparks.length = 0;
   cookProps.length = 0; ovenGlows.length = 0;     // stoves are removed above, taking their cookware with them
-  player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null;
+  player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null; player.playing = null;
   if (bedProps) bedProps.visible = false;
   if (shieldBubble) shieldBubble.visible = false;
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -4266,7 +4278,7 @@ function cellClearArea(x, z) {
 }
 function unstickPlayer() {
   if (player.driving) { toggleDrive(); toast('🚪 Out of the car!', 1400); return; }   // stuck in a car → hop off
-  player.restingBed = null; player.sittingChair = null;
+  player.restingBed = null; player.sittingChair = null; player.playing = null;
   const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
   let best = null;
   for (let r = 3; r <= 28 && !best; r++) {
@@ -8516,8 +8528,19 @@ function buildCinema(g) {                     // 🎬 Stack Cinema — Reading T
 }
 // 🪧 a billboard sign that floats above a building and always faces the camera, so kids can
 // spot each Reading Town hub from the road (fixes the "circled for 5 minutes" navigation issue).
+/* 🎠 a marked "Build-Your-Own Playground" spot — a soft rubber mat + a welcome arch. Decor only
+   (no collision), so kids drop their swings/slides/see-saws right on it. Gear comes from the 🏚️ Stack Barn. */
+function buildPlaygroundZone(g, cx, cz) {
+  const MAT1 = 0x53b0c0, MAT2 = 0xE0a23a, POST = 0xE0522B, POST2 = 0x4a8fd0;
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) box(g, 0.98, 0.04, 0.98, (i + j) % 2 ? MAT1 : MAT2, cx + i, 0.02, cz + j);   // checker play-mat
+  [-2.3, 2.3].forEach(dx => box(g, 0.18, 2.4, 0.18, POST, cx + dx, 1.2, cz - 2.6));   // arch posts
+  box(g, 5.0, 0.3, 0.3, POST2, cx, 2.45, cz - 2.6);                                   // arch beam
+  signOn(g, 'PLAYGROUND', 'Build & Play! 🎠', 0x2f6b4f, 3.4, 0.62, cx, 2.0, cz - 2.45);
+  [[-2.3, 2.3, POST2], [2.3, 2.3, POST]].forEach(([dx, dz, c]) => { box(g, 0.28, 0.5, 0.28, c, cx + dx, 0.27, cz + dz); box(g, 0.34, 0.12, 0.34, 0xF2C84B, cx + dx, 0.56, cz + dz); });   // corner marker cones
+}
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
+  buildPlaygroundZone(g, 12, 9);             // 🎠 Reading Town playground build-spot (south-east lawn)
   buildPostOffice(g);
   buildRealty(g);
   buildCinema(g);
@@ -9253,6 +9276,7 @@ function buildMeadowDecor(g) {
   americanBarn(g, ML.barn.x, ML.barn.z, Math.PI / 2, 'STACK BARN', 'Furniture & Home');                       // W arm (faces EAST) — red gambrel barn
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
+  buildPlaygroundZone(g, 14, 10);                       // 🎠 Math Meadow playground build-spot (south-east meadow)
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 16;
   for (let i = 0; i < HN; i++) {
@@ -9676,6 +9700,45 @@ function toggleBedRest() {
   player.vel.set(0, 0, 0);
   if (document.pointerLockElement) document.exitPointerLock();
   toast('Cozy! Press L again when you are ready to get up.');
+}
+
+/* 🎠 PLAYGROUND — the rideable pieces you build & play on. Walk up, tap ⭐ USE to hop on. */
+const PLAY_RIDE = { swingset: 1, seesaw: 1, slide: 1, springer: 1, roundabout: 1 };
+function nearestPlay(maxDist) {
+  maxDist = maxDist || 2.7;
+  let best = null, bestD = maxDist; const seen = new Set();
+  blocks.forEach(b => {
+    if (!PLAY_RIDE[b.type] || seen.has(b.mesh)) return;
+    seen.add(b.mesh);
+    const d = Math.hypot(player.pos.x - b.mesh.position.x, player.pos.z - b.mesh.position.z);
+    if (d < bestD) { bestD = d; best = b; }
+  });
+  return best;
+}
+function startPlay(entry) {
+  if (!entry) return;
+  player.sittingChair = null; player.restingBed = null; player.stroking = null;
+  player.playing = { entry, type: entry.type, t: 0, _beat: 0, done: false,
+    mx: entry.mesh.position.x, mz: entry.mesh.position.z, ry: entry.mesh.rotation.y || 0 };
+  player.vel.set(0, 0, 0);
+  if (document.pointerLockElement) document.exitPointerLock();
+  const tips = {
+    swingset: '🤸 Wheee — swing up high! Tap ⭐ USE or just walk to hop off.',
+    seesaw: '⚖️ Up… and down! Tap ⭐ USE or walk to hop off.',
+    springer: '🐴 Boing boing boing! Tap ⭐ USE or walk to hop off.',
+    roundabout: '🎠 Round and round we go! Tap ⭐ USE or walk to hop off.',
+    slide: '🛝 Hold on tight — wheeeee!'
+  };
+  toast(tips[entry.type] || 'Wheee!', 2600);
+  if (entry.type === 'slide') { if (Sound.slide) Sound.slide(); }
+  else if (Sound.boing) Sound.boing();
+}
+function endPlay() {
+  const p = player.playing; player.playing = null;
+  if (p) { player.pos.set(p.mx, 0, p.mz + 1.1); player.vel.set(0, 0, 0); }
+  const d = player.avatarData, av = player.avatar;
+  if (d) { if (d.legs) d.legs.forEach(l => l.rotation.x = 0); if (d.arms && d.armRest) d.arms.forEach((a, i) => { a.rotation.x = d.armRest[i].x; a.rotation.z = d.armRest[i].z; }); }
+  if (av) av.rotation.set(0, player.yaw + Math.PI, 0);
 }
 
 function setAvatar(index) {
@@ -10139,6 +10202,53 @@ function updatePlayer(dt) {
       if (s._beat > 1.1) { s._beat = 0; petHearts(p, 1); if (p.kind === 'cat') { Sound.purr && Sound.purr(); } else { Sound.bark && Sound.bark(); } }
       camera.position.lerp(new THREE.Vector3(s.sx + 2.4, 2.2, s.sz + 2.4), 0.16);
       camera.lookAt(m.position.x, 0.35, m.position.z);
+      return;
+    }
+  }
+
+  // 🎠 playing on a playground ride — the equipment animates and the avatar rides along
+  if (player.playing) {
+    const pl = player.playing, e = pl.entry, ud = e.mesh.userData;
+    let still = false; blocks.forEach(b => { if (b.mesh === e.mesh) still = true; });
+    const moved = Math.hypot(touch.joyX, touch.joyY) > 0.24 ||
+      keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+    if (!still || moved || pl.done) { endPlay(); }
+    else {
+      pl.t += dt; player.vel.set(0, 0, 0);
+      const mx = pl.mx, mz = pl.mz, ry = pl.ry, t = pl.t, av = player.avatar, d = player.avatarData;
+      let lx = 0, ly = 0.5, lz = 0, ax = 0, ay = ry + Math.PI, az = 0;
+      if (pl.type === 'swingset') {
+        const ang = Math.sin(t * 2.6) * 0.62;
+        lx = Math.sin(ang) * 1.0; ly = 1.55 - Math.cos(ang) * 1.0 + 0.12; lz = 0; ay = ry + Math.PI / 2; az = -ang;
+        if (ud.swing) ud.swing.rotation.z = ang;
+      } else if (pl.type === 'seesaw') {
+        const tilt = Math.sin(t * 2.0) * 0.32;
+        lz = 0.85 * Math.cos(tilt); ly = 0.75 - Math.sin(tilt) * 0.8; ax = tilt; ay = ry;
+        if (ud.plank) ud.plank.rotation.x = tilt;
+      } else if (pl.type === 'springer') {
+        const b = Math.sin(t * 4.2);
+        ly = 0.82 + Math.abs(b) * 0.14; ax = b * 0.12; ay = ry + Math.PI / 2;
+        if (ud.spring) { ud.spring.position.y = 0.06 + Math.abs(b) * 0.1; ud.spring.rotation.x = b * 0.12; }
+        if (ud.coil) ud.coil.scale.y = 1 - Math.abs(b) * 0.3;
+      } else if (pl.type === 'roundabout') {
+        const a = t * 1.8;
+        lx = Math.cos(a) * 0.5; lz = Math.sin(a) * 0.5; ly = 0.48; ay = ry + a + Math.PI / 2;
+        if (ud.spin) ud.spin.rotation.y = a;
+      } else if (pl.type === 'slide') {
+        const dur = 1.9, u = Math.min(1, t / dur);
+        lz = -0.3 + u * 1.55; ly = 1.55 - u * 1.4; ax = -0.5 - u * 0.3; ay = ry;
+        if (u >= 1) pl.done = true;
+      }
+      const wx = mx + lx * Math.cos(ry) + lz * Math.sin(ry), wz = mz - lx * Math.sin(ry) + lz * Math.cos(ry);
+      player.pos.set(wx, 0, wz);
+      av.visible = true; av.position.set(wx, ly, wz); av.rotation.set(ax, ay, az);
+      if (d && d.legs && !d.quad) d.legs.forEach(l => l.rotation.x = -1.2);
+      if (d && d.arms) d.arms.forEach(a => a.rotation.x = -0.85);
+      pl._beat += dt;
+      if (pl.type !== 'slide' && pl._beat > 1.5) { pl._beat = 0; if (Sound.creak && pl.type === 'seesaw') Sound.creak(); else if (Sound.boing) Sound.boing(); }
+      const cd = pl.type === 'roundabout' ? 4.4 : 3.2;
+      camera.position.lerp(new THREE.Vector3(mx + cd, 2.8, mz + cd), 0.12);
+      camera.lookAt(mx, 0.9, mz);
       return;
     }
   }
@@ -11472,7 +11582,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -11812,6 +11922,63 @@ function buildFurnitureMesh(type, variant) {
     const bc = box(g, 0.44, 0.06, 0.6, CUSH2, 0, 0.64, -0.54); bc.rotation.x = -0.6;   // raised reclined back
     [[-0.22, 0.5], [0.22, 0.5], [-0.22, -0.5], [0.22, -0.5]].forEach(([lx, lz]) => box(g, 0.06, 0.28, 0.06, FRAME, lx, 0.15, lz));   // legs
     box(g, 0.46, 0.04, 0.3, CUSH2, 0, 0.43, 0.5);                       // headrest pad
+  } else if (type === 'swingset') {
+    const FRAME = 0x4a8fd0, SEAT = 0xE0522B, CHAIN = 0xBFC6CC, BAR = 0xD24B6A;
+    const topY = 1.55;
+    [-0.5, 0.5].forEach(zz => {                                        // two A-frame end supports
+      const l1 = box(g, 0.08, 1.8, 0.08, FRAME, -0.3, 0.82, zz); l1.rotation.z = 0.34;
+      const l2 = box(g, 0.08, 1.8, 0.08, FRAME, 0.3, 0.82, zz); l2.rotation.z = -0.34;
+    });
+    box(g, 0.1, 0.1, 1.3, BAR, 0, topY, 0);                            // top cross bar
+    const sw = new THREE.Group(); sw.position.set(0, topY, 0); g.add(sw);   // the swinging seat (pivot at the bar)
+    [-0.16, 0.16].forEach(cx => box(sw, 0.03, 1.0, 0.03, CHAIN, cx, -0.5, 0));   // two chains
+    box(sw, 0.44, 0.06, 0.26, SEAT, 0, -1.02, 0);                      // seat plank
+    g.userData.swing = sw;
+  } else if (type === 'seesaw') {
+    const PLANK = 0xE0a23a, PIV = 0x4a8fd0, SEAT = 0xD24B6A, HANDLE = 0x3f7ab4;
+    box(g, 0.3, 0.34, 0.5, PIV, 0, 0.3, 0); box(g, 0.16, 0.16, 0.16, 0x35506a, 0, 0.5, 0);   // pivot block
+    const pl = new THREE.Group(); pl.position.set(0, 0.52, 0); g.add(pl);
+    box(pl, 0.34, 0.08, 2.0, PLANK, 0, 0, 0);                          // the plank along z
+    [-0.85, 0.85].forEach(zz => { box(pl, 0.42, 0.1, 0.34, SEAT, 0, 0.08, zz); box(pl, 0.05, 0.36, 0.05, HANDLE, 0, 0.26, zz * 0.7); });   // seats + grab handles
+    g.userData.plank = pl;
+  } else if (type === 'slide') {
+    const TOWER = 0x4a8fd0, SLIDE = 0xE0522B, STEP = 0xF2C84B, RAIL = 0x3f7ab4, PLAT = 0xE0a23a;
+    [[-0.32, -0.5], [0.32, -0.5], [-0.32, 0], [0.32, 0]].forEach(([x, z]) => box(g, 0.08, 1.5, 0.08, TOWER, x, 0.75, z));   // tower legs
+    box(g, 0.78, 0.08, 0.62, PLAT, 0, 1.5, -0.25);                     // top platform
+    box(g, 0.78, 0.46, 0.06, RAIL, 0, 1.76, -0.52);                    // back safety rail
+    for (let i = 0; i < 4; i++) box(g, 0.6, 0.05, 0.12, STEP, 0, 0.3 + i * 0.33, -0.58);   // ladder steps
+    const chute = box(g, 0.5, 0.06, 1.55, SLIDE, 0, 0.86, 0.52); chute.rotation.x = 0.62;  // sloping chute to the front
+    [-0.27, 0.27].forEach(x => { const r = box(g, 0.05, 0.22, 1.55, SLIDE, x, 0.96, 0.52); r.rotation.x = 0.62; });   // side rails
+    box(g, 0.5, 0.04, 0.34, SLIDE, 0, 0.16, 1.18);                     // run-out at the bottom
+  } else if (type === 'springer') {
+    const SPRING = 0xBFC6CC, BODY = 0xE0522B, MANE = 0xF2C84B, BASE = 0x4a8fd0, HANDLE = 0x33241a;
+    box(g, 0.5, 0.06, 0.5, BASE, 0, 0.03, 0);                          // ground base
+    const sp = new THREE.Group(); sp.position.set(0, 0.06, 0); g.add(sp);
+    const coil = box(sp, 0.14, 0.5, 0.14, SPRING, 0, 0.28, 0);         // the spring
+    box(sp, 0.72, 0.34, 0.28, BODY, 0, 0.72, 0);                       // pony body
+    box(sp, 0.26, 0.36, 0.24, BODY, 0.34, 0.94, 0); box(sp, 0.16, 0.13, 0.24, MANE, 0.16, 1.07, 0);   // head + mane
+    box(sp, 0.34, 0.06, 0.06, HANDLE, 0.06, 0.8, 0.16); box(sp, 0.34, 0.06, 0.06, HANDLE, 0.06, 0.8, -0.16);   // handlebars
+    g.userData.spring = sp; g.userData.coil = coil;
+  } else if (type === 'roundabout') {
+    const PLAT = 0xE0522B, PLAT2 = 0xF2C84B, POLE = 0xBFC6CC, HUB = 0x4a8fd0;
+    box(g, 0.3, 0.32, 0.3, HUB, 0, 0.16, 0);                           // hub base
+    const sp = new THREE.Group(); sp.position.set(0, 0.34, 0); g.add(sp);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.1, 16), mat(PLAT)); disc.position.y = 0.05; sp.add(disc);
+    for (let i = 0; i < 6; i++) { const st = box(sp, 1.78, 0.05, 0.12, i % 2 ? PLAT2 : 0xF7F4EE, 0, 0.11, 0); st.rotation.y = i / 6 * Math.PI * 2; }   // pie stripes
+    box(sp, 0.12, 0.62, 0.12, POLE, 0, 0.42, 0);                       // center pole
+    for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2; const bar = box(sp, 0.05, 0.05, 0.86, POLE, Math.cos(a) * 0.42, 0.64, Math.sin(a) * 0.42); bar.rotation.y = a; box(sp, 0.09, 0.4, 0.09, POLE, Math.cos(a) * 0.82, 0.32, Math.sin(a) * 0.82); }   // grab bars
+    g.userData.spin = sp;
+  } else if (type === 'sandbox') {
+    const FRAME = 0x8a5c33, SAND = 0xEAD9A0;
+    [[-0.45, 0, 0.06, 0.96], [0.45, 0, 0.06, 0.96], [0, -0.45, 0.96, 0.06], [0, 0.45, 0.96, 0.06]].forEach(([x, z, w, d]) => box(g, w, 0.2, d, FRAME, x, 0.1, z));   // frame
+    box(g, 0.86, 0.1, 0.86, SAND, 0, 0.08, 0);                         // sand
+    box(g, 0.16, 0.13, 0.16, 0xE0522B, 0.2, 0.18, 0.2);               // bucket
+    box(g, 0.04, 0.24, 0.04, 0x4a8fd0, -0.18, 0.18, -0.14); box(g, 0.12, 0.04, 0.14, 0x4a8fd0, -0.18, 0.07, -0.22);   // spade
+  } else if (type === 'climber') {
+    const cols = [0xE0522B, 0x4a8fd0, 0xF2C84B, 0x57a53c];
+    [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]].forEach(([x, z], i) => box(g, 0.08, 1.4, 0.08, cols[i], x, 0.7, z));   // 4 corner posts
+    [0.5, 1.0, 1.4].forEach((y, k) => { box(g, 0.88, 0.07, 0.08, cols[k % 4], 0, y, -0.4); box(g, 0.88, 0.07, 0.08, cols[(k + 1) % 4], 0, y, 0.4); box(g, 0.08, 0.07, 0.88, cols[(k + 2) % 4], -0.4, y, 0); box(g, 0.08, 0.07, 0.88, cols[(k + 3) % 4], 0.4, y, 0); });   // rungs
+    box(g, 0.86, 0.05, 0.86, 0xD24B6A, 0, 1.42, 0);                    // top platform
   } else if (type === 'flag') {
     box(g, 0.05, 1.5, 0.05, 0x9a8a6a, -0.32, 0.74, 0);                 // pole
     box(g, 0.07, 0.07, 0.07, 0xFFD23E, -0.32, 1.5, 0);               // gold finial
@@ -13170,6 +13337,7 @@ function tryUse() {
   else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
   else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
   else if (player.sittingChair) { Sound.click(); toggleSit(); }
+  else if (player.playing) { Sound.click(); endPlay(); }           // 🎠 hop off a playground ride
   else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
   else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
   else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
@@ -13188,6 +13356,7 @@ function tryUse() {
   else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
   else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
   else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
+  else if (nearestPlay()) { Sound.click(); startPlay(nearestPlay()); }   // 🎠 hop on a swing / see-saw / slide / spring rider / roundabout
   else if (nearestChair()) { Sound.click(); toggleSit(); }
   else if (nearestBed()) { Sound.click(); toggleBedRest(); }
   else { toast('⭐ Walk up to a shop, car, or chair, then tap USE!', 1800); }
@@ -13242,7 +13411,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy' };
+const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -13394,6 +13563,13 @@ function renderInv() {
     ['🛝', 'Splash & Slide Pools', G.furniture.poolslide, 'poolslide'],
     ['🌊', 'Mega Pools', G.furniture.poolmega, 'poolmega'],
     ['🌳', 'Bushes', G.furniture.bush, 'bush'],
+    ['🤸', 'Swing Sets', G.furniture.swingset, 'swingset'],
+    ['⚖️', 'See-Saws', G.furniture.seesaw, 'seesaw'],
+    ['🛝', 'Curly Slides', G.furniture.slide, 'slide'],
+    ['🐴', 'Spring Riders', G.furniture.springer, 'springer'],
+    ['🎠', 'Merry-Go-Rounds', G.furniture.roundabout, 'roundabout'],
+    ['🏖️', 'Sandboxes', G.furniture.sandbox, 'sandbox'],
+    ['🧗', 'Climbing Frames', G.furniture.climber, 'climber'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
   placeables.forEach(([icon, name, count, slot]) => {
