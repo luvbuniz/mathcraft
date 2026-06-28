@@ -1479,6 +1479,17 @@
   </div>
 </div>
 
+<!-- ================= MEASURING-TAPE PERIMETER POPUP (Math Meadow flooring) ================= -->
+<div class="popup" id="measurePopup">
+  <div class="popupCard" style="text-align:center; width:min(440px,94vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="measureClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 style="color:#6b8e3a; margin:2px 0 6px; font-size:clamp(20px,4vw,28px)">📏 Measure the Room</h2>
+    <div id="measureMsg" style="color:#5a6b35; font-weight:700; font-size:clamp(14px,2.8vw,17px); margin-bottom:8px; min-height:20px"></div>
+    <div id="measureHint" style="display:none"></div>
+    <div id="measurePad" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:6px"></div>
+  </div>
+</div>
+
 <!-- ================= ELEVATOR FLOOR PICKER POPUP ================= -->
 <div class="popup" id="liftPopup">
   <div class="popupCard" style="text-align:center; width:min(360px,92vw)">
@@ -3376,9 +3387,10 @@ const SHOP_ITEMS = [
   { id: 'plant',  icon: '🪴', name: 'House Plant', price: 10, kind: 'many', desc: 'A leafy potted plant to bring a room to life.' },
   { id: 'rug',    icon: '🟫', name: 'Cozy Rug', price: 9,    kind: 'many', desc: 'A soft rug — a fresh color every time.' },
   // 🪵 Flooring — lay tiles across a room; you walk right over them. Pick a colour in your 🎒 backpack.
-  { id: 'carpet',    icon: '🟥', name: 'Carpet Floor', price: 4, kind: 'many', desc: 'A soft carpet floor tile — pick a colour in your 🎒. Lay lots to cover a whole room!' },
-  { id: 'woodfloor', icon: '🟫', name: 'Wood Floor', price: 5, kind: 'many', desc: 'A warm wood-plank floor tile — pick a wood tone in your 🎒.' },
-  { id: 'tilefloor', icon: '🔲', name: 'Tile Floor', price: 5, kind: 'many', desc: 'A shiny checkered tile floor — pick a colour in your 🎒.' },
+  { id: 'carpet',    icon: '🟥', name: 'Carpet Floor', price: 8, kind: 'many', desc: 'Soft carpet that fills a WHOLE room at once and tucks neatly under your furniture. Stand inside a walled room and lay it! (Math Meadow: measure the room first with a 📏 tape.)' },
+  { id: 'woodfloor', icon: '🟫', name: 'Wood Floor', price: 9, kind: 'many', desc: 'Warm wood planks that fill a whole room and sit under your furniture. Reading Town = sleek modern wood; Math Meadow = rustic barnwood.' },
+  { id: 'tilefloor', icon: '🔲', name: 'Tile Floor', price: 9, kind: 'many', desc: 'A checkered tile floor that fills the whole room under your furniture. Reading Town = modern tile; Math Meadow = country tile.' },
+  { id: 'measuretape', icon: '📏', name: 'Measuring Tape', price: 6, kind: 'own', desc: 'A Math Meadow must-have! Measure a room\'s PERIMETER, get it right, and your floor rolls out across the whole room — a math lesson you build with.' },
   { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
@@ -3464,7 +3476,7 @@ const ITEM_CAT = {
   // 🏚️ Stack Barn — furniture & home
   chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
   rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living', bird: 'living', birdcage: 'living', aviary: 'living', birdfood: 'living',
-  carpet: 'floor', woodfloor: 'floor', tilefloor: 'floor',
+  carpet: 'floor', woodfloor: 'floor', tilefloor: 'floor', measuretape: 'floor',
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
@@ -4213,6 +4225,7 @@ function saveGame() {
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel, gradePin: G.gradePin || 0,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
+      floors: serializeFloors(),
       foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0, f.petName || '', f.hunger == null ? '' : Math.round(f.hunger), f.bond == null ? '' : Math.round(f.bond)]),
       quest: G.quest,
       homes: G.homes || [],
@@ -4307,6 +4320,7 @@ function restoreGame(s) {
       const st = blocks.get(key(x, 0, z));
       if (st && Array.isArray(detail)) detail.forEach(k => attachCookware(st, k));
     }
+    else if (FLOOR_TYPES.includes(type)) addFloorTile(x, z, type, (detail || 0) % 1000, s.world || G.world);   // 🪵 migrate old floor-as-block saves into the new flooring layer (strip the town-finish multiplier)
     else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail, extra);
     else {
       const col = detail || 0xC9B79A;
@@ -4317,6 +4331,7 @@ function restoreGame(s) {
       blocks.get(key(x, y, z)).color = col;
     }
   });
+  (s.floors || []).forEach(([x, z, ti, variant]) => addFloorTile(x, z, FLOOR_TYPES[ti] || 'carpet', variant || 0, s.world || G.world));   // 🪵 the flooring layer
   reorientFixtures();        // now that every wall is back, line up doors & windows with them
   if (typeof pruneOverlappingDecoTrees === 'function') pruneOverlappingDecoTrees();   // clear any tree a home/pool was built over (e.g. a tree in the pool)
   if (typeof rebuildAllHomeExtras === 'function') rebuildAllHomeExtras();             // re-lay marble floors & driveways for premium homes
@@ -4373,6 +4388,7 @@ function resetWorld() {
   berries.forEach(b => scene.remove(b.mesh)); berries.length = 0;
   placedFood.forEach(f => scene.remove(f.mesh)); placedFood.length = 0;
   poolWater = [];                                  // pool meshes are removed with the blocks above
+  if (typeof clearFloorTiles === 'function') clearFloorTiles();   // 🪵 flooring layer is its own thing — wipe it too
   if (typeof slideDecors !== 'undefined') { slideDecors.forEach(g => scene.remove(g)); slideDecors = []; }   // water-slide decor (rebuilt with the pool)
   if (typeof homeDecors !== 'undefined') { homeDecors.forEach(h => scene.remove(h.mesh)); homeDecors = []; }   // home floors/driveways (rebuilt from G.homes on load)
   pools = [];                                      // whole-pool registry, rebuilt on load
@@ -11309,7 +11325,14 @@ function removePlacedBlock() {
     if (d > 1.8) return;
     if (y > bestY || (y === bestY && d < bestDist)) { bk = k; be = b; bestY = y; bestDist = d; }
   });
-  if (!bk) return false;
+  if (!bk) {
+    // nothing built in reach — maybe lift the floor you're standing on (whole room's floor, one piece refunded)
+    const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
+    let n = removeFloorPatchAt(px, pz);
+    if (!n) n = removeFloorPatchAt(Math.floor(player.pos.x - Math.sin(player.yaw) * 1.2), Math.floor(player.pos.z - Math.cos(player.yaw) * 1.2));
+    if (n) { Sound.brk(); refreshHUD(); toast('📦 Rolled the floor back up — ' + n + ' tiles, piece back in your 🎒!', 2400); return true; }
+    return false;
+  }
   if (be.pool) { removeWholePool(be.pool); return true; }   // a pool comes up as ONE whole item
   const [x, y, z] = bk.split(',').map(Number);
   pushUndo(captureCell(x, y, z));
@@ -11435,6 +11458,7 @@ function placeSelectedAt(x, z, blockY) {
     spawnFoodAt(x, z, false, slot, surfY, G[slot + 'Variant'] || 0); G.furniture[slot] -= 1; Sound.pop(); refreshHUD();
     toast(slot === 'cat' ? '🐱 Meow! Cozy kitty.' : slot === 'dog' ? '🐶 Woof! Good doggo.' : '🐠 Blub blub!', 1600); return true;
   }
+  if (FLOOR_TYPES.includes(slot)) return layFloor(slot, x, z);   // 🪵 flooring fills the whole room as its own under-furniture layer
   if (FURNITURE_TYPES.includes(slot)) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🏚️ Stack Barn!', 2200); return false; }
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
@@ -11509,7 +11533,7 @@ function putDownBlock() {
   const fx = Math.floor(player.pos.x - Math.sin(player.yaw) * 1.4);
   const fz = Math.floor(player.pos.z - Math.cos(player.yaw) * 1.4);
   const base = blocks.get(key(fx, 0, fz));
-  if (base && !base.removable && G.selectedSlot !== 'food') { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
+  if (base && !base.removable && G.selectedSlot !== 'food' && !FLOOR_TYPES.includes(G.selectedSlot)) { toast('🙂 Not there! Turn a little and try again.', 1500); return; }
   let blockY = 0;
   if (G.selectedSlot === 'block' || G.selectedSlot === 'power' || G.selectedSlot === 'window' || G.selectedSlot === 'roof') {
     while (blockY <= 8 && blocks.has(key(fx, blockY, fz))) blockY++;
@@ -12572,6 +12596,155 @@ const FLOOR_COLORS = {
   woodfloor: [0xC8A165, 0x9A6B3A, 0x9E5B4A, 0x6b4a2c, 0xCDBBA0, 0xB5854E],
   tilefloor: [0xEDE8DE, 0xC0392B, 0x4F7CB0, 0x55606B, 0x2f7d4a, 0xD9A441]
 };
+
+/* ====================== 🪵 FLOORING — its own UNDER-furniture layer ======================
+   Flooring is no longer a grid block; it's a thin tile that sits UNDER beds, couches & tables,
+   and a single piece auto-fills a whole walled room. Each town has its OWN look: Reading Town
+   (city) is modern & sleek; Math Meadow (meadow) is rustic countryside. In Math Meadow you lay
+   it with a 📏 Measuring Tape — work out the room's perimeter and the floor rolls out! */
+const FLOOR_TYPES = ['carpet', 'woodfloor', 'tilefloor'];
+const floorTiles = new Map();              // 'x,z' -> { mesh, type, variant, world }
+const fk = (x, z) => x + ',' + z;
+const FLOOR_STYLES = {
+  city: {     // 🏙️ Reading Town — modern: cool greys, teal, clean white/charcoal tile, pale modern oak
+    carpet:    [0x556070, 0x2E8B8B, 0x9AA3AD, 0x3B6FD8, 0xC9CDD4, 0x7A5CC0],
+    woodfloor: [0xCDBBA0, 0xB9A589, 0x8C8C90, 0xD8C9B0, 0x6E7378],
+    tilefloor: [0xF4F1EA, 0x2B2F36, 0x9FD0E8, 0x55606B, 0xE0E3E7]
+  },
+  meadow: {   // 🌾 Math Meadow — rustic: barn red, harvest gold, sage, warm barnwood, terracotta
+    carpet:    [0xB04A3E, 0xC98A4B, 0x7C8C5A, 0xC7B299, 0x9C5A3C, 0xD9C27A],
+    woodfloor: [0x9A6B3A, 0x7A4E28, 0x8A5C33, 0xB5854E, 0x6B4A2C],
+    tilefloor: [0xC97B4A, 0xD9A441, 0xA8754C, 0x8A6A3A, 0xE7DCC4]
+  }
+};
+function floorPalette(type, world) {
+  return (FLOOR_STYLES[world] && FLOOR_STYLES[world][type]) || FLOOR_COLORS[type] || FLOOR_COLORS.carpet;
+}
+function buildFloorTileMesh(type, variant, world) {
+  const g = new THREE.Group();
+  const pal = floorPalette(type, world);
+  const c = pal[(variant || 0) % pal.length];
+  if (type === 'carpet') {
+    box(g, 0.99, 0.045, 0.99, c, 0, 0.022, 0); box(g, 0.86, 0.05, 0.86, shade(c, 1.12), 0, 0.028, 0);
+  } else if (type === 'woodfloor') {
+    box(g, 0.99, 0.045, 0.99, c, 0, 0.022, 0);
+    for (let i = 0; i < 4; i++) box(g, 0.99, 0.05, 0.02, shade(c, 0.76), 0, 0.03, -0.36 + i * 0.24);   // plank seams
+  } else {   // tilefloor — 2×2 checker
+    const c2 = shade(c, 0.72);
+    box(g, 0.99, 0.045, 0.99, c, 0, 0.022, 0);
+    box(g, 0.47, 0.05, 0.47, c2, -0.245, 0.028, -0.245); box(g, 0.47, 0.05, 0.47, c2, 0.245, 0.028, 0.245);
+  }
+  return g;
+}
+function addFloorTile(x, z, type, variant, world) {
+  removeFloorTile(x, z);
+  world = world || G.world;
+  const mesh = buildFloorTileMesh(type, variant, world);
+  mesh.position.set(x + 0.5, 0.01, z + 0.5);          // a hair above the grass; not in `blocks`, so it's walkable & furniture sits on top
+  scene.add(mesh);
+  floorTiles.set(fk(x, z), { mesh, type, variant: variant || 0, world });
+}
+function removeFloorTile(x, z) {
+  const t = floorTiles.get(fk(x, z));
+  if (t) { scene.remove(t.mesh); floorTiles.delete(fk(x, z)); }
+}
+function clearFloorTiles() { floorTiles.forEach(t => scene.remove(t.mesh)); floorTiles.clear(); }
+// a cell bounds a ROOM (for flooring) only if a structural block stands there — furniture/water/flooring don't.
+function isFloorWall(x, z) {
+  const b = blocks.get(key(x, 0, z));
+  if (!b) return false;
+  return b.type === 'placed' || b.type === 'power' || b.type === 'door' || b.type === 'window' || b.type === 'garage';
+}
+// flood-fill the enclosed room around (sx,sz). Fills UNDER furniture, stops at walls. null = not a closed room.
+function floodRoom(sx, sz) {
+  const x0 = Math.floor(sx), z0 = Math.floor(sz);
+  if (isFloorWall(x0, z0)) return null;
+  const seen = new Set(), cells = [];
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  const stack = [[x0, z0]], CAP = 400;
+  while (stack.length) {
+    const [x, z] = stack.pop(), k = fk(x, z);
+    if (seen.has(k)) continue; seen.add(k);
+    if (Math.abs(x) >= WORLD_R - 1 || Math.abs(z) >= WORLD_R - 1) return null;   // leaks out to the edge → not a room
+    if (isFloorWall(x, z)) continue;                                              // a wall bounds the room
+    cells.push([x, z]);
+    if (cells.length > CAP) return null;                                          // too big / not enclosed
+    if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    stack.push([x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]);
+  }
+  return { cells, minX, maxX, minZ, maxZ, w: maxX - minX + 1, d: maxZ - minZ + 1 };
+}
+function fillFloor(type, variant, room) {
+  room.cells.forEach(([x, z]) => addFloorTile(x, z, type, variant, G.world));
+}
+// lift the whole connected same-type floor patch touching (x,z); refunds the one piece that laid it.
+function removeFloorPatchAt(x, z) {
+  x = Math.floor(x); z = Math.floor(z);
+  const start = floorTiles.get(fk(x, z));
+  if (!start) return 0;
+  const type = start.type, seen = new Set(), stack = [[x, z]]; let n = 0;
+  while (stack.length) {
+    const [cx, cz] = stack.pop(), k = fk(cx, cz);
+    if (seen.has(k)) continue; seen.add(k);
+    const t = floorTiles.get(k);
+    if (!t || t.type !== type) continue;
+    removeFloorTile(cx, cz); n++;
+    stack.push([cx + 1, cz], [cx - 1, cz], [cx, cz + 1], [cx, cz - 1]);
+  }
+  if (n > 0) { G.furniture[type] = (G.furniture[type] || 0) + 1; }
+  return n;
+}
+function serializeFloors() {
+  const out = [];
+  floorTiles.forEach((t, k) => { const [x, z] = k.split(',').map(Number); out.push([x, z, FLOOR_TYPES.indexOf(t.type), t.variant || 0]); });
+  return out;
+}
+// 🪵 lay flooring from the selected slot at (x,z). Reading Town fills instantly; Math Meadow runs the tape lesson.
+function layFloor(type, x, z) {
+  if ((G.furniture[type] || 0) < 1) { toast('🪵 No ' + (SLOT_TAGS[type] || type) + ' in your 🎒 — buy some at 🏚️ Stack Barn (🪵 Flooring)!', 2800); return false; }
+  // seed from the player's own cell (they're standing in the room); fall back to the cell they tapped
+  let room = floodRoom(player.pos.x, player.pos.z);
+  if (!room) room = floodRoom(x, z);
+  if (!room) { toast('🏠 Stand INSIDE a room with walls, then lay the floor — it fills the whole room! (a 🚪 door is fine)', 4200); return false; }
+  const variant = G[type + 'Variant'] || 0;
+  if (G.world === 'meadow') {                       // 🌾 Math Meadow — measure the perimeter first!
+    if (!G.owned.measuretape) { toast('📏 You need a Measuring Tape to lay floors in Math Meadow — buy one at 🏚️ Stack Barn (🪵 Flooring)!', 4000); return false; }
+    openMeasure(type, variant, room); return true;
+  }
+  fillFloor(type, variant, room); G.furniture[type] -= 1; Sound.place(); refreshHUD();
+  toast('✨ ' + (SLOT_TAGS[type] || 'Floor') + ' laid across the whole room — ' + room.cells.length + ' tiles, and furniture sits right on top!', 3400);
+  return true;
+}
+/* 📏 Math Meadow measuring-tape lesson: the tape sizes up the room, the kid works out the
+   PERIMETER (all the way around), and a right answer rolls the rustic floor out across it. */
+let measurePending = null;
+function openMeasure(type, variant, room) {
+  if (popupOpen) return;
+  measurePending = { type, variant, room };
+  popupOpen = true; if (document.pointerLockElement) document.exitPointerLock();
+  const w = room.w, d = room.d, ans = 2 * (w + d);
+  const distractors = [w + d, w * d, 2 * w + d, w + 2 * d, ans + 2, ans - 2].filter(n => n > 0 && n !== ans);
+  $('measureMsg').innerHTML = '📏 This room measures <b>' + w + '</b> tiles one way and <b>' + d + '</b> tiles the other.<br>What is the <b>perimeter</b> — the distance ALL the way around the edge?';
+  $('measureHint').textContent = 'Hint: add up all four sides — ' + w + ' + ' + d + ' + ' + w + ' + ' + d + '.';
+  const pad = $('measurePad'); pad.innerHTML = '';
+  fourChoices(ans, distractors).forEach(v => {
+    const b = document.createElement('button'); b.className = 'placeBtn';
+    b.style.cssText = 'font-size:clamp(17px,4vw,22px); padding:12px 20px; min-width:74px';
+    b.textContent = v + ' tiles';
+    b.onclick = () => measureAnswer(Number(v), ans);
+    pad.appendChild(b);
+  });
+  $('measurePopup').style.display = 'flex';
+}
+function measureAnswer(picked, ans) {
+  if (picked !== ans) { Sound.wrong && Sound.wrong(); $('measureMsg').innerHTML = '🤔 Not quite — add up all four sides and try again!<br><span style="color:#b5832a">' + $('measureHint').textContent + '</span>'; return; }
+  const p = measurePending; closeMeasure();
+  if (!p) return;
+  fillFloor(p.type, p.variant, p.room); G.furniture[p.type] -= 1;
+  G.coins += 3; Sound.fanfare && Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+  toast('📏 Perimeter ' + ans + ' tiles — spot on! Rustic floor rolled out across the room. +3 🪙', 3600);
+}
+function closeMeasure() { $('measurePopup').style.display = 'none'; popupOpen = false; measurePending = null; }
 const PETBED_COLORS = [0xE0707F, 0x6FA8DC, 0x8FC96B, 0xC79AE0, 0xF0B450, 0xF09BB5];
 function buildCouch(g, variant) {
   const si = Math.floor((variant || 0) / 100) % COUCH_STYLES.length;
@@ -14350,7 +14523,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
   if (action === 'move') { player.walkTo = { x: hit.point.x, z: hit.point.z }; showWalkMarker(hit.point); return; }
 
   if (action === 'break') {
-    if (!entry) return;
+    if (!entry) {   // tapped bare ground in break mode — lift the floor there, if any
+      const n = removeFloorPatchAt(Math.floor(hit.point.x), Math.floor(hit.point.z));
+      if (n) { Sound.brk(); refreshHUD(); toast('📦 Rolled the floor back up — ' + n + ' tiles back in your 🎒!', 2400); }
+      return;
+    }
     if (!entry.removable) { toast(entry.type === 'tree' || entry.type === 'leaf' ? '🌳 Trees are friends — build with your own blocks!' : '✨ That one stays put!', 1600); return; }
     if (entryKey && (() => { const [hx, , hz] = entryKey.split(',').map(Number); return isHomeStructure(hx, hz, entry.type); })()) {
       toast('🏠 That\'s part of your house — you can\'t take it apart brick by brick! Sell the whole house at 🏡 Stack Realty.', 3200); return;
@@ -14566,6 +14743,12 @@ function startPlacing(slot) {
   selectSlot(slot);
   closeInv();
   if (slot === 'paint') { toast('🎨 Paint mode on! Tap any of your wall blocks to paint it. Pick a color in your 🎒 backpack.', 3600); return; }
+  if (FLOOR_TYPES.includes(slot)) {
+    toast(G.world === 'meadow'
+      ? '🪵 Stand INSIDE a walled room, then press D (or tap) — your 📏 tape measures it and the floor rolls out!'
+      : '🪵 Stand INSIDE a walled room, then press D (or tap the ground) — the floor fills the whole room and tucks under your furniture!', 4200);
+    return;
+  }
   toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
 }
 function renderInv() {
@@ -14800,12 +14983,13 @@ function renderInv() {
         wrow.appendChild(btn);
       });
     }
-    if (FLOOR_COLORS[slot]) {                 // 🪵 pick the floor colour
+    if (FLOOR_COLORS[slot]) {                 // 🪵 pick the floor shade (palette matches the town: modern in Reading Town, rustic in Math Meadow)
       const fb = document.createElement('div'); fb.className = 'invPaint';
-      fb.innerHTML = '<span class="invPaintLabel">🎨 Floor colour</span><div class="paintRow"></div>';
+      const styleNote = G.world === 'meadow' ? ' (rustic)' : G.world === 'city' ? ' (modern)' : '';
+      fb.innerHTML = '<span class="invPaintLabel">🎨 Floor shade' + styleNote + '</span><div class="paintRow"></div>';
       wrap.appendChild(fb);
       const frow = fb.querySelector('.paintRow');
-      FLOOR_COLORS[slot].forEach((c, idx) => {
+      floorPalette(slot, G.world).forEach((c, idx) => {
         const sw = document.createElement('button');
         sw.className = 'swatch' + ((G[slot + 'Variant'] || 0) === idx ? ' sel' : '');
         sw.style.background = '#' + c.toString(16).padStart(6, '0');
@@ -14895,6 +15079,7 @@ $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('sandClose').onclick = () => { Sound.click(); closeSandbox(); };
 $('liftClose').onclick = () => { Sound.click(); closeLift(); };
+$('measureClose').onclick = () => { Sound.click(); closeMeasure(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
