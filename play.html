@@ -1061,7 +1061,7 @@
           <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
           <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏘️ Reading Town</b><small>Reading &amp; grammar</small></button>
           <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish</small></button>
-          <button class="choice" data-world="west" data-desc="STEM building &amp; rides"><b>🔬 Science Park</b><small>🤠 Western — STEM, bridges &amp; rides!</small></button>
+          <button class="choice" data-world="west" data-desc="Build a frontier town"><b>🤠 Country Western</b><small>Build a frontier town</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
       </div>
@@ -3219,7 +3219,7 @@ const WORLDS = {
   beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
             sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] },
   // 🔬 Science Park — three themed STEM/science worlds (groundwork; built out later)
-  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', comingSoon: true, park: 'science', blurb: '🌉 Build bridges across the canyon — engineering, measuring & forces!',
+  west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', park: 'science', blurb: '🤠 Build your own frontier homestead — cowboy houses, a tour train & a build park!',
             sky: 0x7CC4F0, fog: 0xCFE6F2, ground: [0xD9A86A, 0xCF9E60, 0xE3B878] },   // bright blue desert sky over the sandy ground
   costa:  { id: 'costa',  name: 'Costa Rica',     emoji: '🌴', subject: 'science', chip: 'Nature', comingSoon: true, park: 'science', blurb: '🦜 Explore the rainforest — discover plants & animals in your field journal!',
             sky: 0x8FD9C9, fog: 0xCDEEE4, ground: [0x4FAE52, 0x429646, 0x5FBF5F] },
@@ -3233,7 +3233,9 @@ const SCIENCE_WORLDS = ['west', 'costa', 'space'];   // the three worlds grouped
 const WORLD_LAYOUT = {
   meadow: { shop: { x: -16.8, z: -15.2 }, barn: { x: -21.5, z: -11.5 }, motors: { x: -6, z: -17 } },   // 🏡 Meadowsbury — L-shaped American country main street, spaced WIDE so no two shops crowd
   city:   { shop: { x: -3, z: -15 }, barn: { x: 0.5, z: -15 }, motors: { x: 5, z: -15 } },   // one tight high-street row (with the Library), all facing the street
-  beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } }
+  beach:  { shop: { x: -8.5, z: -8.5 }, barn: { x: -10, z: 9 }, motors: { x: 12, z: -9 } },
+  // 🤠 Country Western — the (hidden) shop triggers sit INSIDE themed frontier storefronts on the main street
+  west:   { shop: { x: -10, z: -16.8 }, barn: { x: -1, z: -16.8 }, motors: { x: 4.6, z: -16.8 } }
 };
 const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
 const worldComingSoon = id => !!(WORLDS[id] && WORLDS[id].comingSoon);
@@ -6427,26 +6429,34 @@ const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 const REALTY_POS = { x: 14, z: -15 };                       // Reading Town's Stack Realty
 const COUNTRY_REALTY_POS = { x: -21, z: -2 };               // 🏡 Country Homes — west arm of the L
+const WEST_REALTY_POS = { x: 14.5, z: -13.5 };              // 🤠 Frontier Homes — east end of the Western main street, facing the build area
 const REALTY_ROT = Math.PI / 2;                              // faces EAST, toward the player
-function realtyPos() { return G.world === 'meadow' ? COUNTRY_REALTY_POS : REALTY_POS; }
-function realtyDist() { return (G.world === 'city' || G.world === 'meadow') ? Math.hypot(player.pos.x - realtyPos().x, player.pos.z - realtyPos().z) : 999; }
+function realtyPos() { return G.world === 'meadow' ? COUNTRY_REALTY_POS : G.world === 'west' ? WEST_REALTY_POS : REALTY_POS; }
+function realtyDist() { return (G.world === 'city' || G.world === 'meadow' || G.world === 'west') ? Math.hypot(player.pos.x - realtyPos().x, player.pos.z - realtyPos().z) : 999; }
 const CINEMA_POS = { x: -15, z: -15 };
 function cinemaDist() { return G.world === 'city' ? Math.hypot(player.pos.x - CINEMA_POS.x, player.pos.z - CINEMA_POS.z) : 999; }
 /* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
 const HOME_MODELS = [
-  { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard' },
-  { id: 'modern',  name: '🏢 Modern Flat',      price: 300, stories: 2, garage: true, pool: false, color: 0xDDE3EA, roofStyle: 'flat',    desc: '2 stories • sleek flat roof • garage • yards' },
-  { id: 'family',  name: '🏠 Family Two-Story',  price: 340, stories: 2, garage: true, pool: false, color: 0xD9C39A, roofStyle: 'pointed', desc: '2 stories + stairs • garage • yards' },
-  { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL' },
-  { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL' },
-  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!' },
+  { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard',
+    westName: '🤠 Homesteader\'s Cabin', westColor: 0xC7A06A, westDesc: '1-story frontier cabin • covered porch • barn • front & back yard' },
+  { id: 'modern',  name: '🏢 Modern Flat',      price: 300, stories: 2, garage: true, pool: false, color: 0xDDE3EA, roofStyle: 'flat',    desc: '2 stories • sleek flat roof • garage • yards',
+    westName: '🏚️ Prairie Farmhouse', westColor: 0xD8C29A, westDesc: '2-story prairie farmhouse • covered porch • barn • yards' },
+  { id: 'family',  name: '🏠 Family Two-Story',  price: 340, stories: 2, garage: true, pool: false, color: 0xD9C39A, roofStyle: 'pointed', desc: '2 stories + stairs • garage • yards',
+    westName: '🐎 Ranch House', westColor: 0xCBA06A, westDesc: '2-story ranch house + stairs • covered porch • barn • yards' },
+  { id: 'deluxe',  name: '🏊 Deluxe with Pool',  price: 430, stories: 2, garage: true, pool: true,  poolW: 4, poolD: 3, color: 0xCFE0E8, roofStyle: 'pointed', desc: '2 stories • garage • yards • big POOL',
+    westName: '💧 Ranch with Watering Hole', westColor: 0xBE9A66, westDesc: '2-story ranch • covered porch • barn • big swimmin\' hole' },
+  { id: 'manor',   name: '🏛️ Columned Manor',    price: 620, stories: 2, garage: true, pool: true,  poolW: 5, poolD: 3, color: 0xF2ECDD, roofStyle: 'pointed', columns: true, hw: 7, hd: 6, desc: 'Big 2-story • grand front columns • garage • POOL',
+    westName: '🤠 Cattle Baron\'s House', westColor: 0xE3D6BC, westDesc: 'Big 2-story • grand pillared porch • barn • swimmin\' hole' },
+  { id: 'mansion', name: '🏰 Grand Mansion',     price: 950, stories: 2, garage: true, pool: true,  poolW: 6, poolD: 4, color: 0xE8DCC0, roofStyle: 'pointed', columns: true, hw: 8, hd: 7, garW: 5, furnished: true, desc: 'Mega! columns • 3-car garage • huge POOL • comes furnished • the grandest!',
+    westName: '🎩 Frontier Manor', westColor: 0xE0CFA8, westDesc: 'Mega frontier manor! pillared porch • 3-stall barn • huge swimmin\' hole • fully furnished' },
   { id: 'estate',  name: '🏞️ Country Estate',     price: 1300, stories: 2, garage: true, pool: true, poolW: 7, poolD: 5, color: 0xE3D6BC, roofStyle: 'pointed', columns: true, hw: 11, hd: 9, garW: 6, frontD: 6, furnished: true, fountain: true, kitchen: true, driveway: true, floorColor: 0xEDE6D6,
     desc: 'The grandest of all — a sprawling countryside manor: BIGGER than the mansion • long driveway + fountain • grand columns • huge POOL • full kitchen • fully furnished',
-    cityName: '🏙️ Executive Estate', cityDesc: 'The grandest of all — bigger than the mansion: long driveway + fountain • grand columns • 3-car garage • huge POOL • full kitchen • fully furnished' }
+    cityName: '🏙️ Executive Estate', cityDesc: 'The grandest of all — bigger than the mansion: long driveway + fountain • grand columns • 3-car garage • huge POOL • full kitchen • fully furnished',
+    westName: '🌵 Sprawling Cattle Ranch', westColor: 0xD9C2A0, westDesc: 'The grandest spread in the territory — sprawling ranch: long drive + fountain • pillared porch • 3-stall barn • huge swimmin\' hole • full kitchen • fully furnished' }
 ];
-// suburban Reading Town uses town-flavored names/descriptions; the meadow keeps the country ones
-function homeName(m) { return (G.world === 'city' && m.cityName) ? m.cityName : m.name; }
-function homeDesc(m) { return (G.world === 'city' && m.cityDesc) ? m.cityDesc : m.desc; }
+// each town flavors the names/descriptions: suburban Reading Town, the meadow's country, and the Western frontier
+function homeName(m) { return (G.world === 'west' && m.westName) ? m.westName : (G.world === 'city' && m.cityName) ? m.cityName : m.name; }
+function homeDesc(m) { return (G.world === 'west' && m.westDesc) ? m.westDesc : (G.world === 'city' && m.cityDesc) ? m.cityDesc : m.desc; }
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
   const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
@@ -6490,7 +6500,7 @@ function rebuildAllHomeExtras() {   // after a save loads, recreate the flat dec
 function openRealty() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
-  $('realtyDesc').innerHTML = (G.world === 'meadow' ? '🏞️ Country cottages & estates — move-in ready in the meadow! ' : 'Move-in-ready homes — built and ready to decorate! ') + 'You have <b>' + G.coins + ' 🪙</b>. Each home is yours to walk into, furnish, and add onto.';
+  $('realtyDesc').innerHTML = (G.world === 'meadow' ? '🏞️ Country cottages & estates — move-in ready in the meadow! ' : G.world === 'west' ? '🤠 Frontier homesteads — weathered-wood cowboy houses with covered porches, move-in ready! ' : 'Move-in-ready homes — built and ready to decorate! ') + 'You have <b>' + G.coins + ' 🪙</b>. Each home is yours to walk into, furnish, and add onto.';
   const list = $('realtyList'); list.innerHTML = '';
   HOME_MODELS.forEach(m => {
     const can = G.coins >= m.price;
@@ -6555,8 +6565,8 @@ function lotClear(ox, oz, W, D) {
 // the FEWEST loose player blocks — those get cleared so the biggest mansion can ALWAYS be placed somewhere.
 /* 🏞️ the big Town Park footprint — kept OFF the home lots so a house never lands on it. The park
    group is REPOSITIONED on load to a spot clear of the player's builds (so it never sits on a home/pool). */
-let PARK_ZONE = { meadow: { cx: 0, cz: 18 }, city: { cx: 0, cz: 18 } };
-let townPark = { meadow: null, city: null };   // the repositionable park groups (built at origin, moved into place)
+let PARK_ZONE = { meadow: { cx: 0, cz: 18 }, city: { cx: 0, cz: 18 }, west: { cx: 0, cz: 16 } };
+let townPark = { meadow: null, city: null, west: null };   // the repositionable park groups (built at origin, moved into place)
 function inParkZone(x, z) {
   const P = PARK_ZONE[G.world]; if (!P) return false;
   return x >= P.cx - 16 && x <= P.cx + 16 && z >= P.cz - 2 && z <= P.cz + 18;
@@ -6618,7 +6628,12 @@ function clearLotColumns(ox, oz, W, D) {
 }
 function buildHome(ox, oz, m) {
   const L = homeLayout(ox, oz, m);
-  const wall = m.color, trim = shade(m.color, 0.78), woodC = 0x8a5c33, roofC = 0x9A5A4A, poolW = 0x4fb3e8, poolEdge = 0xEDE8DE;
+  // 🤠 In Country Western, the pre-built homes are weathered-wood frontier houses (1800s–early 1900s):
+  // warm timber walls, a barn-red roof, a gabled (never flat) roof, and a covered front porch.
+  const western = G.world === 'west';
+  const wall = western ? (m.westColor || 0xCBA06A) : m.color;
+  const trim = shade(wall, 0.78), woodC = 0x8a5c33, roofC = western ? 0x7E4536 : 0x9A5A4A, poolW = 0x4fb3e8, poolEdge = 0xEDE8DE;
+  const roofStyle = western ? 'pointed' : (m.roofStyle || 'pointed');
   const cell = (x, y, z, color, type) => {
     if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R || blocks.has(key(x, y, z))) return;
     const mesh = new THREE.Mesh(blockGeo, blockMat(color));
@@ -6654,13 +6669,22 @@ function buildHome(ox, oz, m) {
     for (let s = 0; s < L.sH; s++) cell(stairX, s, stairZ - s, woodC);           // stairs up to the deck
   }
   // ---- grand columned portico (mansions) ----
-  if (m.columns) {
+  if (m.columns && !western) {
     const pz = L.frontZ + 1, ph = Math.min(L.wallH, 3);
     [L.doorX - 1, L.doorX + 1].forEach(px => { for (let y = 0; y < ph; y++) cell(px, y, pz, trim); });   // pillars flanking the door
     for (let x = L.doorX - 1; x <= L.doorX + 1; x++) { cell(x, ph, L.frontZ, roofC); cell(x, ph, pz, roofC); }  // porch roof
   }
-  // ---- roof over the house (peaked or flat to match the style) ----
-  spawnAutoRoof(L.hx0, L.wallH, L.hz0, L.hw, L.hd, Math.max(4, Math.ceil(L.hw * L.hd / 2)), m.roofStyle || 'pointed');
+  // ---- 🤠 Western covered front porch — timber posts + a shed-roof overhang across the front ----
+  if (western) {
+    const pz = L.frontZ + 1, ph = Math.min(L.wallH, 3);
+    const posts = [L.hx0, L.hx1];
+    if (L.hw >= 6) posts.push(L.doorX - 2, L.doorX + 2);
+    if (m.columns) posts.push(L.doorX - 1, L.doorX + 1);                 // grander homes get pillars flanking the door too
+    posts.forEach(px => { if (px === L.doorX) return; for (let y = 0; y < ph; y++) cell(px, y, pz, woodC); });   // porch posts (door stays clear)
+    for (let x = L.hx0; x <= L.hx1; x++) cell(x, ph, pz, roofC);          // porch overhang roof
+  }
+  // ---- roof over the house (peaked or flat to match the style; Western is always gabled) ----
+  spawnAutoRoof(L.hx0, L.wallH, L.hz0, L.hw, L.hd, Math.max(4, Math.ceil(L.hw * L.hd / 2)), roofStyle);
   // ---- attached garage with roll-up door(s) — a wide garage gets two ----
   if (m.garage) {
     const doorXs = L.garW >= 5 ? [L.gx0, L.gx0 + 2] : [L.gx0 + 1];   // left cell of each 2-wide door
@@ -10078,6 +10102,77 @@ function buildMineEntrance(g, x, z) {
   signOn(g, 'GOLD MINE', 'Bridge-build coming soon!', 0x4a3520, 2.0, 0.6, x, 2.9, z + 1.5);
 }
 function hitchingPost(g, x, z) { box(g, 0.1, 0.8, 0.1, 0x6b4a2c, x - 0.5, 0.4, z); box(g, 0.1, 0.8, 0.1, 0x6b4a2c, x + 0.5, 0.4, z); box(g, 1.2, 0.1, 0.1, 0x5e3f24, x, 0.78, z); }
+// 🤠 a compact frontier false-front STOREFRONT (used for the Western Lumber yard & Livery — the
+// visible homes of the hidden Stack Barn / Stack Motors triggers, so shopping looks Old-West).
+function buildWestStorefront(g, x, z, title, sub, bodyCol, signCol) {
+  const S = new THREE.Group();
+  const BODY = bodyCol, WOOD = 0x6b4a2c, WOOD2 = 0x4a3520, TRIM = 0xE3C36A;
+  box(S, 3.6, 2.8, 3.0, BODY, 0, 1.4, 0);                                  // body
+  for (let i = 0; i < 9; i++) box(S, 3.62, 0.05, 0.02, shade(BODY, 0.86), 0, 0.35 + i * 0.28, 1.51);   // clapboard
+  [-1.76, 1.76].forEach(px => box(S, 0.2, 2.8, 0.2, WOOD, px, 1.4, 1.5));  // corner posts
+  box(S, 4.0, 1.5, 0.3, BODY, 0, 3.6, 1.42);                              // false front
+  box(S, 4.2, 0.22, 0.4, WOOD, 0, 4.32, 1.43); box(S, 4.2, 0.22, 0.4, WOOD, 0, 2.86, 1.43);   // cornices
+  box(S, 0.22, 1.5, 0.34, WOOD, -1.9, 3.6, 1.43); box(S, 0.22, 1.5, 0.34, WOOD, 1.9, 3.6, 1.43);   // side trim
+  box(S, 3.3, 0.82, 0.05, WOOD2, 0, 3.6, 1.57);                           // sign backing
+  signOn(S, title, sub, signCol, 3.1, 0.72, 0, 3.6, 1.61);
+  [-1.6, 1.6].forEach(px => box(S, 0.16, 1.95, 0.16, WOOD, px, 0.97, 1.95));   // awning posts
+  box(S, 3.5, 0.16, 0.7, WOOD, 0, 1.98, 1.78); box(S, 3.3, 0.08, 0.6, shade(BODY, 1.06), 0, 2.06, 1.78);   // awning
+  box(S, 0.8, 1.6, 0.12, WOOD, 0, 0.9, 1.55);                            // wide doorway
+  paneWindow(S, -1.1, 1.0, 1.54, 0.7, 1.0, 2, 2, 0xC9A24A); paneWindow(S, 1.1, 1.0, 1.54, 0.7, 1.0, 2, 2, 0xC9A24A);
+  wBarrel(S, -1.5, 2.3); wBarrel(S, 1.5, 2.35);
+  S.position.set(x, 0, z); S.rotation.y = 0; g.add(S);
+}
+// 🤠 FRONTIER HOMES — the Western realty office (false-front timber building with a listings window)
+function buildWesternRealty(g) {
+  const R = new THREE.Group();
+  const BODY = 0xC2935A, BODY2 = 0xA97A45, WOOD = 0x6b4a2c, WOOD2 = 0x4a3520, TRIM = 0xE3C36A, GREEN = 0x3f6b3a, ROOFC = 0x7E4536;
+  box(R, 3.8, 2.8, 3.0, BODY, 0, 1.4, 0);                                  // main timber body
+  for (let i = 0; i < 9; i++) box(R, 3.82, 0.05, 0.02, shade(BODY, 0.86), 0, 0.35 + i * 0.28, 1.51);   // clapboard courses
+  [-1.86, 1.86].forEach(px => box(R, 0.2, 2.8, 0.2, WOOD, px, 1.4, 1.5));  // corner posts
+  // ── tall false front with a stepped peak + cornices ──
+  box(R, 4.2, 1.6, 0.3, BODY, 0, 3.62, 1.42);
+  box(R, 2.6, 0.5, 0.3, BODY, 0, 4.55, 1.42);
+  box(R, 4.4, 0.22, 0.4, WOOD, 0, 4.34, 1.43); box(R, 4.4, 0.22, 0.4, WOOD, 0, 2.88, 1.43);   // cornices
+  box(R, 0.22, 1.6, 0.34, WOOD, -2.0, 3.62, 1.43); box(R, 0.22, 1.6, 0.34, WOOD, 2.0, 3.62, 1.43);   // side trim
+  box(R, 3.5, 0.82, 0.05, WOOD2, 0, 3.62, 1.57);                          // sign backing
+  signOn(R, 'FRONTIER HOMES', 'Land & Houses · Est. 1885', TRIM, 3.3, 0.72, 0, 3.62, 1.61);
+  [-1.2, 1.2].forEach(sx => box(R, 0.16, 0.16, 0.08, TRIM, sx, 4.4, 1.45));   // star accents
+  // ── covered porch ──
+  [-1.7, 1.7].forEach(px => box(R, 0.16, 1.95, 0.16, WOOD, px, 0.97, 1.95));   // awning posts
+  box(R, 3.7, 0.16, 0.7, WOOD, 0, 1.98, 1.78); box(R, 3.5, 0.08, 0.6, BODY2, 0, 2.06, 1.78);   // porch awning roof
+  box(R, 0.7, 1.5, 0.12, WOOD, 0, 0.85, 1.55);                            // timber door
+  box(R, 0.12, 0.12, 0.16, 0xFFD23E, 0.22, 0.92, 1.62);                   // door knob
+  // 🏡 the listings window — painted "photos" of cowboy houses with prices
+  const lc = document.createElement('canvas'); lc.width = 240; lc.height = 150; const lg = lc.getContext('2d');
+  lg.fillStyle = '#F3E7CE'; lg.fillRect(0, 0, 240, 150);
+  lg.fillStyle = '#7E4536'; lg.font = 'bold 17px Georgia, serif'; lg.textAlign = 'center'; lg.textBaseline = 'middle'; lg.fillText('🤠 FOR SALE', 120, 14);
+  const draw = (ox, wall, roof, price) => {
+    lg.fillStyle = '#ffffff'; lg.fillRect(ox, 28, 98, 92); lg.strokeStyle = '#b88a4a'; lg.lineWidth = 2; lg.strokeRect(ox, 28, 98, 92);
+    lg.fillStyle = '#cfe6f0'; lg.fillRect(ox + 4, 32, 90, 52);                       // sky
+    lg.fillStyle = wall; lg.fillRect(ox + 24, 56, 50, 28);                            // house body
+    lg.fillStyle = roof; lg.beginPath(); lg.moveTo(ox + 18, 58); lg.lineTo(ox + 49, 38); lg.lineTo(ox + 80, 58); lg.closePath(); lg.fill();   // gabled roof
+    lg.fillStyle = '#6b4a2c'; lg.fillRect(ox + 44, 68, 11, 16);                       // door
+    lg.fillStyle = '#8a5c33'; lg.fillRect(ox + 20, 84, 58, 4);                        // porch
+    lg.fillStyle = '#E8B923'; lg.beginPath(); lg.arc(ox + 22, 104, 7, 0, 7); lg.fill();
+    lg.fillStyle = '#7E4536'; lg.font = 'bold 17px Georgia, serif'; lg.textAlign = 'left'; lg.fillText(price, ox + 33, 105); lg.textAlign = 'center';
+  };
+  draw(14, '#C7A06A', '#7E4536', '195'); draw(128, '#D9C2A0', '#7E4536', '620');
+  const lpanel = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.82, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(lc) }));
+  lpanel.position.set(-0.78, 1.45, 1.53); R.add(lpanel);
+  box(R, 1.5, 0.09, 0.07, WOOD, -0.78, 1.88, 1.55); box(R, 1.5, 0.09, 0.07, WOOD, -0.78, 1.04, 1.55);
+  box(R, 0.09, 0.86, 0.07, WOOD, -1.47, 1.45, 1.55); box(R, 0.09, 0.86, 0.07, WOOD, -0.1, 1.45, 1.55); box(R, 0.08, 0.82, 0.07, WOOD, -0.78, 1.45, 1.55);
+  // a "FOR SALE" yard sign on two posts out front
+  box(R, 0.07, 0.82, 0.07, WOOD, 1.05, 0.41, 2.2); box(R, 0.07, 0.82, 0.07, WOOD, 1.55, 0.41, 2.2);
+  const yc = document.createElement('canvas'); yc.width = 170; yc.height = 100; const yg = yc.getContext('2d');
+  yg.fillStyle = '#7E4536'; yg.fillRect(0, 0, 170, 100); yg.strokeStyle = '#F3E7CE'; yg.lineWidth = 5; yg.strokeRect(5, 5, 160, 90);
+  yg.fillStyle = '#F3E7CE'; yg.font = 'bold 26px Georgia, serif'; yg.textAlign = 'center'; yg.textBaseline = 'middle'; yg.fillText('FOR SALE', 85, 34);
+  yg.fillStyle = '#F2C037'; yg.font = 'italic bold 17px Georgia, serif'; yg.fillText('🤠 ask inside!', 85, 68);
+  const ysign = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.52, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(yc) })); ysign.position.set(1.3, 0.74, 2.23); R.add(ysign);
+  // a hitching rail + barrel for frontier flavor
+  box(R, 1.4, 0.08, 0.08, WOOD, -1.4, 0.66, 2.3); [-2.0, -0.8].forEach(px => box(R, 0.08, 0.66, 0.08, WOOD, px, 0.33, 2.3));
+  R.position.set(WEST_REALTY_POS.x, 0, WEST_REALTY_POS.z); R.rotation.y = 0;   // front (+z) faces the play area
+  g.add(R);
+}
 function buildWestDecor(g) {
   const tans = [0xD9A86A, 0xCF9E60, 0xE3B878, 0xC79256];
   for (let i = 0; i < 24; i++) { const ang = (i / 24) * Math.PI * 2 + 0.2, rad = 6 + (i % 4) * 2.6, r = 44 + rad + (i % 3) * 5;
@@ -10096,6 +10191,10 @@ function buildWestDecor(g) {
   buildFoodStall(g, -1, -12.5, 0, 'FUNNEL CAKES', 0xE07B2A, 0xE8C24A);
   buildFoodStall(g, 2.6, -12.5, 0, 'CORN DOGS', 0xC0392B, 0x9a6b2a);
   buildDepot(g, 9.6, -15.8, 0);                             // station on the north strip, platform facing SOUTH onto the loop
+  buildWesternRealty(g);                                    // 🤠 Frontier Homes — buy a cowboy house!
+  buildWestStorefront(g, -1, -16.8, 'STACK LUMBER', 'Building • Hardware • Furnishings', 0xC2935A, 0xE3C36A);   // 🪵 the Stack Barn (building supplies) — themed
+  buildWestStorefront(g, 4.6, -16.8, 'LIVERY & GARAGE', 'Horses • Wagons • Motorcars', 0xB07A45, 0xE0C36A);     // 🚗 the Stack Motors (vehicles) — themed
+  { const p = new THREE.Group(); buildTownPark(p, 0, 0, 'FRONTIER PARK'); p.position.set(PARK_ZONE.west.cx, 0, PARK_ZONE.west.cz); g.add(p); townPark.west = p; }   // 🎠 build-&-play park (Dog Park + Playground), repositioned clear of homes on load
   // 🚆 the big TOUR LOOP — track that circles the whole town so the train rides all the way around past the scenery
   westLoop = buildLoopPath(0, -2, 20, 12, 4, 132);
   for (let i = 0; i < westLoop.steps; i++) {
@@ -10406,7 +10505,7 @@ function renderLiftPad() {
 
 /* 🐕 DOG PARK — play fetch for coins. Walk to the 🐾 throw pad, tap ⭐ USE to start, then tap USE
    to throw the ball; a friendly park pup runs it down and brings it back. Pets are the hook! */
-let DOGPARK = { meadow: { x: PARK_ZONE.meadow.cx - 8, z: PARK_ZONE.meadow.cz + 8 }, city: { x: PARK_ZONE.city.cx - 8, z: PARK_ZONE.city.cz + 8 } };   // dog-park section center inside the big Town Park (throw pad at z+2); updated when the park is repositioned
+let DOGPARK = { meadow: { x: PARK_ZONE.meadow.cx - 8, z: PARK_ZONE.meadow.cz + 8 }, city: { x: PARK_ZONE.city.cx - 8, z: PARK_ZONE.city.cz + 8 }, west: { x: PARK_ZONE.west.cx - 8, z: PARK_ZONE.west.cz + 8 } };   // dog-park section center inside the big Town Park (throw pad at z+2); updated when the park is repositioned
 const FETCH_BALLS = [{ n: 'Tennis Ball', c: 0xC9E04A }, { n: 'Basketball', c: 0xE07B2A }, { n: 'Beach Ball', c: 0x4a9ad8 }];
 let fetchGame = null;
 function dogParkDist() { const P = DOGPARK[G.world]; return P ? Math.hypot(player.pos.x - P.x, player.pos.z - (P.z + 2)) : 999; }
@@ -11383,6 +11482,10 @@ function inShopZone(cx, cz) {
   if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8) || near(PIZZA_POS, 2.6) || near(FEED_POS, 2.6))) return true;
   if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
+  if (G.world === 'west') {                                  // 🤠 keep the frontier main street (north strip) + realty clear
+    if (near(WEST_REALTY_POS, 3.2)) return true;
+    if (cz <= -14) return true;                              // the whole saloon/store/sheriff/depot row sits north of here
+  }
   return false;
 }
 /* Place whatever slot is selected at grid cell (x,z). blockY is the height
