@@ -8656,7 +8656,6 @@ function buildTownPark(g, cx, cz, name) {
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
-  buildBirthdayDecor(g, -5, 5);              // 🎂 birthday party display near the Reading Town spawn
   buildTownPark(g, 0, 9, 'READING TOWN PARK');   // 🏞️ one big park: gated Dog Park + Playground
   buildPostOffice(g);
   buildRealty(g);
@@ -9397,7 +9396,6 @@ function buildMeadowDecor(g) {
   americanBarn(g, ML.barn.x, ML.barn.z, Math.PI / 2, 'STACK BARN', 'Furniture & Home');                       // W arm (faces EAST) — red gambrel barn
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
-  buildBirthdayDecor(g, 5, 5);                          // 🎂 birthday party display near the Math Meadow spawn
   buildTownPark(g, 0, 9, 'MEADOW PARK');                // 🏞️ one big park: gated Dog Park + Playground
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 16;
