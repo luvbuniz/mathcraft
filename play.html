@@ -1479,6 +1479,16 @@
   </div>
 </div>
 
+<!-- ================= ELEVATOR FLOOR PICKER POPUP ================= -->
+<div class="popup" id="liftPopup">
+  <div class="popupCard" style="text-align:center; width:min(360px,92vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="liftClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 style="color:#5b6b80; margin:2px 0 4px; font-size:clamp(20px,4vw,28px)">🛗 Which floor?</h2>
+    <div id="liftMsg" style="color:#70808f; font-weight:700; font-size:clamp(13px,2.6vw,16px); margin-bottom:10px; min-height:20px">Tap a floor to ride there!</div>
+    <div id="liftPad" style="display:flex; flex-direction:column; gap:8px"></div>
+  </div>
+</div>
+
 <!-- ================= DREAM GOAL PICKER POPUP ================= -->
 <div class="popup" id="goalPopup">
   <div class="popupCard" style="text-align:center; width:min(460px,94vw)">
@@ -3171,7 +3181,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -3418,6 +3428,9 @@ const SHOP_ITEMS = [
   { id: 'hydrant',     icon: '🚒', name: 'Fire Hydrant', price: 5, kind: 'many', desc: 'A classic red fire hydrant for the dog park.' },
   { id: 'parkbench',   icon: '🪑', name: 'Park Bench', price: 8, kind: 'many', desc: 'A wooden park bench to sit and watch the fun.' },
   { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
+  // 🪜🛗 Get between the floors of your house the easy way — no more hopping up blocks!
+  { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 18, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
+  { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -3442,7 +3455,7 @@ const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['k
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🏚️ Stack Barn — Building dept (blocks, doors, garage doors, windows, roof — all the build materials)
-  blocks: 'build', powerBlocks: 'build', door: 'build', garagedoor: 'build', window: 'build', roof: 'build',
+  blocks: 'build', powerBlocks: 'build', door: 'build', garagedoor: 'build', window: 'build', roof: 'build', stairs: 'build', elevator: 'build',
   // 🛒 Stack Mart — the general store
   ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',   // treasuremap removed: gemstone quests are paused for now
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
@@ -4379,7 +4392,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0, stairs: 0, elevator: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -10187,6 +10200,66 @@ function smoothSand() {
   $('sandMsg').textContent = 'All smoothed over — fresh sand! Tap a mold to start building.';
 }
 
+/* 🪜🛗 STAIRS & ELEVATOR — ride between the floors you've built without hopping up blocks.
+   Both are placed on a tile; the "floor" of that tile is the y the mesh sits on. */
+function nearestLift(maxDist) {
+  maxDist = maxDist || 2.4;
+  let best = null, bestD = maxDist; const seen = new Set();
+  blocks.forEach(b => {
+    if ((b.type !== 'stairs' && b.type !== 'elevator') || seen.has(b.mesh)) return;
+    seen.add(b.mesh);
+    const d = Math.hypot(player.pos.x - b.mesh.position.x, player.pos.z - b.mesh.position.z);
+    if (d < bestD) { bestD = d; best = b; }
+  });
+  return best;
+}
+// drop the player onto whatever solid surface sits at/below targetY at their column (so they land on a floor)
+function rideTo(targetY) {
+  let y = Math.max(0, Math.min(LIFT_MAX_Y, targetY));
+  player.pos.y = y; player.vel.set(0, 0, 0); player.onGround = true;
+  player.restingBed = null; player.sittingChair = null; player.playing = null;
+}
+function useStairs(entry) {
+  const baseY = Math.round(entry.mesh.position.y);       // the floor this staircase stands on (usually 0)
+  const top = baseY + LIFT_FLOOR_H;
+  const goingUp = player.pos.y < baseY + LIFT_FLOOR_H * 0.5;
+  rideTo(goingUp ? top : baseY);
+  if (Sound.slide) Sound.slide();
+  toast(goingUp ? '🪜 Up you go — to the next floor!' : '🪜 Back down you come!', 1600);
+}
+let liftActive = null;
+function openLift(entry) {
+  if (!entry || popupOpen) return;
+  liftActive = entry; popupOpen = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  renderLiftPad();
+  $('liftMsg').textContent = 'Tap a floor to ride there!';
+  $('liftPopup').style.display = 'flex';
+}
+function closeLift() { $('liftPopup').style.display = 'none'; popupOpen = false; liftActive = null; }
+function renderLiftPad() {
+  const pad = $('liftPad'); pad.innerHTML = '';
+  const baseY = liftActive ? Math.round(liftActive.mesh.position.y) : 0;
+  const here = Math.round(player.pos.y);
+  const floors = Math.floor(LIFT_MAX_Y / LIFT_FLOOR_H);   // 9/3 = 3 floors above the ground
+  for (let f = floors; f >= 0; f--) {
+    const fy = baseY + f * LIFT_FLOOR_H;
+    if (fy > LIFT_MAX_Y) continue;
+    const btn = document.createElement('button');
+    btn.className = 'placeBtn';
+    btn.style.cssText = 'font-size:clamp(15px,3vw,19px); padding:12px; width:100%';
+    const label = f === 0 ? 'Ground Floor' : (f + 1) + (f === 1 ? 'nd' : f === 2 ? 'rd' : 'th') + ' Floor';
+    btn.innerHTML = '🛗 ' + label + (Math.abs(fy - here) < 0.6 ? '  •  you are here' : '');
+    btn.onclick = () => {
+      Sound.click(); rideTo(fy);
+      if (Sound.bell) Sound.bell();
+      toast('🛗 Ding! ' + label, 1500);
+      closeLift();
+    };
+    pad.appendChild(btn);
+  }
+}
+
 /* 🐕 DOG PARK — play fetch for coins. Walk to the 🐾 throw pad, tap ⭐ USE to start, then tap USE
    to throw the ball; a friendly park pup runs it down and brings it back. Pets are the hook! */
 let DOGPARK = { meadow: { x: PARK_ZONE.meadow.cx - 8, z: PARK_ZONE.meadow.cz + 8 }, city: { x: PARK_ZONE.city.cx - 8, z: PARK_ZONE.city.cz + 8 } };   // dog-park section center inside the big Town Park (throw pad at z+2); updated when the park is repositioned
@@ -12194,7 +12267,9 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'aviary', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'aviary', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain', 'stairs', 'elevator'];
+// 🪜🛗 how tall ONE floor is (in blocks). Stairs/elevator lift you between floors this far apart.
+const LIFT_FLOOR_H = 3, LIFT_MAX_Y = 9;
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 const WINDOW_STYLES = ['plain', 'grid', 'diamond', 'round', 'bay'];
 function buildWindowMesh(style) {
@@ -13007,6 +13082,39 @@ function buildFurnitureMesh(type, variant) {
     box(g, 0.5, 0.32, 0.5, 0x4CAF50, 0, 0.62, 0);                     // rounded top
     [[-0.2, 0.2], [0.22, -0.15], [0.05, 0.05]].forEach(([x, z]) =>
       box(g, 0.1, 0.1, 0.1, 0xE53935, x, 0.66, z));                   // berries
+  } else if (type === 'stairs') {
+    // 🪜 A neat flight of stairs that takes you up one floor. Tap ⭐ USE at the bottom to go
+    // up (and at the top to come back down) — no awkward block-hopping. Climbs to ~3 high.
+    const WOOD = 0xB07A43, WOOD2 = 0x9A6736, RAIL = 0xE9DCC4, POST = 0x7A5128;
+    const STEPS = 7, RISE = LIFT_FLOOR_H / STEPS, RUN = 0.86 / STEPS;   // fit a full floor inside one tile
+    for (let i = 0; i < STEPS; i++) {
+      const zc = 0.42 - (i + 0.5) * RUN;                               // march from the front edge toward the back
+      box(g, 0.78, RISE, RUN + 0.02, i % 2 ? WOOD2 : WOOD, 0, (i + 0.5) * RISE, zc);   // the tread
+      box(g, 0.78, RISE * 0.9, 0.03, POST, 0, (i + 0.5) * RISE, zc + RUN / 2);          // riser face
+    }
+    [-0.4, 0.4].forEach(sx => {                                        // two side stringers + handrails
+      box(g, 0.04, LIFT_FLOOR_H, 0.92, WOOD2, sx, LIFT_FLOOR_H / 2, 0);
+      box(g, 0.05, 0.05, 0.96, RAIL, sx, LIFT_FLOOR_H + 0.5, 0);       // the sloping rail cap
+      box(g, 0.045, 0.5, 0.045, POST, sx, 0.25, 0.4);                  // newel posts front & back
+      box(g, 0.045, 0.5, 0.045, POST, sx, LIFT_FLOOR_H + 0.25, -0.4);
+    });
+    g.userData.customFinish = true;                                    // keep the wood look in every town
+  } else if (type === 'elevator') {
+    // 🛗 A glass lift cab. Tap ⭐ USE to open the floor buttons and ride to any floor you've built.
+    const FRAME = 0x6E7A86, GLASS = 0x9FD0E8, PANEL = 0x2C3540, BTN = 0xFFD23E;
+    const H = LIFT_FLOOR_H - 0.1;
+    box(g, 0.92, 0.08, 0.92, 0x4A5662, 0, 0.04, 0);                    // floor pad
+    box(g, 0.92, 0.08, 0.92, FRAME, 0, H, 0);                          // roof
+    [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]].forEach(([x, z]) =>
+      box(g, 0.08, H, 0.08, FRAME, x, H / 2, z));                      // 4 corner posts
+    box(g, 0.84, H - 0.2, 0.06, GLASS, 0, H / 2, -0.43);               // back glass wall
+    [[-0.43, 0], [0.43, 0]].forEach(([x]) => box(g, 0.06, H - 0.2, 0.84, GLASS, x, H / 2, 0));   // side glass
+    box(g, 0.16, 0.34, 0.05, PANEL, 0.28, 0.9, 0.41);                  // button panel on the front-right
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++)
+      box(g, 0.045, 0.045, 0.02, BTN, 0.24 + c * 0.08, 1.02 - r * 0.1, 0.44);   // glowing call buttons
+    box(g, 0.2, 0.08, 0.03, 0x1A1F26, 0, H - 0.12, 0.43);              // floor-indicator strip over the door
+    box(g, 0.07, 0.05, 0.02, 0x6BE06B, 0, H - 0.12, 0.45);            // lit arrow
+    g.userData.customFinish = true;
   }
   if (!g.userData.customFinish) applyFurnFinish(g, finish);   // pieces with a bespoke town design (e.g. stoves) skip the generic retint
   return g;
@@ -14240,6 +14348,7 @@ function tryUse() {
   else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
   else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
   else if (dogParkDist() < 3.6) { Sound.click(); startFetch(); }   // 🐕 dog park — play fetch for coins!
+  else if (nearestLift()) { const lf = nearestLift(); Sound.click(); if (lf.type === 'elevator') openLift(lf); else useStairs(lf); }   // 🪜🛗 ride between floors
   else if (nearestSandbox()) { Sound.click(); openSandbox(nearestSandbox()); }   // 🏖️ play in the sandbox — build sandcastles!
   else if (nearestPlay()) { Sound.click(); startPlay(nearestPlay()); }   // 🎠 hop on a swing / see-saw / slide / spring rider / roundabout / climbing frame
   else if (nearestChair()) { Sound.click(); toggleSit(); }
@@ -14296,7 +14405,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', aviary: '🏯 Grand Aviary', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
+const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', aviary: '🏯 Grand Aviary', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain', stairs: '🪜 Staircase', elevator: '🛗 Elevator' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -14475,6 +14584,8 @@ function renderInv() {
     ['🪑', 'Park Benches', G.furniture.parkbench, 'parkbench'],
     ['⛲', 'Park Fountains', G.furniture.fountain, 'fountain'],
     ['🧗', 'Climbing Frames', G.furniture.climber, 'climber'],
+    ['🪜', 'Staircases', G.furniture.stairs, 'stairs'],
+    ['🛗', 'Elevators', G.furniture.elevator, 'elevator'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
   placeables.forEach(([icon, name, count, slot]) => {
@@ -14666,6 +14777,7 @@ $('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
 $('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
 $('travelClose').onclick = () => { Sound.click(); closeTravel(); };
 $('sandClose').onclick = () => { Sound.click(); closeSandbox(); };
+$('liftClose').onclick = () => { Sound.click(); closeLift(); };
 $('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
 $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
