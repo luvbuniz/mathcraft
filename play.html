@@ -6567,6 +6567,16 @@ function homeRefund(h) {
   const m = HOME_MODELS.find(x => x.id === h.id) || HOME_MODELS.find(x => x.name === h.name);
   return m ? m.price : 0;
 }
+/* 🏠 A bought home is sold as ONE WHOLE thing at Stack Realty — you can't pick its bricks out one
+   by one (that was a free-bricks exploit: harvest the walls AND still sell the house for full price).
+   Furniture & pets inside stay removable; only the house structure is locked. */
+const HOME_STRUCT = { placed: 1, roof: 1, autoroof: 1, window: 1, door: 1 };
+function inHomeFootprint(x, z) {
+  if (!G.homes) return false;
+  for (const h of G.homes) if (x >= h.x0 && x <= h.x1 && z >= h.z0 && z <= h.z1) return true;
+  return false;
+}
+function isHomeStructure(x, z, type) { return !!HOME_STRUCT[type] && inHomeFootprint(x, z); }
 function sellHome(i) {
   const h = (G.homes || [])[i]; if (!h) return;
   const refund = homeRefund(h);
@@ -10900,6 +10910,7 @@ function removePlacedBlock() {
   blocks.forEach((b, k) => {            // within reach, prefer the topmost block
     if (!b.removable) return;
     const [x, y, z] = k.split(',').map(Number);
+    if (isHomeStructure(x, z, b.type)) return;   // 🏠 house bricks can't be harvested — sell the whole house instead
     if (y > player.pos.y + 2.5) return;
     const d = Math.hypot(x + 0.5 - player.pos.x, z + 0.5 - player.pos.z);
     if (d > 1.8) return;
@@ -10955,6 +10966,7 @@ function placeSelectedAt(x, z, blockY) {
   if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 3) { toast('🌀 Keep the travel portal clear — build a bit further away!', 2200); return false; }
   if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { toast('🏠 That\'s a neighbor\'s house — build a bit closer in!', 2000); return false; }
   const slot = G.selectedSlot;
+  if (slot === 'paint') { toast('🎨 Paint mode — tap a wall block to paint it!', 1600); return false; }   // paint is tap-a-wall, not place-on-ground
   if (slot === 'door') {
     if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🏚️ Stack Barn (Building tab)!', 2400); return false; }
     if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
@@ -13818,6 +13830,9 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
   if (action === 'break') {
     if (!entry) return;
     if (!entry.removable) { toast(entry.type === 'tree' || entry.type === 'leaf' ? '🌳 Trees are friends — build with your own blocks!' : '✨ That one stays put!', 1600); return; }
+    if (entryKey && (() => { const [hx, , hz] = entryKey.split(',').map(Number); return isHomeStructure(hx, hz, entry.type); })()) {
+      toast('🏠 That\'s part of your house — you can\'t take it apart brick by brick! Sell the whole house at 🏡 Stack Realty.', 3200); return;
+    }
     if (entry.pool) { removeWholePool(entry.pool); return; }   // a pool comes up as ONE whole item
     // doors span two cells; find the base cell from the mesh
     let bx, by, bz;
@@ -13839,6 +13854,14 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
     return;
   }
 
+  // 🎨 Paint mode — tap a wall/block to repaint it the chosen colour (works on bought-home walls too, since it isn't removing them)
+  if (G.selectedSlot === 'paint') {
+    if (entry && entry.type === 'placed') {
+      entry.mesh.material = blockMat(G.blockColor); entry.color = G.blockColor;
+      Sound.place(); return;
+    }
+    toast('🎨 Tap one of your wall blocks to paint it!', 1800); return;
+  }
   // place
   // tapping a stove with a pot/pan/bacon/pie in hand cooks it right there
   if (entry && entry.type === 'stove' && COOK_SLOTS[G.selectedSlot]) { cookOnStove(entry, G.selectedSlot); return; }
@@ -13975,7 +13998,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
+const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -13997,7 +14020,7 @@ function refreshPaintStrip() {
       const sw = document.createElement('button');
       sw.className = 'pswatch'; sw.title = pc.name;
       sw.style.background = '#' + pc.color.toString(16).padStart(6, '0');
-      sw.onclick = () => { Sound.click(); G.blockColor = pc.color; selectSlot('block', true); toast('🎨 ' + pc.name + ' blocks!', 1300); };
+      sw.onclick = () => { Sound.click(); G.blockColor = pc.color; selectSlot(G.selectedSlot === 'paint' ? 'paint' : 'block', true); toast('🎨 ' + pc.name + (G.selectedSlot === 'paint' ? ' paint!' : ' blocks!'), 1300); };
       el.appendChild(sw);
     });
     el._built = true;
@@ -14018,6 +14041,7 @@ function startPlacing(slot) {
   G.buildMode = true;
   selectSlot(slot);
   closeInv();
+  if (slot === 'paint') { toast('🎨 Paint mode on! Tap any of your wall blocks to paint it. Pick a color in your 🎒 backpack.', 3600); return; }
   toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
 }
 function renderInv() {
@@ -14070,6 +14094,7 @@ function renderInv() {
   fRow.querySelectorAll('.finishBtn').forEach(b => b.onclick = () => { Sound.click(); G.furnFinish = parseInt(b.dataset.fi); renderInv(); });
   const placeables = [
     ['🧱', 'Building Blocks', G.blocks, 'block'],
+    ['🎨', 'Paint Walls', 999, 'paint'],
     ['⚡', 'Power Blocks', G.powerBlocks, 'power'],
     ['🚪', 'Doors', G.doors, 'door'],
     ['🚙', 'Garage Doors', G.garageDoors, 'garagedoor'],
@@ -14151,11 +14176,11 @@ function renderInv() {
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
   placeables.forEach(([icon, name, count, slot]) => {
-    if (count < 1 && slot !== 'block') return;   // only show what you actually have (blocks always shown for the paint picker)
+    if (count < 1 && slot !== 'block' && slot !== 'paint') return;   // only show what you actually have (blocks/paint always shown)
     const row = document.createElement('div');
     row.className = 'invItem';
     row.innerHTML = '<div class="icon">' + icon + '</div>' +
-      '<div class="info"><b>' + biName(name, slot) + '</b><small>You have ' + count +
+      '<div class="info"><b>' + biName(name, slot) + '</b><small>' + (slot === 'paint' ? 'Pick a color below, then tap your walls to paint them! 🎨' : 'You have ' + count) +
       (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
        slot === 'window' ? ' • Drops into a wall gap at any height' :
        slot === 'roof' ? ' • Tap the top of a finished house — ONE roof covers it all! (walls 2+ tall, no gaps but a door is fine). Pick a style below' :
@@ -14163,8 +14188,8 @@ function renderInv() {
        slot === 'pie' ? ' • Aim at a 🔥 stove to bake it in the oven' : '') + '</small></div>';
     const place = document.createElement('button');
     place.className = 'placeBtn';
-    place.textContent = 'Place';
-    place.disabled = count < 1;
+    place.textContent = slot === 'paint' ? '🎨 Paint' : 'Place';
+    place.disabled = count < 1 && slot !== 'paint';
     place.onclick = () => { Sound.click(); startPlacing(slot); };
     if (slot === 'food' || slot === 'bacon' || slot === 'pie') {
       const eat = document.createElement('button');
@@ -14176,10 +14201,11 @@ function renderInv() {
     }
     row.appendChild(place);
     wrap.appendChild(row);
-    if (slot === 'block') {                 // color picker right under the blocks, so it's easy to find
+    if (slot === 'block' || slot === 'paint') {   // color picker right under blocks / paint, so it's easy to find
+      const isPaint = slot === 'paint';
       const paint = document.createElement('div');
       paint.className = 'invPaint';
-      paint.innerHTML = '<span class="invPaintLabel">🎨 Block color</span><div class="paintRow"></div>';
+      paint.innerHTML = '<span class="invPaintLabel">🎨 ' + (isPaint ? 'Wall color' : 'Block color') + '</span><div class="paintRow"></div>';
       wrap.appendChild(paint);
       const prow = paint.querySelector('.paintRow');
       PAINTS.forEach(pc => {
@@ -14190,10 +14216,10 @@ function renderInv() {
         sw.onclick = () => {
           Sound.click();
           G.buildMode = true;
-          G.blockColor = pc.color; selectSlot('block', true);
+          G.blockColor = pc.color; selectSlot(isPaint ? 'paint' : 'block', true);
           prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
           sw.classList.add('sel');
-          toast('🎨 ' + pc.name + ' blocks selected! Press D or tap to build.', 2000);
+          toast(isPaint ? '🎨 ' + pc.name + ' paint — tap a wall to paint it!' : '🎨 ' + pc.name + ' blocks selected! Press D or tap to build.', 2000);
         };
         prow.appendChild(sw);
       });
@@ -15249,7 +15275,7 @@ function loop(now) {
   }
 
   // show the block-color swatches only while you're actually building on foot
-  const _showPaints = !isTouch && G.buildMode && !G.mouseWalk && G.running && G.selectedSlot === 'block' && !popupOpen && !player.driving && !G.firstPerson;
+  const _showPaints = !isTouch && G.buildMode && !G.mouseWalk && G.running && (G.selectedSlot === 'block' || G.selectedSlot === 'paint') && !popupOpen && !player.driving && !G.firstPerson;
   if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
   $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 
