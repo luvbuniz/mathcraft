@@ -3088,7 +3088,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -3273,7 +3273,8 @@ const SHOP_ITEMS = [
   { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'Pick a breed: Golden Retriever, Pomeranian, Dalmatian, Samoyed & more. Build a room first — pets need a home to roam in!' },
   { id: 'fish',   icon: '🐠', name: 'Fish Bowl', price: 13, kind: 'many', desc: 'Pick a fish: Goldfish, Clownfish, Blue Tang, Betta & more. Put it on a table, dresser, or shelf.' },
   { id: 'bird',   icon: '🦜', name: 'Pet Bird', price: 15, kind: 'many', desc: 'Pick a parrot or parakeet — it flies around your yard, lands on the trees, and ALWAYS comes back to you! Set it free outside or rest it in a 🪺 Bird Cage.' },
-  { id: 'birdcage', icon: '🪺', name: 'Bird Cage', price: 12, kind: 'many', desc: 'A pretty cage with a perch & swing — tap your bird and choose 🪺 Cage and it\'ll flutter home to rest.' },
+  { id: 'birdcage', icon: '🪺', name: 'Bird Cage', price: 12, kind: 'many', desc: 'A roomy cage with a perch & swing — tap your bird and choose 🪺 Cage and it\'ll flutter home to rest.' },
+  { id: 'aviary',   icon: '🏯', name: 'Grand Aviary', price: 30, kind: 'many', desc: 'A big domed aviary with three perches — roomy enough for up to 3 birds to rest together!' },
   { id: 'birdfood', icon: '🌰', name: 'Bird Feeder', price: 6, kind: 'many', desc: 'A feeder full of seed — set it in the yard and your birds will flutter over to nibble.' },
   { id: 'coffeetable', icon: '🪵', name: 'Coffee Table', price: 16, kind: 'many', desc: 'A low table for in front of the couch.' },
   { id: 'dresser', icon: '🗄️', name: 'Dresser', price: 22, kind: 'many', desc: 'A wooden chest of drawers with knobs.' },
@@ -3366,7 +3367,7 @@ const ITEM_CAT = {
   usahat: 'july4', flag: 'july4', bunting: 'july4', hotdog: 'july4', sausage: 'july4', ribs: 'july4', corn: 'july4', sparkler: 'july4', fireworks: 'july4',
   // 🏚️ Stack Barn — furniture & home
   chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
-  rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living', bird: 'living', birdcage: 'living', birdfood: 'living',
+  rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living', bird: 'living', birdcage: 'living', aviary: 'living', birdfood: 'living',
   carpet: 'floor', woodfloor: 'floor', tilefloor: 'floor',
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
@@ -4295,7 +4296,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -12087,7 +12088,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'aviary', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 const WINDOW_STYLES = ['plain', 'grid', 'diamond', 'round', 'bay'];
 function buildWindowMesh(style) {
@@ -12473,15 +12474,25 @@ function buildFurnitureMesh(type, variant) {
     const water = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.16, 16), new THREE.MeshLambertMaterial({ color: W, transparent: true, opacity: 0.85 })); water.position.y = 0.26; g.add(water);
     box(g, 0.28, 0.8, 0.28, STONE, 0, 0.55, 0);
     const sp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), new THREE.MeshLambertMaterial({ color: W, transparent: true, opacity: 0.7 })); sp.position.y = 1.05; g.add(sp);
-  } else if (type === 'birdcage') {
-    const BAR = 0xF2C84B, BASE = 0x8a5c33, PERCH = 0x6b4a2c, SEED = 0xE0a23a;
-    box(g, 0.44, 0.08, 0.44, BASE, 0, 0.04, 0); box(g, 0.36, 0.04, 0.36, shade(BASE, 1.2), 0, 0.09, 0);   // base tray
-    const N = 10; for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2; box(g, 0.025, 0.95, 0.025, BAR, Math.cos(a) * 0.2, 0.56, Math.sin(a) * 0.2); }   // bars
-    [0.14, 1.04].forEach(y => { const r = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.02, 6, 18), mat(BAR)); r.rotation.x = Math.PI / 2; r.position.y = y; g.add(r); });   // hoops
-    box(g, 0.12, 0.18, 0.12, BAR, 0, 1.16, 0); box(g, 0.05, 0.14, 0.05, BASE, 0, 1.33, 0);   // dome + hanging hook
-    box(g, 0.3, 0.025, 0.025, PERCH, 0, 0.5, 0);   // perch bar
-    box(g, 0.025, 0.3, 0.025, 0xBFC6CC, 0, 0.82, 0.09); box(g, 0.16, 0.02, 0.025, PERCH, 0, 0.68, 0.09);   // little swing
-    box(g, 0.1, 0.08, 0.1, 0xC0392B, 0.12, 0.16, 0); box(g, 0.07, 0.04, 0.07, SEED, 0.12, 0.2, 0);   // seed cup
+  } else if (type === 'birdcage') {                  // roomier cage — comfy for a bird (or two)
+    const BAR = 0xF2C84B, BASE = 0x8a5c33, PERCH = 0x6b4a2c, SEED = 0xE0a23a, R = 0.32;
+    box(g, 0.72, 0.1, 0.72, BASE, 0, 0.05, 0); box(g, 0.6, 0.05, 0.6, shade(BASE, 1.2), 0, 0.12, 0);   // wide base tray
+    const N = 12; for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2; box(g, 0.03, 1.5, 0.03, BAR, Math.cos(a) * R, 0.85, Math.sin(a) * R); }   // tall bars
+    [0.16, 1.6].forEach(y => { const r = new THREE.Mesh(new THREE.TorusGeometry(R, 0.025, 6, 22), mat(BAR)); r.rotation.x = Math.PI / 2; r.position.y = y; g.add(r); });
+    box(g, 0.16, 0.24, 0.16, BAR, 0, 1.72, 0); box(g, 0.06, 0.18, 0.06, BASE, 0, 1.94, 0);   // dome + hook
+    box(g, 0.5, 0.03, 0.03, PERCH, 0, 0.7, 0);   // perch bar
+    box(g, 0.03, 0.4, 0.03, 0xBFC6CC, 0, 1.1, 0.14); box(g, 0.22, 0.025, 0.03, PERCH, 0, 0.9, 0.14);   // swing
+    box(g, 0.13, 0.1, 0.13, 0xC0392B, 0.18, 0.22, 0); box(g, 0.09, 0.05, 0.09, SEED, 0.18, 0.27, 0);   // seed cup
+  } else if (type === 'aviary') {                    // BIG aviary — roomy enough for up to 3 birds
+    const BAR = 0xE9C24A, BASE = 0x7a5230, PERCH = 0x6b4a2c, SEED = 0xE0a23a, R = 0.48;
+    box(g, 1.04, 0.12, 1.04, BASE, 0, 0.06, 0); box(g, 0.9, 0.05, 0.9, shade(BASE, 1.2), 0, 0.15, 0);   // big base
+    const N = 18; for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2; box(g, 0.035, 2.2, 0.035, BAR, Math.cos(a) * R, 1.2, Math.sin(a) * R); }   // tall bars
+    [0.22, 1.3, 2.3].forEach(y => { const r = new THREE.Mesh(new THREE.TorusGeometry(R, 0.03, 6, 26), mat(BAR)); r.rotation.x = Math.PI / 2; r.position.y = y; g.add(r); });
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; const b = box(g, 0.035, 0.55, 0.035, BAR, Math.cos(a) * R * 0.6, 2.5, Math.sin(a) * R * 0.6); b.rotation.x = -Math.sin(a) * 0.6; b.rotation.z = Math.cos(a) * 0.6; }   // domed roof
+    box(g, 0.16, 0.22, 0.16, BAR, 0, 2.74, 0); box(g, 0.07, 0.2, 0.07, BASE, 0, 2.98, 0);
+    box(g, 0.8, 0.035, 0.035, PERCH, 0, 0.7, -0.12); box(g, 0.035, 0.035, 0.8, PERCH, 0.12, 1.15, 0); box(g, 0.7, 0.035, 0.035, PERCH, 0, 1.7, 0.12);   // 3 perches at 3 heights
+    box(g, 0.05, 0.7, 0.05, PERCH, -0.18, 0.55, 0.18); box(g, 0.3, 0.05, 0.05, PERCH, -0.1, 0.9, 0.18);   // a little branch
+    box(g, 0.15, 0.11, 0.15, 0xC0392B, 0.32, 0.26, 0); box(g, 0.1, 0.05, 0.1, SEED, 0.32, 0.32, 0);   // seed cup
   } else if (type === 'birdfood') {
     const POLE = 0x8a6a4a, ROOF = 0xC0392B, TRAY = 0xE9DEC6, SEED = 0xCFA15A, GLASS = 0xF3ECD8;
     box(g, 0.06, 1.0, 0.06, POLE, 0, 0.5, 0);                          // pole
@@ -13154,27 +13165,52 @@ function nearestTreeFor(x, z, maxD) {
   for (const t of decoTrees) { if (wg && t.parent !== wg) continue; const d = Math.hypot(t.x - x, t.z - z); if (d < bd) { bd = d; best = t; } }
   return best;
 }
+// furniture a bird is happy to perch on top of (value = roughly how tall its top is)
+const PERCH_FURN = { table: 0.8, dtable: 0.84, chair: 0.62, couch: 0.54, coffeetable: 0.42, bookshelf: 1.34, dresser: 0.98, tv: 0.92, lamp: 1.62, cattree: 1.85, scratchpost: 1.2, fence: 0.62, sink: 0.92, stove: 0.92, umbrella: 0.78, birdcage: 1.7 };
+function nearestPerchFurn(x, z, maxD) {
+  let best = null, bd = maxD || 12;
+  blocks.forEach((b, k) => {
+    if (!PERCH_FURN[b.type]) return;
+    const a = k.split(',').map(Number), cx = a[0] + 0.5, cz = a[2] + 0.5, d = Math.hypot(cx - x, cz - z);
+    if (d < bd) { bd = d; best = { x: cx, y: PERCH_FURN[b.type] + 0.12, z: cz }; }
+  });
+  return best;
+}
 function pickBirdTarget(p) {
   const m = p.f.mesh, f = p.f;
-  if (p.mode === 'cage') {                                           // sent to the cage — perch inside it
-    const c = nearestPetTarget('birdcage', m.position.x, m.position.z);
-    if (c) { p.target = { x: c.x, y: 0.9, z: c.z }; p.wantPerch = true; p.flyTimer = 5; return; }
+  if (p.mode === 'cage') {                                           // sent to the cage/aviary — perch inside, spread out
+    const cage = nearestPetTarget('birdcage', m.position.x, m.position.z), av = nearestPetTarget('aviary', m.position.x, m.position.z);
+    const c = (cage && av) ? (cage.dist <= av.dist ? cage : av) : (cage || av);
+    if (c) {
+      const big = !!(c.entry && c.entry.type === 'aviary');
+      if (p._cageSlot == null) p._cageSlot = Math.floor(Math.random() * 3);
+      const rad = big ? 0.26 : 0.09, ang = p._cageSlot / 3 * Math.PI * 2 + 0.6;
+      const py = big ? [0.78, 1.22, 1.78][p._cageSlot % 3] : 0.78;
+      p.target = { x: c.x + Math.cos(ang) * rad, y: py, z: c.z + Math.sin(ang) * rad }; p.wantPerch = true; p.flyTimer = 6; return;
+    }
   }
   if (p.mode === 'come') {                                           // called — come straight to you, then resume
     p.target = { x: player.pos.x + (Math.random() - 0.5) * 0.8, y: 1.5, z: player.pos.z + 0.7 }; p.wantPerch = false; p.flyTimer = 4; p.mode = 'fly'; return;
   }
   const r = Math.random();
-  if (r < 0.36) {                                                    // 🫶 swoop in close to you — always comes back
-    const a = Math.random() * Math.PI * 2, rad = 1.5 + Math.random() * 1.6;
+  if (r < 0.26) {                                                    // 🫶 swoop in close to you — always comes back
+    const a = Math.random() * Math.PI * 2, rad = 1.4 + Math.random() * 1.6;
     p.target = { x: player.pos.x + Math.cos(a) * rad, y: 1.3 + Math.random() * 1.3, z: player.pos.z + Math.sin(a) * rad }; p.wantPerch = false;
-  } else if (r < 0.62) {                                             // 🌳 land on a nearby tree
+  } else if (r < 0.44) {                                             // 🌳 land high up in a tree
     const t = nearestTreeFor(p.home.x, p.home.z, 18);
     if (t) { p.target = { x: t.x + (Math.random() - 0.5) * 0.6, y: 2.5 + Math.random() * 0.5, z: t.z + (Math.random() - 0.5) * 0.6 }; p.wantPerch = true; }
     else { p.target = circleSpot(p.home, 7, 2.2); p.wantPerch = false; }
-  } else if (r < 0.8) {                                              // 🌰 visit the bird feeder & nibble
+  } else if (r < 0.6) {                                              // 🪑 perch on a table, chair, shelf or lamp
+    const fu = nearestPerchFurn(m.position.x, m.position.z, 13);
+    if (fu) { p.target = fu; p.wantPerch = true; }
+    else { p.target = circleSpot(p.home, 6, 2.2); p.wantPerch = false; }
+  } else if (r < 0.74) {                                             // 🌰 visit the bird feeder & nibble
     const fd = nearestPetTarget('birdfood', m.position.x, m.position.z);
     if (fd) { p.target = { x: fd.x, y: 0.95, z: fd.z }; p.wantPerch = true; if (f.hunger < 100) f.hunger = Math.min(100, f.hunger + 10); }
     else { p.target = circleSpot(p.home, 6, 2.0); p.wantPerch = false; }
+  } else if (r < 0.86) {                                             // 🐤 flutter down and hop on the ground
+    const a = Math.random() * Math.PI * 2, rad = 1 + Math.random() * 3.5;
+    p.target = { x: p.home.x + Math.cos(a) * rad, y: 0.16, z: p.home.z + Math.sin(a) * rad }; p.wantPerch = true;
   } else {                                                           // free circle around home
     p.target = circleSpot(p.home, 6, 2.4); p.wantPerch = false;
   }
@@ -13461,7 +13497,7 @@ function renderPetMenu(pet) {
       if (pet.kind === 'bird') {                                              // 🦜 bird actions
         if (m === 'love') { petHearts(pet, 3); pet.f.bond = Math.min(100, (pet.f.bond || 20) + 8); if (Sound.chirp) Sound.chirp(); toast(petNiceName(pet) + ' chirps happily! 🎵', 1600); closePetMenu(); return; }
         if (m === 'speak') { if (Sound.chirp) Sound.chirp(); petHearts(pet, 1); toast(petNiceName(pet) + ': 🦜 Tweet tweet!', 1500); closePetMenu(); return; }
-        if (m === 'cage' && !nearestPetTarget('birdcage', pet.f.mesh.position.x, pet.f.mesh.position.z)) { toast('🪺 Place a Bird Cage first (from your 🎒)!', 2800); return; }
+        if (m === 'cage' && !nearestPetTarget('birdcage', pet.f.mesh.position.x, pet.f.mesh.position.z) && !nearestPetTarget('aviary', pet.f.mesh.position.x, pet.f.mesh.position.z)) { toast('🪺 Place a Bird Cage or 🏯 Grand Aviary first (from your 🎒)!', 3000); return; }
         pet.mode = m; pet.target = null; pet.perch = false;
         pet.f.bond = Math.min(100, (pet.f.bond || 20) + 2); Sound.click();
         toast(m === 'come' ? '🦜 Here it comes!' : m === 'cage' ? '🪺 Flying home to its cage…' : '🕊️ Off it flies — but it always comes back!', 1900);
@@ -13748,24 +13784,37 @@ const DOG_BREEDS = [['Chocolate Lab', 0x6E4A2E, 'plain'], ['Golden Retriever', 0
   ['Pomeranian', 0xDDA24F, 'fluffy'], ['Samoyed', 0xF1ECE0, 'fluffy'], ['Dalmatian', 0xF2F0EC, 'spotted']];
 const FISH_BREEDS = [['Goldfish', 0xFF8A3D, 'plain'], ['Clownfish', 0xFF7A1A, 'stripe'], ['Blue Tang', 0x2E78D0, 'plain'],
   ['Guppy', 0xF09BB5, 'fin'], ['Betta', 0xE5534B, 'fin']];
-const BIRD_BREEDS = [['Scarlet Macaw', 0xD83A2E, 'parrot'], ['Blue Parakeet', 0x4a9ad8, 'budgie'], ['Green Parakeet', 0x57b06a, 'budgie'],
-  ['Sunny Conure', 0xF2B81E, 'parrot'], ['Cockatiel', 0xE9E2CE, 'tiel'], ['Lovebird', 0xE0673A, 'budgie']];
-function buildBirdMesh(variant) {          // a little parrot/parakeet that flies (wings flap, tail steers)
+const BIRD_BREEDS = [
+  ['Scarlet Macaw', 0xD83A2E, 'macaw'], ['Blue & Gold Macaw', 0x2f6fd0, 'macaw'], ['Blue Parakeet', 0x4a9ad8, 'budgie'],
+  ['Green Parakeet', 0x57b06a, 'budgie'], ['Sunny Conure', 0xF2B81E, 'parrot'], ['Cockatiel', 0xE9E2CE, 'tiel'],
+  ['Lovebird', 0xE0673A, 'budgie'], ['White Cockatoo', 0xF4F1E8, 'cockatoo'], ['Toco Toucan', 0x1c1c1c, 'toucan'],
+  ['Cardinal', 0xC0231F, 'cardinal'], ['Blue Jay', 0x4a8fd0, 'jay'], ['Robin', 0x6b4a30, 'robin'],
+  ['Canary', 0xF2D71E, 'budgie'], ['Flamingo', 0xF2A0C0, 'flamingo'], ['Peacock', 0x1f7a6b, 'peacock'], ['Hummingbird', 0x2fae8e, 'hummer']];
+function buildBirdMesh(variant) {          // a flying bird of a chosen exotic breed (wings flap, tail steers)
   const br = BIRD_BREEDS[(variant || 0) % BIRD_BREEDS.length], col = br[1], feat = br[2];
   const g = new THREE.Group();
   const belly = shade(col, 1.28), wingC = shade(col, 0.78), beak = 0xF2A93B, BLACK = 0x161616;
   box(g, 0.2, 0.24, 0.32, col, 0, 0, 0);                              // body
-  box(g, 0.16, 0.16, 0.18, belly, 0, -0.04, 0.08);                   // pale belly
+  box(g, 0.16, 0.16, 0.18, feat === 'robin' ? 0xE0671E : belly, 0, -0.04, 0.08);   // belly (robin gets a red breast)
   const head = new THREE.Group(); head.position.set(0, 0.18, 0.13); g.add(head);
   box(head, 0.18, 0.18, 0.18, col, 0, 0, 0);
-  box(head, 0.07, 0.07, 0.09, beak, 0, -0.03, 0.12); box(head, 0.05, 0.04, 0.05, shade(beak, 0.85), 0, -0.06, 0.13);   // hooked beak
+  if (feat === 'toucan') { box(head, 0.11, 0.14, 0.28, 0xF2A020, 0, -0.02, 0.22); box(head, 0.1, 0.06, 0.26, 0xC0392B, 0, -0.07, 0.22); box(head, 0.2, 0.16, 0.06, 0xFFFFFF, 0, 0, 0.06); }   // big toucan beak + white bib
+  else { box(head, 0.07, 0.07, 0.09, beak, 0, -0.03, 0.12); box(head, 0.05, 0.04, 0.05, shade(beak, 0.85), 0, -0.06, 0.13); }   // hooked beak
   box(head, 0.038, 0.045, 0.03, BLACK, -0.06, 0.03, 0.075); box(head, 0.038, 0.045, 0.03, BLACK, 0.06, 0.03, 0.075);   // eyes
-  if (feat === 'parrot') box(head, 0.12, 0.13, 0.08, shade(col, 1.12), 0, 0.12, -0.02);   // crest
-  if (feat === 'tiel') { box(head, 0.05, 0.18, 0.05, 0xF2C84B, 0, 0.17, 0.01); box(head, 0.06, 0.06, 0.05, 0xE0673A, 0.08, -0.01, 0.08); box(head, 0.06, 0.06, 0.05, 0xE0673A, -0.08, -0.01, 0.08); }   // cockatiel crest + cheeks
+  if (feat === 'macaw' || feat === 'parrot') box(head, 0.12, 0.13, 0.08, shade(col, 1.12), 0, 0.12, -0.02);   // small crest
+  if (feat === 'cardinal' || feat === 'jay') { box(head, 0.06, 0.16, 0.08, shade(col, 1.1), 0, 0.13, -0.01); box(head, 0.05, 0.1, 0.06, shade(col, 1.1), 0, 0.22, -0.04); if (feat === 'cardinal') box(head, 0.12, 0.07, 0.14, 0x1c1c1c, 0, -0.05, 0.06); }   // pointed crest (+ cardinal mask)
+  if (feat === 'cockatoo') [-0.05, 0, 0.05].forEach((o, i) => box(head, 0.04, i === 1 ? 0.24 : 0.18, 0.05, 0xF2D24A, o, 0.16, -0.01));   // spiky cockatoo crest
+  if (feat === 'tiel') { box(head, 0.05, 0.18, 0.05, 0xF2C84B, 0, 0.17, 0.01); box(head, 0.06, 0.06, 0.05, 0xE0673A, 0.08, -0.01, 0.08); box(head, 0.06, 0.06, 0.05, 0xE0673A, -0.08, -0.01, 0.08); }
+  if (feat === 'flamingo') { box(head, 0.1, 0.32, 0.1, col, 0, 0.2, -0.05); head.position.y += 0.14; box(head, 0.08, 0.08, 0.12, 0x1c1c1c, 0, -0.03, 0.13); }   // long neck + black-tip beak
   const wingL = new THREE.Group(); wingL.position.set(-0.09, 0.05, 0); g.add(wingL); box(wingL, 0.06, 0.1, 0.34, wingC, -0.13, 0, -0.02); box(wingL, 0.05, 0.06, 0.18, shade(col, 0.6), -0.22, -0.02, -0.04);
   const wingR = new THREE.Group(); wingR.position.set(0.09, 0.05, 0); g.add(wingR); box(wingR, 0.06, 0.1, 0.34, wingC, 0.13, 0, -0.02); box(wingR, 0.05, 0.06, 0.18, shade(col, 0.6), 0.22, -0.02, -0.04);
-  const tail = new THREE.Group(); tail.position.set(0, 0, -0.16); g.add(tail); box(tail, 0.13, 0.05, 0.3, feat === 'parrot' ? shade(col, 0.66) : wingC, 0, 0, -0.14);
-  box(g, 0.03, 0.08, 0.03, beak, -0.05, -0.18, 0.03); box(g, 0.03, 0.08, 0.03, beak, 0.05, -0.18, 0.03);   // feet
+  const tail = new THREE.Group(); tail.position.set(0, 0, -0.16); g.add(tail);
+  if (feat === 'macaw') box(tail, 0.1, 0.05, 0.5, shade(col, 0.7), 0, 0, -0.24);   // long macaw tail
+  else if (feat === 'peacock') { [[-0.18, 0x1f7a6b], [0, 0x2f9ed0], [0.18, 0x6fae3a]].forEach(([o, c]) => box(tail, 0.13, 0.04, 0.44, c, o, 0, -0.22)); [[-0.26, 0x2f9ed0], [0, 0x2fae8e], [0.26, 0x2f9ed0]].forEach(([o, c]) => box(tail, 0.1, 0.05, 0.1, c, o, 0.02, -0.46)); }   // peacock fan
+  else box(tail, 0.13, 0.05, 0.3, feat === 'parrot' ? shade(col, 0.66) : wingC, 0, 0, -0.14);
+  const legH = feat === 'flamingo' ? 0.24 : 0.08, legC = feat === 'flamingo' ? 0xE890AE : beak;
+  box(g, 0.03, legH, 0.03, legC, -0.05, -0.14 - legH / 2, 0.03); box(g, 0.03, legH, 0.03, legC, 0.05, -0.14 - legH / 2, 0.03);   // feet/legs
+  if (feat === 'hummer') g.scale.setScalar(0.66);   // tiny hummingbird
   g.userData.wings = [wingL, wingR]; g.userData.tail = tail; g.userData.head = head;
   return g;
 }
@@ -14141,7 +14190,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
+const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', aviary: '🏯 Grand Aviary', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -14252,6 +14301,7 @@ function renderInv() {
     ['🐠', 'Fish Bowls', G.furniture.fish, 'fish'],
     ['🦜', 'Pet Birds', G.furniture.bird, 'bird'],
     ['🪺', 'Bird Cages', G.furniture.birdcage, 'birdcage'],
+    ['🏯', 'Grand Aviaries', G.furniture.aviary, 'aviary'],
     ['🌰', 'Bird Feeders', G.furniture.birdfood, 'birdfood'],
     ['🥣', 'Food Bowls', G.furniture.foodbowl, 'foodbowl'],
     ['💧', 'Water Bowls', G.furniture.waterbowl, 'waterbowl'],
