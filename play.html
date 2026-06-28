@@ -3092,7 +3092,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, birdVariant: 0, carpetVariant: 0, woodfloorVariant: 0, tilefloorVariant: 0, furnFinish: 0,
+  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', windowStyle: 'plain', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, birdVariant: 0, carpetVariant: 0, woodfloorVariant: 0, tilefloorVariant: 0, furnFinish: 0,
   world: 'meadow',
   goal: null, goalReached: false,                 // 🎯 the kid's dream-purchase goal (coins to save toward)
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
@@ -4070,7 +4070,7 @@ function serializeWorld() {
     else if (b.type === 'garage') { if (b.garageAnchor) placed.push([x, y, z, 'garage', b.rot || 0]); else seen.delete(b.mesh.id); }
     else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
-    else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0]);
+    else if (b.type === 'window') placed.push([x, y, z, 'window', b.rot || 0, b.style || 'plain']);
     else if (b.type === 'roof') placed.push([x, y, z, 'roof', b.rot || 0, b.roofStyle || 'pointed']);
     else if (b.type === 'autoroof') placed.push([x, y, z, 'autoroof', [b.roofW || 2, b.roofD || 2, b.roofCost || 1, b.roofStyle || 'pointed']]);
     else if (b.type === 'water') placed.push([x, y, z, 'water']);
@@ -4200,7 +4200,7 @@ function restoreGame(s) {
       mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
       addBlockMesh(x, y, z, null, 'power', true, mesh);
     }
-    else if (type === 'window') addWindow(x, y, z, detail);
+    else if (type === 'window') addWindow(x, y, z, detail, extra);
     else if (type === 'roof') addRoof(x, y, z, detail, extra);
     else if (type === 'autoroof') { const d = detail || [2, 2, 1, 'pointed']; spawnAutoRoof(x, y, z, d[0], d[1], d[2], d[3]); }
     else if (type === 'pool') buildPool(detail || 'pool', x, z, true);   // whole pool item
@@ -4303,7 +4303,7 @@ function resetGameState() {
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.gradePin = 0; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
-  G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.furnFinish = 0;
+  G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.windowStyle = 'plain'; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
@@ -4670,7 +4670,7 @@ function captureCell(x, y, z) {
   if (b.pool) return null;   // pools are handled as whole items, not single-cell undo
   const t = b.type, s = { t, x, y, z };
   if (t === 'placed') s.color = b.color || 0xC9B79A;
-  else if (t === 'window') s.rot = b.rot || 0;
+  else if (t === 'window') { s.rot = b.rot || 0; s.style = b.style || 'plain'; }
   else if (t === 'roof') { s.rot = b.rot || 0; s.style = b.roofStyle || 'pointed'; }
   else if (t === 'autoroof') { s.W = b.roofW; s.D = b.roofD; s.cost = b.roofCost; s.style = b.roofStyle; }
   else if (t === 'garage') { if (!b.garageAnchor) return null; s.rot = b.rot || 0; }
@@ -4685,7 +4685,7 @@ function recreateFromSnap(s) {
   if (t === 'door') placeDoor(s.x, s.y, s.z, s.rot);
   else if (t === 'garage') placeGarageDoor(s.x, s.y, s.z, s.rot);
   else if (t === 'autoroof') spawnAutoRoof(s.x, s.y, s.z, s.W, s.D, s.cost, s.style);
-  else if (t === 'window') addWindow(s.x, s.y, s.z, s.rot);
+  else if (t === 'window') addWindow(s.x, s.y, s.z, s.rot, s.style);
   else if (t === 'roof') addRoof(s.x, s.y, s.z, s.rot, s.style);
   else if (t === 'water') placePoolWater(s.x, s.z);
   else if (t === 'power') { const mesh = new THREE.Mesh(blockGeo, powerMat); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'power', true, mesh); }
@@ -11118,7 +11118,7 @@ function placeSelectedAt(x, z, blockY) {
     if (y > 8) { toast('⬆️ That stack is tall enough!', 1400); return false; }
     if (blocks.has(key(x, y, z))) return false;
     if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    addWindow(x, y, z);
+    addWindow(x, y, z, null, G.windowStyle);
     G.furniture.window -= 1; Sound.place(); refreshHUD(); return true;
   }
   if (slot === 'roof') {       // one roof auto-fits the whole house; a single peaked tile is the fallback
@@ -12023,31 +12023,45 @@ function eatSnack(kind) {
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
 const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
-function buildWindowMesh() {
+const WINDOW_STYLES = ['plain', 'grid', 'diamond', 'round', 'bay'];
+function buildWindowMesh(style) {
   const g = new THREE.Group();
-  const fc = 0x6d4326;                            // warm brown frame
-  const t = 0.12;                                 // frame bar thickness
-  const D = 0.96;                                 // depth ~fills the wall so there are no gaps
-  box(g, 1.0, t, D, fc, 0, 0.5 - t / 2, 0);       // frame top
-  box(g, 1.0, t, D, fc, 0, -0.5 + t / 2, 0);      // frame bottom
-  box(g, t, 1.0, D, fc, -0.5 + t / 2, 0, 0);      // frame left
-  box(g, t, 1.0, D, fc, 0.5 - t / 2, 0, 0);       // frame right
-  // big light-blue pane that sits flush with the frame so it clearly reads as glass
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.84, 0.9),
-    new THREE.MeshLambertMaterial({ color: 0x9FD8F0, transparent: true, opacity: 0.82 }));
-  g.add(glass);
-  box(g, 0.86, 0.08, 0.94, 0xFFFFFF, 0, 0, 0);    // white mullion — horizontal bar
-  box(g, 0.08, 0.86, 0.94, 0xFFFFFF, 0, 0, 0);    // white mullion — vertical bar
+  const fc = 0x6d4326, t = 0.12, D = 0.96;        // warm brown frame, fills the wall depth
+  const glassMat = () => new THREE.MeshLambertMaterial({ color: 0x9FD8F0, transparent: true, opacity: 0.82 });
+  if (style === 'round') {                          // 🪟 porthole / round window
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.1, 12, 24), mat(fc)); g.add(ring);
+    const gl = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.9, 22), glassMat()); gl.rotation.x = Math.PI / 2; g.add(gl);
+    box(g, 0.74, 0.07, 0.92, 0xFFFFFF, 0, 0, 0); box(g, 0.07, 0.74, 0.92, 0xFFFFFF, 0, 0, 0);
+    return g;
+  }
+  box(g, 1.0, t, D, fc, 0, 0.5 - t / 2, 0); box(g, 1.0, t, D, fc, 0, -0.5 + t / 2, 0);   // shared rectangular frame
+  box(g, t, 1.0, D, fc, -0.5 + t / 2, 0, 0); box(g, t, 1.0, D, fc, 0.5 - t / 2, 0, 0);
+  if (style === 'bay') {                            // 🪟 bay window — three panes that bow outward
+    const c = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.8, 0.1), glassMat()); c.position.z = 0.34; g.add(c);
+    box(g, 0.56, t, 0.12, fc, 0, 0.42, 0.34); box(g, 0.56, t, 0.12, fc, 0, -0.42, 0.34);
+    [-1, 1].forEach(s => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.08), glassMat()); p.position.set(s * 0.34, 0, 0.18); p.rotation.y = -s * 0.8; g.add(p); });
+    return g;
+  }
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.84, 0.9), glassMat()); g.add(glass);
+  if (style === 'diamond') {                        // 🪟 diamond lattice
+    const d1 = box(g, 0.06, 1.16, 0.94, 0xFFFFFF, 0, 0, 0); d1.rotation.z = Math.PI / 4;
+    const d2 = box(g, 0.06, 1.16, 0.94, 0xFFFFFF, 0, 0, 0); d2.rotation.z = -Math.PI / 4;
+  } else if (style === 'grid') {                    // 🪟 colonial 6-pane grid
+    [-0.28, 0.28].forEach(o => box(g, 0.86, 0.06, 0.94, 0xFFFFFF, 0, o, 0));
+    box(g, 0.06, 0.86, 0.94, 0xFFFFFF, 0, 0, 0);
+  } else {                                          // plain — a simple cross
+    box(g, 0.86, 0.08, 0.94, 0xFFFFFF, 0, 0, 0); box(g, 0.08, 0.86, 0.94, 0xFFFFFF, 0, 0, 0);
+  }
   return g;
 }
 /* drop a window into a wall gap, turned to line up with the wall it sits in */
-function addWindow(x, y, z, rot) {
+function addWindow(x, y, z, rot, style) {
   if (rot == null) rot = fixtureRotationAt(x, z);
-  const mesh = buildWindowMesh();
+  const mesh = buildWindowMesh(style || 'plain');
   mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
   mesh.rotation.y = rot;
   addBlockMesh(x, y, z, null, 'window', true, mesh);
-  blocks.get(key(x, y, z)).rot = rot;
+  const b = blocks.get(key(x, y, z)); b.rot = rot; b.style = style || 'plain';
   return mesh;
 }
 /* a peaked roof tile — two slopes meeting at a ridge, the classic little-house roof */
@@ -14300,6 +14314,19 @@ function renderInv() {
           toast('🏠 ' + (st === 'flat' ? 'Flat' : 'Pointed') + ' roof selected! Tap the top of a wall to place it.', 2400);
         };
         srow.appendChild(btn);
+      });
+    }
+    if (slot === 'window') {                  // 🪟 pick a window style — plain, grid, diamond, round or bay
+      const wb = document.createElement('div'); wb.className = 'invPaint';
+      wb.innerHTML = '<span class="invPaintLabel">🪟 Window style</span><div class="roofStyleRow"></div>';
+      wrap.appendChild(wb);
+      const wrow = wb.querySelector('.roofStyleRow');
+      [['plain', '➕ Classic'], ['grid', '🪟 Colonial'], ['diamond', '◇ Diamond'], ['round', '⭕ Round'], ['bay', '🔼 Bay']].forEach(([st, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'roofStyleBtn' + (G.windowStyle === st ? ' sel' : '');
+        btn.textContent = label;
+        btn.onclick = () => { Sound.click(); G.windowStyle = st; selectSlot('window', true); wrow.querySelectorAll('.roofStyleBtn').forEach(b => b.classList.remove('sel')); btn.classList.add('sel'); toast('🪟 ' + label.split(' ').slice(1).join(' ') + ' window — drop it into a wall gap!', 2400); };
+        wrow.appendChild(btn);
       });
     }
     if (FLOOR_COLORS[slot]) {                 // 🪵 pick the floor colour
