@@ -4107,7 +4107,7 @@ function saveGame() {
       blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
-      shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
+      shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel, gradePin: G.gradePin || 0,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
       foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0, f.petName || '', f.hunger == null ? '' : Math.round(f.hunger), f.bond == null ? '' : Math.round(f.bond)]),
@@ -4179,6 +4179,7 @@ function restoreGame(s) {
   G.balls = s.balls || 0;
   G.shelterRewarded = !!s.shelterRewarded;
   G.mathLevel = Math.max(1, Math.min(5, s.mathLevel || G.grade || 2));
+  G.gradePin = s.gradePin || 0;                 // 🎚️ when set (1–5), difficulty is capped at this grade (won't climb)
   G.mathCorrectStreak = s.mathCorrectStreak || 0;
   G.mathMisses = s.mathMisses || 0;
   if (s.timerMax) G.timerMax = s.timerMax;
@@ -4221,6 +4222,28 @@ function restoreGame(s) {
   startGame();
   restoreQuest();
   toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
+  applyGradeOverride();          // 🎚️ ?grade=N in the URL resets THIS player to Grade N (keeps coins, houses, pets)
+}
+/* 🎚️ Parent helper: open the game with ?grade=2 (1–5) to reset the loaded player to that grade —
+   it pins the difficulty so questions stay at that grade, while keeping coins, houses, pets & everything else.
+   Use ?grade=off to let the difficulty adapt (climb) again. */
+let GRADE_OVERRIDE = null;
+try { const _g = new URLSearchParams(location.search).get('grade'); if (_g != null) GRADE_OVERRIDE = /^[1-5]$/.test(_g) ? +_g : ((_g === 'off' || _g === 'auto') ? 0 : null); } catch (e) {}
+function applyGradeOverride() {
+  if (GRADE_OVERRIDE == null || !G.running) return;
+  const N = GRADE_OVERRIDE; GRADE_OVERRIDE = null;          // apply once
+  if (N === 0) {
+    G.gradePin = 0;
+    toast('🎚️ Difficulty unpinned — questions will adapt to how ' + (G.playerName || 'they') + ' play again.', 5000);
+  } else {
+    G.grade = N; G.mathLevel = N; G.gradePin = N;
+    G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
+    G.mathCorrectStreak = 0; G.mathMisses = 0; G.mathRecent = [];
+    if (typeof profile === 'object' && profile) { profile.readLevel = N; profile.spellLevel = N; profile.spanLevel = N; profileDirty = true; if (typeof saveProfile === 'function') saveProfile(); }
+    toast('🎚️ ' + (G.playerName || 'Player') + ' is now set to Grade ' + N + '! Questions are Grade ' + N + ' — coins, houses & pets all kept. 💾', 6000);
+  }
+  if (typeof saveGame === 'function') saveGame();
+  try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}   // tidy the URL so a reload won't re-trigger
 }
 addEventListener('beforeunload', () => { if (G.running && !G.over) saveGame(); });
 // 💾 Auto-save — players shouldn't have to think about saving. Save on a timer during
@@ -4271,7 +4294,7 @@ function resetGameState() {
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
   G.spellLevel = null; G.spellStreak = 0; G.spellSlip = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
-  G.mathLevel = G.grade; G.mathCorrectStreak = 0; G.mathMisses = 0;
+  G.mathLevel = G.grade; G.gradePin = 0; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
@@ -11390,7 +11413,7 @@ function fmtTime(s) {
 /* ============================ MATH POPUP ============================ */
 let currentEq = null, popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0, answerUnlockTimer = null, nextQuestionTimer = null, pendingReward = 0, questionShownAt = 0, answerUnlockedAt = 0;
 function adaptiveMathLevel() {
-  return Math.max(1, Math.min(5, G.mathLevel || G.grade || 2));
+  return Math.max(1, Math.min(G.gradePin || 5, G.mathLevel || G.grade || 2));   // 🎚️ a grade pin caps the difficulty
 }
 /* Per-skill difficulty: each kind of problem (add, mul, frac…) climbs or eases on
    its own. Strong at multiplication? Those get a touch harder. Shaky on fractions?
@@ -11398,8 +11421,8 @@ function adaptiveMathLevel() {
    where they're not. */
 function bumpSkill(skill, correct) {
   if (!skill) return;
-  const base = G.mathLevel || G.grade || 2;
-  const ceiling = 5;                              // difficulty is EARNED — it climbs with skill, not capped by the picked grade
+  const base = G.gradePin || G.mathLevel || G.grade || 2;
+  const ceiling = G.gradePin || 5;                // difficulty is EARNED — it climbs with skill (but a 🎚️ grade pin caps it)
   G.skillLevel = G.skillLevel || {}; G.skillStreak = G.skillStreak || {}; G.skillMiss = G.skillMiss || {};
   const cur = G.skillLevel[skill] || base;
   if (correct) {
@@ -11648,7 +11671,7 @@ function answerPicked(btn, opt) {
     G.mathRecent = (G.mathRecent || []); G.mathRecent.push(1); if (G.mathRecent.length > 5) G.mathRecent.shift();   // rolling window for adaptive easing
     if (G.mathCorrectStreak > (profile.bestStreak || 0)) { profile.bestStreak = G.mathCorrectStreak; profileDirty = true; }
     bumpSkill(currentEq.skill, true);
-    const ceiling = 5;                            // earned difficulty — strong play climbs past the picked grade (no camping on easy)
+    const ceiling = G.gradePin || 5;              // earned difficulty climbs past the picked grade — unless a 🎚️ grade pin caps it
     let levelNote = '';
     if (G.mathCorrectStreak >= 3 && G.mathLevel < ceiling) {
       G.mathLevel++;
