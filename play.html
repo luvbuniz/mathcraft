@@ -4565,7 +4565,7 @@ function buildPool(tier, x0, z0, force) {
     for (let cx = x0 - 1; cx <= x0 + w; cx++) for (let cz = z0 - 1; cz <= z0 + d; cz++) {
       if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) { toast('🌍 Too close to the edge for that pool!', 2200); return null; }
       if (blocks.has(key(cx, 0, cz))) { toast('🏊 That pool needs a clear open patch — find a bigger empty spot!', 3000); return null; }
-      if (inShopZone(cx, cz) || (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz))) { toast('🏊 Too close to a building — pick an open yard!', 2400); return null; }
+      if (inShopZone(cx, cz) || inParkZone(cx, cz) || (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz))) { toast('🏊 Too close to a building — pick an open yard!', 2400); return null; }
       if (cellOverlapsPlayer(cx, 0, cz)) { toast('🙂 Step back a little first!', 1500); return null; }
     }
   }
@@ -6405,6 +6405,12 @@ function lotClear(ox, oz, W, D) {
 // Find a lot for a new home, scanning the WHOLE world. Strict pass = a perfectly empty lot closest to you.
 // Relaxed pass (allowClear) = a lot clear of IMMOVABLES (shops, neighbour houses, the portal, the edge) with
 // the FEWEST loose player blocks — those get cleared so the biggest mansion can ALWAYS be placed somewhere.
+/* 🏞️ the big Town Park footprint — kept OFF the home lots so a house never lands on it */
+const PARK_ZONE = { meadow: { cx: 0, cz: 18 }, city: { cx: 0, cz: 18 } };
+function inParkZone(x, z) {
+  const P = PARK_ZONE[G.world]; if (!P) return false;
+  return x >= P.cx - 16 && x <= P.cx + 16 && z >= P.cz - 2 && z <= P.cz + 18;
+}
 function findHomeLot(W, D, allowClear) {
   const bx = player.pos.x, bz = player.pos.z;
   let best = null, bestScore = Infinity;
@@ -6416,6 +6422,7 @@ function findHomeLot(W, D, allowClear) {
           if (Math.abs(x) >= WORLD_R - 1 || Math.abs(z) >= WORLD_R - 1) { blocked = true; break; }
           if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { blocked = true; break; }
           if (inShopZone(x, z)) { blocked = true; break; }
+          if (inParkZone(x, z)) { blocked = true; break; }                       // 🏞️ never drop a home on the Town Park
           if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 4.5) { blocked = true; break; }
           if (blocks.has(key(x, 0, z))) { if (!allowClear) { blocked = true; break; } toClear++; }
         }
@@ -8679,7 +8686,7 @@ function buildTownPark(g, cx, cz, name) {
 }
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
-  buildTownPark(g, 0, 9, 'READING TOWN PARK');   // 🏞️ one big park: gated Dog Park + Playground
+  buildTownPark(g, PARK_ZONE.city.cx, PARK_ZONE.city.cz, 'READING TOWN PARK');   // 🏞️ one big park (south of the homes): gated Dog Park + Playground
   buildPostOffice(g);
   buildRealty(g);
   buildCinema(g);
@@ -9418,7 +9425,7 @@ function buildMeadowDecor(g) {
   americanBarn(g, ML.barn.x, ML.barn.z, Math.PI / 2, 'STACK BARN', 'Furniture & Home');                       // W arm (faces EAST) — red gambrel barn
   cotswoldDealership(g, ML.motors.x, ML.motors.z, 0);                                                          // 🚗 big country car showroom (east end of the north arm)
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
-  buildTownPark(g, 0, 9, 'MEADOW PARK');                // 🏞️ one big park: gated Dog Park + Playground
+  buildTownPark(g, PARK_ZONE.meadow.cx, PARK_ZONE.meadow.cz, 'MEADOW PARK');   // 🏞️ one big park (south of the homes): gated Dog Park + Playground
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
   const HN = 16;
   for (let i = 0; i < HN; i++) {
@@ -9969,7 +9976,7 @@ function smoothSand() {
 
 /* 🐕 DOG PARK — play fetch for coins. Walk to the 🐾 throw pad, tap ⭐ USE to start, then tap USE
    to throw the ball; a friendly park pup runs it down and brings it back. Pets are the hook! */
-const DOGPARK = { meadow: { x: -8, z: 17 }, city: { x: -8, z: 17 } };   // dog-park section center inside the big Town Park (throw pad at z+2)
+const DOGPARK = { meadow: { x: PARK_ZONE.meadow.cx - 8, z: PARK_ZONE.meadow.cz + 8 }, city: { x: PARK_ZONE.city.cx - 8, z: PARK_ZONE.city.cz + 8 } };   // dog-park section center inside the big Town Park (throw pad at z+2)
 const FETCH_BALLS = [{ n: 'Tennis Ball', c: 0xC9E04A }, { n: 'Basketball', c: 0xE07B2A }, { n: 'Beach Ball', c: 0x4a9ad8 }];
 let fetchGame = null;
 function dogParkDist() { const P = DOGPARK[G.world]; return P ? Math.hypot(player.pos.x - P.x, player.pos.z - (P.z + 2)) : 999; }
