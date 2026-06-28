@@ -1916,8 +1916,31 @@ const PAST_TENSE = [['run', 'ran'], ['go', 'went'], ['eat', 'ate'], ['see', 'saw
   ['jump', 'jumped'], ['play', 'played'], ['walk', 'walked'], ['look', 'looked'], ['help', 'helped'], ['talk', 'talked'],
   ['make', 'made'], ['come', 'came'], ['give', 'gave'], ['take', 'took'], ['ride', 'rode'], ['write', 'wrote']];
 const GRAM_SENTENCES = ['the dog ran', 'i like cake', 'we can play', 'she has a cat', 'my book is red', 'the sun is hot', 'he ate lunch', 'birds can fly'];
+// ── broader grade 2–5 grammar: adverbs, pronouns, prepositions, conjunctions, comparatives, contractions, homophones ──
+const GRAM_ADVERBS = ['quickly', 'slowly', 'quietly', 'loudly', 'happily', 'gently', 'carefully', 'softly', 'bravely', 'neatly', 'sadly', 'easily', 'wildly', 'kindly', 'proudly'];
+const PRONOUNS = ['he', 'she', 'it', 'they', 'we', 'you', 'him', 'her', 'them', 'us', 'I'];
+const PREPOSITIONS = ['in', 'on', 'under', 'over', 'beside', 'behind', 'above', 'below', 'between', 'near', 'into', 'around', 'through', 'across'];
+const CONJUNCTIONS = ['and', 'but', 'or', 'because', 'so', 'if', 'when', 'while', 'although'];
+const COMPARATIVES = [['big', 'bigger', 'biggest'], ['small', 'smaller', 'smallest'], ['fast', 'faster', 'fastest'], ['tall', 'taller', 'tallest'], ['happy', 'happier', 'happiest'], ['good', 'better', 'best'], ['bad', 'worse', 'worst'], ['hot', 'hotter', 'hottest'], ['cold', 'colder', 'coldest'], ['strong', 'stronger', 'strongest'], ['old', 'older', 'oldest'], ['nice', 'nicer', 'nicest'], ['funny', 'funnier', 'funniest']];
+const CONTRACTIONS = [['do not', "don't"], ['can not', "can't"], ['is not', "isn't"], ['are not', "aren't"], ['I am', "I'm"], ['you are', "you're"], ['it is', "it's"], ['we are', "we're"], ['they are', "they're"], ['will not', "won't"], ['did not', "didn't"], ['she is', "she's"], ['he is', "he's"], ['let us', "let's"], ['could not', "couldn't"], ['was not', "wasn't"], ['that is', "that's"], ['I will', "I'll"]];
+const HOMOPHONES = [
+  ['I see ____ dog.', 'their', ['there', "they're", 'thier'], '“Their” shows the dog belongs to them.'],
+  ['The toys are over ____.', 'there', ['their', "they're", 'thare'], '“There” means a place.'],
+  ['____ my best friends!', "They're", ['Their', 'There', 'Theyre'], '“They’re” is short for “they are.”'],
+  ['I have ____ cats.', 'two', ['too', 'to', 'tooo'], '“Two” is the number 2.'],
+  ['I want to come ____.', 'too', ['two', 'to', 'tow'], '“Too” means “also.”'],
+  ['We walked ____ the store.', 'to', ['too', 'two', 'too'], '“To” means toward something.'],
+  ['Is this ____ book?', 'your', ["you're", 'yor', 'youre'], '“Your” shows it belongs to you.'],
+  ['____ very kind!', "You're", ['Your', 'Youre', 'Yore'], '“You’re” is short for “you are.”'],
+  ['The dog wagged ____ tail.', 'its', ["it's", 'its’', 'itz'], '“Its” shows the tail belongs to it.'],
+  ['____ a sunny day!', "It's", ['Its', 'Its’', 'Itz'], '“It’s” is short for “it is.”'],
+  ['Did you ____ that?', 'hear', ['here', 'heer', 'hier'], '“Hear” is what you do with your ears.'],
+  ['Come and sit ____.', 'here', ['hear', 'heer', 'hyer'], '“Here” means this place.']
+];
 function makeGrammarQuestion(level) {
-  const t = pick(level >= 3 ? ['pos', 'plural', 'past', 'sentence'] : ['pos', 'plural', 'sentence']);
+  const t = pick(level >= 3
+    ? ['pos', 'adverb', 'pronoun', 'preposition', 'conjunction', 'plural', 'past', 'comparative', 'contraction', 'homophone', 'sentence']
+    : ['pos', 'pronoun', 'preposition', 'conjunction', 'plural', 'comparative', 'sentence']);
   if (t === 'pos') {
     const which = pick(['noun', 'verb', 'adjective']);
     const lists = { noun: GRAM_NOUNS, verb: GRAM_VERBS, adjective: GRAM_ADJS };
@@ -1927,6 +1950,57 @@ function makeGrammarQuestion(level) {
     const art = /^[aeiou]/i.test(which) ? 'an' : 'a';
     return { text: 'Which word is ' + art + ' ' + which.toUpperCase() + ' (' + desc + ')', options: fourChoices(answer, distractors),
       answer, reward: langReward(level), skill: 'reading', hint: art.charAt(0).toUpperCase() + art.slice(1) + ' ' + which + ' is ' + desc + '. Which word fits?' };
+  }
+  if (t === 'adverb') {
+    const answer = pick(GRAM_ADVERBS);
+    const distractors = [].concat(GRAM_NOUNS, GRAM_VERBS, GRAM_ADJS).filter(w => GRAM_ADVERBS.indexOf(w) < 0);
+    return { text: 'Which word is an ADVERB (it tells HOW — often ends in -ly)', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading', hint: 'An adverb tells how something is done, like “quickly” or “softly.”' };
+  }
+  if (t === 'pronoun') {
+    const answer = pick(PRONOUNS);
+    const distractors = [].concat(GRAM_NOUNS, GRAM_VERBS, GRAM_ADJS).filter(w => PRONOUNS.indexOf(w) < 0);
+    return { text: 'Which word is a PRONOUN (it takes the place of a noun)', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading', hint: 'A pronoun replaces a name — like he, she, it, or they.' };
+  }
+  if (t === 'preposition') {
+    const answer = pick(PREPOSITIONS);
+    const distractors = [].concat(GRAM_NOUNS, GRAM_VERBS, GRAM_ADJS).filter(w => PREPOSITIONS.indexOf(w) < 0);
+    return { text: 'Which word is a PREPOSITION (it tells WHERE — like on, under, behind)', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading', hint: 'A preposition shows position, like “under the table.”' };
+  }
+  if (t === 'conjunction') {
+    const answer = pick(CONJUNCTIONS);
+    const distractors = [].concat(GRAM_NOUNS, GRAM_VERBS, GRAM_ADJS).filter(w => CONJUNCTIONS.indexOf(w) < 0);
+    return { text: 'Which word is a CONJUNCTION (a joining word — like and, but, because)', options: fourChoices(answer, distractors),
+      answer, reward: langReward(level), skill: 'reading', hint: 'A conjunction joins ideas — “I ran AND jumped.”' };
+  }
+  if (t === 'comparative') {
+    const set = pick(COMPARATIVES);
+    if (Math.random() < 0.5) {   // superlative
+      const others = COMPARATIVES.filter(c => c !== set).map(c => c[2]);
+      return { text: 'Which is the MOST? (even more than “' + set[1] + '”)', options: fourChoices(set[2], [set[0], set[1], pick(others)]),
+        answer: set[2], reward: langReward(level), skill: 'reading', hint: '“' + set[0] + '” → “' + set[1] + '” → the MOST is “' + set[2] + '.”' };
+    }
+    const others = COMPARATIVES.filter(c => c !== set).map(c => c[1]);
+    return { text: 'Finish it — “This one is ___.” (compare to “' + set[0] + '”)', options: fourChoices(set[1], [set[0], set[2], pick(others)]),
+      answer: set[1], reward: langReward(level), skill: 'reading', hint: 'To compare TWO things: “' + set[0] + '” → “' + set[1] + '.”' };
+  }
+  if (t === 'contraction') {
+    const item = pick(CONTRACTIONS), two = item[0], con = item[1];
+    if (Math.random() < 0.5) {
+      const others = shuffle(CONTRACTIONS.filter(c => c[0] !== two).map(c => c[0])).slice(0, 3);
+      return { text: 'Which two words make “' + con + '”', options: fourChoices(two, others),
+        answer: two, reward: langReward(level), skill: 'reading', hint: 'The apostrophe takes the place of the missing letters.' };
+    }
+    const others = shuffle(CONTRACTIONS.filter(c => c[1] !== con).map(c => c[1])).slice(0, 3);
+    return { text: 'What is the contraction for “' + two + '”', options: fourChoices(con, others),
+      answer: con, reward: langReward(level), skill: 'reading', hint: 'Squish the words & add an apostrophe: “' + two + '” → “' + con + '.”' };
+  }
+  if (t === 'homophone') {
+    const h = pick(HOMOPHONES);
+    return { text: 'Pick the right word: “' + h[0] + '”', options: fourChoices(h[1], h[2].slice(0, 3)),
+      answer: h[1], reward: langReward(level), skill: 'reading', hint: h[3] };
   }
   if (t === 'plural') {
     const [sing, plur] = pick(PLURALS), naive = sing + 's';
@@ -2052,12 +2126,21 @@ function makeScienceQuestion(level) {
 }
 /* pick a fresh question for the current world's subject */
 const usedLangQ = new Set();
+const QUESTION_RETIRE = 4;       // answered correctly this many times → retire it (stop showing) until everything else is done too
 function makeQuestion(level) {
   const subj = curWorld().subject;
   if (subj === 'math') return makeEquation(level);
   const gen = subj === 'spanish' ? makeSpanishQuestion : subj === 'science' ? makeScienceQuestion : makeReadingQuestion;
-  for (let i = 0; i < 40; i++) { const q = gen(level); if (!usedLangQ.has(q.text)) { usedLangQ.add(q.text); return q; } }
-  return gen(level);
+  const log = (typeof profile === 'object' && profile && profile.qLog) || {};
+  let mastered = null;           // a not-this-session question the kid has already aced — only used if nothing fresh is left
+  for (let i = 0; i < 60; i++) {
+    const q = gen(level);
+    if (usedLangQ.has(q.text)) continue;                       // already seen this session
+    if ((log[q.text] || 0) >= QUESTION_RETIRE) { mastered = mastered || q; continue; }   // mastered — skip it
+    usedLangQ.add(q.text); return q;
+  }
+  const q = mastered || gen(level);                            // pool exhausted → re-use a mastered/old one
+  usedLangQ.add(q.text); return q;
 }
 
 /* Hints teach the place-value method but never reveal the final answer. */
@@ -7745,6 +7828,24 @@ const GRAMMAR_MOVIES = [
     { correct: 'We brushed Cassie\'s tail.', bad: ['We brushed Cassies tail.', 'we brushed Cassie\'s tail.', 'We brushed Cassie\'s tail'], why: 'The apostrophe shows the tail belongs to Cassie.' },
     { correct: 'The ponies were very fast.', bad: ['The ponies was very fast.', 'the ponies were very fast.', 'The ponies were very fast'], why: 'Use "were" for more than one pony.' },
   ] },
+  { id: 'robot', title: 'Robot Repair Shop', emoji: '🤖', scenes: [
+    { correct: 'I can\'t fix it alone.', bad: ['I cant fix it alone.', 'I can\'t fix it alone', 'i can\'t fix it alone.'], why: '"Can\'t" needs an apostrophe for the missing letters in "cannot."' },
+    { correct: 'The robot beeped loudly.', bad: ['The robot beeped loud.', 'the robot beeped loudly.', 'The robot beeped loudly'], why: 'Use an adverb — "loudly" — to tell HOW it beeped.' },
+    { correct: 'This robot is faster than that one.', bad: ['This robot is more fast than that one.', 'This robot is fastest than that one.', 'this robot is faster than that one.'], why: 'To compare TWO things, use "faster" — not "more fast" or "fastest."' },
+    { correct: 'It\'s time to power up!', bad: ['Its time to power up!', 'Its\' time to power up!', 'it\'s time to power up!'], why: '"It\'s" is short for "it is."' },
+    { correct: 'The robots don\'t need sleep.', bad: ['The robots dont need sleep.', 'The robots don\'t need sleep', 'the robots don\'t need sleep.'], why: '"Don\'t" = "do not" with an apostrophe.' },
+    { correct: 'This is the smartest robot of all.', bad: ['This is the smarter robot of all.', 'This is the most smart robot of all.', 'this is the smartest robot of all.'], why: 'For the MOST out of many, use "smartest."' },
+    { correct: 'You\'re a great inventor!', bad: ['Your a great inventor!', 'Youre a great inventor!', 'you\'re a great inventor!'], why: '"You\'re" is short for "you are."' },
+  ] },
+  { id: 'ocean', title: 'Ocean Explorers', emoji: '🐠', scenes: [
+    { correct: 'Can I come too?', bad: ['Can I come to?', 'Can I come two?', 'can I come too?'], why: '"Too" means "also."' },
+    { correct: 'The blue whale is bigger than the shark.', bad: ['The blue whale is more big than the shark.', 'The blue whale is biggest than the shark.', 'the blue whale is bigger than the shark.'], why: 'Compare TWO things with "bigger."' },
+    { correct: 'The fish swam quickly away.', bad: ['The fish swam quick away.', 'the fish swam quickly away.', 'The fish swam quickly away'], why: 'Use "quickly" (an adverb) to tell HOW it swam.' },
+    { correct: 'We\'re going underwater!', bad: ['Were going underwater!', 'We\'re going underwater', 'were going underwater!'], why: '"We\'re" is short for "we are."' },
+    { correct: 'The octopus has eight arms.', bad: ['The octopus have eight arms.', 'the octopus has eight arms.', 'The octopus has eight arms'], why: 'Use "has" for one octopus.' },
+    { correct: 'We swam to the coral reef.', bad: ['We swimmed to the coral reef.', 'We swam to the coral reef', 'we swam to the coral reef.'], why: 'The past tense of "swim" is "swam."' },
+    { correct: 'The crabs hid in their shells.', bad: ['The crabs hid in there shells.', 'The crabs hid in they\'re shells.', 'the crabs hid in their shells.'], why: '"Their" shows the shells belong to them.' },
+  ] },
 ];
 let cinema = null;
 function openCinema() {
@@ -11788,6 +11889,11 @@ function answerPicked(btn, opt) {
     const reward = currentEq.reward;
     document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
     G.solved++;
+    if (curWorld().subject !== 'math' && currentEq.text) {   // 📒 log mastered language questions so they retire & stop repeating
+      profile.qLog = profile.qLog || {};
+      profile.qLog[currentEq.text] = (profile.qLog[currentEq.text] || 0) + 1;
+      profileDirty = true;
+    }
     G.mathMisses = 0;
     G.mathCorrectStreak++;
     G.mathRecent = (G.mathRecent || []); G.mathRecent.push(1); if (G.mathRecent.length > 5) G.mathRecent.shift();   // rolling window for adaptive easing
