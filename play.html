@@ -3092,7 +3092,7 @@ const G = {
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', windowStyle: 'plain', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, birdVariant: 0, carpetVariant: 0, woodfloorVariant: 0, tilefloorVariant: 0, furnFinish: 0,
+  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', windowStyle: 'plain', doorStyle: 'plain', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, birdVariant: 0, carpetVariant: 0, woodfloorVariant: 0, tilefloorVariant: 0, furnFinish: 0,
   world: 'meadow',
   goal: null, goalReached: false,                 // 🎯 the kid's dream-purchase goal (coins to save toward)
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
@@ -4066,7 +4066,7 @@ function serializeWorld() {
     if (b.pool) return;   // pools are saved as whole units below, not cell-by-cell
     seen.add(b.mesh.id);
     const [x, y, z] = k.split(',').map(Number);
-    if (b.type === 'door' && b.partner) placed.push([x, Math.min(y, Number(b.partner.split(',')[1])), z, 'door', b.rot || 0]);
+    if (b.type === 'door' && b.partner) placed.push([x, Math.min(y, Number(b.partner.split(',')[1])), z, 'door', b.rot || 0, b.style || 'plain']);
     else if (b.type === 'garage') { if (b.garageAnchor) placed.push([x, y, z, 'garage', b.rot || 0]); else seen.delete(b.mesh.id); }
     else if (b.type === 'placed') placed.push([x, y, z, 'placed', b.color || 0xC9B79A]);
     else if (b.type === 'power') placed.push([x, y, z, 'power']);
@@ -4193,7 +4193,7 @@ function restoreGame(s) {
   loadProfileFor(G.playerName);
   (s.placed || []).forEach(([x, y, z, type, detail, extra]) => {
     if (blocks.has(key(x, y, z))) return;
-    if (type === 'door') placeDoor(x, y, z, detail);
+    if (type === 'door') placeDoor(x, y, z, detail, extra);
     else if (type === 'garage') placeGarageDoor(x, y, z, detail);
     else if (type === 'power') {
       const mesh = new THREE.Mesh(blockGeo, powerMat);
@@ -4303,7 +4303,7 @@ function resetGameState() {
   G.shieldUntil = 0; G.shieldStreak = 0;
   G.mathLevel = G.grade; G.gradePin = 0; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
-  G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.windowStyle = 'plain'; G.furnFinish = 0;
+  G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.windowStyle = 'plain'; G.doorStyle = 'plain'; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
@@ -4674,7 +4674,7 @@ function captureCell(x, y, z) {
   else if (t === 'roof') { s.rot = b.rot || 0; s.style = b.roofStyle || 'pointed'; }
   else if (t === 'autoroof') { s.W = b.roofW; s.D = b.roofD; s.cost = b.roofCost; s.style = b.roofStyle; }
   else if (t === 'garage') { if (!b.garageAnchor) return null; s.rot = b.rot || 0; }
-  else if (t === 'door') s.rot = b.rot || 0;
+  else if (t === 'door') { s.rot = b.rot || 0; s.style = b.style || 'plain'; }
   else if (t === 'stove') { s.cooking = (b.mesh.userData.cooking || []).map(c => c.kind); s.rotY = b.rotY || 0; }
   else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) { s.variant = b.variant; s.rotY = b.rotY || 0; }
   return s;
@@ -4682,7 +4682,7 @@ function captureCell(x, y, z) {
 function recreateFromSnap(s) {
   if (!s || blocks.has(key(s.x, s.y, s.z))) return false;
   const t = s.t;
-  if (t === 'door') placeDoor(s.x, s.y, s.z, s.rot);
+  if (t === 'door') placeDoor(s.x, s.y, s.z, s.rot, s.style);
   else if (t === 'garage') placeGarageDoor(s.x, s.y, s.z, s.rot);
   else if (t === 'autoroof') spawnAutoRoof(s.x, s.y, s.z, s.W, s.D, s.cost, s.style);
   else if (t === 'window') addWindow(s.x, s.y, s.z, s.rot, s.style);
@@ -4757,23 +4757,35 @@ function reorientFixtures() {
     if (b.partner) { const p = blocks.get(b.partner); if (p) p.rot = rot; }
   });
 }
-function placeDoor(x, y, z, rot) {
+const DOOR_STYLES = ['plain', 'french', 'panel'];
+function placeDoor(x, y, z, rot, style) {
+  style = style || 'plain';
   if (rot == null) rot = fixtureRotationAt(x, z);
   const grp = new THREE.Group();
   const hinge = new THREE.Group();
   hinge.position.set(-0.45, 0, 0);                                     // hinge at the left edge
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.94, 0.14), mat(0x9C6B3F));
+  const wood = style === 'french' ? 0xF0E8D6 : 0x9C6B3F;              // French doors are painted light
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.94, 0.14), mat(wood));
   panel.position.set(0.45, 0, 0);                                     // panel extends right from hinge
   hinge.add(panel);
-  box(hinge, 0.5, 0.5, 0.16, 0x7d5430, 0.45, 0.42, 0);               // little window on the door
+  if (style === 'french') {                                          // tall glass panes with white muntins
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.5, 0.16), new THREE.MeshLambertMaterial({ color: 0x9FD8F0, transparent: true, opacity: 0.8 }));
+    glass.position.set(0.45, 0.12, 0); hinge.add(glass);
+    [0.55, 0.0, -0.55].forEach(yy => box(hinge, 0.62, 0.05, 0.18, 0xFFFFFF, 0.45, yy + 0.12, 0));
+    box(hinge, 0.05, 1.5, 0.18, 0xFFFFFF, 0.45, 0.12, 0);
+  } else if (style === 'panel') {                                    // raised colonial panels
+    [0.58, 0.0, -0.58].forEach(yy => { box(hinge, 0.58, 0.42, 0.16, shade(wood, 0.84), 0.45, yy, 0.01); box(hinge, 0.46, 0.3, 0.17, shade(wood, 1.1), 0.45, yy, 0.02); });
+  } else {
+    box(hinge, 0.5, 0.5, 0.16, 0x7d5430, 0.45, 0.42, 0);             // little window on a plain door
+  }
   box(hinge, 0.1, 0.1, 0.2, 0xFFD23E, 0.8, 0, 0);                    // handle near the free edge
   grp.add(hinge);
   grp.position.set(x + 0.5, y + 1, z + 0.5);
   grp.rotation.y = rot;                                               // line up with the wall
   scene.add(grp);
   const state = { open: false, swing: 0, hinge, cx: x + 0.5, cz: z + 0.5, didClose: false, didOpen: false };
-  blocks.set(key(x, y, z),     { mesh: grp, type: 'door', removable: true, partner: key(x, y + 1, z), state, rot });
-  blocks.set(key(x, y + 1, z), { mesh: grp, type: 'door', removable: true, partner: key(x, y, z), state, rot });
+  blocks.set(key(x, y, z),     { mesh: grp, type: 'door', removable: true, partner: key(x, y + 1, z), state, rot, style });
+  blocks.set(key(x, y + 1, z), { mesh: grp, type: 'door', removable: true, partner: key(x, y, z), state, rot, style });
   doorList.push(state);
 }
 function updateDoors(dt) {
@@ -11006,7 +11018,7 @@ function placeSelectedAt(x, z, blockY) {
     if (G.doors < 1) { toast('🚪 No doors in your 🎒! Buy one at 🏚️ Stack Barn (Building tab)!', 2400); return false; }
     if (blocks.has(key(x, 0, z)) || blocks.has(key(x, 1, z))) { toast('🚪 The door needs an empty spot!', 1500); return false; }
     if (cellOverlapsPlayer(x, 0, z) || cellOverlapsPlayer(x, 1, z)) { toast('🙂 Step back a little first!', 1400); return false; }
-    placeDoor(x, 0, z); G.doors -= 1; Sound.place(); refreshHUD(); return true;
+    placeDoor(x, 0, z, null, G.doorStyle); G.doors -= 1; Sound.place(); refreshHUD(); return true;
   }
   if (POOL_KEYS.includes(slot)) {
     if ((G.furniture[slot] || 0) < 1) { toast('🏊 No ' + POOL_TIERS[slot].name + ' in your 🎒 — buy one at 🏚️ Stack Barn (🌳 Garden)!', 2600); return false; }
@@ -14314,6 +14326,19 @@ function renderInv() {
           toast('🏠 ' + (st === 'flat' ? 'Flat' : 'Pointed') + ' roof selected! Tap the top of a wall to place it.', 2400);
         };
         srow.appendChild(btn);
+      });
+    }
+    if (slot === 'door') {                     // 🚪 pick a door style — classic, French (glass) or panelled
+      const db = document.createElement('div'); db.className = 'invPaint';
+      db.innerHTML = '<span class="invPaintLabel">🚪 Door style</span><div class="roofStyleRow"></div>';
+      wrap.appendChild(db);
+      const drow = db.querySelector('.roofStyleRow');
+      [['plain', '🚪 Classic'], ['french', '🪟 French'], ['panel', '🔲 Panelled']].forEach(([st, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'roofStyleBtn' + (G.doorStyle === st ? ' sel' : '');
+        btn.textContent = label;
+        btn.onclick = () => { Sound.click(); G.doorStyle = st; selectSlot('door', true); drow.querySelectorAll('.roofStyleBtn').forEach(b => b.classList.remove('sel')); btn.classList.add('sel'); toast('🚪 ' + label.split(' ').slice(1).join(' ') + ' door — place it in a wall!', 2400); };
+        drow.appendChild(btn);
       });
     }
     if (slot === 'window') {                  // 🪟 pick a window style — plain, grid, diamond, round or bay
