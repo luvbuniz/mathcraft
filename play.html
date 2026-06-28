@@ -8853,13 +8853,12 @@ function buildCountryRealty(g) {
     lg.fillStyle = '#2E5E45'; lg.font = 'bold 17px Georgia, serif'; lg.textAlign = 'left'; lg.fillText(price, ox + 33, oy + 81); lg.textAlign = 'center';
   };
   drawListing(14, 30, '#F2E2C7', '#9E5B4A', '320'); drawListing(128, 30, '#D9E6F2', '#6E7F9A', '540');
-  const lpanel = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.98, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(lc) }));
-  lpanel.position.set(0.55, 1.35, 1.5); R.add(lpanel);
+  const lpanel = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.86, 0.05), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(lc) }));
+  lpanel.position.set(0.55, 1.25, 1.5); R.add(lpanel);                                                   // listings window, sitting BELOW the shop sign (no overlap)
   // a clean wooden window frame (four sides) with one divider between the two listings
-  box(R, 1.56, 0.1, 0.08, WOOD, 0.55, 1.87, 1.53); box(R, 1.56, 0.1, 0.08, WOOD, 0.55, 0.83, 1.53);   // top & bottom rails
-  box(R, 0.1, 1.14, 0.08, WOOD, -0.17, 1.35, 1.53); box(R, 0.1, 1.14, 0.08, WOOD, 1.27, 1.35, 1.53);   // left & right stiles
-  box(R, 0.08, 1.0, 0.08, WOOD, 0.55, 1.35, 1.53);                                                       // centre divider between the two homes
-  box(R, 0.22, 0.16, 0.12, 0x4f535a, 0.55, 1.95, 1.5);                                                   // little eyebrow over the window
+  box(R, 1.56, 0.1, 0.08, WOOD, 0.55, 1.7, 1.53); box(R, 1.56, 0.1, 0.08, WOOD, 0.55, 0.82, 1.53);     // top & bottom rails
+  box(R, 0.1, 0.96, 0.08, WOOD, -0.17, 1.25, 1.53); box(R, 0.1, 0.96, 0.08, WOOD, 1.27, 1.25, 1.53);   // left & right stiles
+  box(R, 0.08, 0.86, 0.08, WOOD, 0.55, 1.25, 1.53);                                                      // centre divider between the two homes
   const sl = box(R, 0.2, 2.3, 3.5, ROOF, -0.86, 2.72, 0); sl.rotation.z = -0.95;   // steep Cotswold roof
   const sr = box(R, 0.2, 2.3, 3.5, ROOF, 0.86, 2.72, 0); sr.rotation.z = 0.95;
   box(R, 0.22, 0.22, 3.5, 0x4f535a, 0, 3.34, 0);              // ridge beam
@@ -8871,8 +8870,8 @@ function buildCountryRealty(g) {
   c.fillStyle = '#4a6b3a'; c.font = 'bold 25px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('🏡 COUNTRY HOMES', 128, 26);
   c.fillStyle = '#8a5c2c'; c.font = 'italic bold 16px Georgia, serif'; c.fillText('cottages & estates', 128, 52);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.7, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
-  sign.position.set(0, 1.95, 1.5); R.add(sign);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.54, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.05, 1.54); R.add(sign);                                                         // shop sign sits cleanly ABOVE the listings window
   box(R, 0.07, 0.82, 0.07, WOOD, 1.05, 0.41, 1.95); box(R, 0.07, 0.82, 0.07, WOOD, 1.55, 0.41, 1.95);   // a proper "FOR SALE" yard sign on two posts
   const yc = document.createElement('canvas'); yc.width = 170; yc.height = 100; const yg = yc.getContext('2d');
   yg.fillStyle = '#2E5E45'; yg.fillRect(0, 0, 170, 100); yg.strokeStyle = '#F4ECD8'; yg.lineWidth = 5; yg.strokeRect(5, 5, 160, 90);
@@ -9248,7 +9247,7 @@ function cotswoldDealership(g, x, z, rot) {
   box(S, 9.6, 0.05, 3.6, 0x8f8b86, 0.5, 0.04, fz + 2.85);                           // asphalt lot
   box(S, 9.6, 0.04, 0.1, 0xEDEDED, 0.5, 0.07, fz + 1.15); box(S, 9.6, 0.04, 0.1, 0xEDEDED, 0.5, 0.07, fz + 4.55);  // lot edge stripes
   for (let i = 0; i < 5; i++) box(S, 0.09, 0.05, 2.9, 0xEDEDED, -3.5 + i * 2.0, 0.07, fz + 2.85);   // parking-bay dividers
-  const row = [[buildMinivanShape, 0x8FA6BC], [buildMonsterShape, 0x6a3fb0], [buildPickupShape, 0x3f7fbf], [buildJeepShape, 0x4E7B3A]];
+  const row = [[buildMinivanShape, 0x8FA6BC], [buildMonsterShape, 0x6a3fb0], [buildPickupShape, 0x3f7fbf]];   // 3 cars — dropped the 4th (it overlapped the Meadowsbury welcome arch)
   row.forEach(([fn, col], i) => forecourtCar(S, fn, col, -2.5 + i * 2.0, fz + 2.85, 0.74, (i % 2 ? 0.05 : -0.05)));   // one car centred per bay, facing the customer
   // 3 flag poles out front (a dealership classic)
   const flagCols = [0xC0392B, 0x2e86c1, 0xF2C037];
