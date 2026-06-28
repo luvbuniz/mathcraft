@@ -3088,11 +3088,11 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
-  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, birdVariant: 0, furnFinish: 0,
+  selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, birdVariant: 0, carpetVariant: 0, woodfloorVariant: 0, tilefloorVariant: 0, furnFinish: 0,
   world: 'meadow',
   goal: null, goalReached: false,                 // 🎯 the kid's dream-purchase goal (coins to save toward)
   firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
@@ -3281,6 +3281,10 @@ const SHOP_ITEMS = [
   { id: 'bookshelf', icon: '📚', name: 'Bookshelf', price: 16, kind: 'many', desc: 'A shelf full of colorful books.' },
   { id: 'plant',  icon: '🪴', name: 'House Plant', price: 10, kind: 'many', desc: 'A leafy potted plant to bring a room to life.' },
   { id: 'rug',    icon: '🟫', name: 'Cozy Rug', price: 9,    kind: 'many', desc: 'A soft rug — a fresh color every time.' },
+  // 🪵 Flooring — lay tiles across a room; you walk right over them. Pick a colour in your 🎒 backpack.
+  { id: 'carpet',    icon: '🟥', name: 'Carpet Floor', price: 4, kind: 'many', desc: 'A soft carpet floor tile — pick a colour in your 🎒. Lay lots to cover a whole room!' },
+  { id: 'woodfloor', icon: '🟫', name: 'Wood Floor', price: 5, kind: 'many', desc: 'A warm wood-plank floor tile — pick a wood tone in your 🎒.' },
+  { id: 'tilefloor', icon: '🔲', name: 'Tile Floor', price: 5, kind: 'many', desc: 'A shiny checkered tile floor — pick a colour in your 🎒.' },
   { id: 'lamp',   icon: '💡', name: 'Glowy Lamp', price: 8,    kind: 'many',  desc: 'A bright lamp post to light things up.' },
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
@@ -3350,7 +3354,7 @@ const SHOP_ITEMS = [
 ];
 /* Two stores: 🛒 Stack Mart (general goods) and 🏚️ Stack Barn (build + home: everything you build a house with). */
 const MART_CATS = [['food', '🍎 Food'], ['july4', '🎆 July 4th'], ['pets', '🐾 Pets'], ['gear', '⭐ Gear']];
-const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden'], ['play', '🏞️ Park & Playground']];
+const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden'], ['floor', '🪵 Flooring'], ['play', '🏞️ Park & Playground']];
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🏚️ Stack Barn — Building dept (blocks, doors, garage doors, windows, roof — all the build materials)
@@ -3363,6 +3367,7 @@ const ITEM_CAT = {
   // 🏚️ Stack Barn — furniture & home
   chair: 'living', couch: 'living', coffeetable: 'living', tv: 'living', bookshelf: 'living',
   rug: 'living', plant: 'living', lamp: 'living', cat: 'living', dog: 'living', fish: 'living', bird: 'living', birdcage: 'living', birdfood: 'living',
+  carpet: 'floor', woodfloor: 'floor', tilefloor: 'floor',
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
   bathtub: 'bath', shower: 'bath',
@@ -4290,7 +4295,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -4505,6 +4510,7 @@ function solidAt(x, y, z) {
   if (b.type === 'garage' && b.state && b.state.lift > 0.9) return false;  // a rolled-up garage door lets the car through
   if (b.type === 'autoroof') return false;       // the big house roof never blocks movement/building
   if (b.type === 'water') return false;          // pool water — you can wade/swim in it
+  if (b.type === 'carpet' || b.type === 'woodfloor' || b.type === 'tilefloor') return false;   // 🪵 flooring — you walk right over it
   return true;
 }
 /* height of the walkable surface at a column — top of the highest solid block (0 = grass) */
@@ -11076,6 +11082,7 @@ function placeSelectedAt(x, z, blockY) {
     if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
     if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     let fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'bed' ? G.bedVariant : slot === 'dtable' ? G.dtableVariant : null;
+    if (fv == null && FLOOR_COLORS[slot]) fv = G[slot + 'Variant'] || 0;   // 🪵 flooring uses the chosen floor colour
     if (fv == null) {                                  // random-color items pick their color now
       if (slot === 'flower') fv = Math.floor(Math.random() * FLOWER_COLORS.length);
       else if (slot === 'rug') fv = Math.floor(Math.random() * RUG_COLORS.length);
@@ -12014,7 +12021,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'birdfood', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -12181,6 +12188,11 @@ const FLOWER_COLORS = [0xFF6FA5, 0xFFD23E, 0x9B6FE0, 0xFF7043];
 const COUCH_STYLES = ['modern', 'classic', 'loveseat', 'chesterfield'];
 const COUCH_COLORS = [0x4F7CB0, 0xC0504D, 0x6FA85B, 0x8E7CC3, 0xD9A441, 0xCF6F9B, 0x57606B, 0xE4E1D8];
 const RUG_COLORS = [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0x55606B];
+const FLOOR_COLORS = {
+  carpet:    [0xC0504D, 0x4F7CB0, 0x6FA85B, 0xD9A441, 0x8E7CC3, 0xE3B7C6, 0x55606B, 0xE7DCC4],
+  woodfloor: [0xC8A165, 0x9A6B3A, 0x9E5B4A, 0x6b4a2c, 0xCDBBA0, 0xB5854E],
+  tilefloor: [0xEDE8DE, 0xC0392B, 0x4F7CB0, 0x55606B, 0x2f7d4a, 0xD9A441]
+};
 const PETBED_COLORS = [0xE0707F, 0x6FA8DC, 0x8FC96B, 0xC79AE0, 0xF0B450, 0xF09BB5];
 function buildCouch(g, variant) {
   const si = Math.floor((variant || 0) / 100) % COUCH_STYLES.length;
@@ -12341,6 +12353,20 @@ function buildFurnitureMesh(type, variant) {
     for (let i = 0; i < 8; i++) box(g, 0.24, 0.04, 0.24, TRIM, 0, 0.22 + i * 0.12, 0);   // sisal wrap rings
     box(g, 0.26, 0.07, 0.26, BASE, 0, 1.18, 0);                         // top cap
     box(g, 0.02, 0.24, 0.02, BASE, 0, 1.34, 0.1); box(g, 0.13, 0.13, 0.13, TOY, 0, 1.18, 0.18);   // dangly ball
+  } else if (type === 'carpet') {
+    const c = FLOOR_COLORS.carpet[(variant || 0) % FLOOR_COLORS.carpet.length];
+    box(g, 0.98, 0.04, 0.98, c, 0, 0.02, 0); box(g, 0.86, 0.045, 0.86, shade(c, 1.12), 0, 0.025, 0);   // soft full-cell carpet
+    g.userData.customFinish = true;
+  } else if (type === 'woodfloor') {
+    const c = FLOOR_COLORS.woodfloor[(variant || 0) % FLOOR_COLORS.woodfloor.length];
+    box(g, 0.98, 0.04, 0.98, c, 0, 0.02, 0);
+    for (let i = 0; i < 4; i++) box(g, 0.98, 0.045, 0.02, shade(c, 0.76), 0, 0.025, -0.36 + i * 0.24);   // plank seams
+    g.userData.customFinish = true;
+  } else if (type === 'tilefloor') {
+    const c = FLOOR_COLORS.tilefloor[(variant || 0) % FLOOR_COLORS.tilefloor.length], c2 = shade(c, 0.72);
+    box(g, 0.98, 0.04, 0.98, c, 0, 0.02, 0);
+    box(g, 0.47, 0.045, 0.47, c2, -0.245, 0.025, -0.245); box(g, 0.47, 0.045, 0.47, c2, 0.245, 0.025, 0.245);   // 2×2 checker
+    g.userData.customFinish = true;
   } else if (type === 'agilityramp') {
     const A = box(g, 0.92, 0.07, 1.0, 0x4a8fd0, 0, 0.42, -0.46); A.rotation.x = 0.6;
     const B = box(g, 0.92, 0.07, 1.0, 0x57b06a, 0, 0.42, 0.46); B.rotation.x = -0.6;
@@ -14027,7 +14053,7 @@ $('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
+const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -14164,6 +14190,9 @@ function renderInv() {
     ['📚', 'Bookshelves', G.furniture.bookshelf, 'bookshelf'],
     ['🪴', 'House Plants', G.furniture.plant, 'plant'],
     ['🟫', 'Rugs', G.furniture.rug, 'rug'],
+    ['🟥', 'Carpet Floor', G.furniture.carpet, 'carpet'],
+    ['🟫', 'Wood Floor', G.furniture.woodfloor, 'woodfloor'],
+    ['🔲', 'Tile Floor', G.furniture.tilefloor, 'tilefloor'],
     ['💡', 'Lamps', G.furniture.lamp, 'lamp'],
     ['🚧', 'Fences', G.furniture.fence, 'fence'],
     ['🌷', 'Flowers', G.furniture.flower, 'flower'],
@@ -14271,6 +14300,19 @@ function renderInv() {
           toast('🏠 ' + (st === 'flat' ? 'Flat' : 'Pointed') + ' roof selected! Tap the top of a wall to place it.', 2400);
         };
         srow.appendChild(btn);
+      });
+    }
+    if (FLOOR_COLORS[slot]) {                 // 🪵 pick the floor colour
+      const fb = document.createElement('div'); fb.className = 'invPaint';
+      fb.innerHTML = '<span class="invPaintLabel">🎨 Floor colour</span><div class="paintRow"></div>';
+      wrap.appendChild(fb);
+      const frow = fb.querySelector('.paintRow');
+      FLOOR_COLORS[slot].forEach((c, idx) => {
+        const sw = document.createElement('button');
+        sw.className = 'swatch' + ((G[slot + 'Variant'] || 0) === idx ? ' sel' : '');
+        sw.style.background = '#' + c.toString(16).padStart(6, '0');
+        sw.onclick = () => { Sound.click(); G[slot + 'Variant'] = idx; selectSlot(slot, true); frow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel')); sw.classList.add('sel'); };
+        frow.appendChild(sw);
       });
     }
     const STYLED = {
