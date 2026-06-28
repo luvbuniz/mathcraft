@@ -3377,7 +3377,7 @@ const SHOP_ITEMS = [
   { id: 'dog',    icon: '🐶', name: 'Pet Dog', price: 16, kind: 'many', desc: 'Pick a breed: Golden Retriever, Pomeranian, Dalmatian, Samoyed & more. Build a room first — pets need a home to roam in!' },
   { id: 'fish',   icon: '🐠', name: 'Fish Bowl', price: 13, kind: 'many', desc: 'Pick a fish: Goldfish, Clownfish, Blue Tang, Betta & more. Put it on a table, dresser, or shelf.' },
   { id: 'bird',   icon: '🦜', name: 'Pet Bird', price: 15, kind: 'many', desc: 'Pick a parrot or parakeet — it flies around your yard, lands on the trees, and ALWAYS comes back to you! Set it free outside or rest it in a 🪺 Bird Cage.' },
-  { id: 'birdcage', icon: '🪺', name: 'Bird Cage', price: 12, kind: 'many', desc: 'A roomy cage with a perch & swing — tap your bird and choose 🪺 Cage and it\'ll flutter home to rest.' },
+  { id: 'birdcage', icon: '🪺', name: 'Bird Cage', price: 12, kind: 'many', desc: 'A cozy home for ONE bird — tap your bird and choose 🪺 Cage and it\'ll flutter home to rest. Want a few birds together? Get the 🏯 Grand Aviary (holds 3)!' },
   { id: 'aviary',   icon: '🏯', name: 'Grand Aviary', price: 30, kind: 'many', desc: 'A big domed aviary with three perches — roomy enough for up to 3 birds to rest together!' },
   { id: 'birdfood', icon: '🌰', name: 'Bird Feeder', price: 6, kind: 'many', desc: 'A feeder full of seed — set it in the yard and your birds will flutter over to nibble.' },
   { id: 'coffeetable', icon: '🪵', name: 'Coffee Table', price: 16, kind: 'many', desc: 'A low table for in front of the couch.' },
@@ -4213,6 +4213,17 @@ const saveKey = (name, world) => SAVE_PREFIX + (name || 'Player') + (world && wo
     });
   } catch (e) {}
 })();
+// 🦜 stamp each living bird's current mode + which cage it's in onto its food record, so a
+// save/reload brings it back exactly where it was (this fixes caged birds escaping on reload).
+function syncPetState() {
+  if (typeof pets === 'undefined') return;
+  for (const p of pets) {
+    if (p.kind !== 'bird' || !p.f) continue;
+    p.f.petMode = p.mode;
+    p.f.cageKey = p.mode === 'cage' ? (p.cageKey || '') : '';
+    p.f.cageSlot = p.mode === 'cage' && p._cageSlot != null ? p._cageSlot : '';
+  }
+}
 let lastSaveAt = 0;
 function saveGame() {
   if (!G.playerName) return;
@@ -4226,7 +4237,7 @@ function saveGame() {
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
       floors: serializeFloors(),
-      foods: placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0, f.petName || '', f.hunger == null ? '' : Math.round(f.hunger), f.bond == null ? '' : Math.round(f.bond)]),
+      foods: (syncPetState(), placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0, f.petName || '', f.hunger == null ? '' : Math.round(f.hunger), f.bond == null ? '' : Math.round(f.bond), f.petMode || '', f.cageKey || '', f.cageSlot == null ? '' : f.cageSlot])),
       quest: G.quest,
       homes: G.homes || [],
       pos: [player.pos.x, player.pos.y, player.pos.z],
@@ -4335,7 +4346,7 @@ function restoreGame(s) {
   reorientFixtures();        // now that every wall is back, line up doors & windows with them
   if (typeof pruneOverlappingDecoTrees === 'function') pruneOverlappingDecoTrees();   // clear any tree a home/pool was built over (e.g. a tree in the pool)
   if (typeof rebuildAllHomeExtras === 'function') rebuildAllHomeExtras();             // re-lay marble floors & driveways for premium homes
-  (s.foods || []).forEach(([x, z, onTable, kind, y, variant, petName, hunger, bond]) => spawnFoodAt(x, z, !!onTable, kind, y, variant, { petName: petName, hunger: hunger, bond: bond }));
+  (s.foods || []).forEach(([x, z, onTable, kind, y, variant, petName, hunger, bond, petMode, cageKey, cageSlot]) => spawnFoodAt(x, z, !!onTable, kind, y, variant, { petName: petName, hunger: hunger, bond: bond, petMode: petMode, cageKey: cageKey, cageSlot: cageSlot }));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   if (typeof repositionPark === 'function') repositionPark();   // 🏞️ move the park clear of this player's homes/pools
   startGame();
@@ -13652,13 +13663,17 @@ function registerPet(f) {
   const m = f.mesh;
   const home = { x: m.position.x, z: m.position.z };
   const p = {
-    f: f, kind: f.kind, mode: f.kind === 'bird' ? 'fly' : 'walk', baseY: f.y || 0, home: home,
+    f: f, kind: f.kind, mode: f.kind === 'bird' ? (f.petMode || 'fly') : 'walk', baseY: f.y || 0, home: home,
     tx: home.x, tz: home.z, timer: 1 + Math.random() * 2, moving: true, pause: false,
     phase: Math.random() * 6.28, facing: 0,
     tail: m.userData.tail, head: m.userData.head, legs: m.userData.legs, wings: m.userData.wings,
     headY: m.userData.head ? m.userData.head.position.y : 0.4
   };
-  if (f.kind === 'bird') { m.position.y = 1.8; p.target = null; p.perch = false; p.flyTimer = 0; }   // 🦜 birds take to the air
+  if (f.kind === 'bird') {                                            // 🦜 birds take to the air (or rest in their saved cage)
+    m.position.y = 1.8; p.target = null; p.perch = false; p.flyTimer = 0;
+    if (f.cageKey) p.cageKey = f.cageKey;
+    if (f.cageSlot != null && f.cageSlot !== '') p._cageSlot = +f.cageSlot;
+  }
   pets.push(p);
 }
 /* 🦜 BIRD FLIGHT — parrots/parakeets flit around the yard, swoop near you, land on trees & feeders,
@@ -13682,15 +13697,17 @@ function nearestPerchFurn(x, z, maxD) {
 }
 function pickBirdTarget(p) {
   const m = p.f.mesh, f = p.f;
-  if (p.mode === 'cage') {                                           // sent to the cage/aviary — perch inside, spread out
-    const cage = nearestPetTarget('birdcage', m.position.x, m.position.z), av = nearestPetTarget('aviary', m.position.x, m.position.z);
-    const c = (cage && av) ? (cage.dist <= av.dist ? cage : av) : (cage || av);
-    if (c) {
-      const big = !!(c.entry && c.entry.type === 'aviary');
-      if (p._cageSlot == null) p._cageSlot = Math.floor(Math.random() * 3);
-      const rad = big ? 0.26 : 0.09, ang = p._cageSlot / 3 * Math.PI * 2 + 0.6;
+  if (p.mode === 'cage') {                                           // sent to ITS OWN cage — perch inside
+    const b = p.cageKey ? blocks.get(p.cageKey) : null;
+    if (!b || (b.type !== 'birdcage' && b.type !== 'aviary')) {       // its cage was moved/sold → fly free again
+      p.mode = 'fly'; p.cageKey = null; p._cageSlot = null; if (p.f) p.f.petMode = 'fly';
+    } else {
+      const a = p.cageKey.split(',').map(Number), cx = a[0] + 0.5, cz = a[2] + 0.5;
+      const big = b.type === 'aviary';
+      if (p._cageSlot == null) p._cageSlot = 0;
+      const rad = big ? 0.26 : 0.0, ang = p._cageSlot / 3 * Math.PI * 2 + 0.6;
       const py = big ? [0.78, 1.22, 1.78][p._cageSlot % 3] : 0.78;
-      p.target = { x: c.x + Math.cos(ang) * rad, y: py, z: c.z + Math.sin(ang) * rad }; p.wantPerch = true; p.flyTimer = 6; return;
+      p.target = { x: cx + Math.cos(ang) * rad, y: py, z: cz + Math.sin(ang) * rad }; p.wantPerch = true; p.flyTimer = 6; return;
     }
   }
   if (p.mode === 'come') {                                           // called — come straight to you, then resume
@@ -13757,6 +13774,26 @@ function nearestPetTarget(type, x, z, filledOnly) {
     if (filledOnly && !(b.mesh.userData && b.mesh.userData.filled)) return;
     const a = k.split(',').map(Number), cx = a[0] + 0.5, cz = a[2] + 0.5, d = Math.hypot(cx - x, cz - z);
     if (d < bd) { bd = d; best = { x: cx, z: cz, entry: b, dist: d }; }
+  });
+  return best;
+}
+/* 🪺 CAGE CAPACITY — a basic Bird Cage holds ONE bird; the Grand Aviary holds three.
+   Each caged bird remembers WHICH cage (its block key) it lives in, so it flies back to the
+   same home and a save/reload keeps it there. */
+const CAGE_CAP = { birdcage: 1, aviary: 3 };
+function cagedCount(cageKey) {
+  let n = 0;
+  for (const p of pets) if (p.kind === 'bird' && p.mode === 'cage' && p.cageKey === cageKey) n++;
+  return n;
+}
+// nearest cage (birdcage/aviary) that still has a free perch; null if every cage is full
+function findFreeCage(x, z) {
+  let best = null, bd = 1e9;
+  blocks.forEach((b, k) => {
+    if (b.type !== 'birdcage' && b.type !== 'aviary') return;
+    if (cagedCount(k) >= (CAGE_CAP[b.type] || 1)) return;
+    const a = k.split(',').map(Number), cx = a[0] + 0.5, cz = a[2] + 0.5, d = Math.hypot(cx - x, cz - z);
+    if (d < bd) { bd = d; best = { key: k, entry: b, x: cx, z: cz, slot: cagedCount(k) }; }
   });
   return best;
 }
@@ -14001,8 +14038,18 @@ function renderPetMenu(pet) {
       if (pet.kind === 'bird') {                                              // 🦜 bird actions
         if (m === 'love') { petHearts(pet, 3); pet.f.bond = Math.min(100, (pet.f.bond || 20) + 8); if (Sound.chirp) Sound.chirp(); toast(petNiceName(pet) + ' chirps happily! 🎵', 1600); closePetMenu(); return; }
         if (m === 'speak') { if (Sound.chirp) Sound.chirp(); petHearts(pet, 1); toast(petNiceName(pet) + ': 🦜 Tweet tweet!', 1500); closePetMenu(); return; }
-        if (m === 'cage' && !nearestPetTarget('birdcage', pet.f.mesh.position.x, pet.f.mesh.position.z) && !nearestPetTarget('aviary', pet.f.mesh.position.x, pet.f.mesh.position.z)) { toast('🪺 Place a Bird Cage or 🏯 Grand Aviary first (from your 🎒)!', 3000); return; }
+        if (m === 'cage') {                                                   // 🪺 send it to a cage with a free perch (1 per Bird Cage, 3 per Aviary)
+          const already = pet.cageKey && blocks.get(pet.cageKey);
+          if (!(pet.mode === 'cage' && already)) {                             // not already resting in a real cage → find one with room
+            if (!nearestPetTarget('birdcage', pet.f.mesh.position.x, pet.f.mesh.position.z) && !nearestPetTarget('aviary', pet.f.mesh.position.x, pet.f.mesh.position.z)) { toast('🪺 Place a Bird Cage or 🏯 Grand Aviary first (from your 🎒)!', 3000); return; }
+            const free = findFreeCage(pet.f.mesh.position.x, pet.f.mesh.position.z);
+            if (!free) { toast('🪺 All your cages are full! A Bird Cage holds one bird and a 🏯 Grand Aviary holds three — place another cage for this one.', 4200); return; }
+            pet.cageKey = free.key; pet._cageSlot = free.slot;
+          }
+        }
         pet.mode = m; pet.target = null; pet.perch = false;
+        if (m !== 'cage') { pet.cageKey = null; pet._cageSlot = null; }        // leaving the cage frees its perch
+        pet.f.petMode = m; pet.f.cageKey = m === 'cage' ? (pet.cageKey || '') : '';
         pet.f.bond = Math.min(100, (pet.f.bond || 20) + 2); Sound.click();
         toast(m === 'come' ? '🦜 Here it comes!' : m === 'cage' ? '🪺 Flying home to its cage…' : '🕊️ Off it flies — but it always comes back!', 1900);
         closePetMenu(); return;
@@ -14027,7 +14074,40 @@ function renderPetMenu(pet) {
     };
     wrap.appendChild(b);
   });
+  // ↩️ Return policy — give a pet back for a full refund (kind, no-pressure: it asks first)
+  const refund = (SHOP_ITEMS.find(i => i.id === pet.kind) || {}).price || 0;
+  const ret = document.createElement('button');
+  ret.className = 'petBtn';
+  ret.style.cssText = 'background:#e9edf2;color:#5a6b80;box-shadow:0 4px 0 #c4ccd6;font-size:14px;margin-top:6px';
+  ret.textContent = '↩️ Return ' + (pet.kind === 'bird' ? 'bird' : pet.kind === 'dog' ? 'dog' : pet.kind === 'fish' ? 'fish' : 'cat') + ' (+' + refund + ' 🪙)';
+  ret.onclick = () => renderReturnConfirm(pet, refund);
+  wrap.appendChild(ret);
   $('petNameBtn').onclick = () => promptPetName(pet);
+}
+function renderReturnConfirm(pet, refund) {
+  Sound.click();
+  const wrap = $('petModes'); wrap.innerHTML = '';
+  const msg = document.createElement('div');
+  msg.style.cssText = 'font-weight:800;color:#5a6b80;font-size:14px;margin-bottom:8px';
+  msg.textContent = 'Return ' + (pet.f.petName || (pet.kind === 'bird' ? 'this bird' : pet.kind === 'dog' ? 'this dog' : pet.kind === 'fish' ? 'this fish' : 'this cat')) + ' to the store for ' + refund + ' 🪙?';
+  wrap.appendChild(msg);
+  const yes = document.createElement('button');
+  yes.className = 'petBtn'; yes.style.cssText = 'background:#e36b6b;color:#fff;box-shadow:0 4px 0 #b84a4a';
+  yes.textContent = '✓ Yes, return for ' + refund + ' 🪙';
+  yes.onclick = () => returnPet(pet, refund);
+  const no = document.createElement('button');
+  no.className = 'petBtn'; no.style.cssText = 'background:#7bc47b;color:#fff;box-shadow:0 4px 0 #559755';
+  no.textContent = '✗ Keep my pet';
+  no.onclick = () => { Sound.click(); renderPetMenu(pet); };
+  wrap.appendChild(yes); wrap.appendChild(no);
+}
+function returnPet(pet, refund) {
+  scene.remove(pet.f.mesh);
+  const fi = placedFood.indexOf(pet.f); if (fi >= 0) placedFood.splice(fi, 1);
+  const pi = pets.indexOf(pet); if (pi >= 0) pets.splice(pi, 1);
+  G.coins += refund; Sound.coin(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+  toast('↩️ Returned your ' + (pet.kind === 'bird' ? 'bird' : pet.kind === 'dog' ? 'dog' : pet.kind === 'fish' ? 'fish' : 'cat') + ' — +' + refund + ' 🪙 refunded. You can adopt again any time!', 3400);
+  closePetMenu();
 }
 function promptPetName(pet) {
   const wrap = $('petModes');
@@ -14408,10 +14488,13 @@ function spawnFoodAt(x, z, onTable, kind, surfY, variant, care) {
   g.position.set(x + 0.5, y, z + 0.5);
   scene.add(g);
   const f = { mesh: g, x, z, onTable, kind, y, variant: variant || 0 };
-  if (care) {                                                        // restore a saved pet's name & care meters
+  if (care) {                                                        // restore a saved pet's name, care meters & where it lives
     if (care.petName) f.petName = care.petName;
     if (care.hunger !== '' && care.hunger != null) f.hunger = +care.hunger;
     if (care.bond !== '' && care.bond != null) f.bond = +care.bond;
+    if (care.petMode) f.petMode = care.petMode;                      // 🦜 fly / cage so it comes back the same way
+    if (care.cageKey) f.cageKey = care.cageKey;
+    if (care.cageSlot != null && care.cageSlot !== '') f.cageSlot = care.cageSlot;
   }
   placedFood.push(f);
   if ((kind === 'cat' || kind === 'dog') && y < 0.3) registerPet(f);   // floor cats/dogs come alive
