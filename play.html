@@ -946,6 +946,17 @@
        grow and scroll with the WHOLE page, so it's easy to drag to a saved game or the hero picker. */
     #savedList { max-height:none !important; overflow:visible !important; }
   }
+  /* 🚂 TRAIN RIDE — a clean cinematic lap. Hide ALL the gameplay UI so nothing overlaps the view. */
+  #rideOverlay { position:fixed; inset:0; z-index:70; display:none; pointer-events:none; }
+  body.riding #hud, body.riding #touchUI { display:none !important; }
+  body.riding #rideOverlay { display:block; }
+  /* a dark train-window frame for the passenger seats (so it feels like you're looking out a window) */
+  #rideOverlay.window::before { content:''; position:absolute; inset:0; pointer-events:none;
+    border:clamp(14px,3vw,30px) solid #2a1c10; border-radius:30px;
+    box-shadow:inset 0 0 70px rgba(0,0,0,.55), inset 0 0 0 4px rgba(120,84,46,.9); }
+  #rideCaption { position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+    background:rgba(42,28,16,.82); color:#ffe7b3; font-weight:800; font-size:clamp(13px,2.4vw,17px);
+    padding:8px 18px; border-radius:16px; white-space:nowrap; box-shadow:0 3px 0 rgba(0,0,0,.3); }
 </style>
 </head>
 <body>
@@ -1664,6 +1675,9 @@
   <button class="touchBtn" id="btnShoot" style="display:none">🎯 Shoot</button>
 </div>
 
+<!-- ================= TRAIN RIDE OVERLAY (cinematic; hides the HUD) ================= -->
+<div id="rideOverlay"><div id="rideCaption">🚂 All aboard the Silver Creek Express!</div></div>
+
 <script>
 'use strict';
 /* =====================================================================
@@ -1724,16 +1738,19 @@ const Sound = {
   correct() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.16, 'sine', 0.18, i * 0.09)); },
   wrong()   { this.tone(330, 0.18, 'sine', 0.12); this.tone(262, 0.22, 'sine', 0.1, 0.16); },
   coin()    { this.tone(900, 0.08, 'square', 0.1); this.tone(1350, 0.18, 'square', 0.1, 0.07); },
-  whistle() {   // 🚂 a long, doubled steam whistle — WHOOO-WHooo (two chords, breathy tail)
-    [[523, 0.10], [659, 0.13], [784, 0.09]].forEach(([f, v]) => this.tone(f, 0.62, 'sine', v, 0, f * 1.18));
-    [[494, 0.10], [622, 0.12], [740, 0.08]].forEach(([f, v]) => this.tone(f, 0.5, 'sine', v, 0.5, f * 1.12));
-    this.noise(1.0, 0.04, 2600);
+  whistle() {   // 🚂 a rich, breathy steam whistle — a detuned chord with a steamy bed & a falling WHooo tail
+    [[392, 0.10], [494, 0.11], [587, 0.10], [784, 0.05]].forEach(([f, v]) => {
+      this.tone(f, 0.8, 'sine', v, 0, f * 1.05);             // slight rise (steam building)
+      this.tone(f * 1.006, 0.8, 'triangle', v * 0.35, 0);    // a hair detuned = a real reedy whistle, not a pure beep
+    });
+    this.noise(1.15, 0.05, 3400);                            // the breath of steam behind the note
+    [[370, 0.09], [466, 0.10], [554, 0.07]].forEach(([f, v]) => this.tone(f, 0.55, 'sine', v, 0.6, f * 0.9));   // WHooo — it dips at the end
   },
-  chuff(power)  {   // 🚂 one "chuff" of steam, louder & sharper the harder the engine works (power 0..1)
-    const p = power || 0, v = 0.1 + p * 0.11;
-    this.noise(0.15, v, 480 + p * 320);
-    this.noise(0.06, v * 0.55, 1700, 0.015);
-    this.tone(92, 0.12, 'sawtooth', v * 0.5, 0, 58);
+  chuff(power)  {   // 🚂 one breathy "ch-ff" of steam — softer & rounder the easier she's working (power 0..1)
+    const p = power || 0, v = 0.11 + p * 0.12;
+    this.noise(0.05, v * 0.9, 3200 - p * 600);               // the sharp "ch" — a quick steam burst
+    this.noise(0.16, v, 900 + p * 700, 0.02);                // the breathy "ff" tail rolling out
+    this.tone(64, 0.13, 'sine', v * 0.45, 0, 44);            // a soft low piston thump (sine, not a buzzy sawtooth)
   },
   bell()    { [1318, 1976].forEach((f, i) => { this.tone(f, 0.7, 'sine', 0.07 - i * 0.02, 0); this.tone(f, 0.6, 'sine', 0.05, 0.28); }); },   // 🔔 station bell ding-ding
   boing()   { this.tone(180, 0.2, 'sine', 0.14, 0, 540); this.tone(540, 0.12, 'sine', 0.06, 0.05, 220); },   // 🤸 springy swing/spring-rider boing
@@ -6357,20 +6374,34 @@ function answerCoal(v) {
     G.tickets = Math.max(0, (G.tickets || 0) - 1); refreshHUD();
     $('trainMsg').style.color = '#2f8a52'; $('trainMsg').innerHTML = '✓ Boiler full — chuff chuff! 🎟️ −1';
     if (Sound.correct) Sound.correct();
-    setTimeout(() => { closeTrainRide(); startTrainRide(); }, 750);
+    setTimeout(() => showSeatPicker(), 650);
   } else {
     if (Sound.wrong) Sound.wrong(); $('trainMsg').style.color = '#c0392b'; $('trainMsg').textContent = '✗ Not quite — count up to fill the boiler!';
   }
 }
-function startTrainRide() {
+// 🚂 pick where to sit before the lap — a window seat (left/right) or the outside view
+function showSeatPicker() {
+  $('trainQ').innerHTML = '🚂 <b>All aboard!</b> Where would you like to ride?';
+  $('trainMsg').textContent = '';
+  const wrap = $('trainPad'); wrap.innerHTML = '';
+  [['left', '👈 Left window'], ['right', '👉 Right window'], ['front', '🎥 Outside view']].forEach(([s, label]) => {
+    const b = document.createElement('button'); b.className = 'bakeBtn'; b.textContent = label;
+    b.onclick = () => { Sound.click && Sound.click(); G.trainSeat = s; closeTrainRide(); startTrainRide(s); };
+    wrap.appendChild(b);
+  });
+}
+function startTrainRide(seat) {
   if (!westTrainGroup || !westLoop) { endTrainRide(); return; }
-  trainRide = { t: 0, dur: 16, lastS: trainStartS, chuff: 0, whistled: false, hidCars: [] };
+  seat = seat || G.trainSeat || 'right';
+  trainRide = { t: 0, dur: 19, lastS: trainStartS, chuff: 0, whistled: false, hidCars: [], seat: seat };
+  document.body.classList.add('riding');
+  const ov = document.getElementById('rideOverlay'); if (ov) ov.classList.toggle('window', seat !== 'front');
+  const cap = document.getElementById('rideCaption'); if (cap) cap.textContent = seat === 'front' ? '🎥 Silver Creek Express — round the town!' : '🚂 Choo-choo! Watch the scenery roll by 🌵';
   // 🚗 tuck any parked car away for the lap so the train can't roll straight through it (Leo's trick!)
   if (typeof cars !== 'undefined') for (const id in cars) {
     if (cars[id].spawned && cars[id].group.visible) { cars[id].group.visible = false; trainRide.hidCars.push(id); }
   }
   if (Sound.whistle) Sound.whistle();
-  toast('🚂 WHOOO-WHOO! All aboard the Silver Creek Express — hold on tight for a lap around town!', 3200);
 }
 function updateTrainRide(dt) {
   if (!trainRide || !westTrainGroup || !westLoop) return;
@@ -6388,9 +6419,18 @@ function updateTrainRide(dt) {
   // billowing steam out of the stack (local ~(1.05, 3.3) on the engine)
   const hd = sp.h, sx = sp.x + 1.05 * Math.cos(hd), sz = sp.z - 1.05 * Math.sin(hd);
   updateTrainSteam(dt, sx, 3.3, sz, hd, power);
-  // chase-cam: ride just behind & above the cab, looking forward down the track at the scenery rolling by
-  camera.position.set(sp.x - Math.cos(hd) * 7.2, 4.4, sp.z + Math.sin(hd) * 7.2);
-  camera.lookAt(sp.x + Math.cos(hd) * 7, 1.5, sp.z - Math.sin(hd) * 7);
+  // camera: a passenger window seat (left/right) — or the outside chase view
+  const fwx = Math.cos(hd), fwz = -Math.sin(hd);        // travel direction (x,z)
+  const sdx = Math.sin(hd), sdz = Math.cos(hd);         // perpendicular (a seat's left/right)
+  if (trainRide.seat === 'front') {
+    camera.position.set(sp.x - fwx * 7.2, 4.4, sp.z - fwz * 7.2);   // behind & above the cab, looking forward
+    camera.lookAt(sp.x + fwx * 7, 1.5, sp.z + fwz * 7);
+  } else {
+    const sgn = trainRide.seat === 'left' ? -1 : 1;
+    const cxp = sp.x + fwx * -3.2, czp = sp.z + fwz * -3.2;          // sit in the carriage behind the engine
+    camera.position.set(cxp + sdx * sgn * 0.35, 1.65, czp + sdz * sgn * 0.35);
+    camera.lookAt(cxp + sdx * sgn * 9 + fwx * 2.4, 0.6, czp + sdz * sgn * 9 + fwz * 2.4);   // gaze out the window, a touch forward & down
+  }
   if (trainRide.t >= trainRide.dur) endTrainRide();
 }
 /* 🐴 Horse & buggy RENTAL — pay coins, then trot around the Western on your own four hooves */
@@ -6422,6 +6462,7 @@ function updateBuggyRide() {
   if (player.avatar) player.avatar.visible = false;   // you're up on the buggy
 }
 function endTrainRide() {
+  document.body.classList.remove('riding');   // bring the gameplay HUD back
   if (trainRide && trainRide.hidCars && typeof cars !== 'undefined') trainRide.hidCars.forEach(id => { if (cars[id]) cars[id].group.visible = true; });   // bring the parked car back
   if (westTrainGroup && westLoop) { const sp = loopSample(westLoop, trainStartS); westTrainGroup.position.set(sp.x, 0, sp.z); westTrainGroup.rotation.y = sp.h; }   // park back at the depot
   if (trainSteam) trainSteam._puffs.forEach(p => { p.life = 0; p.mesh.visible = false; });
@@ -10235,6 +10276,24 @@ function buildWestDecor(g) {
   hitchingPost(g, -15.5, -15.2); hitchingPost(g, -10, -15.2); hitchingPost(g, -2, -8.6);   // out front of the buildings, clear of the rails
   if (typeof decoTree === 'function') { decoTree(g, -29, 2, 1.0); decoTree(g, 26, 10, 0.9); }   // a couple of cottonwoods at the edges (well outside the loop)
   for (let i = 0; i < 5; i++) box(g, 0.74, 0.5, 0.52, 0xE3C34A, -19 + (i % 3) * 0.1, 0.27 + Math.floor(i / 3) * 0.5, -15.4);   // hay bales by the saloon
+  // 🌵🌼 line the rails with desert scenery (all OUTSIDE the loop) so there's lots to watch from the train window
+  const FLO = [0xE0533B, 0xF2C84B, 0xC0398B, 0xE07B2A, 0x9b6fe0];
+  const wRock = (x, z) => { box(g, 1.2, 0.7, 1.0, 0xB07A4A, x, 0.35, z); box(g, 0.8, 0.5, 0.7, 0xC2935A, x + 0.3, 0.55, z - 0.2); box(g, 0.5, 0.3, 0.45, 0x9c6a3f, x - 0.3, 0.25, z + 0.25); };
+  const wFlowers = (x, z, seed) => { for (let k = 0; k < 5; k++) { const fx = x + (k % 3 - 1) * 0.42, fz = z + (Math.floor(k / 3) - 0.5) * 0.5; box(g, 0.04, 0.26, 0.04, 0x3E9B3E, fx, 0.13, fz); box(g, 0.15, 0.11, 0.15, FLO[(seed + k) % FLO.length], fx, 0.31, fz); } };
+  const wCow = (x, z) => { box(g, 0.95, 0.6, 0.5, 0xF4F0E8, x, 0.55, z); box(g, 0.97, 0.62, 0.2, 0x47372a, x, 0.72, z); box(g, 0.32, 0.32, 0.32, 0xF4F0E8, x + 0.55, 0.62, z); box(g, 0.1, 0.12, 0.06, 0xE7B7A0, x + 0.72, 0.55, z); [[-0.32, -0.15], [0.32, -0.15], [-0.32, 0.15], [0.32, 0.15]].forEach(([lx, lz]) => box(g, 0.12, 0.4, 0.12, 0x3a2c1e, x + lx, 0.2, z + lz)); };
+  const sceneSpots = [
+    [24, -7, 'cactus'], [26, -1, 'rock'], [25, 4, 'cactus'], [27, 9, 'tree'], [23, 12, 'flowers'],
+    [-24, -6, 'cactus'], [-26, 0, 'tree'], [-25, 5, 'rock'], [-23, 10, 'cactus'], [-22, 13, 'flowers'],
+    [-14, 13, 'rock'], [-7, 14, 'flowers'], [0, 15, 'cactus'], [7, 14, 'tree'], [14, 13, 'rock'],
+    [-10, 12, 'cactus'], [10, 12, 'flowers'], [22, 1, 'cow'], [24, 2, 'cow']
+  ];
+  sceneSpots.forEach(([sx, sz, kind], i) => {
+    if (kind === 'cactus') cactus(g, sx, sz, 0.8 + (i % 3) * 0.18);
+    else if (kind === 'tree') decoTree(g, sx, sz, 0.85 + (i % 2) * 0.2);
+    else if (kind === 'rock') wRock(sx, sz);
+    else if (kind === 'flowers') wFlowers(sx, sz, i);
+    else if (kind === 'cow') wCow(sx, sz);
+  });
   // 🌲 safety net: lift any cottonwood (or future prop tree) that ended up sitting on the rails
   if (westLoop && westLoop.pts) for (let i = decoTrees.length - 1; i >= 0; i--) {
     const t = decoTrees[i]; if (t.parent !== g) continue;
