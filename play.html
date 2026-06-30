@@ -11489,6 +11489,17 @@ function collectLoot(l) {
   refreshHUD();
 }
 /* R — remove the nearest block you placed (topmost of a stack first) */
+// pick up one placed item (fish bowl, apple, plated food…) by index — refunds it to the 🎒 backpack
+function pickUpFood(i) {
+  const f = placedFood[i]; if (!f) return;
+  scene.remove(f.mesh); placedFood.splice(i, 1);
+  const pi = pets.findIndex(p => p.f === f); if (pi >= 0) pets.splice(pi, 1);
+  const back = (f.kind === 'fish') ? 'fish'
+    : (f.kind === 'apple' || f.kind === 'food') ? 'food'
+    : (G.furniture[f.kind] != null ? f.kind : 'food');
+  G.furniture[back] = (G.furniture[back] || 0) + 1; Sound.pop(); refreshHUD();
+  toast('📦 ' + (f.kind === 'fish' ? 'Fish bowl' : f.kind === 'apple' || f.kind === 'food' ? 'Apple' : 'Picked it up') + ' — back in your 🎒!', 1600);
+}
 function removePlacedBlock() {
   for (let i = 0; i < placedFood.length; i++) {     // an apple (or pet) you placed comes first
     const f = placedFood[i];
@@ -13839,6 +13850,31 @@ function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in i
   return false;
 }
 function shortAngle(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
+function nearestHome(x, z, maxD) {
+  let best = null, bd = maxD || 12;
+  for (const h of (G.homes || [])) {
+    const cx = (h.x0 + h.x1) / 2, cz = (h.z0 + h.z1) / 2, d = Math.hypot(cx - x, cz - z);
+    if (d < bd) { bd = d; best = h; }
+  }
+  return best;
+}
+// 🏠 tie a cat/dog to the ROOM it's placed in so it stays in that house and doesn't wander off
+// to another one. We flood-fill the walls around it; if it has already strayed outside, we gently
+// corral it back into the nearest house.
+function bindPetHome(p) {
+  const m = p.f.mesh;
+  let room = (typeof floodRoom === 'function') ? floodRoom(m.position.x, m.position.z) : null;
+  if (!room) {
+    const h = nearestHome(m.position.x, m.position.z, 11);
+    if (h) {
+      const sx = Math.floor((h.x0 + h.x1) / 2), sz = Math.floor((h.z0 + h.z1) / 2);
+      m.position.set(sx + 0.5, p.baseY || 0, sz + 0.5);
+      p.f.x = sx; p.f.z = sz; p.home = { x: sx + 0.5, z: sz + 0.5 }; p.tx = p.home.x; p.tz = p.home.z;
+      room = (typeof floodRoom === 'function') ? floodRoom(sx, sz) : null;
+    }
+  }
+  if (room) p.homeBox = { x0: room.minX, x1: room.maxX, z0: room.minZ, z1: room.maxZ };
+}
 function registerPet(f) {
   if (f.hunger == null) f.hunger = 100;          // 🍖 fullness 0–100 (decays while you play; refill at a food bowl)
   if (f.bond == null) f.bond = 20;               // ❤️ grows every time you play with / care for them
@@ -13856,6 +13892,7 @@ function registerPet(f) {
     if (f.cageKey) p.cageKey = f.cageKey;
     if (f.cageSlot != null && f.cageSlot !== '') p._cageSlot = +f.cageSlot;
   }
+  if (f.kind === 'cat' || f.kind === 'dog') bindPetHome(p);          // 🏠 keep it in its own house
   pets.push(p);
 }
 /* 🦜 BIRD FLIGHT — parrots/parakeets flit around the yard, swoop near you, land on trees & feeders,
@@ -14154,8 +14191,15 @@ function updatePets(dt, now) {
     if (p.timer <= 0) {                                                      // pick a fresh OPEN floor spot to amble to
       let tx = m.position.x, tz = m.position.z;
       for (let tries = 0; tries < 6; tries++) {
-        const cx = petClampX(p.home.x + (Math.random() * 2 - 1) * 5.5);     // roam a bit further & more freely
-        const cz = petClampX(p.home.z + (Math.random() * 2 - 1) * 5.5);
+        let cx, cz;
+        if (p.homeBox) {                                                   // 🏠 wander only WITHIN its own house
+          const b = p.homeBox;
+          cx = Math.round(b.x0 + Math.random() * (b.x1 - b.x0)) + 0.5;
+          cz = Math.round(b.z0 + Math.random() * (b.z1 - b.z0)) + 0.5;
+        } else {                                                          // placed in the open → amble around freely
+          cx = petClampX(p.home.x + (Math.random() * 2 - 1) * 5.5);
+          cz = petClampX(p.home.z + (Math.random() * 2 - 1) * 5.5);
+        }
         if (!petCellBlocked(cx, cz)) { tx = cx; tz = cz; break; }
       }
       p.tx = tx; p.tz = tz; p.timer = 1.5 + Math.random() * 2.8;
@@ -14761,6 +14805,16 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
       let o = petHit.object; while (o.parent && o.parent !== scene) o = o.parent;
       const pet = pets.find(p => p.f.mesh === o);
       if (pet) { openPetMenu(pet); return; }
+    }
+  }
+  // 1.8) in BREAK mode, tap a placed item (🐠 fish bowl, 🍎 apple…) to pick it up — even on a table inside a house
+  if (action === 'break' && placedFood.length) {
+    const fMeshes = placedFood.filter(f => f.kind !== 'cat' && f.kind !== 'dog' && f.kind !== 'bird').map(f => f.mesh);
+    const fhit = fMeshes.length ? raycaster.intersectObjects(fMeshes, true)[0] : null;
+    if (fhit) {
+      let o = fhit.object; while (o.parent && o.parent !== scene) o = o.parent;
+      const fi = placedFood.findIndex(ff => ff.mesh === o);
+      if (fi >= 0) { pickUpFood(fi); return; }
     }
   }
 
