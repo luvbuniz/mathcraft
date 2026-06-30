@@ -6329,6 +6329,15 @@ function submitFeed(val) {
 /* ════════════ 🚂 STEAM TRAIN RIDE (Country Western) — spend a ride ticket, load the coal, take a ride ════════════ */
 let TRAIN_POS = { x: 11, z: -11 };   // boarding point on the loop (set when the Western decor is built)
 function trainDist() { return G.world === 'west' ? Math.hypot(player.pos.x - TRAIN_POS.x, player.pos.z - TRAIN_POS.z) : 999; }
+// 🚂 is a cell on (or right beside) the Western train loop? Used to keep the track clear so nothing
+// gets built on it — and so decor never spawns on the rails.
+function nearWestTrack(x, z, margin) {
+  if (G.world !== 'west' || !westLoop || !westLoop.pts) return false;
+  margin = margin || 1.5;
+  const cx = x + 0.5, cz = z + 0.5;
+  for (const p of westLoop.pts) if (Math.hypot(p.x - cx, p.z - cz) < margin) return true;
+  return false;
+}
 let coalNeed = 0;
 function openTrainRide() {
   if (popupOpen || G.over || !G.running || trainRide) return;
@@ -6355,7 +6364,11 @@ function answerCoal(v) {
 }
 function startTrainRide() {
   if (!westTrainGroup || !westLoop) { endTrainRide(); return; }
-  trainRide = { t: 0, dur: 16, lastS: trainStartS, chuff: 0, whistled: false };
+  trainRide = { t: 0, dur: 16, lastS: trainStartS, chuff: 0, whistled: false, hidCars: [] };
+  // 🚗 tuck any parked car away for the lap so the train can't roll straight through it (Leo's trick!)
+  if (typeof cars !== 'undefined') for (const id in cars) {
+    if (cars[id].spawned && cars[id].group.visible) { cars[id].group.visible = false; trainRide.hidCars.push(id); }
+  }
   if (Sound.whistle) Sound.whistle();
   toast('🚂 WHOOO-WHOO! All aboard the Silver Creek Express — hold on tight for a lap around town!', 3200);
 }
@@ -6409,6 +6422,7 @@ function updateBuggyRide() {
   if (player.avatar) player.avatar.visible = false;   // you're up on the buggy
 }
 function endTrainRide() {
+  if (trainRide && trainRide.hidCars && typeof cars !== 'undefined') trainRide.hidCars.forEach(id => { if (cars[id]) cars[id].group.visible = true; });   // bring the parked car back
   if (westTrainGroup && westLoop) { const sp = loopSample(westLoop, trainStartS); westTrainGroup.position.set(sp.x, 0, sp.z); westTrainGroup.rotation.y = sp.h; }   // park back at the depot
   if (trainSteam) trainSteam._puffs.forEach(p => { p.life = 0; p.mesh.visible = false; });
   trainRide = null;
@@ -6429,7 +6443,7 @@ const POST_POS = { x: 9, z: -15 };
 function postDist() { return G.world === 'city' ? Math.hypot(player.pos.x - POST_POS.x, player.pos.z - POST_POS.z) : 999; }
 const REALTY_POS = { x: 14, z: -15 };                       // Reading Town's Stack Realty
 const COUNTRY_REALTY_POS = { x: -21, z: -2 };               // 🏡 Country Homes — west arm of the L
-const WEST_REALTY_POS = { x: 14.5, z: -13.5 };              // 🤠 Frontier Homes — east end of the Western main street, facing the build area
+const WEST_REALTY_POS = { x: 15, z: -16.5 };                // 🤠 Frontier Homes — on the main street (north of the train loop), facing the build area
 const REALTY_ROT = Math.PI / 2;                              // faces EAST, toward the player
 function realtyPos() { return G.world === 'meadow' ? COUNTRY_REALTY_POS : G.world === 'west' ? WEST_REALTY_POS : REALTY_POS; }
 function realtyDist() { return (G.world === 'city' || G.world === 'meadow' || G.world === 'west') ? Math.hypot(player.pos.x - realtyPos().x, player.pos.z - realtyPos().z) : 999; }
@@ -10188,8 +10202,8 @@ function buildWestDecor(g) {
   buildHorseBuggy(g, -12.5, -12.5, 2.6);                    // a hitched buggy out front of the saloon
   rentalBuggy = buildHorseBuggy(g, -2, -7, -0.3);           // 🐴 the RENTAL buggy near the entrance — rent it to ride!
   box(g, 0.12, 1.4, 0.12, 0x6b4a2c, -3.4, 0.7, -6); signOn(g, 'BUGGY RENTAL', 'Ride for 10 🪙!', 0x6b3a1a, 1.5, 0.7, -3.4, 1.55, -5.9);   // rental sign
-  buildFoodStall(g, -1, -12.5, 0, 'FUNNEL CAKES', 0xE07B2A, 0xE8C24A);
-  buildFoodStall(g, 2.6, -12.5, 0, 'CORN DOGS', 0xC0392B, 0x9a6b2a);
+  buildFoodStall(g, -1, -9.5, 0, 'FUNNEL CAKES', 0xE07B2A, 0xE8C24A);   // pulled INSIDE the loop, clear of the track
+  buildFoodStall(g, 2.6, -9.5, 0, 'CORN DOGS', 0xC0392B, 0x9a6b2a);
   buildDepot(g, 9.6, -15.8, 0);                             // station on the north strip, platform facing SOUTH onto the loop
   buildWesternRealty(g);                                    // 🤠 Frontier Homes — buy a cowboy house!
   buildWestStorefront(g, -1, -16.8, 'STACK LUMBER', 'Building • Hardware • Furnishings', 0xC2935A, 0xE3C36A);   // 🪵 the Stack Barn (building supplies) — themed
@@ -10217,10 +10231,15 @@ function buildWestDecor(g) {
   buildMineEntrance(g, 19, -20);
   buildCoveredWagon(g, 5, -8, -0.4);
   // props
-  [[-26, -7, 1.3], [25, -5, 1.0], [-20, 6, 0.95], [16, 5, 1.15], [-8, 9, 0.8], [13, 11, 1.05], [4, 3, 0.9]].forEach(([cx, cz, cs]) => cactus(g, cx, cz, cs));
-  hitchingPost(g, -15.5, -14.5); hitchingPost(g, -10, -14.4); hitchingPost(g, -2, -9.8);
-  if (typeof decoTree === 'function') { decoTree(g, -29, 2, 1.0); decoTree(g, 24, 9, 0.9); }   // a couple of cottonwoods at the edges
-  for (let i = 0; i < 5; i++) box(g, 0.74, 0.5, 0.52, 0xE3C34A, -19 + (i % 3) * 0.1, 0.27 + Math.floor(i / 3) * 0.5, -14.5);   // hay bales by the saloon
+  [[-26, -7, 1.3], [25, -5, 1.0], [-20, 6, 0.95], [10, 6, 1.15], [-6, 6, 0.8], [13, 12, 1.05], [4, 3, 0.9]].forEach(([cx, cz, cs]) => cactus(g, cx, cz, cs));   // (moved two cacti off the train loop)
+  hitchingPost(g, -15.5, -15.2); hitchingPost(g, -10, -15.2); hitchingPost(g, -2, -8.6);   // out front of the buildings, clear of the rails
+  if (typeof decoTree === 'function') { decoTree(g, -29, 2, 1.0); decoTree(g, 26, 10, 0.9); }   // a couple of cottonwoods at the edges (well outside the loop)
+  for (let i = 0; i < 5; i++) box(g, 0.74, 0.5, 0.52, 0xE3C34A, -19 + (i % 3) * 0.1, 0.27 + Math.floor(i / 3) * 0.5, -15.4);   // hay bales by the saloon
+  // 🌲 safety net: lift any cottonwood (or future prop tree) that ended up sitting on the rails
+  if (westLoop && westLoop.pts) for (let i = decoTrees.length - 1; i >= 0; i--) {
+    const t = decoTrees[i]; if (t.parent !== g) continue;
+    if (westLoop.pts.some(p => Math.hypot(p.x - t.x, p.z - t.z) < 2.2)) { g.remove(t.grp); decoTrees.splice(i, 1); }
+  }
 }
 buildMeadowDecor(worldDecor.meadow);
 buildCityDecor(worldDecor.city);
@@ -11495,6 +11514,7 @@ function placeSelectedAt(x, z, blockY) {
   if (inShopZone(x, z)) { toast('🏬 That spot belongs to a shop — build a little further away!', 2200); return false; }
   if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 3) { toast('🌀 Keep the travel portal clear — build a bit further away!', 2200); return false; }
   if (G.world === 'city' && CITY_SOLID.has(x + ',' + z)) { toast('🏠 That\'s a neighbor\'s house — build a bit closer in!', 2000); return false; }
+  if (nearWestTrack(x, z, 1.5)) { toast('🚂 That\'s the train track — keep it clear so the Silver Creek Express can roll through!', 3000); return false; }
   const slot = G.selectedSlot;
   if (slot === 'paint') { toast('🎨 Paint mode — tap a wall block to paint it!', 1600); return false; }   // paint is tap-a-wall, not place-on-ground
   if (slot === 'door') {
