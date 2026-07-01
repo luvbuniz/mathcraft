@@ -53,6 +53,16 @@ Each world also looks the part: 🌳 Math Meadow has wildflowers and green grass
 🏘️ Reading Town has a lit skyline on the horizon, and 🏖️ Spanish Beach is a sandy
 island ringed by ocean with palm trees and beach umbrellas.
 
+🕹️ **The Stack Arcade** sits next to the Cinema in Reading Town. Word games cost
+**2 🪙 a play** (coins come from learning!) and pay out **🎟️ tickets**:
+**🔤 Word Hunt** is a tap-friendly word search, and **⛄ Snowman Spell** is a
+guess-the-letters game where every word comes with its sentence as a clue —
+save the snowman before the sun melts him! Winning opens a short no-reading
+**✨ Gloomy Bop** bonus round, and tickets buy **arcade-only prizes** at the
+counter (a trophy, a claw-machine bear, a glowing neon OPEN sign, and a mini
+arcade cabinet) to place in your house. Tickets never turn back into coins, so
+the arcade is where learning money gets spent — never a coin farm.
+
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
 to another world without going back to the home screen — your house in each world
 is saved separately, so you can build different houses in different places.

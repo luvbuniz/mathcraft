@@ -165,6 +165,18 @@ build budget on one or two "wow" features.
 - Coin rebalance (Library pays most; spelling bee no longer farmable).
 - 4 Reading Town **city vehicles**: fire truck 🚒, ambulance 🚑 (both siren+lights), taxi 🚕, bus 🚌.
 - Whole-item **pools** (3 sizes) + **Mega Pool water slide** (first-person ride).
+- 🕹️ **Stack Arcade** (Reading Town, next door to the Cinema): **Word Hunt**
+  (7×7 tap-start/tap-end word search) + **Snowman Spell** (friendly hangman — no
+  gallows — with sentence clues from the graded spelling lists), 2-coin entry,
+  🎟️ ticket payouts scaled by level, a **Gloomy Bop** no-reading bonus round
+  after wins (cleaner spelling = longer bonus), and a ticket-only **prize
+  counter** (arcade trophy, claw-machine bear, neon OPEN sign, mini arcade
+  cabinet — all placeable furniture). Economy: coins are the entry fee and
+  tickets never convert back, so the arcade is a coin *sink*, not a farm; wins
+  record spelling practice on the parent dashboard but grant **no stars/levels**.
+- ✨ **Graphics pass**: real-time soft shadows across every world, hemisphere
+  sky/ground lighting (themed per world), round leafy trees, and natural
+  noise-blended grass replacing the checkerboard.
 
 ### 🎬 Grammar Cinema (Reading Town) — HIGH value, build next-ish
 Grammar is an underserved gap and rounds Reading Town into three pillars:
@@ -190,8 +202,8 @@ Leveling up grants a bonus quest that **rotates through mini-games**, length/dif
 **auto-scaled by level** (younger kids get easier ones — no manual age setting). Pool so far:
 - ✅ **Treasure Map** (read X,Y coordinates), **Describing Words** (adjectives),
   **Unscramble** (anagram, picture hint, 3–6 letters by level). *Shipped.*
-- 🔜 **Word Search** — small grid (e.g. 7×7), find 3–4 themed words; tap start+end cell
-  (easier than drag on touch). Gate to higher levels (~older kids). Medium build.
+- ✅ **Word Search** — shipped as **Word Hunt in the 🕹️ Stack Arcade** instead (7×7,
+  tap start+end cell — easier than drag on touch; diagonals join at spelling level 3+).
 - 🤔 **Mini Crossword** — *older kids only* (younger won't get it, per parent). A 5×5 with
   picture/short clues is doable but a **bigger build**; do it after word search.
 - ⏭️ **Sudoku** — honest take: the "too hard for little kids" worry is right, and even a

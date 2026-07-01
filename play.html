@@ -1434,6 +1434,19 @@
   </div>
 </div>
 
+<!-- ================= 🕹️ STACK ARCADE POPUP ================= -->
+<div class="popup" id="arcadePopup">
+  <div class="popupCard" style="width:min(680px,96vw); text-align:center">
+    <div style="display:flex; justify-content:space-between; align-items:center">
+      <div id="arcadeWallet" style="font-weight:800; color:#7a4ea0; font-size:15px"></div>
+      <button class="closeX" id="arcadeClose" title="Close" aria-label="Close">✕</button>
+    </div>
+    <h2 id="arcadeTitle" style="color:#d63d8f; margin:2px 0 4px; font-size:clamp(22px,4vw,30px)">🕹️ Stack Arcade</h2>
+    <div id="arcadeBody"></div>
+    <div id="arcadeMsg" style="min-height:18px; font-weight:700; margin-top:8px; line-height:1.4"></div>
+  </div>
+</div>
+
 <!-- ================= MI VOCABULARIO POPUP ================= -->
 <div class="popup" id="vocabPopup" style="z-index:66">
   <div class="popupCard" style="width:min(460px,94vw); text-align:center">
@@ -2880,8 +2893,8 @@ const AVATARS = [
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
-  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, berries: 0, solved: 0, balls: 0,
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 },
+  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, berries: 0, solved: 0, balls: 0,
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -3232,6 +3245,23 @@ function recordWrong(eq, fast) {
   profile.wrongByDay[today] = (profile.wrongByDay[today] || 0) + 1;
   if (eq) { const op = eq.skill || 'other'; profile.byOpWrong[op] = (profile.byOpWrong[op] || 0) + 1; }
   if (fast) profile.fastWrong = (profile.fastWrong || 0) + 1;   // a quick wrong tap = a likely guess
+  profileDirty = true;
+}
+/* Arcade practice: counts toward the dashboard's skill chart and accuracy, but awards NO
+   stars or levels — arcade games replay for pocket change, and levels must never be farmable. */
+function recordPractice(skill, right) {
+  const today = new Date().toISOString().slice(0, 10);
+  profile.byOp = profile.byOp || {}; profile.byOpWrong = profile.byOpWrong || {};
+  if (right) {
+    profile.totalSolved++;
+    profile.byDay = profile.byDay || {}; profile.byDay[today] = (profile.byDay[today] || 0) + 1;
+    profile.byOp[skill] = (profile.byOp[skill] || 0) + 1;
+    if (typeof player !== 'undefined' && player) player.happyUntil = performance.now() + 1500;
+  } else {
+    profile.totalWrong = (profile.totalWrong || 0) + 1;
+    profile.wrongByDay = profile.wrongByDay || {}; profile.wrongByDay[today] = (profile.wrongByDay[today] || 0) + 1;
+    profile.byOpWrong[skill] = (profile.byOpWrong[skill] || 0) + 1;
+  }
   profileDirty = true;
 }
 function recordSolve(eq) {
@@ -3811,7 +3841,7 @@ function saveGame() {
   try {
     localStorage.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
-      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, berries: G.berries, solved: G.solved,
+      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, berries: G.berries, solved: G.solved,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel,
@@ -3871,6 +3901,7 @@ function restoreGame(s) {
   G.homes = s.homes || [];
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0;
+  G.tickets = s.tickets || 0;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
   Object.assign(G.owned, s.owned || {});
@@ -3960,8 +3991,8 @@ function resetWorld() {
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
-  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.berries = 0; G.solved = 0; G.balls = 0;
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0 };
+  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, petfood: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -5587,6 +5618,8 @@ const REALTY_POS = { x: 14, z: -15 };
 function realtyDist() { return G.world === 'city' ? Math.hypot(player.pos.x - REALTY_POS.x, player.pos.z - REALTY_POS.z) : 999; }
 const CINEMA_POS = { x: -15, z: -15 };
 function cinemaDist() { return G.world === 'city' ? Math.hypot(player.pos.x - CINEMA_POS.x, player.pos.z - CINEMA_POS.z) : 999; }
+const ARCADE_POS = { x: -20.5, z: -15 };      // 🕹️ next door to the Cinema — the fun corner of the high street
+function arcadeDist() { return G.world === 'city' ? Math.hypot(player.pos.x - ARCADE_POS.x, player.pos.z - ARCADE_POS.z) : 999; }
 /* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
 const HOME_MODELS = [
   { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard' },
@@ -6616,6 +6649,347 @@ function finishLib() {
    The word is spoken aloud (Web Speech API). Younger spellers TAP the right spelling from
    close decoys; older spellers TYPE it. Rated on the first answer, like reading comprehension. */
 let spell = null;
+/* ============================ 🕹️ STACK ARCADE (Reading Town) ============================
+   The fun corner of the high street. Word games COST a couple of coins to play (coins come
+   from real learning) and pay out 🎟️ tickets; tickets buy arcade-only prizes at the counter.
+   Winning a word game unlocks a short no-reading BONUS round (Gloomy Bop!) — cleaner spelling
+   earns a longer bonus. Tickets never convert back to coins, so the arcade is a place where
+   learning money gets SPENT, not minted — it can't be farmed. */
+const ARCADE_PLAY_COST = 2;                   // coins per game — a real arcade takes tokens!
+const ARCADE_PRIZES = [
+  { id: 'trophycup', icon: '🏆', name: 'Arcade Trophy', cost: 12, desc: 'A shiny gold cup for your house.' },
+  { id: 'plushie',   icon: '🧸', name: 'Claw-Machine Bear', cost: 18, desc: 'A soft bear plushie — hug tested.' },
+  { id: 'neonsign',  icon: '🪧', name: 'Neon OPEN Sign', cost: 30, desc: 'A glowing sign for your front yard.' },
+  { id: 'arcadecab', icon: '🕹️', name: 'Mini Arcade Cabinet', cost: 45, desc: 'Your very own machine at home!' }
+];
+let arcade = null;                            // live state for whichever machine is running
+function arcadeLevel() {                      // same 1–5 level the Spelling Bee uses
+  if (G.spellLevel == null) G.spellLevel = Math.max(1, Math.min(5, profile.spellLevel || G.grade));
+  return Math.max(1, Math.min(5, G.spellLevel));
+}
+function arcadeWallet() { $('arcadeWallet').innerHTML = '🪙 ' + G.coins + ' &nbsp;•&nbsp; 🎟️ ' + (G.tickets || 0); }
+function openArcade() {
+  if (popupOpen || G.over || !G.running) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  $('arcadePopup').style.display = 'flex';
+  arcadeLobby();
+}
+function closeArcade() {
+  if (arcade && arcade.timer) clearInterval(arcade.timer);
+  arcade = null;
+  $('arcadePopup').style.display = 'none'; popupOpen = false;
+}
+function arcadeBtn(html, color, onclick) {
+  const b = document.createElement('button');
+  b.style.cssText = 'font-weight:bold; padding:12px 14px; border-radius:14px; border:none; cursor:pointer; color:#fff; font-size:16px; line-height:1.3; box-shadow:0 4px 0 rgba(0,0,0,0.25); background:' + color;
+  b.innerHTML = html; b.onclick = () => { Sound.click(); onclick(); };
+  return b;
+}
+function arcadeLobby() {
+  if (arcade && arcade.timer) clearInterval(arcade.timer);
+  arcade = null;
+  arcadeWallet();
+  $('arcadeTitle').innerHTML = '🕹️ Stack Arcade';
+  $('arcadeMsg').textContent = '';
+  const body = $('arcadeBody');
+  body.innerHTML = '<div style="color:#6c84a6; font-size:14px; margin-bottom:10px">Play word games to win <b>🎟️ tickets</b> — beat one and the ✨ <b>bonus round</b> opens! Trade tickets for prizes at the counter.</div>';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex; flex-direction:column; gap:10px';
+  const canPay = G.coins >= ARCADE_PLAY_COST;
+  wrap.appendChild(arcadeBtn('🔤 WORD HUNT <small style="opacity:.85">— find the hidden words</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#8e44ad' : '#b3a4c4', () => startWordHunt()));
+  wrap.appendChild(arcadeBtn('⛄ SNOWMAN SPELL <small style="opacity:.85">— guess letters, save him!</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2980b9' : '#9fb8ca', () => startSnowman()));
+  wrap.appendChild(arcadeBtn('🎟️ PRIZE COUNTER <small style="opacity:.85">— spend your tickets</small>', '#27ae60', () => arcadePrizes()));
+  body.appendChild(wrap);
+  if (!canPay) { $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🪙 — earn coins at the Library, Post Office & Cinema!'; }
+}
+function arcadePay() {
+  if (G.coins < ARCADE_PLAY_COST) {
+    $('arcadeMsg').style.color = '#c0392b';
+    $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🪙 — earn coins by learning, then come play!';
+    return false;
+  }
+  G.coins -= ARCADE_PLAY_COST; Sound.coin(); refreshHUD(); arcadeWallet();
+  $('arcadeMsg').textContent = '';
+  return true;
+}
+function pickArcadeWords(n, maxLen) {
+  const lvl = arcadeLevel();
+  const pool = (SPELL_WORDS[lvl] || SPELL_WORDS[2]).filter(w => w[0].length <= maxLen && w[0].length >= 3);
+  const out = [], used = new Set();
+  let guard = 500;
+  while (out.length < n && guard--) {
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick && !used.has(pick[0])) { used.add(pick[0]); out.push(pick); }
+  }
+  return out;
+}
+/* ---- 🔤 WORD HUNT: a 7×7 word search. Tap the FIRST letter, then the LAST letter. ---- */
+function startWordHunt() {
+  if (!arcadePay()) return;
+  const S = 7, lvl = arcadeLevel();
+  const words = pickArcadeWords(4, S);
+  const grid = Array.from({ length: S }, () => Array(S).fill(null));
+  const dirs = lvl >= 3 ? [[1, 0], [0, 1], [1, 1]] : [[1, 0], [0, 1]];   // little kids: across & down only
+  const placed = [];
+  for (const [word, sentence] of words) {
+    const W = word.toUpperCase();
+    for (let t = 0; t < 200; t++) {
+      const d = dirs[Math.floor(Math.random() * dirs.length)];
+      const sx = Math.floor(Math.random() * (S - (W.length - 1) * d[0]));
+      const sy = Math.floor(Math.random() * (S - (W.length - 1) * d[1]));
+      let ok = true;
+      for (let i = 0; i < W.length; i++) { const c = grid[sy + d[1] * i][sx + d[0] * i]; if (c && c !== W[i]) { ok = false; break; } }
+      if (!ok) continue;
+      for (let i = 0; i < W.length; i++) grid[sy + d[1] * i][sx + d[0] * i] = W[i];
+      placed.push({ word: W, sentence, found: false });
+      break;
+    }
+  }
+  const FILLER = 'AABCDEEFGHIIJKLMNOOPQRSTUUVWXYZ';         // vowel-weighted so it reads word-ish
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (!grid[y][x]) grid[y][x] = FILLER[Math.floor(Math.random() * FILLER.length)];
+  arcade = { kind: 'hunt', S, grid, words: placed, anchor: null, wrongPicks: 0, ticketsWon: 0 };
+  renderWordHunt();
+}
+function huntCellAt(x, y) { return document.querySelector('.huntCell[data-x="' + x + '"][data-y="' + y + '"]'); }
+function huntBaseStyle(el) {
+  if (el.dataset.found === '1') return;                     // found cells keep their green
+  el.style.background = '#faf6ff'; el.style.borderColor = '#d9c8ec'; el.style.color = '#5a3f7a';
+}
+function renderWordHunt() {
+  const a = arcade, S = a.S;
+  $('arcadeTitle').innerHTML = '🔤 Word Hunt';
+  arcadeWallet();
+  let h = '<div style="color:#6c84a6; font-size:13px; margin-bottom:6px">Tap the <b>first</b> letter of a word, then its <b>last</b> letter!</div>';
+  h += '<div style="display:grid; grid-template-columns:repeat(' + S + ',1fr); gap:4px; max-width:340px; margin:0 auto">';
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    h += '<button class="huntCell" data-x="' + x + '" data-y="' + y + '" style="aspect-ratio:1; font-weight:800; font-size:17px; border-radius:9px; border:2px solid #d9c8ec; background:#faf6ff; color:#5a3f7a; cursor:pointer; padding:0">' + a.grid[y][x] + '</button>';
+  }
+  h += '</div><div id="huntWords" style="display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:10px"></div>';
+  $('arcadeBody').innerHTML = h;
+  document.querySelectorAll('.huntCell').forEach(c => c.onclick = () => huntTap(+c.dataset.x, +c.dataset.y, c));
+  renderHuntWords();
+}
+function renderHuntWords() {
+  const el = document.getElementById('huntWords'); if (!el || !arcade) return;
+  el.innerHTML = arcade.words.map(w =>
+    '<span style="padding:4px 10px; border-radius:999px; font-weight:800; font-size:14px; ' +
+    (w.found ? 'background:#d9f5e0; color:#2f8a52; text-decoration:line-through' : 'background:#f0e8fb; color:#7a4ea0') + '">' + w.word.toLowerCase() + '</span>').join('');
+}
+function huntTap(x, y, cell) {
+  const a = arcade; if (!a || a.kind !== 'hunt') return;
+  if (!a.anchor) {
+    a.anchor = { x, y };
+    cell.style.background = '#ffe9a8'; cell.style.borderColor = '#e8b93e';
+    Sound.click(); return;
+  }
+  const prev = huntCellAt(a.anchor.x, a.anchor.y);
+  if (a.anchor.x === x && a.anchor.y === y) { if (prev) huntBaseStyle(prev); a.anchor = null; return; }   // same cell = cancel
+  const dx = Math.sign(x - a.anchor.x), dy = Math.sign(y - a.anchor.y);
+  const len = Math.max(Math.abs(x - a.anchor.x), Math.abs(y - a.anchor.y)) + 1;
+  const straight = (a.anchor.x + dx * (len - 1) === x) && (a.anchor.y + dy * (len - 1) === y);
+  if (!straight) {                                          // not in a line — treat the tap as a fresh start
+    if (prev) huntBaseStyle(prev);
+    a.anchor = { x, y };
+    cell.style.background = '#ffe9a8'; cell.style.borderColor = '#e8b93e';
+    return;
+  }
+  let s = ''; const cells = [];
+  for (let i = 0; i < len; i++) { const cx = a.anchor.x + dx * i, cy = a.anchor.y + dy * i; s += a.grid[cy][cx]; cells.push([cx, cy]); }
+  const rev = s.split('').reverse().join('');
+  const hit = a.words.find(w => !w.found && (w.word === s || w.word === rev));
+  if (prev) huntBaseStyle(prev);
+  a.anchor = null;
+  if (hit) {
+    hit.found = true; Sound.correct();
+    cells.forEach(([cx, cy]) => { const el = huntCellAt(cx, cy); if (el) { el.dataset.found = '1'; el.style.background = '#c8f0d2'; el.style.borderColor = '#57b06f'; el.style.color = '#22633a'; } });
+    const t = arcadeLevel() >= 3 ? 2 : 1;
+    a.ticketsWon += t; G.tickets = (G.tickets || 0) + t;
+    recordPractice('spelling', true);
+    $('arcadeMsg').style.color = '#2f8a52';
+    $('arcadeMsg').innerHTML = '✓ <b>' + hit.word.toLowerCase() + '</b> +' + t + ' 🎟️ — <i>' + hit.sentence + '</i>';
+    arcadeWallet(); renderHuntWords();
+    if (a.words.every(w => w.found)) finishHunt();
+  } else {
+    a.wrongPicks++;
+    Sound.wrong();
+    $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '✗ Not one of the hidden words — look again!';
+  }
+}
+function finishHunt() {
+  const a = arcade;
+  const bonus = 2; G.tickets += bonus; a.ticketsWon += bonus;
+  Sound.fanfare && Sound.fanfare();
+  arcadeWallet();
+  arcadeGameOver('🎉 You found them all! <b>+' + a.ticketsWon + ' 🎟️</b>', Math.max(0, 6 - a.wrongPicks));
+}
+/* ---- ⛄ SNOWMAN SPELL: guess letters before the sun melts him (a friendly hangman) ---- */
+function startSnowman() {
+  if (!arcadePay()) return;
+  const pick = pickArcadeWords(1, 9)[0];
+  arcade = { kind: 'snow', word: pick[0].toUpperCase(), sentence: pick[1], hits: new Set(), used: new Set(), misses: 0, maxMiss: 6, done: false };
+  renderSnowman();
+}
+function renderSnowman() {
+  const a = arcade;
+  $('arcadeTitle').innerHTML = '⛄ Snowman Spell';
+  arcadeWallet();
+  const melt = a.misses / a.maxMiss;                                              // 0 → 1
+  const blanked = a.sentence.replace(new RegExp(a.word, 'ig'), '_____');
+  let h = '<div style="height:104px; position:relative; overflow:hidden">' +
+    '<div style="position:absolute; right:10px; top:2px; font-size:' + Math.round(16 + melt * 30) + 'px">☀️</div>' +
+    '<div style="font-size:80px; line-height:1; position:absolute; left:50%; bottom:2px; transform:translateX(-50%) scaleY(' + (a.misses >= a.maxMiss ? 1 : 1 - melt * 0.75).toFixed(2) + '); transform-origin:bottom">' + (a.misses >= a.maxMiss ? '💧' : '⛄') + '</div>' +
+    '<div style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:' + Math.round(8 + melt * 140) + 'px; height:9px; border-radius:50%; background:#9fd8f0"></div></div>';
+  h += '<div style="display:flex; gap:6px; justify-content:center; margin:8px 0 4px">' +
+    a.word.split('').map(ch => '<span style="width:28px; height:38px; border-bottom:4px solid #7a4ea0; font-size:26px; font-weight:800; color:#5a3f7a; display:inline-block">' + (a.hits.has(ch) || a.done ? ch : '') + '</span>').join('') + '</div>';
+  h += '<div style="color:#6c84a6; font-size:14px; margin-bottom:8px">Clue: <i>' + blanked + '</i></div>';
+  h += '<div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center; max-width:430px; margin:0 auto">';
+  for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const used = a.used.has(ch) || a.done;
+    h += '<button class="snowKey" data-ch="' + ch + '" ' + (used ? 'disabled' : '') + ' style="width:33px; height:38px; border-radius:8px; border:none; font-weight:800; font-size:16px; cursor:pointer; ' +
+      (used ? 'background:#e8e4ee; color:#b8b0c8' : 'background:#7a4ea0; color:#fff; box-shadow:0 3px 0 #5a3a78') + '">' + ch + '</button>';
+  }
+  h += '</div>';
+  if (!a.done) h += '<div style="margin-top:6px; color:#8a7aa0; font-size:13px">❄️ ' + (a.maxMiss - a.misses) + ' wrong guesses before he melts!</div>';
+  $('arcadeBody').innerHTML = h;
+  document.querySelectorAll('.snowKey').forEach(k => k.onclick = () => snowGuess(k.dataset.ch));
+}
+function snowGuess(ch) {
+  const a = arcade; if (!a || a.kind !== 'snow' || a.done) return;
+  a.used.add(ch);
+  if (a.word.indexOf(ch) >= 0) {
+    a.hits.add(ch); Sound.correct();
+    if (a.word.split('').every(c => a.hits.has(c))) {                             // ⛄ saved!
+      a.done = true;
+      recordPractice('spelling', true);
+      const t = 2 + (a.misses <= 1 ? 2 : a.misses <= 3 ? 1 : 0) + (arcadeLevel() >= 4 ? 1 : 0);
+      G.tickets = (G.tickets || 0) + t;
+      if (typeof speakWord === 'function') { try { speakWord(a.word.toLowerCase()); } catch (e) {} }
+      Sound.fanfare && Sound.fanfare();
+      renderSnowman();
+      arcadeGameOver('⛄ You saved him! <b>' + a.word.toLowerCase() + '</b> +' + t + ' 🎟️', Math.max(0, a.maxMiss - a.misses));
+      return;
+    }
+  } else {
+    a.misses++;
+    Sound.wrong();
+    if (a.misses >= a.maxMiss) {                                                  // 💧 melted
+      a.done = true;
+      recordPractice('spelling', false);
+      renderSnowman();
+      $('arcadeMsg').style.color = '#c0392b';
+      $('arcadeMsg').innerHTML = '💧 Oh no, he melted! The word was <b>' + a.word.toLowerCase() + '</b> — <i>' + a.sentence + '</i><br><span style="color:#8a7aa0; font-size:0.86em">He\'ll be rebuilt for next time — you\'ve got this! 💪</span>';
+      const bar = document.createElement('div');
+      bar.style.cssText = 'margin-top:10px; display:flex; gap:9px; justify-content:center; flex-wrap:wrap';
+      bar.appendChild(arcadeBtn('🔁 Try again (' + ARCADE_PLAY_COST + ' 🪙)', '#2980b9', () => startSnowman()));
+      bar.appendChild(arcadeBtn('🕹️ Arcade lobby', '#8a7aa0', () => arcadeLobby()));
+      $('arcadeBody').appendChild(bar);
+      return;
+    }
+  }
+  renderSnowman();
+}
+/* ---- ✨ the win screen: collect tickets, then a no-reading BONUS round ---- */
+function arcadeGameOver(msgHTML, bonusSeconds) {
+  $('arcadeMsg').style.color = '#2f8a52';
+  $('arcadeMsg').innerHTML = msgHTML;
+  if (arcade) arcade.kind = 'over';
+  const secs = 10 + bonusSeconds;                          // clean spelling = a longer bonus round
+  const bar = document.createElement('div');
+  bar.style.cssText = 'margin-top:10px; display:flex; gap:9px; justify-content:center; flex-wrap:wrap';
+  bar.appendChild(arcadeBtn('✨ BONUS ROUND: Gloomy Bop! <small>(' + secs + 's)</small>', '#d63d8f', () => startBop(secs)));
+  bar.appendChild(arcadeBtn('🕹️ Arcade lobby', '#8a7aa0', () => arcadeLobby()));
+  $('arcadeBody').appendChild(bar);
+}
+/* ---- ✨ GLOOMY BOP: tap the Gloomies as they pop up. Pure fun — the dessert after the word game. ---- */
+function startBop(secs) {
+  if (arcade && arcade.timer) clearInterval(arcade.timer);
+  arcade = { kind: 'bop', left: secs, score: 0, timer: null, active: -1, star: false };
+  $('arcadeTitle').innerHTML = '✨ Gloomy Bop!';
+  $('arcadeMsg').textContent = '';
+  let h = '<div style="color:#6c84a6; font-size:14px; margin-bottom:8px">Bop the 💜 Gloomies! ⭐ is worth 2 🎟️</div>';
+  h += '<div id="bopTime" style="font-weight:800; color:#d63d8f; font-size:18px; margin-bottom:8px">⏱️ ' + secs + 's</div>';
+  h += '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:300px; margin:0 auto">';
+  for (let i = 0; i < 9; i++) h += '<button class="bopHole" data-i="' + i + '" style="aspect-ratio:1; font-size:38px; border-radius:16px; border:none; background:#3a2a52; cursor:pointer"></button>';
+  h += '</div><div id="bopScore" style="font-weight:800; color:#7a4ea0; margin-top:8px">🎟️ 0</div>';
+  $('arcadeBody').innerHTML = h;
+  document.querySelectorAll('.bopHole').forEach(b => b.onclick = () => bopTap(+b.dataset.i, b));
+  let tick = 0;
+  arcade.timer = setInterval(() => {
+    const a = arcade; if (!a || a.kind !== 'bop') return;
+    tick++;
+    if (tick % 2 === 0) {                                  // every ~0.8s the Gloomy pops somewhere new
+      document.querySelectorAll('.bopHole').forEach(b => { b.textContent = ''; });
+      a.active = Math.floor(Math.random() * 9);
+      a.star = Math.random() < 0.18;
+      const el = document.querySelector('.bopHole[data-i="' + a.active + '"]');
+      if (el) el.textContent = a.star ? '⭐' : '💜';
+    }
+    a.left -= 0.4;
+    const t = document.getElementById('bopTime'); if (t) t.textContent = '⏱️ ' + Math.max(0, Math.ceil(a.left)) + 's';
+    if (a.left <= 0) finishBop();
+  }, 400);
+}
+function bopTap(i, el) {
+  const a = arcade; if (!a || a.kind !== 'bop') return;
+  if (i === a.active && el.textContent) {
+    const t = a.star ? 2 : 1;
+    a.score += t; G.tickets = (G.tickets || 0) + t;
+    a.active = -1;
+    el.textContent = '💥';
+    Sound.pop && Sound.pop();
+    const sc = document.getElementById('bopScore'); if (sc) sc.textContent = '🎟️ ' + a.score;
+    arcadeWallet();
+  }
+}
+function finishBop() {
+  const a = arcade;
+  if (a && a.timer) clearInterval(a.timer);
+  const sc = a ? a.score : 0;
+  arcade = { kind: 'over' };
+  Sound.fanfare && Sound.fanfare();
+  $('arcadeMsg').style.color = '#2f8a52';
+  $('arcadeMsg').innerHTML = '✨ Bonus over — you bopped <b>+' + sc + ' 🎟️</b>!';
+  const bar = document.createElement('div');
+  bar.style.cssText = 'margin-top:10px; display:flex; gap:9px; justify-content:center';
+  bar.appendChild(arcadeBtn('🕹️ Back to the arcade', '#8e44ad', () => arcadeLobby()));
+  $('arcadeBody').appendChild(bar);
+}
+/* ---- 🎟️ PRIZE COUNTER: arcade-exclusive furniture, tickets only ---- */
+function arcadePrizes() {
+  if (arcade && arcade.timer) clearInterval(arcade.timer);
+  arcade = { kind: 'prizes' };
+  $('arcadeTitle').innerHTML = '🎟️ Prize Counter';
+  $('arcadeMsg').textContent = '';
+  arcadeWallet();
+  const body = $('arcadeBody');
+  body.innerHTML = '<div style="color:#6c84a6; font-size:14px; margin-bottom:8px">Arcade-only prizes! Place them at home from your 🎒 backpack.</div>';
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex; flex-direction:column; gap:9px';
+  ARCADE_PRIZES.forEach(p => {
+    const row = document.createElement('div');
+    row.style.cssText = 'background:#f4f7fb; border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px; text-align:left';
+    row.innerHTML = '<div style="font-size:26px">' + p.icon + '</div><div style="flex:1"><b style="color:#34495e">' + p.name + '</b> <small style="color:#8a7aa0">' + ((G.furniture[p.id] || 0) ? '×' + G.furniture[p.id] : '') + '</small><br><small style="color:#6c84a6">' + p.desc + '</small></div>';
+    const can = (G.tickets || 0) >= p.cost;
+    const b = document.createElement('button');
+    b.style.cssText = 'font-weight:bold; padding:10px 14px; border-radius:12px; color:#fff; white-space:nowrap; border:none; cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,0.2); background:' + (can ? '#27ae60' : '#a5c4ae');
+    b.textContent = (can ? '' : '🔒 ') + p.cost + ' 🎟️';
+    b.disabled = !can;
+    b.onclick = () => {
+      Sound.coin();
+      G.tickets -= p.cost;
+      G.furniture[p.id] = (G.furniture[p.id] || 0) + 1;
+      toast('🎁 ' + p.icon + ' ' + p.name + ' — it\'s in your 🎒 backpack!', 2600);
+      arcadePrizes();
+    };
+    row.appendChild(b); list.appendChild(row);
+  });
+  body.appendChild(list);
+  const bar = document.createElement('div');
+  bar.style.cssText = 'margin-top:10px';
+  bar.appendChild(arcadeBtn('🕹️ Arcade lobby', '#8a7aa0', () => arcadeLobby()));
+  body.appendChild(bar);
+}
+
 const SPELL_WORDS = {
   1: [['cat', 'The cat sat on the soft mat.'], ['dog', 'My dog likes to run and play.'], ['sun', 'The sun is bright and warm.'], ['red', 'She has a red hat.'], ['box', 'Put the toys in the box.'], ['fish', 'A little fish swam in the pond.'], ['jump', 'I can jump very high.'], ['milk', 'He drank a glass of milk.'], ['hand', 'Raise your hand to answer.'], ['nest', 'The bird built a nest.'], ['frog', 'The frog hopped away.'], ['star', 'One star shone in the sky.'], ['bed', 'I sleep in my bed.'], ['cup', 'She drank from a cup.'], ['hat', 'He wore a warm hat.'], ['pig', 'The pig rolled in mud.'], ['bus', 'We ride the bus to school.'], ['ten', 'I can count to ten.'], ['pen', 'I write with a pen.'], ['mom', 'My mom is kind.'], ['dad', 'My dad reads to me.'], ['big', 'The elephant is big.'], ['run', 'I like to run fast.'], ['sit', 'Please sit down.'], ['hop', 'The bunny can hop.'], ['bug', 'A bug is on the leaf.'], ['map', 'We read the map.'], ['leg', 'I hurt my leg.'], ['fox', 'The fox is quick.'], ['sock', 'I lost one sock.'], ['duck', 'The duck says quack.'], ['bell', 'Ring the bell.'], ['ball', 'Throw me the ball.'], ['kite', 'We fly a kite.'], ['mat', 'The cat sat on the mat.'], ['rat', 'A little rat ran by.'], ['bat', 'The bat can fly at night.'], ['can', 'I can open the can.'], ['fan', 'The fan keeps me cool.'], ['man', 'The man waved hello.'], ['pan', 'Mom cooks in the pan.'], ['van', 'We rode in the van.'], ['cap', 'He wore a blue cap.'], ['lap', 'The cat sat on my lap.'], ['nap', 'The baby took a nap.'], ['tap', 'I tap on the drum.'], ['bag', 'I packed my bag.'], ['tag', 'We play a game of tag.'], ['wag', 'Dogs wag their tails.'], ['jam', 'I like jam on toast.'], ['ham', 'We ate ham for lunch.'], ['ram', 'The ram has big horns.'], ['pot', 'Soup is in the pot.'], ['dot', 'Draw a little dot.'], ['hot', 'The soup is hot.'], ['log', 'A frog sat on the log.'], ['jog', 'We jog in the park.'], ['fog', 'The fog is thick.'], ['mug', 'I drink from a mug.'], ['rug', 'The cat naps on the rug.'], ['hug', 'Give me a big hug.'], ['tug', 'We tug on the rope.'], ['net', 'The fish is in the net.'], ['jet', 'The jet flew fast.'], ['wet', 'My socks are wet.'], ['vet', 'The vet helps my dog.'], ['pet', 'I love my pet.'], ['bit', 'I took a small bit.'], ['fit', 'These shoes fit me.'], ['hit', 'He hit the ball.'], ['kit', 'I have a paint kit.'], ['lip', 'I bit my lip.'], ['tip', 'Walk on the tip of your toes.'], ['dip', 'We dip chips in salsa.'], ['rip', 'Do not rip the paper.'], ['zip', 'Zip up your coat.'], ['win', 'I hope we win.'], ['pin', 'The pin is sharp.'], ['fin', 'A fish has a fin.'], ['bin', 'Toss it in the bin.'], ['tin', 'The lid is made of tin.'], ['dig', 'Dogs dig in the dirt.'], ['fig', 'A fig is a sweet fruit.'], ['wig', 'She wore a funny wig.'], ['mud', 'The pig likes mud.'], ['bud', 'A flower bud will open.'], ['cub', 'The bear cub is small.'], ['tub', 'I sit in the tub.'], ['rub', 'Rub your hands to stay warm.'], ['nut', 'A squirrel hid a nut.'], ['cut', 'Be careful, do not cut it.'], ['hut', 'We built a little hut.'], ['gum', 'Do not swallow your gum.'], ['sum', 'The sum is ten.'], ['bun', 'I ate a soft bun.'], ['fun', 'We had so much fun.'], ['cot', 'The baby sleeps in a cot.'], ['top', 'The toy is on top.'], ['mop', 'I mop the wet floor.'], ['pop', 'The balloon went pop.'], ['cop', 'The cop helped us cross.'], ['job', 'He did a good job.'], ['web', 'A spider made a web.'], ['den', 'The fox went in its den.'], ['hen', 'The hen laid an egg.'], ['men', 'Two men fixed the road.'], ['wax', 'The candle is made of wax.'], ['six', 'I have six crayons.'], ['mix', 'Mix the paint together.'], ['fix', 'Dad will fix the bike.'], ['kid', 'That kid is my friend.'], ['lid', 'Put the lid on the jar.'], ['rib', 'I felt my rib.'], ['bib', 'The baby wears a bib.'], ['cob', 'Corn grows on a cob.'], ['hip', 'I put my hand on my hip.'], ['jig', 'We danced a little jig.'], ['peg', 'Hang it on the peg.'], ['beg', 'The dog will beg for food.'], ['egg', 'I ate one egg.'], ['elf', 'The elf made a toy.'], ['ant', 'An ant is very small.'], ['arm', 'I hurt my arm.'], ['ear', 'I hear with my ear.'], ['toe', 'I stubbed my toe.'], ['lot', 'We have a lot of toys.'], ['get', 'Go get the ball.'], ['let', 'Please let me play.'], ['set', 'I set the table.'], ['yes', 'The answer is yes.'], ['pup', 'The pup likes to play.'], ['sky', 'The sky is blue.'], ['fly', 'I saw a fly buzz.'], ['cry', 'The baby will cry.'], ['dry', 'My towel is dry.'], ['try', 'I will try my best.'], ['day', 'We play all day.']],
   2: [['rain', 'The rain fell all day.'], ['tree', 'A bird sat in the tall tree.'], ['clock', 'The clock says it is three.'], ['green', 'The grass is green.'], ['happy', 'The puppy felt happy.'], ['sheep', 'The sheep ate the grass.'], ['bread', 'We baked fresh bread.'], ['chair', 'Please sit on the chair.'], ['snake', 'The snake slid through the grass.'], ['train', 'The train is very fast.'], ['cloud', 'One fluffy cloud floated by.'], ['smile', 'She gave me a big smile.'], ['beach', 'We built a castle at the beach.'], ['grass', 'The green grass is soft.'], ['plant', 'Water the little plant.'], ['crab', 'A crab walked on the sand.'], ['queen', 'The queen wore a crown.'], ['black', 'The cat is black.'], ['stamp', 'Put a stamp on the letter.'], ['brush', 'Brush your teeth.'], ['spoon', 'Eat soup with a spoon.'], ['sweet', 'The candy is sweet.'], ['drum', 'He plays the drum.'], ['swing', 'Push me on the swing.'], ['bench', 'We sat on the bench.'], ['cake', 'We baked a cake.'], ['moon', 'The moon is bright.'], ['boat', 'The boat sails away.'], ['ship', 'The ship is big.'], ['leaf', 'A leaf fell down.'], ['paint', 'We paint a picture.'], ['truck', 'The truck is loud.'], ['glass', 'Fill the glass with water.'], ['snow', 'We play in the snow.'], ['frog', 'The frog jumped in the pond.'], ['nest', 'The bird made a cozy nest.'], ['blue', 'My shirt is blue.'], ['play', 'Let us go play outside.'], ['stop', 'We stop at the red light.'], ['ride', 'I ride my bike to school.'], ['game', 'We won the game.'], ['name', 'Write your name here.'], ['gate', 'Close the garden gate.'], ['lake', 'We swam in the lake.'], ['cave', 'A bat lives in the cave.'], ['rose', 'She picked a red rose.'], ['nose', 'My nose is cold.'], ['home', 'We walk home together.'], ['bone', 'The dog buried a bone.'], ['cone', 'I ate an ice cream cone.'], ['rope', 'We jump the rope.'], ['hope', 'I hope it is sunny.'], ['gift', 'I got a birthday gift.'], ['lamp', 'Turn on the lamp.'], ['ring', 'She wears a gold ring.'], ['king', 'The king sat on his throne.'], ['wing', 'The bird flapped its wing.'], ['sing', 'We love to sing songs.'], ['song', 'I know that song.'], ['long', 'The snake is very long.'], ['hill', 'We rolled down the hill.'], ['mill', 'Wheat is ground at the mill.'], ['pill', 'The doctor gave a pill.'], ['well', 'I feel very well today.'], ['tell', 'Please tell me a story.'], ['fell', 'The cup fell down.'], ['sell', 'They sell fresh fruit.'], ['cold', 'The ice is cold.'], ['gold', 'The crown is made of gold.'], ['hold', 'Please hold my hand.'], ['fold', 'Fold the towel neatly.'], ['told', 'She told a funny joke.'], ['cart', 'We push the cart.'], ['part', 'I know my part of the play.'], ['dark', 'The room is dark.'], ['park', 'We play at the park.'], ['farm', 'Cows live on the farm.'], ['barn', 'The horse is in the barn.'], ['corn', 'We grow corn.'], ['horn', 'The car has a loud horn.'], ['fork', 'I eat with a fork.'], ['cork', 'Pop the cork off.'], ['bird', 'A bird sang outside.'], ['girl', 'The girl read a book.'], ['first', 'I came in first place.'], ['hurt', 'I did not hurt my knee.'], ['turn', 'It is my turn to play.'], ['burn', 'The fire can burn.'], ['food', 'We share our food.'], ['noon', 'We eat lunch at noon.'], ['room', 'Clean up your room.'], ['zoom', 'The car will zoom past.'], ['pool', 'We swim in the pool.'], ['cool', 'The breeze is cool.'], ['tool', 'A hammer is a tool.'], ['foot', 'I hurt my foot.'], ['book', 'I read a good book.'], ['look', 'Look at the bright star.'], ['cook', 'We cook dinner.'], ['hook', 'Hang the coat on the hook.'], ['wood', 'The chair is made of wood.'], ['good', 'You did a good job.'], ['shop', 'We shop for fruit.'], ['shut', 'Please shut the door.'], ['shell', 'I found a sea shell.'], ['fish', 'The fish swam fast.'], ['dish', 'Wash the dirty dish.'], ['wish', 'Make a birthday wish.'], ['chin', 'I rest my chin on my hand.'], ['chip', 'I ate one chip.'], ['chop', 'We chop the wood.'], ['chat', 'We chat with friends.'], ['thin', 'The ice is too thin.'], ['this', 'Take a look at this.'], ['that', 'I want that one.'], ['then', 'We ate, then we played.'], ['rang', 'The phone rang loudly.'], ['wind', 'The wind blew hard.'], ['mind', 'I do not mind waiting.'], ['kind', 'Be kind to your friends.'], ['find', 'I can find it.'], ['sand', 'We dug in the sand.'], ['land', 'The plane will land.'], ['band', 'The band played music.'], ['pond', 'Ducks swim in the pond.'], ['lend', 'Can you lend me a pen?'], ['send', 'I will send a letter.'], ['camp', 'We sleep at camp.'], ['jump', 'I can jump high.'], ['mask', 'I wore a fun mask.'], ['desk', 'My books are on the desk.']],
@@ -7554,6 +7928,34 @@ function buildCinema(g) {                     // 🎬 Stack Cinema — Reading T
   C.position.set(CINEMA_POS.x, 0, CINEMA_POS.z);            // west end of the high street, facing the play area
   g.add(C);
 }
+function buildArcade(g) {                     // 🕹️ Stack Arcade — word games & prizes, next door to the Cinema
+  const WALL = 0x2B3A67, ROOF = 0x1d2747, NEON = 0xd63d8f, CYAN = 0x35D6E8, DARK = 0x1a1430, GOLD = 0xF2C037;
+  const A = new THREE.Group();
+  box(A, 4.4, 0.16, 3.0, 0x9a948a, 0, 0.08, 0);            // base pad
+  box(A, 4.0, 2.6, 0.16, WALL, 0, 1.4, -1.4);              // back wall
+  box(A, 0.16, 2.6, 2.9, WALL, -1.98, 1.4, 0);             // left wall
+  box(A, 0.16, 2.6, 2.9, WALL, 1.98, 1.4, 0);              // right wall
+  box(A, 1.3, 2.0, 0.1, DARK, -0.35, 1.1, 1.4);            // dark glass doors
+  box(A, 0.1, 2.0, 0.12, CYAN, -1.05, 1.1, 1.46); box(A, 0.1, 2.0, 0.12, CYAN, 0.35, 1.1, 1.46);  // neon door posts
+  const win = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.95, 0.07), new THREE.MeshBasicMaterial({ color: 0x8fe0f8 }));
+  win.position.set(1.15, 1.3, 1.42); A.add(win);            // glowing window — the games are on inside!
+  box(A, 4.7, 0.4, 3.3, ROOF, 0, 2.82, 0);                 // roof
+  box(A, 4.3, 0.5, 1.0, NEON, 0, 2.2, 1.55);               // marquee canopy
+  for (let i = -3; i <= 3; i++) box(A, 0.1, 0.1, 0.1, GOLD, i * 0.58, 1.92, 2.08);   // marquee bulbs
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 96; const c = cv.getContext('2d');
+  c.fillStyle = '#141026'; c.fillRect(0, 0, 320, 96); c.strokeStyle = '#35D6E8'; c.lineWidth = 6; c.strokeRect(5, 5, 310, 86);
+  c.fillStyle = '#FF7BC1'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 30px Georgia, serif';
+  c.fillText('🕹️ STACK ARCADE', 160, 34);
+  c.fillStyle = '#8fe0f8'; c.font = 'bold 17px Georgia, serif'; c.fillText('Word Games • Prizes', 160, 68);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.96, 0.08), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sign.position.set(0, 2.2, 2.1); A.add(sign);
+  box(A, 0.5, 1.1, 0.42, 0x7a2bb5, -1.6, 0.55, 1.75);      // an arcade cabinet out front as a teaser
+  box(A, 0.5, 0.14, 0.5, NEON, -1.6, 1.16, 1.77);          // its little marquee
+  const scr = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.3, 0.04), new THREE.MeshBasicMaterial({ color: 0x9fe8ff }));
+  scr.position.set(-1.6, 0.78, 1.97); A.add(scr);           // glowing screen
+  A.position.set(ARCADE_POS.x, 0, ARCADE_POS.z);
+  g.add(A);
+}
 // 🪧 a billboard sign that floats above a building and always faces the camera, so kids can
 // spot each Reading Town hub from the road (fixes the "circled for 5 minutes" navigation issue).
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
@@ -7561,6 +7963,7 @@ function buildCityDecor(g) {                  // (name kept) Reading Town's subu
   buildPostOffice(g);
   buildRealty(g);
   buildCinema(g);
+  buildArcade(g);
   buildHighStreetArch(g);
   const N = 26;
   for (let i = 0; i < N; i++) {
@@ -8596,7 +8999,7 @@ function inShopZone(cx, cz) {
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
   if (G.world === 'meadow' && near(BAKERY_POS, 2.5)) return true;
-  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4))) return true;
+  if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4) || near(ARCADE_POS, 3.0))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   return false;
 }
@@ -9501,7 +9904,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'trophycup', 'plushie', 'neonsign', 'arcadecab'];
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
 function buildWindowMesh() {
   const g = new THREE.Group();
@@ -9776,7 +10179,8 @@ const SPANISH_NAMES = {
   garden: 'Jardín', bush: 'Arbusto', food: 'Manzana', petbed: 'Cama de mascota', foodbowl: 'Plato de comida',
   waterbowl: 'Plato de agua', litterbox: 'Arenero', petfood: 'Comida de mascota', flag: 'Bandera', bunting: 'Banderines',
   bbq: 'Parrilla', hotdog: 'Perrito caliente', sausage: 'Salchichas', ribs: 'Costillas', corn: 'Maíz',
-  sparkler: 'Bengala', fireworks: 'Fuegos artificiales', gem: 'Trofeo'
+  sparkler: 'Bengala', fireworks: 'Fuegos artificiales', gem: 'Trofeo',
+  trophycup: 'Trofeo de arcade', plushie: 'Osito de peluche', neonsign: 'Letrero de neón', arcadecab: 'Máquina de arcade'
 };
 function biName(label, key) {                 // bilingual when the Spanish finish is selected
   const es = SPANISH_NAMES[key];
@@ -9857,6 +10261,45 @@ function buildFurnitureMesh(type, variant) {
     for (let i = -2; i <= 2; i++) box(g, 0.045, 0.02, 0.14, 0xE0B020, i * 0.07, 0.165, 0);  // kernel rows
     box(g, 0.06, 0.06, 0.13, 0x6FA85B, 0.24, 0.1, 0);              // green husk handle
     box(g, 0.05, 0.05, 0.05, 0xFFF1C0, -0.15, 0.13, 0.04);        // butter pat
+  } else if (type === 'trophycup') {                                  // 🏆 arcade prize
+    box(g, 0.34, 0.08, 0.34, 0x6d4326, 0, 0.04, 0);                  // wooden base
+    box(g, 0.1, 0.12, 0.1, 0xC9A24A, 0, 0.14, 0);                    // stem
+    box(g, 0.26, 0.22, 0.26, 0xF2C037, 0, 0.31, 0);                  // cup
+    box(g, 0.34, 0.05, 0.34, 0xF2C037, 0, 0.44, 0);                  // rim
+    box(g, 0.06, 0.12, 0.18, 0xF2C037, -0.19, 0.33, 0);              // handles
+    box(g, 0.06, 0.12, 0.18, 0xF2C037, 0.19, 0.33, 0);
+    box(g, 0.12, 0.05, 0.02, 0xE8E4EE, 0, 0.09, 0.18);               // little name plate
+  } else if (type === 'plushie') {                                    // 🧸 arcade prize
+    const B = 0x9C6B3F, B2 = 0xC49A6C;
+    box(g, 0.34, 0.3, 0.26, B, 0, 0.16, 0);                          // tummy
+    box(g, 0.26, 0.24, 0.24, B, 0, 0.42, 0);                         // head
+    box(g, 0.09, 0.09, 0.06, B, -0.11, 0.57, 0); box(g, 0.09, 0.09, 0.06, B, 0.11, 0.57, 0);   // ears
+    box(g, 0.13, 0.1, 0.05, B2, 0, 0.38, 0.11);                      // muzzle
+    box(g, 0.04, 0.045, 0.03, 0x2a2238, -0.06, 0.46, 0.12); box(g, 0.04, 0.045, 0.03, 0x2a2238, 0.06, 0.46, 0.12);  // eyes
+    box(g, 0.05, 0.04, 0.03, 0x2a2238, 0, 0.4, 0.14);                // nose
+    box(g, 0.1, 0.2, 0.12, B, -0.2, 0.14, 0.04); box(g, 0.1, 0.2, 0.12, B, 0.2, 0.14, 0.04);   // arms
+    box(g, 0.12, 0.1, 0.22, B, -0.1, 0.05, 0.14); box(g, 0.12, 0.1, 0.22, B, 0.1, 0.05, 0.14); // legs out front
+    box(g, 0.2, 0.06, 0.06, 0xE0457B, 0, 0.3, 0.12);                 // a little bow
+  } else if (type === 'neonsign') {                                   // 🪧 arcade prize: always-glowing OPEN sign
+    box(g, 0.5, 0.06, 0.3, 0x2a2238, 0, 0.03, 0);                    // base
+    box(g, 0.08, 0.52, 0.08, 0x3a3448, 0, 0.32, 0);                  // post
+    box(g, 0.78, 0.46, 0.08, 0x1a1430, 0, 0.8, 0);                   // sign box
+    const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#141026'; c.fillRect(0, 0, 128, 64);
+    c.strokeStyle = '#ff6ab8'; c.lineWidth = 5; c.strokeRect(6, 6, 116, 52);
+    c.fillStyle = '#7df0ff'; c.font = 'bold 30px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('OPEN', 64, 34);
+    const face = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.4, 0.03), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv) }));
+    face.position.set(0, 0.8, 0.05); g.add(face);                     // unlit = glows day & night, like real neon
+  } else if (type === 'arcadecab') {                                  // 🕹️ arcade prize: a mini cabinet of your own
+    box(g, 0.5, 1.1, 0.42, 0x7a2bb5, 0, 0.55, 0);                    // cabinet body
+    box(g, 0.52, 0.14, 0.48, 0xd63d8f, 0, 1.16, 0.01);               // marquee top
+    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.3, 0.04), new THREE.MeshBasicMaterial({ color: 0x9fe8ff }));
+    scr.position.set(0, 0.82, 0.21); g.add(scr);                      // glowing screen
+    box(g, 0.44, 0.1, 0.18, 0x2a2238, 0, 0.56, 0.24);                // control deck
+    box(g, 0.05, 0.1, 0.05, 0xF2C037, -0.09, 0.64, 0.28);            // joystick
+    box(g, 0.07, 0.04, 0.07, 0xE0457B, 0.09, 0.6, 0.28);             // big red button
   } else if (type === 'gem') {
     box(g, 0.4, 0.12, 0.4, 0xC9A24A, 0, 0.06, 0);                    // gold base
     box(g, 0.3, 0.16, 0.3, 0xE0C56A, 0, 0.18, 0);                    // pedestal
@@ -10948,6 +11391,7 @@ function tryUse() {
   else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
   else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
   else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
+  else if (arcadeDist() < 4.0) { Sound.click(); openArcade(); }   // 🕹️ word-game arcade (Reading Town)
   else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
   else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
   else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
@@ -11129,6 +11573,10 @@ function renderInv() {
     ['🎇', 'Sparklers', G.furniture.sparkler, 'sparkler'],
     ['🎆', 'Fireworks', G.furniture.fireworks, 'fireworks'],
     ['💎', 'Pom-pom Trophy', G.furniture.gem, 'gem'],
+    ['🏆', 'Arcade Trophies', G.furniture.trophycup || 0, 'trophycup'],
+    ['🧸', 'Claw-Machine Bears', G.furniture.plushie || 0, 'plushie'],
+    ['🪧', 'Neon OPEN Signs', G.furniture.neonsign || 0, 'neonsign'],
+    ['🕹️', 'Mini Arcade Cabinets', G.furniture.arcadecab || 0, 'arcadecab'],
     ['🪵', 'Coffee Tables', G.furniture.coffeetable, 'coffeetable'],
     ['🗄️', 'Dressers', G.furniture.dresser, 'dresser'],
     ['📺', 'Televisions', G.furniture.tv, 'tv'],
@@ -11288,6 +11736,7 @@ function renderInv() {
   const money = document.createElement('div');
   money.className = 'invItem';
   money.innerHTML = '<div class="icon">🪙</div><div class="info"><b>Coins</b><small>You have ' + G.coins +
+    ((G.tickets || 0) ? ' • 🎟️ Arcade tickets: ' + G.tickets : '') +
     ' • 🍓 Berries: ' + G.berries + '</small></div>';
   wrap.appendChild(money);
   const gear = [['🪜', 'Ladder', 'ladder'], ['👟', 'Speedy Shoes', 'shoes'], ['🦘', 'Bouncy Boots', 'boots'], ['🎉', 'Party Hat', 'hat']]
@@ -11310,6 +11759,7 @@ $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
 $('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
+$('arcadeClose').onclick = () => { Sound.click(); closeArcade(); };
 $('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else if (school) closeSchool(); else closeMart(); };
 $('vocabBtn').onclick = () => { Sound.click(); openVocab(); };
 $('vocabClose').onclick = () => { Sound.click(); closeVocab(); };
@@ -11489,6 +11939,7 @@ if (isTouch) {
     else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
     else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
     else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
+    else if (arcadeDist() < 4.0) { Sound.click(); openArcade(); }   // 🕹️ word-game arcade (Reading Town)
     else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
     else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
     else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
@@ -12208,6 +12659,9 @@ function loop(now) {
       hint.style.display = 'block';
     } else if (cinemaDist() < 4.0) {
       hint.textContent = isTouch ? '🎬 Tap ⭐ USE — fix the grammar at the Cinema!' : '🎬 ⭐ USE (or E) — fix the grammar at the Cinema!';
+      hint.style.display = 'block';
+    } else if (arcadeDist() < 4.0) {
+      hint.textContent = isTouch ? '🕹️ Tap ⭐ USE — word games & prizes at the Arcade!' : '🕹️ ⭐ USE (or E) — word games & prizes at the Arcade!';
       hint.style.display = 'block';
     } else if (martDist() < 3.8) {
       hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 ⭐ USE (or E) — order in Spanish at El Mercadito!';
