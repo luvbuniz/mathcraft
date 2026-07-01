@@ -177,6 +177,13 @@ build budget on one or two "wow" features.
 - ✨ **Graphics pass**: real-time soft shadows across every world, hemisphere
   sky/ground lighting (themed per world), round leafy trees, and natural
   noise-blended grass replacing the checkerboard.
+- 🦅 **Bird's eye build view + 🌉 row fill** (the "Leo can't reach the roof"
+  fixes): the camera button/C key now cycles a third **top-down view** — tap
+  any column from above to stack on it or remove its top brick (high walls
+  and roofs without aiming struggles). And when a placed brick lines up
+  straight with another at the same height, a one-tap **🌉 Fill across**
+  button lays the whole row — flat "old-fashioned" roofs in three taps per
+  row instead of balancing along the wall placing bricks one by one.
 
 ### 🎬 Grammar Cinema (Reading Town) — HIGH value, build next-ish
 Grammar is an underserved gap and rounds Reading Town into three pillars:

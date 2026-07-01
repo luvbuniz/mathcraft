@@ -1147,7 +1147,7 @@
   </div>
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
-  <button id="camBtn" title="Switch view: see your character / look through their eyes">🧍</button>
+  <button id="camBtn" title="Switch view: see your character / look through their eyes / bird's eye for building">🧍</button>
   <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
   <button id="saveBtn" class="hudBtn" title="Save game">💾</button>
@@ -1166,6 +1166,7 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
+  <button id="bridgeBtn" style="display:none; position:fixed; left:50%; bottom:158px; transform:translateX(-50%); z-index:40; background:#3f9d34; color:#fff; font-weight:800; font-size:16px; padding:12px 20px; border:none; border-radius:999px; box-shadow:0 4px 0 #2c6f24; cursor:pointer; font-family:inherit; pointer-events:auto"></button>
 </div>
 
 <!-- ================= MATH POPUP ================= -->
@@ -2900,7 +2901,7 @@ const G = {
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
   selectedSlot: 'block', buildMode: false, blockColor: 0xC9B79A, roofStyle: 'pointed', couchVariant: 0, chairVariant: 0, dtableVariant: 0, bedVariant: 0, catVariant: 0, dogVariant: 0, fishVariant: 0, furnFinish: 0,
   world: 'meadow',
-  firstPerson: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
+  firstPerson: false, birdsEye: false, selfie: false, snackUntil: 0, pickupColor: 0x3f7fbf,
   treats: [],                              // yummy treats made at Stack Sweets, waiting in the backpack to be eaten
   owned: { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false },
   activeCar: null, carColors: {},
@@ -4009,6 +4010,7 @@ function resetGameState() {
 }
 function goHome() {
   if (G.running && !G.over) saveGame();
+  if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
   G.running = false; popupOpen = false;
   ['mathPopup', 'shopPopup', 'invPopup', 'badgePopup', 'endScreen'].forEach(id => $(id).style.display = 'none');
   $('placingTag').style.display = 'none';
@@ -8738,11 +8740,11 @@ function updatePlayer(dt) {
   { const sfx = Math.floor(player.pos.x), sfz = Math.floor(player.pos.z), sfy = Math.floor(player.pos.y + 0.001);
     for (let yy = sfy; yy >= sfy - 1; yy--) { const b = blocks.get(key(sfx, yy, sfz)); if (b && b.slide) { _slideB = b; break; } } }
   if (_slideB && !inWater) {
-    if (!player.sliding) { player.sliding = true; player._preFP = G.firstPerson; G.firstPerson = true; $('camBtn').textContent = '👁️'; if (Sound.slide) Sound.slide(); }
+    if (!player.sliding) { player.sliding = true; player._preFP = G.firstPerson; G.firstPerson = true; $('camBtn').textContent = camIcon(); if (Sound.slide) Sound.slide(); }
     player.yaw = Math.atan2(-_slideB.slide.sdx, -_slideB.slide.sdz);   // face downhill
     player.vel.x = _slideB.slide.sdx * 9; player.vel.z = _slideB.slide.sdz * 9;
   } else if (player.sliding) {
-    player.sliding = false; G.firstPerson = player._preFP; $('camBtn').textContent = G.firstPerson ? '👁️' : '🧍';
+    player.sliding = false; G.firstPerson = player._preFP; $('camBtn').textContent = camIcon();
     if (inWater && Sound.splash) Sound.splash();
   }
 
@@ -8859,6 +8861,12 @@ function updatePlayer(dt) {
   const headY = player.pos.y + 1.55;
   if (G.firstPerson) {
     camera.position.set(player.pos.x, headY, player.pos.z);
+  } else if (G.birdsEye) {
+    // 🦅 bird's eye: hover high above and a step behind, looking down at the builder.
+    // Screen-up = the way you're facing, and no wall pull-in — you're above the walls.
+    const bx = player.pos.x + Math.sin(player.yaw) * 3.2;
+    const bz = player.pos.z + Math.cos(player.yaw) * 3.2;
+    camera.position.lerp(new THREE.Vector3(bx, headY + 12.5, bz), 0.22);
   } else {
     const selfie = G.selfie;
     const dist = selfie ? 3.4 : 4.6;
@@ -8882,13 +8890,18 @@ function updatePlayer(dt) {
     }
     camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
   }
-  const look = (G.selfie && !G.firstPerson)
-    ? new THREE.Vector3(player.pos.x, headY, player.pos.z)            // selfie: look straight back at the character's face
-    : new THREE.Vector3(
-        player.pos.x - Math.sin(player.yaw) * Math.cos(player.pitch) * 8,
-        headY + Math.sin(player.pitch) * 8,
-        player.pos.z - Math.cos(player.yaw) * Math.cos(player.pitch) * 8
-      );
+  const look = G.birdsEye
+    ? new THREE.Vector3(                                              // 🦅 look down at the ground just ahead of the builder
+        player.pos.x - Math.sin(player.yaw) * 1.2,
+        player.pos.y,
+        player.pos.z - Math.cos(player.yaw) * 1.2)
+    : (G.selfie && !G.firstPerson)
+      ? new THREE.Vector3(player.pos.x, headY, player.pos.z)          // selfie: look straight back at the character's face
+      : new THREE.Vector3(
+          player.pos.x - Math.sin(player.yaw) * Math.cos(player.pitch) * 8,
+          headY + Math.sin(player.pitch) * 8,
+          player.pos.z - Math.cos(player.yaw) * Math.cos(player.pitch) * 8
+        );
   camera.lookAt(look);
 
   // first time you stand under your own roof, suggest first-person for a look around inside
@@ -9140,12 +9153,65 @@ function placeSelectedAt(x, z, blockY) {
   if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
   if (blocks.has(key(x, y, z))) return false;
   if (cellOverlapsPlayer(x, y, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+  spawnPlacedBlock(x, y, z);
+  G.blocks -= 1; G.buildMode = true; Sound.place(); refreshHUD();
+  offerBridgeFrom(x, y, z);                          // 🌉 lines up with another block? offer to fill the row
+  return true;
+}
+function spawnPlacedBlock(x, y, z) {                 // the bare block-into-the-world step (no checks, no sound)
   const isPlain = G.blockColor === 0xC9B79A;
   const mesh = new THREE.Mesh(blockGeo, isPlain ? ((x + y + z) % 2 ? placedMat : placedMatEdge) : blockMat(G.blockColor));
   mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
   addBlockMesh(x, y, z, null, 'placed', true, mesh);
   blocks.get(key(x, y, z)).color = G.blockColor;     // remember the paint for saving
-  G.blocks -= 1; G.buildMode = true; Sound.place(); refreshHUD(); return true;
+}
+/* 🌉 ROW FILL — the "old-fashioned roof" helper. When a block you place lines up straight
+   with another block at the SAME height, a one-tap button lays the whole row — no more
+   balancing along the wall top placing bricks one at a time. Works for flat roofs,
+   bridges, walkways and wall bases alike. */
+let bridgeOffer = null, bridgeTimer = null;
+function hideBridgeOffer() {
+  bridgeOffer = null;
+  if (bridgeTimer) { clearTimeout(bridgeTimer); bridgeTimer = null; }
+  const b = $('bridgeBtn'); if (b) b.style.display = 'none';
+}
+function offerBridgeFrom(x, y, z) {
+  hideBridgeOffer();
+  const ENDS = { placed: 1, power: 1, window: 1 };   // your own building blocks count as an end post
+  const gaps = [];
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (let i = 1; i <= 10; i++) {
+      const cx = x + dx * i, cz = z + dz * i;
+      if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) break;
+      const b = blocks.get(key(cx, y, cz));
+      if (b) {                                       // reached a block at this height
+        if (i >= 2 && ENDS[b.type]) for (let j = 1; j < i; j++) gaps.push([x + dx * j, y, z + dz * j]);
+        break;                                       // the nearest block ends the scan either way
+      }
+      if (inShopZone(cx, cz) || (G.world === 'city' && CITY_SOLID.has(cx + ',' + cz))) break;   // no building there
+    }
+  }
+  if (!gaps.length) return;
+  bridgeOffer = { cells: gaps };
+  const btn = $('bridgeBtn'); if (!btn) return;
+  btn.textContent = G.blocks >= gaps.length
+    ? '🌉 Fill across — lay ' + gaps.length + ' 🧱'
+    : '🌉 Filling across needs ' + gaps.length + ' 🧱 — you have ' + G.blocks;
+  btn.style.display = 'block';
+  bridgeTimer = setTimeout(hideBridgeOffer, 9000);
+}
+function fillBridge() {
+  if (!bridgeOffer) return;
+  const cells = bridgeOffer.cells;
+  if (G.blocks < cells.length) { toast('🧱 Not enough blocks — solve a ❓ or two, then try again!', 2600); hideBridgeOffer(); return; }
+  let laid = 0;
+  for (const [cx, cy, cz] of cells) {
+    if (blocks.has(key(cx, cy, cz)) || cellOverlapsPlayer(cx, cy, cz)) continue;
+    spawnPlacedBlock(cx, cy, cz);
+    G.blocks -= 1; laid++;
+  }
+  hideBridgeOffer();
+  if (laid) { G.buildMode = true; Sound.place(); refreshHUD(); toast('🌉 Bridged — ' + laid + ' 🧱 laid across!', 2000); }
 }
 /* D — put down the selected item on the square in front of you (blocks stack) */
 function putDownBlock() {
@@ -11424,12 +11490,21 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
+function camIcon() { return G.firstPerson ? '👁️' : (G.birdsEye ? '🦅' : '🧍'); }
 function toggleCamera() {
-  G.firstPerson = !G.firstPerson;
-  if (G.firstPerson && G.selfie) toggleSelfie();             // can't be in your own eyes AND see your face
+  // three views, one button: 🧍 see your character → 👁️ their eyes → 🦅 bird's eye (top-down)
+  if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; }
+  else if (G.firstPerson) { G.firstPerson = false; G.birdsEye = true; }
+  else { G.birdsEye = false; }
+  if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();   // selfie needs the normal camera
   if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }   // found it — stop nudging
-  $('camBtn').textContent = G.firstPerson ? '👁️' : '🧍';   // eye = looking through their eyes; person = seeing the character
-  toast(G.firstPerson ? '👁️ First-person view' : '🧍 Third-person view', 1100);
+  $('camBtn').textContent = camIcon();
+  if (G.birdsEye && !G._beHintShown) {
+    G._beHintShown = true;
+    toast('🦅 Bird\'s eye view! Tap any block to build on TOP of it — perfect for tall walls & roofs.', 4200);
+  } else {
+    toast(G.firstPerson ? '👁️ First-person view' : (G.birdsEye ? '🦅 Bird\'s eye view' : '🧍 Third-person view'), 1100);
+  }
 }
 $('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
 $('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
@@ -11813,6 +11888,7 @@ $('walkBtn').onclick = () => {
   toast(G.mouseWalk ? '🚶 Click-to-move ON — left-click the ground to walk there. No keyboard needed!' : '🔨 Build mode — left-click to place blocks.', 2800);
 };
 $('undoBtn').onclick = () => { Sound.click(); undoLast(); };
+$('bridgeBtn').onclick = () => { Sound.click(); fillBridge(); };
 function takePhoto() {
   renderer.render(scene, camera);                 // fresh frame in the buffer
   // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
@@ -12440,7 +12516,7 @@ function startGame() {
   updateBadgeBtn(false);
   updateQuestBtn();
   selectSlot('block', true);
-  $('camBtn').textContent = G.firstPerson ? '👁️' : '🧍';
+  $('camBtn').textContent = camIcon();
   G.selfie = false; $('selfieBtn').classList.remove('on');
   setRemoveMode(false);                        // always start in 🧱 Build mode
   $('mouseLegend').style.display = isTouch ? 'none' : 'block';   // show the click shortcut on desktop
