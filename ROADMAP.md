@@ -178,6 +178,11 @@ build budget on one or two "wow" features.
 - ✨ **Graphics pass**: real-time soft shadows across every world, hemisphere
   sky/ground lighting (themed per world), round leafy trees, and natural
   noise-blended grass replacing the checkerboard.
+- 🎨 **GLB avatar pipeline**: drop `avatars/<id>.glb` (Meshy/Blender/artist)
+  and that hero upgrades to the real model — instant procedural fallback,
+  auto scale/ground, game-matched materials, walk/idle clips via
+  AnimationMixer, hats on a proxy head, picker repaint, offline caching.
+  Guide in `avatars/README.md`. Next: face-texture expression swaps.
 - 🧒 **Cute pass on the kid avatars** (Leo & Fiona): smooth round heads with
   big bright eyes, ONE curved smile (the old 3-piece mouth read as red cheek
   marks — gone), soft sphere-puff hair (side-swept for Leo, a bob with curl

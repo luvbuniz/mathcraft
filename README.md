@@ -112,6 +112,15 @@ Stack Mart is open in **both** modes (press **B**); **doors are bought there**
 for coins. To place a door, chair, table, or other item, open your **🎒
 backpack (I)**, tap **Place**, then press **D** where you want it.
 
+### 🎨 Real 3D character models (optional)
+
+Drop a `.glb` model at `avatars/<id>.glb` (e.g. `avatars/leo.glb` from Meshy,
+Blender, or an artist) and that hero **upgrades automatically** — auto-scaled,
+grounded, shadowed, with walk/idle animations if the model is rigged, and the
+picker card repaints with the real model. No file → the hero quietly stays
+procedural, so the game still works offline and heroes ship one at a time.
+Full weekend guide: [`avatars/README.md`](avatars/README.md).
+
 ## 🦊 The heroes
 
 Seven blocky, procedurally built avatars to choose from — and the

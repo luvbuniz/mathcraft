@@ -3,12 +3,13 @@
    picks up the latest version while online, and the WHOLE game still works with no Wi-Fi —
    including the CDN libraries (Three.js, fonts, Firebase), which we now cache too. After one
    online load the game runs offline. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v197';
+const CACHE = 'stackadoo-v198';
 
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
 const PRECACHE = [
   'play.html', 'manifest.json',
+  'lib/GLTFLoader.js',                       // 🎨 avatar model loader (avatars/*.glb cache on first use)
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
   'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
