@@ -22,7 +22,26 @@ Ship one character at a time, in any order.
 | `superhero.glb` | Superhero | | `spark.glb` | Spark the Fairy |
 | `knight.glb` | Knight | | `trex.glb` | T-Rex |
 
-## Meshy checklist (per character)
+## Fully-automated option: the Meshy MCP
+
+The repo ships a `.mcp.json` that loads the
+[Meshy AI MCP server](https://github.com/pasie15/meshy-ai-mcp-server) — it
+lets Claude drive Meshy directly (image-to-3D, auto-rig, animate, optimize,
+download). Setup:
+
+1. Get a Meshy **API key** (make sure your plan includes API credits — the
+   API bills from its own credit pool, not web-app credits).
+2. Set the `MESHY_API_KEY` environment variable — **never commit the key**:
+   - *Desktop Claude Code*: `export MESHY_API_KEY=...` before launching, or
+     `claude mcp add meshy-ai --env MESHY_API_KEY=... -- npx -y meshy-ai-mcp-server`
+   - *Claude Code on the web*: add `MESHY_API_KEY` in the environment's
+     settings, and allow the domains `api.meshy.ai` + `assets.meshy.ai` in
+     the environment's network policy (the default policy blocks them).
+3. Then just ask Claude: *"make the tiger avatar from this render"* — it can
+   generate → rig → animate → download → drop the GLB here → screenshot it
+   in-game → commit, while you review.
+
+## Meshy checklist (per character, by hand)
 
 1. **Generate** with *Image to 3D* from your character render. Use the same
    art-style renders + same settings for every character so the cast matches.
