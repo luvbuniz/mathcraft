@@ -25,7 +25,12 @@ No images, models, or audio files to download.
    bushes, flowers), **cooking items** (pots, frying pans, bacon, pies), a
    tree ladder, and more.
 
-   **Roofs:** stack roof tiles on top of your walls for a peaked roof.
+   **Roofs:** stack roof tiles on top of your walls for a peaked roof. For a
+   flat "old-fashioned" brick roof, pop a brick on top of one wall and another
+   straight across on the far wall — a **🌉 Fill across** button appears and
+   lays the whole row in one tap. Press **C** twice for the **🦅 bird's eye**
+   view first: tap any block from above to build on top of it (or remove it),
+   no ladder-walking needed.
    **Cooking:** aim at your stove (tap its top) and place a pot, pan, or
    bacon on a burner to make it steam and sizzle — or put a pie in to bake
    in the glowing oven.
@@ -52,6 +57,17 @@ subject at the **❓ stations**, and its own saved build:
 Each world also looks the part: 🌳 Math Meadow has wildflowers and green grass,
 🏘️ Reading Town has a lit skyline on the horizon, and 🏖️ Spanish Beach is a sandy
 island ringed by ocean with palm trees and beach umbrellas.
+
+🕹️ **The Stack Arcade** sits next to the Cinema in Reading Town. Word games cost
+**2 🪙 a play** (coins come from learning!) and pay out **🎫 prize tickets**
+(their own currency — separate from the Western's 🎟️ ride tickets):
+**🔤 Word Hunt** is a tap-friendly word search, and **⛄ Snowman Spell** is a
+guess-the-letters game where every word comes with its sentence as a clue —
+save the snowman before the sun melts him! Winning opens a short no-reading
+**✨ Gloomy Bop** bonus round, and tickets buy **arcade-only prizes** at the
+counter (a trophy, a claw-machine bear, a glowing neon OPEN sign, and a mini
+arcade cabinet) to place in your house. Tickets never turn back into coins, so
+the arcade is where learning money gets spent — never a coin farm.
 
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
 to another world without going back to the home screen — your house in each world
@@ -125,7 +141,7 @@ four-legged animals really walk on four legs:
 | `1` / `2` | Quick-select block 🧱 or door 🚪 (or choose any item in the 🎒 backpack) |
 | `E` | Use a math station / open Stack Mart |
 | `B` | Open 🛒 Stack Mart — blocks, doors, roof tiles, furniture, cooking items, gear |
-| `C` | Toggle camera: 🧍 see your character / 👁️ look through their eyes |
+| `C` | Cycle camera: 🧍 see your character / 👁️ their eyes / 🦅 bird's eye (top-down — great for building) |
 | `F` | Throw a softball at the Gloomies (Shelter Rush, after the timer ends) |
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
 
