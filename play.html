@@ -2490,6 +2490,16 @@ const shade = (c, f) => {                 // scale a hex color's brightness by f
   const cl = v => Math.max(0, Math.min(255, Math.round(v)));
   return (cl((c >> 16 & 255) * f) << 16) | (cl((c >> 8 & 255) * f) << 8) | cl((c & 255) * f);
 };
+/* 🫧 a smooth sphere part — the building block of the extra-cute avatars (round heads,
+   flowing hair puffs, button noses, mitten hands). sx/sy/sz optionally squash it. */
+function orb(parent, r, color, x, y, z, sx, sy, sz) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), mat(color));
+  m.position.set(x, y, z);
+  if (sx) m.scale.set(sx, sy == null ? sx : sy, sz == null ? sx : sz);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
 // A limb whose pivot sits at its top so it can swing while walking.
 function limb(parent, w, h, d, color, x, topY, z) {
   const g = new THREE.Group();
@@ -2526,17 +2536,18 @@ const eyeShineMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });   // ✨ u
 const EYE_SHINE = 0.018, EYE_PUPIL_CORE = 0x141414, BROW_COLOR = 0x6E4A2E, BROW_Y = 0.165, BLUSH_GRIN = 1.25;
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
 // layers never z-fight (the flicker the Ninja Dog had). `color` becomes the pupil/iris colour.
-function addEyes(head, color, z, noBlush) {
+function addEyes(head, color, z, noBlush, big) {
+  const s = big || 1;                                               // kids pass ~1.25 for big cute eyes
   const pupil = (color && color !== 0xFFFFFF) ? color : 0x1a1a1a;
-  box(head, 0.09, 0.095, 0.03, 0xF7F7F7, -0.11, 0.05, z);          // white sclera
-  box(head, 0.09, 0.095, 0.03, 0xF7F7F7, 0.11, 0.05, z);
-  box(head, 0.045, 0.062, 0.03, pupil, -0.105, 0.04, z + 0.022);   // coloured iris (offset forward → no flicker)
-  box(head, 0.045, 0.062, 0.03, pupil, 0.105, 0.04, z + 0.022);
-  box(head, 0.022, 0.03, 0.03, EYE_PUPIL_CORE, -0.105, 0.035, z + 0.030); // dark pupil core in front of iris → iris reads as a ring, real depth
-  box(head, 0.022, 0.03, 0.03, EYE_PUPIL_CORE, 0.105, 0.035, z + 0.030);
+  box(head, 0.09 * s, 0.095 * s, 0.03, 0xF7F7F7, -0.11 * s, 0.05 * s, z);          // white sclera
+  box(head, 0.09 * s, 0.095 * s, 0.03, 0xF7F7F7, 0.11 * s, 0.05 * s, z);
+  box(head, 0.045 * s, 0.062 * s, 0.03, pupil, -0.105 * s, 0.04 * s, z + 0.022);   // coloured iris (offset forward → no flicker)
+  box(head, 0.045 * s, 0.062 * s, 0.03, pupil, 0.105 * s, 0.04 * s, z + 0.022);
+  box(head, 0.022 * s, 0.03 * s, 0.03, EYE_PUPIL_CORE, -0.105 * s, 0.035 * s, z + 0.030); // dark pupil core in front of iris → iris reads as a ring, real depth
+  box(head, 0.022 * s, 0.03 * s, 0.03, EYE_PUPIL_CORE, 0.105 * s, 0.035 * s, z + 0.030);
   for (const sx of [-1, 1]) {                                       // ✨ tiny white catch-light, upper-inner corner = 'wet/alive' eyes
-    const sh = new THREE.Mesh(new THREE.BoxGeometry(EYE_SHINE, EYE_SHINE * 1.2, 0.02), eyeShineMat);
-    sh.position.set(sx * 0.09, 0.066, z + 0.038); head.add(sh);
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(EYE_SHINE * s, EYE_SHINE * 1.2 * s, 0.02), eyeShineMat);
+    sh.position.set(sx * 0.09 * s, 0.066 * s, z + 0.038); head.add(sh);
   }
   if (noBlush) return;                                              // human kid avatars skip the blush
   const blush = [];
@@ -2583,6 +2594,10 @@ function setFaceExpr(face, kind) {
     f.browL.position.y = by; f.browR.position.y = by;         // neutral resting brows
     f.browL.rotation.z = 0.05; f.browR.rotation.z = -0.05;
     setBlush(1);
+  }
+  if (f.kidArcs) {                                            // 🙂 kids: one smooth curved mouth, not 3 pieces
+    f.kidArcs.smile.visible = kind !== 'frown';
+    f.kidArcs.frown.visible = kind === 'frown';
   }
 }
 
@@ -3158,63 +3173,117 @@ const AVATARS = [
     // kid who loves the shows can be their favourite character (the cartoon→game bridge).
     id: 'leo', name: 'Leo 👦',
     build() {
-      const tee = 0xF6C744, shorts = 0x3A6FB0, skin = 0xFFD9B3, hair = 0x6B4423;
-      const a = buildBiped(tee, skin, shorts, skin);                  // yellow tee, blue shorts, bare arms
-      addEyes(a.head, 0x35506e, 0.26, true);                          // no blush on the boy
-      box(a.head, 0.08, 0.03, 0.03, 0xC0694A, 0, -0.15, 0.26);        // small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xC0694A, -0.052, -0.135, 0.26);
-      box(a.head, 0.035, 0.03, 0.03, 0xC0694A, 0.052, -0.135, 0.26);
-      // eyebrows now come from the shared, expression-animated addFace brows (no more static doubles)
-      // 💇 standard boy haircut — full cap + bangs + BACK of head + short SIDES
-      box(a.head, 0.56, 0.26, 0.56, hair, 0, 0.2, 0);                 // hair cap
-      // swept wavy fringe — staggered soft clumps (they round into waves) instead of a flat bang slab
-      box(a.head, 0.18, 0.15, 0.14, hair, -0.22, 0.15, 0.245);
-      box(a.head, 0.17, 0.18, 0.15, hair, -0.03, 0.17, 0.255);
-      box(a.head, 0.18, 0.14, 0.15, hair, 0.16, 0.14, 0.25);
-      box(a.head, 0.15, 0.13, 0.13, hair, 0.30, 0.11, 0.235);        // sweeps off to one side
-      box(a.head, 0.5, 0.46, 0.15, hair, 0, 0.0, -0.26);            // back of the head
-      box(a.head, 0.14, 0.42, 0.5, hair, -0.28, 0.04, -0.03);        // short left side
-      box(a.head, 0.14, 0.42, 0.5, hair, 0.28, 0.04, -0.03);         // short right side
-      // gently tousled top — low, soft clumps that hug the head (not a tall poof)
-      box(a.head, 0.20, 0.12, 0.20, hair, -0.15, 0.31, 0.06);
-      box(a.head, 0.20, 0.13, 0.20, hair, 0.10, 0.32, 0.0);
-      box(a.head, 0.18, 0.12, 0.18, hair, 0.0, 0.30, -0.16);
-      a.legs.forEach(L => box(L, 0.26, 0.13, 0.34, 0xF4F4F4, 0, -0.5, 0.08));   // white sneakers
+      const tee = 0xF6C744, teeD = 0xE3AC38, jeans = 0x3A6FB0, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x6B4423, hairHi = 0x82562E;
+      const a = buildBiped(tee, skin, jeans, skin);                  // yellow tee, blue jeans, bare arms
+      // 🙂 a smooth ROUND head instead of the box (the box is hidden, the rig stays the same)
+      a.head.children[0].visible = false;
+      orb(a.head, 0.34, skin, 0, 0.02, 0, 1, 0.98, 0.96);            // round noggin
+      orb(a.head, 0.05, skin, 0, -0.03, 0.315, 1, 0.8, 0.7);         // button nose
+      [-1, 1].forEach(s => orb(a.head, 0.05, skinD, s * 0.325, 0.0, 0.02, 0.55, 0.85, 0.8));   // little ears
+      addEyes(a.head, 0x35506e, 0.315, true, 1.25);                  // big friendly eyes, NO blush
+      a.face = addFace(a.head, -0.155, 0.318, 0xA8615A);
+      // swap the 3-piece mouth for ONE smooth curved smile (a frown arc hides behind it)
+      a.face.mouth.children[0].visible = false; a.face.lc.visible = false; a.face.rc.visible = false;
+      a.face.kidArcs = {};
+      [['smile', 3.38, 0], ['frown', 0.24, -0.055]].forEach(([kind, rz, oy]) => {
+        const arc = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.02, 8, 16, Math.PI * 0.85), mat(0xA8615A));
+        arc.rotation.z = rz; arc.scale.y = 0.55; arc.position.set(0, oy + (kind === 'smile' ? 0.03 : 0), 0.004);
+        a.face.mouth.add(arc); a.face.kidArcs[kind] = arc;
+      });              // ONE soft warm mouth (animated) — no red doubles
+      setFaceExpr(a.face, 'smile');
+      // 💇 soft rounded boy hair — a snug cap of puffs with a side-swept fringe (no cube chunks)
+      orb(a.head, 0.35, hair, 0, 0.125, -0.05, 1.02, 0.88, 0.98);    // snug rounded cap, brow stays clear
+      orb(a.head, 0.13, hair, -0.21, 0.235, 0.215, 1, 0.72, 0.8);    // fringe sweeps left → right
+      orb(a.head, 0.14, hair, -0.02, 0.255, 0.225, 1, 0.72, 0.8);
+      orb(a.head, 0.12, hair, 0.17, 0.235, 0.215, 1, 0.68, 0.8);
+      orb(a.head, 0.095, hair, 0.29, 0.19, 0.18, 1, 0.65, 0.75);     // tip tucks in at the temple
+      orb(a.head, 0.15, hair, -0.12, 0.315, 0.0, 1, 0.85, 1);        // gentle tousle hugging the cap
+      orb(a.head, 0.14, hair, 0.12, 0.325, -0.07, 1, 0.85, 1);
+      orb(a.head, 0.11, hairHi, 0.01, 0.33, 0.10, 1, 0.7, 1);        // sun-kissed strand
+      [-1, 1].forEach(s => orb(a.head, 0.10, hair, s * 0.295, 0.03, -0.09, 0.7, 1.05, 0.95));  // short sides over the ears
+      a.hatY = 0.44;                                                 // badge hats sit on the hair, not in it
+      // 👕 outfit details — sleeves, hem, chest star, rounded hands
+      a.arms.forEach(A => {
+        box(A, 0.21, 0.2, 0.21, tee, 0, -0.06, 0);                   // little tee sleeves
+        A.children[1].visible = false;                               // box hands → soft mitts (children[0] is the arm!)
+        orb(A, 0.105, skin, 0, -0.5, 0);
+      });
+      box(a.group, 0.56, 0.07, 0.36, teeD, 0, 0.585, 0);             // tee hem
+      const star = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.085, 0.035, 5), mat(0xFFFFFF));
+      star.rotation.x = Math.PI / 2; star.position.set(0, 0.94, 0.185); a.group.add(star);     // little star print
+      // 👖 cuffs + chunky sneakers with a round toe
+      a.legs.forEach(L => {
+        L.children[1].visible = false;                               // children[0] is the leg itself — keep it!
+        box(L, 0.27, 0.09, 0.27, shade(jeans, 0.82), 0, -0.38, 0);   // rolled jean cuff
+        box(L, 0.24, 0.13, 0.28, 0xF4F4F4, 0, -0.5, 0.03);           // sneaker body
+        orb(L, 0.115, 0xF4F4F4, 0, -0.5, 0.15, 1, 0.75, 1);          // rounded toe
+        box(L, 0.25, 0.05, 0.30, 0xD8D8D8, 0, -0.545, 0.03);         // sole
+        box(L, 0.16, 0.05, 0.02, 0xE23B3B, 0, -0.47, 0.185);         // red stripe
+      });
       return a;
     }
   },
   {
     id: 'fiona', name: 'Fiona 👧',
     build() {
-      const dress = 0x9B59B6, dressD = 0x7D3C98, skin = 0xFFD9B3, hair = 0x6B4423;
-      const a = buildBiped(dress, skin, skin, skin);                  // purple top; skin legs — the DRESS skirt is added below
-      addEyes(a.head, 0x35506e, 0.26, true);                          // no blush on the girl
-      box(a.head, 0.08, 0.03, 0.03, 0xD06A92, 0, -0.15, 0.26);        // sweet small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, -0.052, -0.135, 0.26);
-      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
-      // 💇 pretty brown hair — cap, soft bangs, long shoulder locks, full back
-      box(a.head, 0.6, 0.3, 0.6, hair, 0, 0.21, 0);                   // full rounded hair cap
-      // light side-swept fringe — parts left of centre and sweeps across to the right, leaving the brow open (lighter face)
-      box(a.head, 0.13, 0.13, 0.13, hair, -0.23, 0.17, 0.255);       // short wisp on the left of the part
-      box(a.head, 0.21, 0.13, 0.14, hair, 0.05, 0.16, 0.265);        // main sweep across the upper forehead
-      box(a.head, 0.16, 0.14, 0.13, hair, 0.28, 0.14, 0.25);         // tucks down by the right ear
-      // soft wavy shoulder locks (stacked rounded clumps, not flat slabs)
-      [-0.33, 0.33].forEach(sx => {
-        box(a.head, 0.19, 0.20, 0.19, hair, sx, 0.05, 0.04);
-        box(a.head, 0.17, 0.20, 0.17, hair, sx - Math.sign(sx) * 0.02, -0.15, 0.01);
-        box(a.head, 0.16, 0.18, 0.16, hair, sx + Math.sign(sx) * 0.01, -0.33, -0.02);
+      const dress = 0x9B59B6, dressD = 0x7D3C98, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x6B4423, hairHi = 0x82562E, bow = 0xE86FB0;
+      const a = buildBiped(dress, skin, skin, skin);                 // purple bodice; bare legs — the skirt is below
+      // 🙂 smooth round head (box hidden), button nose, big sweet eyes — and NO blush marks
+      a.head.children[0].visible = false;
+      orb(a.head, 0.34, skin, 0, 0.02, 0, 1, 0.98, 0.96);
+      orb(a.head, 0.05, skin, 0, -0.03, 0.315, 1, 0.8, 0.7);
+      [-1, 1].forEach(s => orb(a.head, 0.05, skinD, s * 0.325, 0.0, 0.02, 0.55, 0.85, 0.8));
+      addEyes(a.head, 0x35506e, 0.315, true, 1.25);
+      a.face = addFace(a.head, -0.155, 0.318, 0xB8646E);
+      // swap the 3-piece mouth for ONE smooth curved smile (a frown arc hides behind it)
+      a.face.mouth.children[0].visible = false; a.face.lc.visible = false; a.face.rc.visible = false;
+      a.face.kidArcs = {};
+      [['smile', 3.38, 0], ['frown', 0.24, -0.055]].forEach(([kind, rz, oy]) => {
+        const arc = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.02, 8, 16, Math.PI * 0.85), mat(0xB8646E));
+        arc.rotation.z = rz; arc.scale.y = 0.55; arc.position.set(0, oy + (kind === 'smile' ? 0.03 : 0), 0.004);
+        a.face.mouth.add(arc); a.face.kidArcs[kind] = arc;
+      });              // ONE soft rose mouth (animated)
+      setFaceExpr(a.face, 'smile');
+      // 💇 soft rounded bob — hood of hair, a row of soft bangs, cheek-hugging locks with curl tips
+      orb(a.head, 0.375, hair, 0, 0.09, -0.045, 1.0, 0.94, 1.0);     // rounded bob hood
+      orb(a.head, 0.115, hair, -0.215, 0.235, 0.215, 1, 0.75, 0.85); // soft bangs sitting above the brow
+      orb(a.head, 0.12, hair, -0.07, 0.26, 0.23, 1, 0.75, 0.85);
+      orb(a.head, 0.12, hair, 0.07, 0.26, 0.23, 1, 0.75, 0.85);
+      orb(a.head, 0.115, hair, 0.215, 0.235, 0.215, 1, 0.75, 0.85);
+      [-1, 1].forEach(s => {                                         // side locks ending in a curl flip
+        orb(a.head, 0.12, hair, s * 0.33, 0.03, 0.05, 0.85, 1.1, 0.95);
+        orb(a.head, 0.105, hair, s * 0.34, -0.17, 0.07, 0.8, 1.05, 0.9);
+        orb(a.head, 0.09, hair, s * 0.315, -0.30, 0.115);            // the flip
       });
-      box(a.head, 0.52, 0.5, 0.18, hair, 0, -0.04, -0.27);          // full back hair
-      // 🌀 wavy curl lumps along the ends (matches the sheet's curly hair)
-      [-0.3, -0.1, 0.1, 0.3].forEach(cx => box(a.head, 0.15, 0.15, 0.15, hair, cx, -0.34, -0.25));   // back curls
-      box(a.head, 0.14, 0.17, 0.15, hair, -0.34, -0.33, 0.03);       // left curl tip
-      box(a.head, 0.14, 0.17, 0.15, hair, 0.34, -0.33, 0.03);        // right curl tip
-      // 👗 a proper DRESS — flared skirt + hem over bare legs (so it's a dress, NOT pants)
-      box(a.group, 0.6, 0.36, 0.4, dress, 0, 0.46, 0);              // skirt
-      box(a.group, 0.74, 0.12, 0.46, dressD, 0, 0.27, 0);          // flared hem
-      box(a.group, 0.44, 0.09, 0.32, 0xFFFFFF, 0, 1.17, 0.03);      // white collar
-      // chunky purple shoes that wrap the WHOLE foot (centred, so the back of the foot shows from behind)
-      a.legs.forEach(L => box(L, 0.26, 0.16, 0.36, dressD, 0, -0.48, 0.0));
+      [-0.24, -0.08, 0.08, 0.24].forEach(cx => orb(a.head, 0.105, hair, cx, -0.30, -0.20));    // wavy ends at the nape
+      orb(a.head, 0.10, hairHi, -0.12, 0.33, 0.10, 1, 0.7, 1);       // soft shine strand
+      // 🎀 a little satin bow tucked over one ear
+      orb(a.head, 0.05, bow, 0.245, 0.295, 0.145, 0.7);
+      orb(a.head, 0.075, bow, 0.305, 0.32, 0.115, 1.15, 0.75, 0.6);
+      orb(a.head, 0.075, bow, 0.19, 0.33, 0.165, 1.15, 0.75, 0.6);
+      a.hatY = 0.45;
+      // 👗 a proper twirly dress — smooth flared skirt, hem, rounded collar, buttons, puff sleeves
+      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.46, 0.42, 18), mat(dress));
+      skirt.position.set(0, 0.47, 0); skirt.castShadow = skirt.receiveShadow = true; a.group.add(skirt);
+      const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.49, 0.10, 18), mat(dressD));
+      hem.position.set(0, 0.245, 0); hem.castShadow = hem.receiveShadow = true; a.group.add(hem);
+      orb(a.group, 0.155, 0xFFFFFF, 0, 1.165, 0.03, 1.5, 0.33, 1.05);   // soft rounded collar
+      orb(a.group, 0.032, 0xFFE07A, 0, 1.0, 0.185);                  // two golden buttons
+      orb(a.group, 0.032, 0xFFE07A, 0, 0.88, 0.185);
+      a.arms.forEach(A => {
+        orb(A, 0.135, dress, 0, -0.04, 0);                           // puff sleeves
+        A.children[1].visible = false;                               // children[0] is the arm itself — keep it!
+        orb(A, 0.105, skin, 0, -0.5, 0);                             // soft mitts
+      });
+      // 🧦 white socks + mary-jane shoes with a strap and round toe
+      a.legs.forEach(L => {
+        L.children[1].visible = false;                               // children[0] is the leg itself — keep it!
+        box(L, 0.21, 0.09, 0.21, 0xFFFFFF, 0, -0.40, 0);             // folded sock
+        box(L, 0.22, 0.12, 0.26, dressD, 0, -0.51, 0.02);            // shoe
+        orb(L, 0.115, dressD, 0, -0.51, 0.13, 1, 0.7, 1);            // round toe
+        box(L, 0.23, 0.04, 0.28, 0x4A2360, 0, -0.555, 0.02);         // sole
+        box(L, 0.23, 0.045, 0.05, dressD, 0, -0.445, 0.09);          // strap
+      });
       return a;
     }
   }
@@ -11115,8 +11184,8 @@ function setAvatar(index) {
     const data = AVATARS[index].build();
     // give the avatar an expressive face on its front (best seen in selfie mode).
     // bipeds have a flat face + arms; quads get a smaller mouth on the muzzle.
-    data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
-    setFaceExpr(data.face, 'smile');
+    if (!data.face) data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
+    setFaceExpr(data.face, 'smile');           // (builders may pre-make their own softer face — don't double the mouth!)
     // remember each arm's resting pose so we can return to it after a wave
     if (data.arms) data.armRest = data.arms.map(a => ({ x: a.rotation.x, z: a.rotation.z }));
     player.avatar = data.group;
@@ -11131,7 +11200,7 @@ function applyHeadwear() {
   if (!d) return;
   if (d.headwear) { d.head.remove(d.headwear); d.headwear = null; }
   if (profile.hideHat) return;         // player chose to go bare-headed (toggle in 🏅 Badges)
-  const topY = d.quad ? 0.13 : 0.25;   // top of the head box (quads sit the crown lower so it rests ON the head)
+  const topY = d.hatY != null ? d.hatY : (d.quad ? 0.13 : 0.25);   // top of the head (round-headed kids set their own)
   let h = null;
   if (G.owned.usahat) {                 // a bought cosmetic the player chose to wear — it wins
     h = new THREE.Group();
