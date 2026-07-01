@@ -2170,6 +2170,7 @@ function mat(color) {
 function box(parent, w, h, d, color, x, y, z) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
   m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;           // everything built from boxes sits in the sunlight
   parent.add(m);
   return m;
 }
@@ -2183,6 +2184,7 @@ function limb(parent, w, h, d, color, x, topY, z) {
   g.position.set(x, topY, z);
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
   m.position.y = -h / 2;
+  m.castShadow = true; m.receiveShadow = true;
   g.add(m);
   parent.add(g);
   return g;
@@ -3998,13 +4000,33 @@ const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 20
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });  // preserve so photos work
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
+/* ✨ Soft sunlight shadows — one shadow map covers the whole play field (it's only ±24
+   blocks), so nothing has to follow the player around. */
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+/* (note: sRGB output encoding was tried and rejected — the palette is hand-tuned for the
+   direct pipeline, and gamma-correcting washes the whole game out pastel) */
 document.body.appendChild(renderer.domElement);
 renderer.domElement.style.position = 'fixed';
 renderer.domElement.style.inset = '0';
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-const sun = new THREE.DirectionalLight(0xfff3d0, 0.7);
+/* Sky-and-ground light: faces looking up take a touch of sky colour, faces looking down
+   take a bounce off the grass — instead of one flat "everything equal" ambient. */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x88B06A, 0.55);
+scene.add(hemi);
+const softFill = new THREE.AmbientLight(0xffffff, 0.12);       // small lift so shaded sides stay friendly
+scene.add(softFill);
+const sun = new THREE.DirectionalLight(0xfff3d0, 0.72);
 sun.position.set(20, 40, 12);
+sun.castShadow = true;
+/* small-memory touch devices get a lighter shadow map; everyone else the crisp one */
+const SHADOW_SIZE = (matchMedia('(pointer:coarse)').matches && (navigator.deviceMemory || 8) <= 4) ? 1024 : 2048;
+sun.shadow.mapSize.set(SHADOW_SIZE, SHADOW_SIZE);
+/* ±36 covers the whole ±24 field INCLUDING corners (radius ~34) — smaller boxes leave a
+   visible "shadow ends here" seam across the far grass */
+{ const sc = sun.shadow.camera; sc.left = -36; sc.right = 36; sc.top = 36; sc.bottom = -36; sc.near = 5; sc.far = 120; }
+sun.shadow.bias = -0.0002;
+sun.shadow.normalBias = 0.04;
 scene.add(sun);
 const sunBall = new THREE.Mesh(new THREE.SphereGeometry(3, 10, 10),
   new THREE.MeshBasicMaterial({ color: 0xFFE680 }));
@@ -4016,21 +4038,30 @@ const groundGeo = new THREE.BoxGeometry(1, 1, 1);
 const groundMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
 const groundCount = (WORLD_R * 2) * (WORLD_R * 2);
 const ground = new THREE.InstancedMesh(groundGeo, groundMat, groundCount);
+/* Natural grass: a deterministic per-tile hash picks among the world's three greens and adds a
+   tiny brightness wobble — reads as a real meadow instead of the old hard checkerboard. */
+function grassTileColor(x, z, c) {
+  const H = (a, b, s) => { const n = Math.sin(a * 127.1 + b * 311.7 + s) * 43758.5453; return n - Math.floor(n); };
+  const r = H(Math.floor(x / 3), Math.floor(z / 3), 7.3) * 0.65 + H(x, z, 0) * 0.35;   // broad patches + fine detail
+  const base = r < 0.34 ? c[0] : (r < 0.67 ? c[1] : c[2]);
+  return base.clone().multiplyScalar(0.968 + H(x, z, 19.7) * 0.06);
+}
 {
   const m4 = new THREE.Matrix4();
-  const c1 = new THREE.Color(0x6FBF4B), c2 = new THREE.Color(0x63B243), c3 = new THREE.Color(0x79C957);
+  const cols = [new THREE.Color(0x6FBF4B), new THREE.Color(0x63B243), new THREE.Color(0x79C957)];
   let idx = 0;
   for (let x = -WORLD_R; x < WORLD_R; x++) {
     for (let z = -WORLD_R; z < WORLD_R; z++) {
       m4.setPosition(x + 0.5, -0.5, z + 0.5);
       ground.setMatrixAt(idx, m4);
-      ground.setColorAt(idx, (x + z) % 2 === 0 ? c1 : (x % 3 === 0 ? c3 : c2));
+      ground.setColorAt(idx, grassTileColor(x, z, cols));
       idx++;
     }
   }
   ground.instanceMatrix.needsUpdate = true;
   if (ground.instanceColor) ground.instanceColor.needsUpdate = true;
 }
+ground.receiveShadow = true;               // the grass catches everyone's shadows
 scene.add(ground);
 
 /* a big flat "skirt" of ground stretching out past the play field so the edge fades
@@ -4039,6 +4070,7 @@ const skirtMat = new THREE.MeshLambertMaterial({ color: 0x63B243 });
 const skirt = new THREE.Mesh(new THREE.CircleGeometry(170, 56), skirtMat);
 skirt.rotation.x = -Math.PI / 2;
 skirt.position.y = -0.08;
+skirt.receiveShadow = true;
 scene.add(skirt);
 
 /* recolor the ground + sky + fog to match the current world's theme */
@@ -4048,7 +4080,7 @@ function applyGroundColors(cols, worldId) {
   let idx = 0;
   for (let x = -WORLD_R; x < WORLD_R; x++) for (let z = -WORLD_R; z < WORLD_R; z++) {
     let col;
-    const grass = (x + z) % 2 === 0 ? c[0] : (x % 3 === 0 ? c[2] : c[1]);
+    const grass = grassTileColor(x, z, c);
     if (worldId === 'city') {
       // Reading Town: open green neighborhood with just a Main Street + Main Cross to drive on
       // (plenty of room to build), and a paved DOWNTOWN to the north where the shops & library sit.
@@ -4078,6 +4110,10 @@ function applyWorldTheme(worldId) {
   scene.background = new THREE.Color(w.sky);
   if (scene.fog) scene.fog.color.setHex(w.fog);
   if (typeof skirtMat !== 'undefined') skirtMat.color.setHex(w.ground[1]);   // skirt matches the world's ground
+  if (typeof hemi !== 'undefined') {     // the sky/ground bounce light takes this world's palette (kept close to white)
+    hemi.color.setHex(w.sky).lerp(new THREE.Color(0xffffff), 0.72);
+    hemi.groundColor.setHex(w.ground[1]).lerp(new THREE.Color(0xffffff), 0.35);
+  }
   applyGroundColors(w.ground, worldId);
   // place the shared shops where this world wants them (Reading Town clusters them downtown)
   const L = WORLD_LAYOUT[worldId] || WORLD_LAYOUT.meadow;
@@ -4135,6 +4171,7 @@ function blockMat(color) {
 function addBlockMesh(x, y, z, material, type, removable, customMesh) {
   const mesh = customMesh || new THREE.Mesh(blockGeo, material);
   if (!customMesh) mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+  if (type !== 'water') { mesh.castShadow = true; mesh.receiveShadow = true; }   // water casting = a murky pool
   scene.add(mesh);
   blocks.set(key(x, y, z), { mesh, type, removable: !!removable });
   return mesh;
@@ -4413,14 +4450,18 @@ const treeSpots = [[-20, -20], [20, -20], [20, 20], [-20, 20], [21, 5], [-21, -6
 function buildTrees() {
   const trunkMat = mat(0x7a5230);
   const leafMats = [mat(0x4C8C3A), mat(0x5BA546), mat(0x3E7A2E), mat(0x69B84F)];
+  /* round trunks + puffy sphere leaves: same solid cells as the old voxel oak (climbing,
+     collision and apple spots unchanged) — only the LOOK went from cubes to soft blobs */
+  const trunkGeo = new THREE.CylinderGeometry(0.46, 0.46, 1.02, 10);
+  const leafGeo = new THREE.SphereGeometry(0.68, 12, 10);
   treeSpots.forEach(([tx, tz], ti) => {
     const h = 3 + (ti % 2);                                  // sturdy oak trunk
     for (let y = 0; y < h; y++) {
-      const trunk = new THREE.Mesh(blockGeo, trunkMat);
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
       trunk.position.set(tx + 0.5, y + 0.5, tz + 0.5);
       addBlockMesh(tx, y, tz, null, 'tree', false, trunk);
     }
-    // big rounded oak canopy: a voxel blob centered above the trunk
+    // big rounded oak canopy: overlapping leaf puffs centered above the trunk
     const cy = h + 1;
     for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 2; dy++) {
       const d = Math.sqrt(dx * dx + dz * dz + (dy * 1.15) * (dy * 1.15));
@@ -4428,8 +4469,9 @@ function buildTrees() {
       if (d > 1.5 && Math.random() < 0.14) continue;         // a few gaps for a natural leafy edge
       const lx = tx + dx, ly = cy + dy, lz = tz + dz;
       if (blocks.has(key(lx, ly, lz))) continue;
-      const leaf = new THREE.Mesh(blockGeo, leafMats[(ti + dx + dz + dy + 12) % leafMats.length]);
+      const leaf = new THREE.Mesh(leafGeo, leafMats[(ti + dx + dz + dy + 12) % leafMats.length]);
       leaf.position.set(lx + 0.5, ly + 0.5, lz + 0.5);
+      leaf.scale.setScalar(0.9 + (((dx * 3 + dz * 5 + dy * 7 + ti) % 4) + 4) % 4 * 0.08);   // leafy variety
       addBlockMesh(lx, ly, lz, null, 'leaf', false, leaf);
     }
     trees.push({ x: tx, z: tz, topY: h });
@@ -12018,11 +12060,23 @@ $('againBtn').onclick = () => location.reload();
 /* ============================ GAME LOOP ============================ */
 let lastT = performance.now();
 let shelterTimer = 0;
+/* 🐢 shadow watchdog: if a low-power tablet can't keep up, switch shadows off once and stay smooth */
+let slowFrames = 0, shadowWatch = true;
+function dropShadowsForSpeed() {
+  shadowWatch = false;
+  if (!renderer.shadowMap.enabled) return;
+  renderer.shadowMap.enabled = false;
+  scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
+}
 function loop(now) {
   requestAnimationFrame(loop);
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
+  if (shadowWatch) {                                   // sustained sub-~22fps → shadows off (one-time)
+    if (dt > 0.045) slowFrames++; else slowFrames = Math.max(0, slowFrames - 2);
+    if (slowFrames > 150) dropShadowsForSpeed();
+  }
 
   if (!popupOpen && !G.over) updatePlayer(dt);
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
@@ -12247,6 +12301,13 @@ function loop(now) {
 
   renderer.render(scene, camera);
 }
+/* everything built at load casts & catches sunlight (skip the ground/skirt which only catch,
+   the sky sun, and see-through things like windows & pool water — glass shadows look wrong) */
+scene.traverse(o => {
+  if (!o.isMesh || o === ground || o === skirt || o === sunBall) return;
+  if (o.material && o.material.transparent) return;
+  o.castShadow = true; o.receiveShadow = true;
+});
 requestAnimationFrame(loop);
 
 addEventListener('resize', () => {
