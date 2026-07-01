@@ -59,7 +59,8 @@ Each world also looks the part: 🌳 Math Meadow has wildflowers and green grass
 island ringed by ocean with palm trees and beach umbrellas.
 
 🕹️ **The Stack Arcade** sits next to the Cinema in Reading Town. Word games cost
-**2 🪙 a play** (coins come from learning!) and pay out **🎟️ tickets**:
+**2 🪙 a play** (coins come from learning!) and pay out **🎫 prize tickets**
+(their own currency — separate from the Western's 🎟️ ride tickets):
 **🔤 Word Hunt** is a tap-friendly word search, and **⛄ Snowman Spell** is a
 guess-the-letters game where every word comes with its sentence as a clue —
 save the snowman before the sun melts him! Winning opens a short no-reading

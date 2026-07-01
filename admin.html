@@ -103,10 +103,12 @@
         <div class="stat" style="box-shadow:none; background:#f3f8f1"><div class="n" id="cAvail" style="font-size:30px">—</div><div class="l">Available</div></div>
         <div class="stat" style="box-shadow:none; background:#f3f8f1"><div class="n" id="cUsed" style="font-size:30px">—</div><div class="l">Redeemed</div></div>
       </div>
-      <div class="row" style="margin-bottom:8px">
-        <input id="genN" type="number" min="1" max="100" value="1" style="max-width:90px">
-        <button onclick="genCodes()">Generate codes</button>
-        <button class="refresh" onclick="loadCodes()">↻</button>
+      <div class="row" style="flex-wrap:wrap; gap:8px; margin-bottom:8px">
+        <input id="genN" type="number" min="1" max="100" value="5" style="max-width:84px; flex:0 0 auto">
+        <button onclick="genCodes()" style="flex:0 0 auto">Generate codes</button>
+        <button class="refresh" onclick="loadCodes()" title="Refresh the list" style="flex:0 0 auto">↻ Refresh</button>
+        <button class="refresh" onclick="copyAvailable()" title="Copy every unused code as a share link" style="flex:0 0 auto">📋 Copy available</button>
+        <button class="refresh" onclick="printGiftCards()" title="Print physical gift cards (logo + QR + code) for your un-sent codes" style="flex:0 0 auto">🎴 Print cards</button>
       </div>
       <div id="genOut"></div>
       <div id="codeList" style="margin-top:10px"></div>
@@ -139,6 +141,13 @@ function giftFetch(params) {
   const url = GIFT_URL + (GIFT_URL.indexOf('?') < 0 ? '?' : '&') + params + '&key=' + encodeURIComponent(ADMIN_KEY) + '&_=' + Date.now();
   return fetch(url).then(r => r.json());
 }
+let _lastCodes = [];
+const SENT_KEY = 'stackadooSentCodes';                 // codes you've handed out (kept in THIS admin browser)
+function sentSet() { try { return new Set(JSON.parse(localStorage.getItem(SENT_KEY) || '[]')); } catch (e) { return new Set(); } }
+function saveSent(s) { try { localStorage.setItem(SENT_KEY, JSON.stringify([...s])); } catch (e) {} }
+function markSent(codes) { const s = sentSet(); (Array.isArray(codes) ? codes : [codes]).forEach(c => s.add(c)); saveSent(s); }
+function toggleSent(code) { const s = sentSet(); s.has(code) ? s.delete(code) : s.add(code); saveSent(s); renderCodeList(); }
+function clearSent(e) { if (e) e.preventDefault(); if (confirm('Clear all "sent" marks? The codes themselves are unaffected.')) { saveSent(new Set()); renderCodeList(); } }
 function loadCodes() {
   if (!GIFT_URL) return;
   giftFetch('action=codes').then(d => {
@@ -146,13 +155,28 @@ function loadCodes() {
     $('cAvail').textContent = d.available; $('cUsed').textContent = d.used;
     const rate = d.total ? Math.round(d.used / d.total * 100) : 0;
     $('cUsed').nextElementSibling.textContent = 'Redeemed' + (d.total ? ' · ' + rate + '% of ' + d.total : '');
-    $('codeList').innerHTML = (d.codes || []).map(c => {
-      const when = c.used && c.redeemedAt ? new Date(c.redeemedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
-      return '<div class="barRow"><span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>' +
-        '<span style="flex:1;text-align:right;color:#6a7b6c;font-size:12px;padding-right:8px">' + when + '</span>' +
-        '<span class="v" style="width:auto;color:' + (c.used ? '#c0392b' : '#3f9d34') + '">' + (c.used ? 'used' : 'free') + '</span></div>';
-    }).join('') || '<p class="note">No codes yet — generate some above.</p>';
+    _lastCodes = d.codes || [];
+    _avail = _lastCodes.filter(c => !c.used).map(c => c.code);
+    renderCodeList();
   }).catch(() => { $('codeList').innerHTML = '<p class="err">Network error reaching gift backend.</p>'; });
+}
+function renderCodeList() {
+  const sent = sentSet();
+  const sentCount = _lastCodes.filter(c => !c.used && sent.has(c.code)).length;
+  const rows = _lastCodes.map(c => {
+    const isS = !c.used && sent.has(c.code);
+    const when = c.used && c.redeemedAt ? new Date(c.redeemedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    const status = c.used ? '<span style="color:#c0392b">used</span>' : (isS ? '<span style="color:#9a7b1e">📤 sent</span>' : '<span style="color:#3f9d34">free</span>');
+    const codeCell = c.used
+      ? '<span class="d" style="width:auto;font-weight:700;font-family:monospace">' + c.code + '</span>'
+      : '<span class="d" style="width:auto;font-weight:700;font-family:monospace;cursor:pointer" title="Copy this code\'s link (marks it sent)" onclick="copyOne(\'' + c.code + '\')">' + c.code + '</span>';
+    const toggle = c.used ? '' : '<button onclick="toggleSent(\'' + c.code + '\')" title="Mark sent / not sent" style="border:none;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;background:' + (isS ? '#efe6c9' : '#eef3ec') + ';color:' + (isS ? '#9a7b1e' : '#6a7b6c') + '">' + (isS ? '✓ Sent' : 'Mark sent') + '</button>';
+    return '<div class="barRow" style="' + (isS ? 'opacity:.55;' : '') + '">' + codeCell +
+      '<span style="flex:1;text-align:right;color:#6a7b6c;font-size:12px;padding:0 8px">' + when + '</span>' +
+      toggle + '<span class="v" style="width:auto;margin-left:8px">' + status + '</span></div>';
+  }).join('');
+  $('codeList').innerHTML = (rows || '<p class="note">No codes yet — generate some above.</p>') +
+    (sentCount ? '<div style="margin-top:8px;font-size:12px;color:#6a7b6c">📤 ' + sentCount + ' marked sent · <a href="#" onclick="clearSent(event)" style="color:#3f9d34">clear sent marks</a></div>' : '');
 }
 function genCodes() {
   if (!GIFT_URL) return;
@@ -171,6 +195,83 @@ function genCodes() {
 function copyGen(btn) {
   const ta = btn.parentElement.parentElement.querySelector('textarea');
   ta.select(); try { document.execCommand('copy'); btn.textContent = 'Copied!'; } catch (e) {}
+}
+let _avail = [];                              // unused codes from the last load, for "Copy available"
+function siteBase() { return location.origin.replace(/\/$/, ''); }
+function copyToClip(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fbCopy(text, done));
+  } else fbCopy(text, done);
+}
+function fbCopy(text, done) {                  // fallback for older browsers / non-HTTPS
+  const t = document.createElement('textarea'); t.value = text;
+  t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t);
+  t.focus(); t.select(); try { document.execCommand('copy'); } catch (e) {}
+  t.remove(); done && done();
+}
+function copyOne(code) {                        // click a code → copy its share link + mark it sent
+  copyToClip(siteBase() + '/?code=' + code, () => { markSent(code); renderCodeList(); });
+}
+function copyAvailable() {                      // copy the codes you HAVEN'T sent yet, then mark them sent
+  const sent = sentSet();
+  const toSend = _avail.filter(c => !sent.has(c));
+  if (!toSend.length) {
+    $('genOut').innerHTML = '<p class="note">✅ Every available code is already marked sent. Generate more above, or use “clear sent marks” under the list.</p>';
+    return;
+  }
+  const site = siteBase();
+  const lines = toSend.map(c => c + '   →   ' + site + '/?code=' + c).join('\n');
+  copyToClip(lines);                            // straight to the clipboard — no extra click needed
+  $('genOut').innerHTML = '<p class="note" style="color:#2f8a52;font-weight:700">📋 Copied ' + toSend.length + ' un-sent code(s) to your clipboard (now marked sent):</p>' +
+    '<textarea readonly style="width:100%;height:' + Math.min(220, 24 + toSend.length * 20) + 'px;font-family:monospace;font-size:13px;border:2px solid #cfe0cb;border-radius:10px;padding:8px">' + lines + '</textarea>' +
+    '<div class="row" style="margin-top:6px"><button onclick="copyGen(this)">Copy again</button></div>';
+  markSent(toSend); renderCodeList();
+}
+
+function printGiftCards() {                      // physical gift cards (logo + QR + code) for the un-sent codes
+  const sent = sentSet();
+  const codes = _avail.filter(c => !sent.has(c));
+  if (!codes.length) { alert('No un-sent codes to print. Generate more above, or use “clear sent marks” under the list.'); return; }
+  const site = siteBase();
+  const logo = '<svg viewBox="0 0 64 64" width="22" height="22"><polygon points="21,11 34,18 34,32 21,25" fill="#D9762E"/><polygon points="47,11 34,18 34,32 47,25" fill="#F59A4E"/><polygon points="34,4 47,11 34,18 21,11" fill="#FFC089"/><polygon points="14,25 27,32 27,46 14,39" fill="#E0A21E"/><polygon points="40,25 27,32 27,46 40,39" fill="#F5C842"/><polygon points="27,18 40,25 27,32 14,25" fill="#FFE08A"/><polygon points="20,39 33,46 33,60 20,53" fill="#2E8B4A"/><polygon points="46,39 33,46 33,60 46,53" fill="#55BC70"/><polygon points="33,32 46,39 33,46 20,39" fill="#86D79A"/></svg>';
+  const card = code => {
+    const url = site + '/?code=' + code;
+    const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=' + encodeURIComponent(url);
+    return '<div class="gc"><div class="gc-top">' + logo + '<span class="gc-brand">Stackadoo</span></div>' +
+      '<div class="gc-head">🎁 A FREE full game — just for you!</div>' +
+      '<img class="gc-qr" src="' + qr + '" alt="Scan to play">' +
+      '<div class="gc-code">' + code + '</div>' +
+      '<div class="gc-instr">Scan it, or visit <b>stackadoo.com</b> &amp; enter this code.<br>Build worlds by solving math! · No ads · Kid-safe</div></div>';
+  };
+  let sheets = '';                                                   // 10 cards per Avery 5523/5871 sheet (2 cols × 5 rows)
+  for (let i = 0; i < codes.length; i += 10) sheets += '<div class="sheet">' + codes.slice(i, i + 10).map(card).join('') + '</div>';
+  const doc = '<!doctype html><html><head><meta charset="utf-8"><title>Stackadoo gift cards — Avery 5523</title><style>' +
+    '@page{size:letter;margin:0}' +
+    '*{box-sizing:border-box;margin:0;padding:0}' +
+    'body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}' +
+    // Avery 5523/5871: Letter, 0.75in side margins, 0.5in top/bottom, 10 cards of exactly 3.5x2, zero gap
+    '.sheet{width:8.5in;height:11in;padding:.5in .75in;display:grid;grid-template-columns:3.5in 3.5in;grid-template-rows:repeat(5,2in);gap:0;page-break-after:always}' +
+    '.sheet:last-child{page-break-after:auto}' +
+    '.gc{width:3.5in;height:2in;padding:.12in .16in;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}' +
+    '.gc-top{display:flex;align-items:center;gap:4px}' +
+    '.gc-brand{font-weight:800;color:#2E8B4A;font-size:13px}' +
+    '.gc-head{font-size:9.5px;font-weight:700;color:#3b5d3f;margin:1px 0 2px}' +
+    '.gc-qr{width:.78in;height:.78in}' +
+    '.gc-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:14px;letter-spacing:1px;color:#1f3a25;margin-top:2px;background:#eef8ea;border-radius:6px;padding:1px 7px}' +
+    '.gc-instr{font-size:7.5px;color:#5a6b5d;line-height:1.25;margin-top:2px}' +
+    '.bar{background:#FFF3D6;color:#8a5c1e;font-size:13px;line-height:1.5;padding:12px 16px;max-width:7in;margin:14px auto;border-radius:10px}' +
+    '@media screen{body{background:#dfe7df}.sheet{background:#fff;margin:14px auto;box-shadow:0 2px 12px rgba(0,0,0,.18)}.gc{outline:.5px solid #e6e6e6}}' +
+    '@media print{.bar{display:none}}' +
+    '</style></head><body>' +
+    '<div class="bar"><b>🖨️ Avery 5523 / 5871 business cards (10 per sheet).</b><br>' +
+    'In the print dialog set <b>Paper: Letter</b>, <b>Margins: None</b>, and <b>Scale: 100% (Actual size — NOT “Fit to page”)</b>.<br>' +
+    'Tip: print one test on plain paper and hold it over an Avery sheet against a light to check alignment before using cardstock. ' +
+    codes.length + ' card(s).</div>' +
+    sheets + '</body></html>';
+  const w = window.open('', '_blank');
+  if (!w) { alert('Your browser blocked the pop-up. Allow pop-ups for this page, then click “Print cards” again.'); return; }
+  w.document.write(doc); w.document.close();
+  markSent(codes); renderCodeList();            // printed = handed out → mark them sent so you never reprint a duplicate
 }
 
 function loadStats() {

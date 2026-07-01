@@ -168,7 +168,8 @@ build budget on one or two "wow" features.
 - 🕹️ **Stack Arcade** (Reading Town, next door to the Cinema): **Word Hunt**
   (7×7 tap-start/tap-end word search) + **Snowman Spell** (friendly hangman — no
   gallows — with sentence clues from the graded spelling lists), 2-coin entry,
-  🎟️ ticket payouts scaled by level, a **Gloomy Bop** no-reading bonus round
+  🎫 prize-ticket payouts scaled by level (its own currency, distinct from the
+  Western's 🎟️ ride tickets), a **Gloomy Bop** no-reading bonus round
   after wins (cleaner spelling = longer bonus), and a ticket-only **prize
   counter** (arcade trophy, claw-machine bear, neon OPEN sign, mini arcade
   cabinet — all placeable furniture). Economy: coins are the entry fee and
