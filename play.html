@@ -146,6 +146,16 @@
   /* 🚨 siren toggle — only shown while driving an emergency vehicle (set in JS) */
   #sirenBtn { position:absolute; top:114px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
+  /* ⋯ "more buttons" tray toggle — only appears on cramped landscape phones */
+  #moreBtn { position:absolute; pointer-events:auto; font-size:19px; font-weight:bold;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:9px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
+  /* 📷 the view chooser — labeled camera options so kids can FIND bird's-eye */
+  #viewMenu { display:none; position:fixed; z-index:46; pointer-events:auto; flex-direction:column; gap:6px;
+    background:#fff; border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.3); padding:8px; min-width:236px; }
+  #viewMenu .viewOpt { text-align:left; border:2px solid #dce6f2; background:#f6f9fd; border-radius:12px;
+    padding:9px 12px; font-size:16px; cursor:pointer; line-height:1.25; font-family:inherit; }
+  #viewMenu .viewOpt small { color:#6c84a6; }
+  #viewMenu .viewOpt.cur { border-color:#3f9d34; background:#eaf7e6; }
   #sirenBtn.off { opacity:.5; filter:grayscale(.8); }
   #hotbar { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
     display:flex; gap:8px; pointer-events:auto; }
@@ -909,6 +919,16 @@
     #setupCard #avatarGrid { grid-template-columns:repeat(3,1fr); }
     #setupCard .stepNav { position:sticky; bottom:0; background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%); padding-top:10px; }
   }
+  /* 📱 Tablets & tall touch screens: bigger, easier tap targets for small fingers */
+  @media (pointer:coarse) and (min-height:640px) {
+    #soundBtn,#camBtn,#homeBtn,#saveBtn,#invBtn,#selfieBtn,#photoBtn { font-size:27px; padding:12px 15px; border-radius:16px; }
+    #questBtn,#cursorBtn { font-size:20px; padding:12px 13px; border-radius:16px; }
+    #modeBtn { font-size:19px; padding:12px 13px; border-radius:16px; }
+    #soundBtn { top:10px; } #camBtn { top:80px; } #sirenBtn { top:150px; }
+    #homeBtn { top:150px; } #saveBtn { top:220px; } #invBtn { top:290px; }
+    #questBtn { top:360px; } #selfieBtn { top:430px; } #photoBtn { top:500px; }
+    #cursorBtn { top:570px; } #modeBtn { top:640px; }
+  }
   /* Touch phones in LANDSCAPE (short height): the right-side utility buttons would stack
      down into the gameplay buttons. Lay them in two compact rows across the top-right,
      leaving the lower-right clear for JUMP / USE / Place. (pointer:coarse = touch only,
@@ -923,10 +943,12 @@
     #saveBtn   { top:8px; right:182px; }
     #invBtn    { top:8px; right:240px; }
     #questBtn  { top:66px; right:8px; }
-    #selfieBtn { top:66px; right:66px; }
-    #photoBtn  { top:66px; right:124px; }
-    #cursorBtn { top:66px; right:182px; }
-    #sirenBtn  { font-size:19px; padding:9px 12px; top:66px; right:240px; }
+    #moreBtn   { display:block; top:66px; right:66px; }
+    #selfieBtn, #photoBtn, #cursorBtn { display:none; }   /* tucked into the ⋯ tray */
+    body.hudExtras #selfieBtn { display:block; top:66px; right:124px; }
+    body.hudExtras #photoBtn  { display:block; top:66px; right:182px; }
+    body.hudExtras #cursorBtn { display:block; top:66px; right:240px; }
+    #sirenBtn  { font-size:19px; padding:9px 12px; top:124px; right:8px; }
     #modeBtn, #undoBtn { display:none; }
     .touchBtn { font-size:18px; padding:16px 22px; border-radius:18px; }
     #btnAction    { right:16px;  bottom:158px; }
@@ -1195,6 +1217,7 @@
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes / bird's eye for building">🧍</button>
+<button id="moreBtn" title="More buttons">⋯</button>
   <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
   <button id="unstuckBtn" class="hudBtn" title="Stuck? Tap to pop back outside" style="display:none">🆘 Unstuck</button>
@@ -1214,6 +1237,11 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
+  <div id="viewMenu">
+    <button class="viewOpt" data-m="third">🧍 <b>Behind me</b><br><small>see your hero</small></button>
+    <button class="viewOpt" data-m="fp">👁️ <b>Through my eyes</b><br><small>first-person look</small></button>
+    <button class="viewOpt" data-m="bird">🦅 <b>Bird's eye</b><br><small>build & remove from above!</small></button>
+  </div>
   <button id="bridgeBtn" style="display:none; position:fixed; left:50%; bottom:158px; transform:translateX(-50%); z-index:40; background:#3f9d34; color:#fff; font-weight:800; font-size:16px; padding:12px 20px; border:none; border-radius:999px; box-shadow:0 4px 0 #2c6f24; cursor:pointer; font-family:inherit; pointer-events:auto"></button>
 </div>
 
@@ -1562,7 +1590,7 @@
 
 <!-- ================= 🕹️ STACK ARCADE POPUP ================= -->
 <div class="popup" id="arcadePopup">
-  <div class="popupCard" style="width:min(680px,96vw); text-align:center">
+  <div class="popupCard" style="width:min(680px,96vw); text-align:center; max-height:96vh; overflow:auto">
     <div style="display:flex; justify-content:space-between; align-items:center">
       <div id="arcadeWallet" style="font-weight:800; color:#7a4ea0; font-size:15px"></div>
       <button class="closeX" id="arcadeClose" title="Close" aria-label="Close">✕</button>
@@ -8295,6 +8323,7 @@ function arcadeLobby() {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex; flex-direction:column; gap:10px';
   const canPay = G.coins >= ARCADE_PLAY_COST;
+  wrap.appendChild(arcadeBtn('📖 WORD QUIZ <small style="opacity:.85">— what\'s a noun? (easiest!)</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2f8a52' : '#9cc0a8', () => startWordQuiz()));
   wrap.appendChild(arcadeBtn('🔤 WORD HUNT <small style="opacity:.85">— find the hidden words</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#8e44ad' : '#b3a4c4', () => startWordHunt()));
   wrap.appendChild(arcadeBtn('⛄ SNOWMAN SPELL <small style="opacity:.85">— guess letters, save him!</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2980b9' : '#9fb8ca', () => startSnowman()));
   wrap.appendChild(arcadeBtn('🎫 PRIZE COUNTER <small style="opacity:.85">— spend your tickets</small>', '#27ae60', () => arcadePrizes()));
@@ -8321,6 +8350,78 @@ function pickArcadeWords(n, maxLen) {
     if (pick && !used.has(pick[0])) { used.add(pick[0]); out.push(pick); }
   }
   return out;
+}
+/* ---- 📖 WORD QUIZ: friendly "which word is a noun?" questions with a real hint button.
+   The gentlest machine — reuses the same trusted question generator as the ❓ stations. ---- */
+function startWordQuiz() {
+  if (!arcadePay()) return;
+  arcade = { kind: 'quiz', qNum: 0, total: 5, right: 0, tried: false, q: null, ticketsWon: 0 };
+  nextQuizQ();
+}
+function nextQuizQ() {
+  const a = arcade;
+  const lvl = Math.max(1, Math.min(3, arcadeLevel()));                  // stays gentle: capped at level 3
+  for (let t = 0; t < 6; t++) {                                         // questions 1,3,5: always "what's a noun?" basics
+    a.q = makeGrammarQuestion(lvl);
+    if (a.qNum % 2 === 1 || /NOUN|VERB|ADJECTIVE|ADVERB/.test(a.q.text)) break;
+  }
+  a.tried = false;
+  renderWordQuiz();
+}
+function renderWordQuiz() {
+  const a = arcade;
+  $('arcadeTitle').innerHTML = '📖 Word Quiz';
+  arcadeWallet();
+  let h = '<div style="color:#8a7aa0; font-weight:800; margin-bottom:6px">Question ' + (a.qNum + 1) + ' of ' + a.total + ' &nbsp;•&nbsp; ⭐ ' + a.right + ' right</div>';
+  h += '<div style="font-size:clamp(16px,3vw,20px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35">' + a.q.text + '?</div>';
+  const short = innerHeight < 620;
+  h += '<div style="display:flex; flex-direction:column; gap:' + (short ? 5 : 8) + 'px; max-width:430px; margin:0 auto">';
+  a.q.options.forEach((o, i) => {
+    h += '<button class="quizOpt" data-i="' + i + '" style="font-weight:bold; padding:' + (short ? '7px 12px' : '11px 14px') + '; border-radius:12px; border:none; cursor:pointer; color:#fff; font-size:' + (short ? 15 : 16) + 'px; background:#7A4EA0; box-shadow:0 4px 0 #5a3a78; font-family:inherit">' + o + '</button>';
+  });
+  h += '</div>';
+  h += '<button id="quizHint" style="margin-top:10px; font-weight:bold; padding:9px 16px; border-radius:999px; border:none; cursor:pointer; color:#fff; background:#E8A33D; box-shadow:0 3px 0 #B57D24; font-family:inherit">💡 Hint</button>';
+  $('arcadeBody').innerHTML = h;
+  document.querySelectorAll('.quizOpt').forEach(b => b.onclick = () => quizAnswer(a.q.options[+b.dataset.i], b));
+  const hb = document.getElementById('quizHint');
+  if (hb) hb.onclick = () => {
+    Sound.click();
+    $('arcadeMsg').style.color = '#B57D24';
+    $('arcadeMsg').innerHTML = '💡 ' + (a.q.hint || 'Read each choice out loud — which one fits?');
+  };
+}
+function quizAnswer(o, btn) {
+  const a = arcade; if (!a || a.kind !== 'quiz') return;
+  if (o === a.q.answer) {
+    Sound.correct();
+    let msg = '✓ <b>' + a.q.answer + '</b>!';
+    if (!a.tried) {
+      a.right++; a.ticketsWon++;
+      G.prizeTickets = (G.prizeTickets || 0) + 1;
+      recordPractice('reading', true);
+      msg += ' +1 🎫';
+    }
+    arcadeWallet();
+    $('arcadeMsg').style.color = '#2f8a52';
+    $('arcadeMsg').innerHTML = msg;
+    a.qNum++;
+    if (a.qNum >= a.total) finishWordQuiz();
+    else setTimeout(() => { if (arcade && arcade.kind === 'quiz') { $('arcadeMsg').textContent = ''; nextQuizQ(); } }, 1000);
+  } else {
+    if (!a.tried) { a.tried = true; recordPractice('reading', false); }
+    Sound.wrong();
+    btn.style.background = '#b8b0c8'; btn.style.boxShadow = 'none'; btn.disabled = true;
+    $('arcadeMsg').style.color = '#c0392b';
+    $('arcadeMsg').innerHTML = '🤔 Not that one — the 💡 Hint helps!';
+  }
+}
+function finishWordQuiz() {
+  const a = arcade;
+  const bonus = a.right === a.total ? 2 : 0;
+  if (bonus) { G.prizeTickets = (G.prizeTickets || 0) + bonus; a.ticketsWon += bonus; }
+  Sound.fanfare && Sound.fanfare();
+  arcadeWallet();
+  arcadeGameOver('📖 Quiz done — <b>' + a.right + '/' + a.total + '</b> on the first try! <b>+' + a.ticketsWon + ' 🎫</b>' + (bonus ? ' 🌟 perfect bonus!' : ''), a.right);
 }
 /* ---- 🔤 WORD HUNT: a 7×7 word search. Tap the FIRST letter, then the LAST letter. ---- */
 function startWordHunt() {
@@ -8359,12 +8460,16 @@ function renderWordHunt() {
   const a = arcade, S = a.S;
   $('arcadeTitle').innerHTML = '🔤 Word Hunt';
   arcadeWallet();
+  const short = innerHeight < 620;             // landscape phone: grid sized by HEIGHT, words BESIDE it
+  const gridW = short ? 'min(300px, 58vh)' : 'min(340px, 92vw)';
   let h = '<div style="color:#6c84a6; font-size:13px; margin-bottom:6px">Tap the <b>first</b> letter of a word, then its <b>last</b> letter!</div>';
-  h += '<div style="display:grid; grid-template-columns:repeat(' + S + ',1fr); gap:4px; max-width:340px; margin:0 auto">';
+  h += '<div style="display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:' + (short ? 'nowrap' : 'wrap') + '">';
+  h += '<div style="display:grid; grid-template-columns:repeat(' + S + ',1fr); gap:4px; width:' + gridW + '; flex:none">';
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    h += '<button class="huntCell" data-x="' + x + '" data-y="' + y + '" style="aspect-ratio:1; font-weight:800; font-size:17px; border-radius:9px; border:2px solid #d9c8ec; background:#faf6ff; color:#5a3f7a; cursor:pointer; padding:0">' + a.grid[y][x] + '</button>';
+    h += '<button class="huntCell" data-x="' + x + '" data-y="' + y + '" style="aspect-ratio:1; font-weight:800; font-size:clamp(12px,' + (short ? '3.4vh' : '17px') + ',17px); border-radius:9px; border:2px solid #d9c8ec; background:#faf6ff; color:#5a3f7a; cursor:pointer; padding:0">' + a.grid[y][x] + '</button>';
   }
-  h += '</div><div id="huntWords" style="display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:10px"></div>';
+  h += '</div><div id="huntWords" style="display:flex; flex-direction:' + (short ? 'column' : 'row') + '; flex-wrap:wrap; gap:7px; justify-content:center; align-items:center;' + (short ? '' : ' margin-top:10px; width:100%') + '"></div>';
+  h += '</div>';
   $('arcadeBody').innerHTML = h;
   document.querySelectorAll('.huntCell').forEach(c => c.onclick = () => huntTap(+c.dataset.x, +c.dataset.y, c));
   renderHuntWords();
@@ -8447,18 +8552,19 @@ function renderSnowman() {
   $('arcadeTitle').innerHTML = '⛄ Snowman Spell';
   arcadeWallet();
   const melt = a.misses / a.maxMiss;                                              // 0 → 1
+  const short = innerHeight < 620;                                                // landscape phone → compact
   const blanked = a.sentence.replace(new RegExp(a.word, 'ig'), '_____');
-  let h = '<div style="height:104px; position:relative; overflow:hidden">' +
-    '<div style="position:absolute; right:10px; top:2px; font-size:' + Math.round(16 + melt * 30) + 'px">☀️</div>' +
-    '<div style="font-size:80px; line-height:1; position:absolute; left:50%; bottom:2px; transform:translateX(-50%) scaleY(' + (a.misses >= a.maxMiss ? 1 : 1 - melt * 0.75).toFixed(2) + '); transform-origin:bottom">' + (a.misses >= a.maxMiss ? '💧' : '⛄') + '</div>' +
-    '<div style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:' + Math.round(8 + melt * 140) + 'px; height:9px; border-radius:50%; background:#9fd8f0"></div></div>';
-  h += '<div style="display:flex; gap:6px; justify-content:center; margin:8px 0 4px">' +
-    a.word.split('').map(ch => '<span style="width:28px; height:38px; border-bottom:4px solid #7a4ea0; font-size:26px; font-weight:800; color:#5a3f7a; display:inline-block">' + (a.hits.has(ch) || a.done ? ch : '') + '</span>').join('') + '</div>';
-  h += '<div style="color:#6c84a6; font-size:14px; margin-bottom:8px">Clue: <i>' + blanked + '</i></div>';
-  h += '<div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center; max-width:430px; margin:0 auto">';
+  let h = '<div style="height:' + (short ? 64 : 104) + 'px; position:relative; overflow:hidden">' +
+    '<div style="position:absolute; right:10px; top:2px; font-size:' + Math.round((short ? 12 : 16) + melt * (short ? 20 : 30)) + 'px">☀️</div>' +
+    '<div style="font-size:' + (short ? 50 : 80) + 'px; line-height:1; position:absolute; left:50%; bottom:2px; transform:translateX(-50%) scaleY(' + (a.misses >= a.maxMiss ? 1 : 1 - melt * 0.75).toFixed(2) + '); transform-origin:bottom">' + (a.misses >= a.maxMiss ? '💧' : '⛄') + '</div>' +
+    '<div style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:' + Math.round(8 + melt * (short ? 90 : 140)) + 'px; height:8px; border-radius:50%; background:#9fd8f0"></div></div>';
+  h += '<div style="display:flex; gap:6px; justify-content:center; margin:' + (short ? '4px 0 2px' : '8px 0 4px') + '">' +
+    a.word.split('').map(ch => '<span style="width:' + (short ? 24 : 28) + 'px; height:' + (short ? 30 : 38) + 'px; border-bottom:4px solid #7a4ea0; font-size:' + (short ? 21 : 26) + 'px; font-weight:800; color:#5a3f7a; display:inline-block">' + (a.hits.has(ch) || a.done ? ch : '') + '</span>').join('') + '</div>';
+  h += '<div style="color:#6c84a6; font-size:' + (short ? 13 : 14) + 'px; margin-bottom:' + (short ? 4 : 8) + 'px">Clue: <i>' + blanked + '</i></div>';
+  h += '<div style="display:flex; flex-wrap:wrap; gap:' + (short ? 4 : 5) + 'px; justify-content:center; max-width:430px; margin:0 auto">';
   for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     const used = a.used.has(ch) || a.done;
-    h += '<button class="snowKey" data-ch="' + ch + '" ' + (used ? 'disabled' : '') + ' style="width:33px; height:38px; border-radius:8px; border:none; font-weight:800; font-size:16px; cursor:pointer; ' +
+    h += '<button class="snowKey" data-ch="' + ch + '" ' + (used ? 'disabled' : '') + ' style="width:' + (short ? 30 : 33) + 'px; height:' + (short ? 32 : 38) + 'px; border-radius:8px; border:none; font-weight:800; font-size:' + (short ? 14 : 16) + 'px; cursor:pointer; ' +
       (used ? 'background:#e8e4ee; color:#b8b0c8' : 'background:#7a4ea0; color:#fff; box-shadow:0 3px 0 #5a3a78') + '">' + ch + '</button>';
   }
   h += '</div>';
@@ -15817,7 +15923,33 @@ function toggleCamera() {
     toast(G.firstPerson ? '👁️ First-person view' : (G.birdsEye ? '🦅 Bird\'s eye view' : '🧍 Third-person view'), 1100);
   }
 }
-$('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
+function setCameraMode(mode) {                 // the three views, by name (the menu uses this)
+  G.firstPerson = mode === 'fp';
+  G.birdsEye = mode === 'bird';
+  if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();
+  if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }
+  $('camBtn').textContent = camIcon();
+  toast(mode === 'fp' ? '👁️ Through my eyes!' : mode === 'bird' ? '🦅 Bird\'s eye — tap any block from above to build on it!' : '🧍 Behind me!', 1600);
+}
+$('camBtn').onclick = () => {
+  Sound.click();
+  const m = $('viewMenu');
+  if (m.style.display === 'flex') { m.style.display = 'none'; return; }
+  const cur = G.firstPerson ? 'fp' : (G.birdsEye ? 'bird' : 'third');
+  m.querySelectorAll('.viewOpt').forEach(b => b.classList.toggle('cur', b.dataset.m === cur));
+  const r = $('camBtn').getBoundingClientRect();
+  m.style.top = Math.min(innerHeight - 200, r.bottom + 6) + 'px';
+  m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  m.style.display = 'flex';
+};
+document.querySelectorAll('#viewMenu .viewOpt').forEach(b => b.onclick = () => {
+  Sound.click(); setCameraMode(b.dataset.m); $('viewMenu').style.display = 'none';
+});
+addEventListener('pointerdown', e => {        // tap anywhere else → the chooser tucks away
+  const m = $('viewMenu');
+  if (m.style.display === 'flex' && !m.contains(e.target) && e.target !== $('camBtn')) m.style.display = 'none';
+}, true);
+$('moreBtn').onclick = () => { Sound.click(); document.body.classList.toggle('hudExtras'); $('moreBtn').textContent = document.body.classList.contains('hudExtras') ? '✕' : '⋯'; };
 $('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
 function toggleSelfie() {
   G.selfie = !G.selfie;
