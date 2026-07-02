@@ -56,6 +56,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script><!-- 🎨 real 3D character models (avatars/<id>.glb), optional & offline-cached -->
 <!-- ☁️ Firebase (optional accounts + cloud save). Compat builds expose a global `firebase`.
      Auth + Firestore only — NO analytics, to keep the "no data collection" promise. -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -143,8 +144,22 @@
     50%{ transform:scale(1.16); box-shadow:0 3px 0 rgba(0,0,0,.15), 0 0 0 9px rgba(255,196,0,0); } }
   #camBtn.peek { background:#FFE07A; animation:camPeek 1s ease-in-out infinite; }
   /* 🚨 siren toggle — only shown while driving an emergency vehicle (set in JS) */
-  #sirenBtn { position:absolute; top:114px; right:10px; pointer-events:auto; font-size:20px;
+  #sirenBtn { position:absolute; top:166px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
+  /* ☰ THE MENU — one labeled list instead of a wall of mystery icons */
+  #menuBtn { position:absolute; top:10px; right:10px; pointer-events:auto; font-size:21px; font-weight:bold;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:9px 13px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  /* these buttons now live INSIDE the ☰ menu (kept in the DOM — their onclick IS the feature) */
+  #soundBtn, #homeBtn, #saveBtn, #questBtn, #selfieBtn, #cursorBtn { display:none !important; }
+  /* 📷 view chooser + ☰ menu — labeled options so kids can FIND things.
+     z-index above the touch JUMP/USE cluster so menu taps never hit the buttons beneath. */
+  #viewMenu, #hudMenu { display:none; position:fixed; z-index:65; pointer-events:auto; flex-direction:column; gap:6px;
+    background:#fff; border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.3); padding:8px; min-width:236px; }
+  #hudMenu { overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #viewMenu .viewOpt, #hudMenu .viewOpt { text-align:left; border:2px solid #dce6f2; background:#f6f9fd; border-radius:12px;
+    padding:9px 12px; font-size:16px; cursor:pointer; line-height:1.25; font-family:inherit; }
+  #viewMenu .viewOpt small, #hudMenu .viewOpt small { color:#6c84a6; }
+  #viewMenu .viewOpt.cur, #hudMenu .viewOpt.cur { border-color:#3f9d34; background:#eaf7e6; }
   #sirenBtn.off { opacity:.5; filter:grayscale(.8); }
   #hotbar { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
     display:flex; gap:8px; pointer-events:auto; }
@@ -162,6 +177,15 @@
     background:rgba(47,125,39,.92); color:#fff; padding:12px 26px; border-radius:16px;
     font-size:clamp(17px,3vw,24px); font-weight:bold; display:none; text-align:center; max-width:90vw;
     box-shadow:0 6px 22px rgba(0,0,0,.3); }
+  /* 💬 town-friend speech bubbles — pinned over each NPC's head */
+  #npcBubbles { position:fixed; inset:0; pointer-events:none; z-index:30; }
+  .npcBubble { position:fixed; transform:translate(-50%,-100%) translateY(-10px); display:none;
+    background:rgba(255,255,255,.96); color:#34495e; border-radius:14px; padding:7px 13px;
+    font-size:clamp(13px,2.2vw,16px); font-weight:600; max-width:min(58vw,290px);
+    box-shadow:0 3px 12px rgba(0,0,0,.28); text-align:center; line-height:1.3; }
+  .npcBubble b { color:#7A4EA0; }
+  .npcBubble::after { content:''; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%);
+    border:9px solid transparent; border-top-color:rgba(255,255,255,.96); border-bottom:none; }
 
   /* ---------- Math popup ---------- */
   .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
@@ -401,14 +425,13 @@
     background:rgba(255,255,255,.88); border-radius:14px; padding:11px 15px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   #homeBtn { top:120px; }
   #saveBtn { top:180px; }
-  #invBtn  { top:240px; }
+  #invBtn  { top:114px; }   /* third in the visible column: ☰ menu, 📷 view, 🎒 backpack */
   #questBtn { top:300px; font-size:17px; font-weight:bold; }   /* the quest board */
   #selfieBtn { top:360px; }
-  #photoBtn { top:420px; }
   #cursorBtn { top:480px; font-size:18px; font-weight:bold; }
-  #modeBtn { top:540px; font-size:16px; font-weight:bold; }
+  #modeBtn { top:222px; font-size:16px; font-weight:bold; }   /* below ☰ 📷 🎒 (+🚨 while driving) */
   #modeBtn.remove { background:#ffd2cc; box-shadow:0 3px 0 #d98b80; }
-  #undoBtn { top:530px; font-size:14px; font-weight:bold; background:#cdeed1; box-shadow:0 3px 0 #a4ccaa; }
+  #undoBtn { top:282px; font-size:14px; font-weight:bold; background:#cdeed1; box-shadow:0 3px 0 #a4ccaa; }
   #mouseLegend { position:absolute; left:12px; bottom:12px; display:none; pointer-events:none;
     background:rgba(0,0,0,.5); color:#fff; padding:6px 13px; border-radius:13px;
     font-size:14px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.25); }
@@ -598,17 +621,11 @@
     #timerBar { width:108px; margin:3px 0 0 auto; }
     #hudShelter { font-size:10.5px; }
     #badgeBtn { font-size:12px; padding:4px 8px; }
-    #soundBtn, #camBtn, .hudBtn { font-size:20px; padding:9px 12px; }
-    #soundBtn { top:8px; right:8px; }
+    #menuBtn, #camBtn, .hudBtn { font-size:20px; padding:9px 12px; }
+    #menuBtn { top:8px; right:8px; }
     #camBtn  { top:58px; right:8px; }
-    #homeBtn { top:108px; right:8px; }
-    #saveBtn { top:158px; right:8px; }
-    #invBtn  { top:208px; right:8px; }
-    #questBtn { top:258px; right:8px; }
-    #selfieBtn { top:308px; right:8px; }
-    #photoBtn { top:358px; right:8px; }
-    #cursorBtn { top:408px; right:8px; }
-    #sirenBtn { font-size:20px; padding:9px 12px; top:458px; right:8px; }
+    #invBtn  { top:108px; right:8px; }
+    #sirenBtn { font-size:20px; padding:9px 12px; top:158px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
     #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
     #btnUndoTouch { right:134px; bottom:150px; background:rgba(196,238,201,.92); }
@@ -908,24 +925,23 @@
     #setupCard #avatarGrid { grid-template-columns:repeat(3,1fr); }
     #setupCard .stepNav { position:sticky; bottom:0; background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%); padding-top:10px; }
   }
-  /* Touch phones in LANDSCAPE (short height): the right-side utility buttons would stack
-     down into the gameplay buttons. Lay them in two compact rows across the top-right,
-     leaving the lower-right clear for JUMP / USE / Place. (pointer:coarse = touch only,
-     so desktop short windows are unaffected.) */
+  /* 📱 Tablets & tall touch screens: bigger, easier tap targets for small fingers */
+  @media (pointer:coarse) and (min-height:640px) {
+    #menuBtn,#camBtn,#invBtn,#sirenBtn { font-size:27px; padding:12px 16px; border-radius:16px; }
+    #menuBtn { top:10px; } #camBtn { top:84px; } #invBtn { top:158px; } #sirenBtn { top:232px; }
+    #hudMenu .viewOpt, #viewMenu .viewOpt { font-size:18px; padding:12px 14px; }
+  }
+  /* Touch phones in LANDSCAPE (short height): lay the three visible buttons (☰ 📷 🎒) in one
+     compact row across the top-right, leaving the lower-right clear for JUMP / USE / Place.
+     (pointer:coarse = touch only, so desktop short windows are unaffected.) */
   @media (orientation:landscape) and (max-height:520px) and (pointer:coarse) {
-    #soundBtn,#camBtn,#homeBtn,#saveBtn,#invBtn,#questBtn,#selfieBtn,#photoBtn,#cursorBtn {
-      font-size:19px; padding:9px 12px;
-    }
-    #soundBtn  { top:8px; right:8px; }
-    #camBtn    { top:8px; right:66px; }
-    #homeBtn   { top:8px; right:124px; }
-    #saveBtn   { top:8px; right:182px; }
-    #invBtn    { top:8px; right:240px; }
-    #questBtn  { top:66px; right:8px; }
-    #selfieBtn { top:66px; right:66px; }
-    #photoBtn  { top:66px; right:124px; }
-    #cursorBtn { top:66px; right:182px; }
-    #sirenBtn  { font-size:19px; padding:9px 12px; top:66px; right:240px; }
+    #menuBtn,#camBtn,#invBtn { font-size:19px; padding:9px 12px; }
+    #menuBtn { top:8px; right:8px; }
+    #camBtn  { top:8px; right:64px; }
+    #invBtn  { top:8px; right:120px; }
+    #sirenBtn { font-size:19px; padding:9px 12px; top:8px; right:176px; }
+    #hudMenu { gap:4px; padding:6px; }                       /* all 7 choices fit a short phone */
+    #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
     #modeBtn, #undoBtn { display:none; }
     .touchBtn { font-size:18px; padding:16px 22px; border-radius:18px; }
     #btnAction    { right:16px;  bottom:158px; }
@@ -946,9 +962,17 @@
        grow and scroll with the WHOLE page, so it's easy to drag to a saved game or the hero picker. */
     #savedList { max-height:none !important; overflow:visible !important; }
   }
+  /* 🔄 phones play SIDEWAYS (like Dojo Island): a friendly full-screen ask when held upright in-game */
+  #rotateOverlay { position:fixed; inset:0; z-index:100; display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; text-align:center; padding:40px 24px;
+    background:rgba(30,50,82,.96); color:#fff; }
+  #rotateOverlay .ph { font-size:72px; animation:rotPhone 1.8s ease-in-out infinite; }
+  @keyframes rotPhone { 0%,18% { transform:rotate(0) } 55%,82% { transform:rotate(90deg) } 100% { transform:rotate(90deg) } }
+  #rotateOverlay b { font-size:clamp(20px,6vw,30px); }
+  #rotateOverlay span { color:#cfe0f5; font-size:15px; max-width:340px; }
   /* 🚂 TRAIN RIDE — a clean cinematic lap. Hide ALL the gameplay UI so nothing overlaps the view. */
   #rideOverlay { position:fixed; inset:0; z-index:70; display:none; pointer-events:none; }
-  body.riding #hud, body.riding #touchUI { display:none !important; }
+  body.riding #hud, body.riding #touchUI, body.riding #viewMenu, body.riding #hudMenu { display:none !important; }
   body.riding #rideOverlay { display:block; }
   /* a dark train-window frame for the passenger seats (so it feels like you're looking out a window) */
   #rideOverlay.window::before { content:''; position:absolute; inset:0; pointer-events:none;
@@ -1192,6 +1216,7 @@
     <div id="hudShelter">🏗️ Not enclosed yet</div>
   </div>
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
+  <button id="menuBtn" title="Menu">☰</button>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes / bird's eye for building">🧍</button>
   <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
@@ -1201,7 +1226,6 @@
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
   <button id="questBtn" class="hudBtn" title="Quest Board">🗺️</button>
   <button id="selfieBtn" class="hudBtn" title="Selfie mode: see the front of your character">🤳</button>
-  <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
   <button id="undoBtn" class="hudBtn" title="Undo — put back the last thing you removed (Z key)">↩️ Undo</button>
@@ -1213,8 +1237,18 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
+  <div id="npcBubbles"></div>
   <button id="bridgeBtn" style="display:none; position:fixed; left:50%; bottom:158px; transform:translateX(-50%); z-index:40; background:#3f9d34; color:#fff; font-weight:800; font-size:16px; padding:12px 20px; border:none; border-radius:999px; box-shadow:0 4px 0 #2c6f24; cursor:pointer; font-family:inherit; pointer-events:auto"></button>
 </div>
+
+<!-- 📷 view chooser + ☰ menu — OUTSIDE #hud so its z-index:20 stacking context can't trap
+     them under the touch JUMP/USE cluster (z-index:25). goHome() hides both explicitly. -->
+<div id="viewMenu">
+  <button class="viewOpt" data-m="third">🧍 <b>Behind me</b><br><small>see your hero</small></button>
+  <button class="viewOpt" data-m="fp">👁️ <b>Through my eyes</b><br><small>first-person look</small></button>
+  <button class="viewOpt" data-m="bird">🦅 <b>Bird's eye</b><br><small>build & remove from above!</small></button>
+</div>
+<div id="hudMenu"></div>
 
 <!-- ================= MATH POPUP ================= -->
 <div class="popup" id="mathPopup">
@@ -1561,7 +1595,7 @@
 
 <!-- ================= 🕹️ STACK ARCADE POPUP ================= -->
 <div class="popup" id="arcadePopup">
-  <div class="popupCard" style="width:min(680px,96vw); text-align:center">
+  <div class="popupCard" style="width:min(680px,96vw); text-align:center; max-height:96vh; overflow:auto">
     <div style="display:flex; justify-content:space-between; align-items:center">
       <div id="arcadeWallet" style="font-weight:800; color:#7a4ea0; font-size:15px"></div>
       <button class="closeX" id="arcadeClose" title="Close" aria-label="Close">✕</button>
@@ -1691,6 +1725,7 @@
 
 <!-- ================= TRAIN RIDE OVERLAY (cinematic; hides the HUD) ================= -->
 <div id="rideOverlay"><div id="rideCaption">🚂 All aboard the Silver Creek Express!</div></div>
+<div id="rotateOverlay"><div class="ph">📱</div><b>Turn your phone sideways!</b><span>Stackadoo plays in landscape — flip your phone and keep building. 🧱</span></div>
 
 <script>
 'use strict';
@@ -2490,6 +2525,24 @@ const shade = (c, f) => {                 // scale a hex color's brightness by f
   const cl = v => Math.max(0, Math.min(255, Math.round(v)));
   return (cl((c >> 16 & 255) * f) << 16) | (cl((c >> 8 & 255) * f) << 8) | cl((c & 255) * f);
 };
+/* 🫧 a smooth sphere part — the building block of the extra-cute avatars (round heads,
+   flowing hair puffs, button noses, mitten hands). sx/sy/sz optionally squash it. */
+function spike(parent, r, h, color, x, y, z, rx, rz, ry) {   // 🌱 a smooth cone — hair tufts & spikes
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.012, r, h, 10), mat(color));
+  m.position.set(x, y, z);
+  if (rx) m.rotation.x = rx; if (rz) m.rotation.z = rz; if (ry) m.rotation.y = ry;
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function orb(parent, r, color, x, y, z, sx, sy, sz) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), mat(color));
+  m.position.set(x, y, z);
+  if (sx) m.scale.set(sx, sy == null ? sx : sy, sz == null ? sx : sz);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
 // A limb whose pivot sits at its top so it can swing while walking.
 function limb(parent, w, h, d, color, x, topY, z) {
   const g = new THREE.Group();
@@ -2526,17 +2579,18 @@ const eyeShineMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });   // ✨ u
 const EYE_SHINE = 0.018, EYE_PUPIL_CORE = 0x141414, BROW_COLOR = 0x6E4A2E, BROW_Y = 0.165, BLUSH_GRIN = 1.25;
 // Real eyes for everyone: a white sclera + a coloured pupil pushed slightly forward so the two
 // layers never z-fight (the flicker the Ninja Dog had). `color` becomes the pupil/iris colour.
-function addEyes(head, color, z, noBlush) {
+function addEyes(head, color, z, noBlush, big) {
+  const s = big || 1;                                               // kids pass ~1.25 for big cute eyes
   const pupil = (color && color !== 0xFFFFFF) ? color : 0x1a1a1a;
-  box(head, 0.09, 0.095, 0.03, 0xF7F7F7, -0.11, 0.05, z);          // white sclera
-  box(head, 0.09, 0.095, 0.03, 0xF7F7F7, 0.11, 0.05, z);
-  box(head, 0.045, 0.062, 0.03, pupil, -0.105, 0.04, z + 0.022);   // coloured iris (offset forward → no flicker)
-  box(head, 0.045, 0.062, 0.03, pupil, 0.105, 0.04, z + 0.022);
-  box(head, 0.022, 0.03, 0.03, EYE_PUPIL_CORE, -0.105, 0.035, z + 0.030); // dark pupil core in front of iris → iris reads as a ring, real depth
-  box(head, 0.022, 0.03, 0.03, EYE_PUPIL_CORE, 0.105, 0.035, z + 0.030);
+  box(head, 0.09 * s, 0.095 * s, 0.03, 0xF7F7F7, -0.11 * s, 0.05 * s, z);          // white sclera
+  box(head, 0.09 * s, 0.095 * s, 0.03, 0xF7F7F7, 0.11 * s, 0.05 * s, z);
+  box(head, 0.045 * s, 0.062 * s, 0.03, pupil, -0.105 * s, 0.04 * s, z + 0.022);   // coloured iris (offset forward → no flicker)
+  box(head, 0.045 * s, 0.062 * s, 0.03, pupil, 0.105 * s, 0.04 * s, z + 0.022);
+  box(head, 0.022 * s, 0.03 * s, 0.03, EYE_PUPIL_CORE, -0.105 * s, 0.035 * s, z + 0.030); // dark pupil core in front of iris → iris reads as a ring, real depth
+  box(head, 0.022 * s, 0.03 * s, 0.03, EYE_PUPIL_CORE, 0.105 * s, 0.035 * s, z + 0.030);
   for (const sx of [-1, 1]) {                                       // ✨ tiny white catch-light, upper-inner corner = 'wet/alive' eyes
-    const sh = new THREE.Mesh(new THREE.BoxGeometry(EYE_SHINE, EYE_SHINE * 1.2, 0.02), eyeShineMat);
-    sh.position.set(sx * 0.09, 0.066, z + 0.038); head.add(sh);
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(EYE_SHINE * s, EYE_SHINE * 1.2 * s, 0.02), eyeShineMat);
+    sh.position.set(sx * 0.09 * s, 0.066 * s, z + 0.038); head.add(sh);
   }
   if (noBlush) return;                                              // human kid avatars skip the blush
   const blush = [];
@@ -2583,6 +2637,10 @@ function setFaceExpr(face, kind) {
     f.browL.position.y = by; f.browR.position.y = by;         // neutral resting brows
     f.browL.rotation.z = 0.05; f.browR.rotation.z = -0.05;
     setBlush(1);
+  }
+  if (f.kidArcs) {                                            // 🙂 kids: one smooth curved mouth, not 3 pieces
+    f.kidArcs.smile.visible = kind !== 'frown';
+    f.kidArcs.frown.visible = kind === 'frown';
   }
 }
 
@@ -3156,69 +3214,263 @@ const AVATARS = [
   {
     // ⭐ The cartoon stars — play AS Leo or Fiona. Looks match the Stackadoo World cartoons so a
     // kid who loves the shows can be their favourite character (the cartoon→game bridge).
-    id: 'leo', name: 'Leo 👦',
+    id: 'leo', name: 'Leo 👦', hidden: true,   // ⏸️ picker-hidden until the real 3D model lands (avatars/leo.glb)
     build() {
-      const tee = 0xF6C744, shorts = 0x3A6FB0, skin = 0xFFD9B3, hair = 0x6B4423;
-      const a = buildBiped(tee, skin, shorts, skin);                  // yellow tee, blue shorts, bare arms
-      addEyes(a.head, 0x35506e, 0.26, true);                          // no blush on the boy
-      box(a.head, 0.08, 0.03, 0.03, 0xC0694A, 0, -0.15, 0.26);        // small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xC0694A, -0.052, -0.135, 0.26);
-      box(a.head, 0.035, 0.03, 0.03, 0xC0694A, 0.052, -0.135, 0.26);
-      // eyebrows now come from the shared, expression-animated addFace brows (no more static doubles)
-      // 💇 standard boy haircut — full cap + bangs + BACK of head + short SIDES
-      box(a.head, 0.56, 0.26, 0.56, hair, 0, 0.2, 0);                 // hair cap
-      // swept wavy fringe — staggered soft clumps (they round into waves) instead of a flat bang slab
-      box(a.head, 0.18, 0.15, 0.14, hair, -0.22, 0.15, 0.245);
-      box(a.head, 0.17, 0.18, 0.15, hair, -0.03, 0.17, 0.255);
-      box(a.head, 0.18, 0.14, 0.15, hair, 0.16, 0.14, 0.25);
-      box(a.head, 0.15, 0.13, 0.13, hair, 0.30, 0.11, 0.235);        // sweeps off to one side
-      box(a.head, 0.5, 0.46, 0.15, hair, 0, 0.0, -0.26);            // back of the head
-      box(a.head, 0.14, 0.42, 0.5, hair, -0.28, 0.04, -0.03);        // short left side
-      box(a.head, 0.14, 0.42, 0.5, hair, 0.28, 0.04, -0.03);         // short right side
-      // gently tousled top — low, soft clumps that hug the head (not a tall poof)
-      box(a.head, 0.20, 0.12, 0.20, hair, -0.15, 0.31, 0.06);
-      box(a.head, 0.20, 0.13, 0.20, hair, 0.10, 0.32, 0.0);
-      box(a.head, 0.18, 0.12, 0.18, hair, 0.0, 0.30, -0.16);
-      a.legs.forEach(L => box(L, 0.26, 0.13, 0.34, 0xF4F4F4, 0, -0.5, 0.08));   // white sneakers
+      const tee = 0xF6C744, trim = 0xE8862E, jeans = 0x3579C8, cuff = 0x6FA8E8, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x7A4A28, hairHi = 0x8F5C33;
+      const a = buildBiped(tee, skin, jeans, skin);                  // yellow tee, blue jeans, bare arms
+      // 🙂 big smooth cartoon head (chibi!) — the rig's box head hides, everything else scales with the group
+      a.head.children[0].visible = false;
+      a.head.scale.setScalar(1.22);
+      orb(a.head, 0.34, skin, 0, 0.02, 0, 1, 0.98, 0.96);            // round noggin
+      orb(a.head, 0.05, skin, 0, -0.04, 0.315, 1, 0.8, 0.7);         // button nose
+      [-1, 1].forEach(s => orb(a.head, 0.05, skinD, s * 0.325, -0.01, 0.02, 0.55, 0.85, 0.8));   // little ears
+      addEyes(a.head, 0x4a3423, 0.315, true, 1.38);                  // BIG warm brown eyes, no blush
+      a.face = addFace(a.head, -0.16, 0.318, 0x8E4A3E);
+      a.face.browL.scale.set(1.25, 1.5, 1); a.face.browR.scale.set(1.25, 1.5, 1);   // thick friendly brows
+      // 😄 open happy smile (dark mouth + a flash of teeth), with a hidden frown for sad moments
+      a.face.mouth.children[0].visible = false; a.face.lc.visible = false; a.face.rc.visible = false;
+      const grinL = new THREE.Group();
+      const moL = new THREE.Mesh(new THREE.SphereGeometry(0.078, 16, 12), mat(0x7A3B44));
+      moL.scale.set(1.2, 0.55, 0.35); grinL.add(moL);
+      box(grinL, 0.115, 0.038, 0.02, 0xFFFFFF, 0, 0.028, 0.048);     // teeth
+      grinL.position.set(0, 0.005, 0.006);
+      a.face.mouth.add(grinL);
+      const frownL = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.019, 8, 16, Math.PI * 0.85), mat(0x8E4A3E));
+      frownL.rotation.z = 0.24; frownL.scale.y = 0.55; frownL.position.set(0, -0.055, 0.004);
+      a.face.mouth.add(frownL);
+      a.face.kidArcs = { smile: grinL, frown: frownL };
+      // 💇 spiky tousled hair — a snug hood with smooth swept tufts (cones), like the show
+      orb(a.head, 0.35, hair, 0, 0.125, -0.045, 1.02, 0.88, 1.0);    // snug hood, forehead open
+      orb(a.head, 0.30, hair, 0, 0.02, -0.19, 1.05, 1.0, 0.7);       // full back of head
+      spike(a.head, 0.115, 0.30, hair, -0.20, 0.36, 0.12, -0.55, 0.35);   // front tufts sweeping up & right
+      spike(a.head, 0.125, 0.34, hair, 0.0, 0.40, 0.10, -0.45, -0.10);
+      spike(a.head, 0.11, 0.28, hair, 0.19, 0.36, 0.10, -0.5, -0.45);
+      spike(a.head, 0.115, 0.30, hairHi, -0.10, 0.40, -0.04, 0.15, 0.5);  // crown tufts (sun-kissed)
+      spike(a.head, 0.12, 0.32, hair, 0.10, 0.40, -0.08, 0.3, -0.4);
+      spike(a.head, 0.11, 0.28, hair, -0.02, 0.36, -0.20, 0.75, 0.1);     // back tufts tipping backwards
+      spike(a.head, 0.10, 0.24, hair, 0.16, 0.33, -0.20, 0.7, -0.5);
+      spike(a.head, 0.09, 0.20, hair, -0.19, 0.33, -0.18, 0.65, 0.55);
+      orb(a.head, 0.09, hair, -0.275, 0.15, 0.04, 0.7, 0.9, 0.9);    // sideburn wisps (tucked back)
+      orb(a.head, 0.09, hair, 0.275, 0.15, 0.04, 0.7, 0.9, 0.9);
+      a.hatY = 0.50;                                                 // badge hats perch on the spikes
+      // 👕 tee details — orange collar ring, sleeve cuffs, hem
+      const col = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.028, 10, 20), mat(trim));
+      col.rotation.x = Math.PI / 2; col.position.set(0, 1.15, 0); col.castShadow = col.receiveShadow = true;
+      a.group.add(col);
+      a.arms.forEach(A => {
+        box(A, 0.21, 0.18, 0.21, tee, 0, -0.05, 0);                  // sleeve
+        box(A, 0.215, 0.05, 0.215, trim, 0, -0.15, 0);               // orange cuff
+        A.children[1].visible = false;                               // box hands → soft mitts
+        orb(A, 0.105, skin, 0, -0.5, 0);
+      });
+      box(a.group, 0.56, 0.07, 0.36, shade(tee, 0.92), 0, 0.585, 0); // tee hem
+      // 👖 rolled light-denim cuffs + blue sneakers with white toes
+      a.legs.forEach(L => {
+        L.children[1].visible = false;
+        box(L, 0.27, 0.10, 0.27, cuff, 0, -0.385, 0);                // rolled cuff
+        box(L, 0.24, 0.13, 0.28, 0x2F7FD0, 0, -0.5, 0.03);           // sneaker body
+        orb(L, 0.115, 0xFFFFFF, 0, -0.5, 0.15, 1, 0.75, 1);          // white toe cap
+        box(L, 0.25, 0.05, 0.30, 0xFFFFFF, 0, -0.545, 0.03);         // white sole
+      });
       return a;
     }
   },
   {
-    id: 'fiona', name: 'Fiona 👧',
+    id: 'fiona', name: 'Fiona 👧', hidden: true,   // ⏸️ picker-hidden until the real 3D model lands (avatars/fiona.glb)
     build() {
-      const dress = 0x9B59B6, dressD = 0x7D3C98, skin = 0xFFD9B3, hair = 0x6B4423;
-      const a = buildBiped(dress, skin, skin, skin);                  // purple top; skin legs — the DRESS skirt is added below
-      addEyes(a.head, 0x35506e, 0.26, true);                          // no blush on the girl
-      box(a.head, 0.08, 0.03, 0.03, 0xD06A92, 0, -0.15, 0.26);        // sweet small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, -0.052, -0.135, 0.26);
-      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
-      // 💇 pretty brown hair — cap, soft bangs, long shoulder locks, full back
-      box(a.head, 0.6, 0.3, 0.6, hair, 0, 0.21, 0);                   // full rounded hair cap
-      // light side-swept fringe — parts left of centre and sweeps across to the right, leaving the brow open (lighter face)
-      box(a.head, 0.13, 0.13, 0.13, hair, -0.23, 0.17, 0.255);       // short wisp on the left of the part
-      box(a.head, 0.21, 0.13, 0.14, hair, 0.05, 0.16, 0.265);        // main sweep across the upper forehead
-      box(a.head, 0.16, 0.14, 0.13, hair, 0.28, 0.14, 0.25);         // tucks down by the right ear
-      // soft wavy shoulder locks (stacked rounded clumps, not flat slabs)
-      [-0.33, 0.33].forEach(sx => {
-        box(a.head, 0.19, 0.20, 0.19, hair, sx, 0.05, 0.04);
-        box(a.head, 0.17, 0.20, 0.17, hair, sx - Math.sign(sx) * 0.02, -0.15, 0.01);
-        box(a.head, 0.16, 0.18, 0.16, hair, sx + Math.sign(sx) * 0.01, -0.33, -0.02);
+      const dress = 0xB07CD6, dressD = 0x7D3C98, band = 0x6C3391, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x7A4E28, hairHi = 0x8F5C33;
+      const a = buildBiped(dress, skin, skin, skin);                 // lilac bodice; bare legs — the skirt is below
+      // 🙂 big smooth cartoon head (chibi!), button nose, BIG sweet eyes with lashes — no blush marks
+      a.head.children[0].visible = false;
+      a.head.scale.setScalar(1.22);
+      orb(a.head, 0.34, skin, 0, 0.02, 0, 1, 0.98, 0.96);
+      orb(a.head, 0.05, skin, 0, -0.04, 0.315, 1, 0.8, 0.7);
+      [-1, 1].forEach(s => orb(a.head, 0.05, skinD, s * 0.325, -0.01, 0.02, 0.55, 0.85, 0.8));
+      addEyes(a.head, 0x43301f, 0.315, true, 1.38);
+      [-1, 1].forEach(s => {                                         // ✨ little lashes at the outer corners
+        const l = box(a.head, 0.05, 0.016, 0.02, 0x3A2A1A, s * 0.20, 0.135, 0.325);
+        l.rotation.z = s * 0.45;
       });
-      box(a.head, 0.52, 0.5, 0.18, hair, 0, -0.04, -0.27);          // full back hair
-      // 🌀 wavy curl lumps along the ends (matches the sheet's curly hair)
-      [-0.3, -0.1, 0.1, 0.3].forEach(cx => box(a.head, 0.15, 0.15, 0.15, hair, cx, -0.34, -0.25));   // back curls
-      box(a.head, 0.14, 0.17, 0.15, hair, -0.34, -0.33, 0.03);       // left curl tip
-      box(a.head, 0.14, 0.17, 0.15, hair, 0.34, -0.33, 0.03);        // right curl tip
-      // 👗 a proper DRESS — flared skirt + hem over bare legs (so it's a dress, NOT pants)
-      box(a.group, 0.6, 0.36, 0.4, dress, 0, 0.46, 0);              // skirt
-      box(a.group, 0.74, 0.12, 0.46, dressD, 0, 0.27, 0);          // flared hem
-      box(a.group, 0.44, 0.09, 0.32, 0xFFFFFF, 0, 1.17, 0.03);      // white collar
-      // chunky purple shoes that wrap the WHOLE foot (centred, so the back of the foot shows from behind)
-      a.legs.forEach(L => box(L, 0.26, 0.16, 0.36, dressD, 0, -0.48, 0.0));
+      a.face = addFace(a.head, -0.16, 0.318, 0xA8555F);
+      a.face.browL.scale.set(1.15, 1.4, 1); a.face.browR.scale.set(1.15, 1.4, 1);
+      // 😄 open happy smile + hidden frown (kept animated through setFaceExpr)
+      a.face.mouth.children[0].visible = false; a.face.lc.visible = false; a.face.rc.visible = false;
+      const grinF = new THREE.Group();
+      const moF = new THREE.Mesh(new THREE.SphereGeometry(0.072, 16, 12), mat(0x7A3B44));
+      moF.scale.set(1.15, 0.55, 0.35); grinF.add(moF);
+      box(grinF, 0.105, 0.036, 0.02, 0xFFFFFF, 0, 0.026, 0.045);     // teeth
+      grinF.position.set(0, 0.005, 0.006);
+      a.face.mouth.add(grinF);
+      const frownF = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.019, 8, 16, Math.PI * 0.85), mat(0xA8555F));
+      frownF.rotation.z = 0.24; frownF.scale.y = 0.55; frownF.position.set(0, -0.055, 0.004);
+      a.face.mouth.add(frownF);
+      a.face.kidArcs = { smile: grinF, frown: frownF };
+      // 💇 sleek shoulder bob with BLUNT-CUT bangs, curtains framing the face, ends curving in
+      orb(a.head, 0.375, hair, 0, 0.075, -0.04, 1.03, 0.96, 1.05);   // smooth hood
+      box(a.head, 0.54, 0.19, 0.16, hair, 0, 0.29, 0.195);           // blunt fringe (rounded box = clean soft edge)
+      box(a.head, 0.10, 0.15, 0.14, hair, -0.255, 0.255, 0.185);     // fringe corners step down
+      box(a.head, 0.10, 0.15, 0.14, hair, 0.255, 0.255, 0.185);
+      [-1, 1].forEach(s => {                                         // smooth curtain panels past the chin
+        const p = box(a.head, 0.15, 0.55, 0.30, hair, s * 0.285, -0.06, 0.0);
+        p.rotation.z = s * -0.04;
+        orb(a.head, 0.085, hair, s * 0.26, -0.345, 0.05, 1, 0.8, 0.9);   // ends curve in at the jaw
+      });
+      orb(a.head, 0.33, hair, 0, -0.06, -0.16, 1.05, 1.08, 0.8);     // full falling back
+      [-0.20, 0, 0.20].forEach(cx => orb(a.head, 0.115, hair, cx, -0.32, -0.16, 1, 0.85, 0.9));  // soft ends at the nape
+      orb(a.head, 0.10, hairHi, -0.10, 0.335, 0.09, 1, 0.65, 1);     // shine strand
+      a.hatY = 0.46;
+      // 👗 the show dress — lilac with a white Peter-Pan collar, buttons, waistband, twirly skirt
+      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.47, 0.44, 18), mat(dress));
+      skirt.position.set(0, 0.47, 0); skirt.castShadow = skirt.receiveShadow = true; a.group.add(skirt);
+      const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.49, 0.07, 18), mat(dress));
+      hem.position.set(0, 0.245, 0); hem.castShadow = hem.receiveShadow = true; a.group.add(hem);
+      const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.315, 0.06, 18), mat(band));
+      waist.position.set(0, 0.665, 0); waist.castShadow = waist.receiveShadow = true; a.group.add(waist);
+      orb(a.group, 0.155, 0xFFFFFF, 0, 1.165, 0.03, 1.5, 0.33, 1.05);   // rounded collar
+      orb(a.group, 0.033, band, 0, 1.02, 0.185);                     // two purple buttons
+      orb(a.group, 0.033, band, 0, 0.90, 0.185);
+      a.arms.forEach(A => {
+        orb(A, 0.135, dress, 0, -0.04, 0);                           // puff sleeves
+        box(A, 0.20, 0.05, 0.20, 0xFFFFFF, 0, -0.155, 0);            // white sleeve cuffs
+        A.children[1].visible = false;
+        orb(A, 0.105, skin, 0, -0.5, 0);                             // soft mitts
+      });
+      // 👟 purple mary-janes with straps + folded socks
+      a.legs.forEach(L => {
+        L.children[1].visible = false;
+        box(L, 0.21, 0.09, 0.21, 0xFFFFFF, 0, -0.40, 0);             // folded sock
+        box(L, 0.22, 0.12, 0.26, dressD, 0, -0.51, 0.02);            // shoe
+        orb(L, 0.115, dressD, 0, -0.51, 0.13, 1, 0.7, 1);            // round toe
+        box(L, 0.23, 0.04, 0.28, 0x4A2360, 0, -0.555, 0.02);         // sole
+        box(L, 0.23, 0.045, 0.05, dressD, 0, -0.445, 0.09);          // strap
+      });
       return a;
     }
   }
 ];
+
+/* ============================ 🎨 REAL 3D CHARACTER MODELS (GLB) ============================
+   Drop a professionally-made model at avatars/<id>.glb (e.g. avatars/leo.glb from Meshy,
+   Blender or an artist) and that hero UPGRADES to it automatically — the procedural avatar
+   appears instantly, then swaps to the model once it loads. No file → nothing changes, so
+   the game keeps working offline and heroes ship one at a time. See avatars/README.md. */
+const AVATAR_MODEL_DIR = 'avatars/';
+const AVATAR_MODEL_HEIGHT = 1.78;             // models are auto-scaled to hero height, feet at y=0
+/* Per-model fixes, applied after auto-normalizing. rotY: some models face backwards (π flips
+   them); scale: fine-tune size; hatY: where badge hats sit (from the model's feet, in blocks). */
+const AVATAR_MODEL_TWEAKS = {
+  // leo:   { rotY: Math.PI },
+  // fiona: { scale: 0.95, hatY: 1.62 },
+};
+const glbBytes = new Map();                   // id → ArrayBuffer | null (null = tried, no file)
+function fetchAvatarBytes(id) {
+  if (glbBytes.has(id)) return Promise.resolve(glbBytes.get(id));
+  return fetch(AVATAR_MODEL_DIR + id + '.glb')
+    .then(r => (r.ok ? r.arrayBuffer() : null))
+    .catch(() => null)
+    .then(buf => { glbBytes.set(id, buf); return buf; });
+}
+/* Parse a fresh instance (each use gets its own copy — skinned meshes don't share safely). */
+function parseAvatarModel(id) {
+  if (typeof THREE.GLTFLoader === 'undefined') return Promise.resolve(null);
+  return fetchAvatarBytes(id).then(buf => new Promise(resolve => {
+    if (!buf) return resolve(null);
+    try {
+      new THREE.GLTFLoader().parse(buf.slice(0), '', gltf => {
+        try { resolve(prepareAvatarModel(id, gltf)); } catch (e) { console.warn('avatar model prep failed', id, e); resolve(null); }
+      }, err => { console.warn('avatar model parse failed', id, err); resolve(null); });
+    } catch (e) { console.warn('avatar model load failed', id, e); resolve(null); }
+  }));
+}
+/* Normalize a loaded model: game-friendly materials, sunlight shadows, hero size, feet at 0. */
+function prepareAvatarModel(id, gltf) {
+  const inner = gltf.scene || gltf.scenes[0];
+  if (!inner) return null;
+  inner.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.receiveShadow = true;
+    o.frustumCulled = false;                  // skinned meshes move; don't let stale bounds blink them out
+    const wasArray = Array.isArray(o.material);
+    const mats = (wasArray ? o.material : [o.material]).map(m => {
+      // match the game's bright hand-tuned look: baked texture on a Lambert, no PBR dulling
+      const lm = new THREE.MeshLambertMaterial({
+        map: m.map || null,
+        color: m.map ? 0xffffff : (m.color ? m.color.getHex() : 0xffffff),
+        transparent: !!m.transparent, opacity: m.opacity != null ? m.opacity : 1,
+        side: m.side != null ? m.side : THREE.FrontSide
+      });
+      if (m.map) { m.map.encoding = THREE.LinearEncoding; m.map.needsUpdate = true; }   // pass-through colors, like the rest of the game
+      lm.skinning = !!o.isSkinnedMesh;        // r128: skinned meshes need the flag on the material
+      lm.morphTargets = !!(o.morphTargetInfluences && o.morphTargetInfluences.length);
+      return lm;
+    });
+    o.material = wasArray ? mats : mats[0];
+  });
+  const tweaks = AVATAR_MODEL_TWEAKS[id] || {};
+  const bb = new THREE.Box3().setFromObject(inner);
+  const size = new THREE.Vector3(); bb.getSize(size);
+  const s = (size.y > 0.0001 ? AVATAR_MODEL_HEIGHT / size.y : 1) * (tweaks.scale || 1);
+  const c = new THREE.Vector3(); bb.getCenter(c);
+  const wrap = new THREE.Group();             // the game moves/turns the wrapper; the inner stays normalized
+  inner.scale.setScalar(s);
+  inner.position.set(-c.x * s, -bb.min.y * s, -c.z * s);
+  if (tweaks.rotY) { const spin = new THREE.Group(); spin.rotation.y = tweaks.rotY; spin.add(inner); wrap.add(spin); }
+  else wrap.add(inner);
+  // animations: find idle + walk clips by name (Meshy/Mixamo conventions); one clip = use for both
+  let mixer = null, idle = null, walk = null;
+  const clips = gltf.animations || [];
+  if (clips.length) {
+    mixer = new THREE.AnimationMixer(inner);
+    const find = re => { const cl = clips.find(k => re.test(k.name)); return cl ? mixer.clipAction(cl) : null; };
+    idle = find(/idle|breath|stand/i) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
+    walk = find(/walk|run|jog/i) || idle;
+    if (!idle) idle = walk || mixer.clipAction(clips[0]);
+    if (idle) { idle.play(); }
+  }
+  const height = AVATAR_MODEL_HEIGHT * (tweaks.scale || 1);
+  const head = new THREE.Group();             // proxy head so badge hats & head-tilt flourishes still work
+  head.position.set(0, height * 0.82, 0);
+  wrap.add(head);
+  return {
+    group: wrap, inner, head, glb: true, face: null,
+    mixer, idleAction: idle, walkAction: walk, curAction: idle,
+    hatY: (tweaks.hatY != null ? tweaks.hatY : height * 0.99) - height * 0.82
+  };
+}
+/* After the instant procedural hero appears, quietly upgrade it to the real model. */
+function maybeUpgradeAvatarToModel(index) {
+  const av = AVATARS[index];
+  if (!av) return;
+  parseAvatarModel(av.id).then(data => {
+    if (!data) return;                                              // no model / bad model → keep procedural
+    if (!player.avatarData || player.avatarIndexLoading !== index) return;   // player switched heroes meanwhile
+    const old = player.avatar;
+    if (old) { data.group.position.copy(old.position); data.group.rotation.copy(old.rotation); scene.remove(old); }
+    data.armRest = null;
+    player.avatar = data.group;
+    player.avatarData = data;
+    scene.add(data.group);
+    applyHeadwear();
+  });
+}
+/* Model avatars animate through their own clips (walk/idle crossfade), or a gentle bob. */
+function updateGlbAvatar(d, moving, t) {
+  const mdt = d._t == null ? 0.016 : Math.min(0.066, Math.max(0.001, t - d._t));
+  d._t = t;
+  if (d.mixer) {
+    const want = (moving && d.walkAction) ? d.walkAction : d.idleAction;
+    if (want && d.curAction !== want) {
+      if (d.curAction) d.curAction.fadeOut(0.2);
+      want.reset().fadeIn(0.2).play();
+      d.curAction = want;
+    }
+    d.mixer.update(mdt);
+    d.inner.position.y = d._baseY || 0;
+  } else {
+    if (d._baseY == null) d._baseY = d.inner.position.y;
+    d.inner.position.y = d._baseY + (moving ? Math.abs(Math.sin(t * 8)) * 0.05 : Math.sin(t * 2) * 0.015);
+  }
+}
 
 /* ============================ GAME STATE ============================ */
 const G = {
@@ -3477,7 +3729,8 @@ const SHOP_ITEMS = [
   { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
   // 🪜🛗 Get between the floors of your house the easy way — no more hopping up blocks!
   { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 18, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
-  { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
+  // ⏸️ shelved for now (felt hasty; placed/owned elevators still work — re-add to sell again):
+  // { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -4490,8 +4743,11 @@ function resetGameState() {
 function goHome() {
   if (G.running && !G.over) saveGame();
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
+  if (typeof clearNpcs === 'function') clearNpcs();
   G.running = false; popupOpen = false;
+  if (typeof updateRotateGate === 'function') updateRotateGate();   // the menu is fine in any orientation
   ['mathPopup', 'shopPopup', 'invPopup', 'badgePopup', 'endScreen'].forEach(id => $(id).style.display = 'none');
+  $('viewMenu').style.display = 'none'; $('hudMenu').style.display = 'none';
   $('placingTag').style.display = 'none';
   $('hud').style.display = 'none';
   $('touchUI').style.display = 'none';
@@ -4570,7 +4826,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 40, 90);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 200);
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });  // preserve so photos work
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 /* ✨ Soft sunlight shadows — one shadow map covers the whole play field (it's only ±24
@@ -8076,7 +8332,7 @@ function arcadeLobby() {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex; flex-direction:column; gap:10px';
   const canPay = G.coins >= ARCADE_PLAY_COST;
-  wrap.appendChild(arcadeBtn('🔤 WORD HUNT <small style="opacity:.85">— find the hidden words</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#8e44ad' : '#b3a4c4', () => startWordHunt()));
+  wrap.appendChild(arcadeBtn('📖 WORD QUIZ <small style="opacity:.85">— what\'s a noun? (easiest!)</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2f8a52' : '#9cc0a8', () => startWordQuiz()));
   wrap.appendChild(arcadeBtn('⛄ SNOWMAN SPELL <small style="opacity:.85">— guess letters, save him!</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2980b9' : '#9fb8ca', () => startSnowman()));
   wrap.appendChild(arcadeBtn('🎫 PRIZE COUNTER <small style="opacity:.85">— spend your tickets</small>', '#27ae60', () => arcadePrizes()));
   body.appendChild(wrap);
@@ -8103,135 +8359,126 @@ function pickArcadeWords(n, maxLen) {
   }
   return out;
 }
-/* ---- 🔤 WORD HUNT: a 7×7 word search. Tap the FIRST letter, then the LAST letter. ---- */
-function startWordHunt() {
+/* ---- 📖 WORD QUIZ: friendly "which word is a noun?" questions with a real hint button.
+   The gentlest machine — reuses the same trusted question generator as the ❓ stations. ---- */
+function startWordQuiz() {
   if (!arcadePay()) return;
-  const S = 7, lvl = arcadeLevel();
-  const words = pickArcadeWords(4, S);
-  const grid = Array.from({ length: S }, () => Array(S).fill(null));
-  const dirs = lvl >= 3 ? [[1, 0], [0, 1], [1, 1]] : [[1, 0], [0, 1]];   // little kids: across & down only
-  const placed = [];
-  for (const [word, sentence] of words) {
-    const W = word.toUpperCase();
-    for (let t = 0; t < 200; t++) {
-      const d = dirs[Math.floor(Math.random() * dirs.length)];
-      const sx = Math.floor(Math.random() * (S - (W.length - 1) * d[0]));
-      const sy = Math.floor(Math.random() * (S - (W.length - 1) * d[1]));
-      let ok = true;
-      for (let i = 0; i < W.length; i++) { const c = grid[sy + d[1] * i][sx + d[0] * i]; if (c && c !== W[i]) { ok = false; break; } }
-      if (!ok) continue;
-      for (let i = 0; i < W.length; i++) grid[sy + d[1] * i][sx + d[0] * i] = W[i];
-      placed.push({ word: W, sentence, found: false });
-      break;
-    }
-  }
-  const FILLER = 'AABCDEEFGHIIJKLMNOOPQRSTUUVWXYZ';         // vowel-weighted so it reads word-ish
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (!grid[y][x]) grid[y][x] = FILLER[Math.floor(Math.random() * FILLER.length)];
-  arcade = { kind: 'hunt', S, grid, words: placed, anchor: null, wrongPicks: 0, ticketsWon: 0 };
-  renderWordHunt();
+  arcade = { kind: 'quiz', qNum: 0, total: 5, right: 0, tried: false, q: null, ticketsWon: 0 };
+  nextQuizQ();
 }
-function huntCellAt(x, y) { return document.querySelector('.huntCell[data-x="' + x + '"][data-y="' + y + '"]'); }
-function huntBaseStyle(el) {
-  if (el.dataset.found === '1') return;                     // found cells keep their green
-  el.style.background = '#faf6ff'; el.style.borderColor = '#d9c8ec'; el.style.color = '#5a3f7a';
-}
-function renderWordHunt() {
-  const a = arcade, S = a.S;
-  $('arcadeTitle').innerHTML = '🔤 Word Hunt';
-  arcadeWallet();
-  let h = '<div style="color:#6c84a6; font-size:13px; margin-bottom:6px">Tap the <b>first</b> letter of a word, then its <b>last</b> letter!</div>';
-  h += '<div style="display:grid; grid-template-columns:repeat(' + S + ',1fr); gap:4px; max-width:340px; margin:0 auto">';
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    h += '<button class="huntCell" data-x="' + x + '" data-y="' + y + '" style="aspect-ratio:1; font-weight:800; font-size:17px; border-radius:9px; border:2px solid #d9c8ec; background:#faf6ff; color:#5a3f7a; cursor:pointer; padding:0">' + a.grid[y][x] + '</button>';
-  }
-  h += '</div><div id="huntWords" style="display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:10px"></div>';
-  $('arcadeBody').innerHTML = h;
-  document.querySelectorAll('.huntCell').forEach(c => c.onclick = () => huntTap(+c.dataset.x, +c.dataset.y, c));
-  renderHuntWords();
-}
-function renderHuntWords() {
-  const el = document.getElementById('huntWords'); if (!el || !arcade) return;
-  el.innerHTML = arcade.words.map(w =>
-    '<span style="padding:4px 10px; border-radius:999px; font-weight:800; font-size:14px; ' +
-    (w.found ? 'background:#d9f5e0; color:#2f8a52; text-decoration:line-through' : 'background:#f0e8fb; color:#7a4ea0') + '">' + w.word.toLowerCase() + '</span>').join('');
-}
-function huntTap(x, y, cell) {
-  const a = arcade; if (!a || a.kind !== 'hunt') return;
-  if (!a.anchor) {
-    a.anchor = { x, y };
-    cell.style.background = '#ffe9a8'; cell.style.borderColor = '#e8b93e';
-    Sound.click(); return;
-  }
-  const prev = huntCellAt(a.anchor.x, a.anchor.y);
-  if (a.anchor.x === x && a.anchor.y === y) { if (prev) huntBaseStyle(prev); a.anchor = null; return; }   // same cell = cancel
-  const dx = Math.sign(x - a.anchor.x), dy = Math.sign(y - a.anchor.y);
-  const len = Math.max(Math.abs(x - a.anchor.x), Math.abs(y - a.anchor.y)) + 1;
-  const straight = (a.anchor.x + dx * (len - 1) === x) && (a.anchor.y + dy * (len - 1) === y);
-  if (!straight) {                                          // not in a line — treat the tap as a fresh start
-    if (prev) huntBaseStyle(prev);
-    a.anchor = { x, y };
-    cell.style.background = '#ffe9a8'; cell.style.borderColor = '#e8b93e';
-    return;
-  }
-  let s = ''; const cells = [];
-  for (let i = 0; i < len; i++) { const cx = a.anchor.x + dx * i, cy = a.anchor.y + dy * i; s += a.grid[cy][cx]; cells.push([cx, cy]); }
-  const rev = s.split('').reverse().join('');
-  const hit = a.words.find(w => !w.found && (w.word === s || w.word === rev));
-  if (prev) huntBaseStyle(prev);
-  a.anchor = null;
-  if (hit) {
-    hit.found = true; Sound.correct();
-    cells.forEach(([cx, cy]) => { const el = huntCellAt(cx, cy); if (el) { el.dataset.found = '1'; el.style.background = '#c8f0d2'; el.style.borderColor = '#57b06f'; el.style.color = '#22633a'; } });
-    const t = arcadeLevel() >= 3 ? 2 : 1;
-    a.ticketsWon += t; G.prizeTickets = (G.prizeTickets || 0) + t;
-    recordPractice('spelling', true);
-    $('arcadeMsg').style.color = '#2f8a52';
-    $('arcadeMsg').innerHTML = '✓ <b>' + hit.word.toLowerCase() + '</b> +' + t + ' 🎫 — <i>' + hit.sentence + '</i>';
-    arcadeWallet(); renderHuntWords();
-    if (a.words.every(w => w.found)) finishHunt();
-  } else {
-    a.wrongPicks++;
-    Sound.wrong();
-    $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '✗ Not one of the hidden words — look again!';
-  }
-}
-function finishHunt() {
+function nextQuizQ() {
   const a = arcade;
-  const bonus = 2; G.prizeTickets += bonus; a.ticketsWon += bonus;
+  const lvl = Math.max(1, Math.min(3, arcadeLevel()));                  // stays gentle: capped at level 3
+  for (let t = 0; t < 6; t++) {                                         // questions 1,3,5: always "what's a noun?" basics
+    a.q = makeGrammarQuestion(lvl);
+    if (a.qNum % 2 === 1 || /NOUN|VERB|ADJECTIVE|ADVERB/.test(a.q.text)) break;
+  }
+  a.tried = false;
+  renderWordQuiz();
+}
+function renderWordQuiz() {
+  const a = arcade;
+  $('arcadeTitle').innerHTML = '📖 Word Quiz';
+  arcadeWallet();
+  let h = '<div style="color:#8a7aa0; font-weight:800; margin-bottom:6px">Question ' + (a.qNum + 1) + ' of ' + a.total + ' &nbsp;•&nbsp; ⭐ ' + a.right + ' right</div>';
+  h += '<div style="font-size:clamp(16px,3vw,20px); color:#34495e; font-weight:bold; margin-bottom:10px; line-height:1.35">' + a.q.text + '?</div>';
+  const short = innerHeight < 620;
+  h += '<div style="display:flex; flex-direction:column; gap:' + (short ? 5 : 8) + 'px; max-width:430px; margin:0 auto">';
+  a.q.options.forEach((o, i) => {
+    h += '<button class="quizOpt" data-i="' + i + '" style="font-weight:bold; padding:' + (short ? '7px 12px' : '11px 14px') + '; border-radius:12px; border:none; cursor:pointer; color:#fff; font-size:' + (short ? 15 : 16) + 'px; background:#7A4EA0; box-shadow:0 4px 0 #5a3a78; font-family:inherit">' + o + '</button>';
+  });
+  h += '</div>';
+  h += '<button id="quizHint" style="margin-top:10px; font-weight:bold; padding:9px 16px; border-radius:999px; border:none; cursor:pointer; color:#fff; background:#E8A33D; box-shadow:0 3px 0 #B57D24; font-family:inherit">💡 Hint</button>';
+  $('arcadeBody').innerHTML = h;
+  document.querySelectorAll('.quizOpt').forEach(b => b.onclick = () => quizAnswer(a.q.options[+b.dataset.i], b));
+  const hb = document.getElementById('quizHint');
+  if (hb) hb.onclick = () => {
+    Sound.click();
+    $('arcadeMsg').style.color = '#B57D24';
+    $('arcadeMsg').innerHTML = '💡 ' + (a.q.hint || 'Read each choice out loud — which one fits?');
+  };
+}
+function quizAnswer(o, btn) {
+  const a = arcade; if (!a || a.kind !== 'quiz') return;
+  if (o === a.q.answer) {
+    Sound.correct();
+    let msg = '✓ <b>' + a.q.answer + '</b>!';
+    if (!a.tried) {
+      a.right++; a.ticketsWon++;
+      G.prizeTickets = (G.prizeTickets || 0) + 1;
+      recordPractice('reading', true);
+      msg += ' +1 🎫';
+    }
+    arcadeWallet();
+    $('arcadeMsg').style.color = '#2f8a52';
+    $('arcadeMsg').innerHTML = msg;
+    a.qNum++;
+    if (a.qNum >= a.total) finishWordQuiz();
+    else setTimeout(() => { if (arcade && arcade.kind === 'quiz') { $('arcadeMsg').textContent = ''; nextQuizQ(); } }, 1000);
+  } else {
+    if (!a.tried) { a.tried = true; recordPractice('reading', false); }
+    Sound.wrong();
+    btn.style.background = '#b8b0c8'; btn.style.boxShadow = 'none'; btn.disabled = true;
+    $('arcadeMsg').style.color = '#c0392b';
+    $('arcadeMsg').innerHTML = '🤔 Not that one — the 💡 Hint helps!';
+  }
+}
+function finishWordQuiz() {
+  const a = arcade;
+  const bonus = a.right === a.total ? 2 : 0;
+  if (bonus) { G.prizeTickets = (G.prizeTickets || 0) + bonus; a.ticketsWon += bonus; }
   Sound.fanfare && Sound.fanfare();
   arcadeWallet();
-  arcadeGameOver('🎉 You found them all! <b>+' + a.ticketsWon + ' 🎫</b>', Math.max(0, 6 - a.wrongPicks));
+  arcadeGameOver('📖 Quiz done — <b>' + a.right + '/' + a.total + '</b> on the first try! <b>+' + a.ticketsWon + ' 🎫</b>' + (bonus ? ' 🌟 perfect bonus!' : ''), a.right);
 }
 /* ---- ⛄ SNOWMAN SPELL: guess letters before the sun melts him (a friendly hangman) ---- */
 function startSnowman() {
   if (!arcadePay()) return;
-  const pick = pickArcadeWords(1, 9)[0];
-  arcade = { kind: 'snow', word: pick[0].toUpperCase(), sentence: pick[1], hits: new Set(), used: new Set(), misses: 0, maxMiss: 6, done: false };
+  const lvl = arcadeLevel();
+  const pick = pickArcadeWords(1, lvl <= 2 ? 5 : lvl === 3 ? 7 : 9)[0];   // little spellers get little words
+  const word = pick[0].toUpperCase();
+  arcade = { kind: 'snow', word, sentence: pick[1],
+    hits: new Set([word[0]]), used: new Set([word[0]]),    // 🆓 the first letter comes free
+    misses: 0, maxMiss: lvl <= 2 ? 8 : lvl === 3 ? 7 : 6,  // younger kids get more snow to spare
+    hints: 2, hintCost: 0, done: false };
   renderSnowman();
+}
+function snowHint() {                          // 💡 reveal one letter (docked from the prize, never below 1)
+  const a = arcade; if (!a || a.kind !== 'snow' || a.done || a.hints <= 0) return;
+  const left = a.word.split('').filter(c => !a.hits.has(c));
+  if (!left.length) return;
+  a.hints--; a.hintCost++;
+  Sound.click();
+  snowGuess(left[Math.floor(Math.random() * left.length)]);
 }
 function renderSnowman() {
   const a = arcade;
   $('arcadeTitle').innerHTML = '⛄ Snowman Spell';
   arcadeWallet();
   const melt = a.misses / a.maxMiss;                                              // 0 → 1
+  const short = innerHeight < 620;                                                // landscape phone → compact
   const blanked = a.sentence.replace(new RegExp(a.word, 'ig'), '_____');
-  let h = '<div style="height:104px; position:relative; overflow:hidden">' +
-    '<div style="position:absolute; right:10px; top:2px; font-size:' + Math.round(16 + melt * 30) + 'px">☀️</div>' +
-    '<div style="font-size:80px; line-height:1; position:absolute; left:50%; bottom:2px; transform:translateX(-50%) scaleY(' + (a.misses >= a.maxMiss ? 1 : 1 - melt * 0.75).toFixed(2) + '); transform-origin:bottom">' + (a.misses >= a.maxMiss ? '💧' : '⛄') + '</div>' +
-    '<div style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:' + Math.round(8 + melt * 140) + 'px; height:9px; border-radius:50%; background:#9fd8f0"></div></div>';
-  h += '<div style="display:flex; gap:6px; justify-content:center; margin:8px 0 4px">' +
-    a.word.split('').map(ch => '<span style="width:28px; height:38px; border-bottom:4px solid #7a4ea0; font-size:26px; font-weight:800; color:#5a3f7a; display:inline-block">' + (a.hits.has(ch) || a.done ? ch : '') + '</span>').join('') + '</div>';
-  h += '<div style="color:#6c84a6; font-size:14px; margin-bottom:8px">Clue: <i>' + blanked + '</i></div>';
-  h += '<div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center; max-width:430px; margin:0 auto">';
+  let h = '<div style="height:' + (short ? 64 : 104) + 'px; position:relative; overflow:hidden">' +
+    '<div style="position:absolute; right:10px; top:2px; font-size:' + Math.round((short ? 12 : 16) + melt * (short ? 20 : 30)) + 'px">☀️</div>' +
+    '<div style="font-size:' + (short ? 50 : 80) + 'px; line-height:1; position:absolute; left:50%; bottom:2px; transform:translateX(-50%) scaleY(' + (a.misses >= a.maxMiss ? 1 : 1 - melt * 0.75).toFixed(2) + '); transform-origin:bottom">' + (a.misses >= a.maxMiss ? '💧' : '⛄') + '</div>' +
+    '<div style="position:absolute; left:50%; bottom:0; transform:translateX(-50%); width:' + Math.round(8 + melt * (short ? 90 : 140)) + 'px; height:8px; border-radius:50%; background:#9fd8f0"></div></div>';
+  h += '<div style="display:flex; gap:6px; justify-content:center; margin:' + (short ? '4px 0 2px' : '8px 0 4px') + '">' +
+    a.word.split('').map(ch => '<span style="width:' + (short ? 24 : 28) + 'px; height:' + (short ? 30 : 38) + 'px; border-bottom:4px solid #7a4ea0; font-size:' + (short ? 21 : 26) + 'px; font-weight:800; color:#5a3f7a; display:inline-block">' + (a.hits.has(ch) || a.done ? ch : '') + '</span>').join('') + '</div>';
+  h += '<div style="color:#6c84a6; font-size:' + (short ? 13 : 14) + 'px; margin-bottom:' + (short ? 4 : 8) + 'px">Clue: <i>' + blanked + '</i></div>';
+  h += '<div style="display:flex; flex-wrap:wrap; gap:' + (short ? 4 : 5) + 'px; justify-content:center; max-width:430px; margin:0 auto">';
   for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     const used = a.used.has(ch) || a.done;
-    h += '<button class="snowKey" data-ch="' + ch + '" ' + (used ? 'disabled' : '') + ' style="width:33px; height:38px; border-radius:8px; border:none; font-weight:800; font-size:16px; cursor:pointer; ' +
+    h += '<button class="snowKey" data-ch="' + ch + '" ' + (used ? 'disabled' : '') + ' style="width:' + (short ? 30 : 33) + 'px; height:' + (short ? 32 : 38) + 'px; border-radius:8px; border:none; font-weight:800; font-size:' + (short ? 14 : 16) + 'px; cursor:pointer; ' +
       (used ? 'background:#e8e4ee; color:#b8b0c8' : 'background:#7a4ea0; color:#fff; box-shadow:0 3px 0 #5a3a78') + '">' + ch + '</button>';
   }
   h += '</div>';
-  if (!a.done) h += '<div style="margin-top:6px; color:#8a7aa0; font-size:13px">❄️ ' + (a.maxMiss - a.misses) + ' wrong guesses before he melts!</div>';
+  if (!a.done) {
+    h += '<div style="margin-top:6px; color:#8a7aa0; font-size:13px">❄️ ' + (a.maxMiss - a.misses) + ' wrong guesses before he melts!</div>';
+    if (a.hints > 0) h += '<button id="snowHint" style="margin-top:8px; font-weight:bold; padding:9px 16px; border-radius:999px; border:none; cursor:pointer; color:#fff; background:#E8A33D; box-shadow:0 3px 0 #B57D24">💡 Reveal a letter (' + a.hints + ' left · costs 1 🎫)</button>';
+  }
   $('arcadeBody').innerHTML = h;
   document.querySelectorAll('.snowKey').forEach(k => k.onclick = () => snowGuess(k.dataset.ch));
+  const hb = document.getElementById('snowHint'); if (hb) hb.onclick = () => snowHint();
 }
 function snowGuess(ch) {
   const a = arcade; if (!a || a.kind !== 'snow' || a.done) return;
@@ -8241,7 +8488,7 @@ function snowGuess(ch) {
     if (a.word.split('').every(c => a.hits.has(c))) {                             // ⛄ saved!
       a.done = true;
       recordPractice('spelling', true);
-      const t = 2 + (a.misses <= 1 ? 2 : a.misses <= 3 ? 1 : 0) + (arcadeLevel() >= 4 ? 1 : 0);
+      const t = Math.max(1, 2 + (a.misses <= 1 ? 2 : a.misses <= 3 ? 1 : 0) + (arcadeLevel() >= 4 ? 1 : 0) - (a.hintCost || 0));
       G.prizeTickets = (G.prizeTickets || 0) + t;
       if (typeof speakWord === 'function') { try { speakWord(a.word.toLowerCase()); } catch (e) {} }
       Sound.fanfare && Sound.fanfare();
@@ -10987,10 +11234,22 @@ function rideTo(targetY) {
   player.pos.y = y; player.vel.set(0, 0, 0); player.onGround = true;
   player.restingBed = null; player.sittingChair = null; player.playing = null;
 }
+function liftHasLanding(entry, targetY) {   // is there a floor to stand on at targetY around the lift?
+  if (targetY <= 0.01) return true;         // the ground floor always exists
+  const cx = Math.floor(entry.mesh.position.x), cz = Math.floor(entry.mesh.position.z);
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++)
+    if (solidAt(cx + dx, Math.round(targetY) - 1, cz + dz)) return true;
+  return false;
+}
 function useStairs(entry) {
   const baseY = Math.round(entry.mesh.position.y);       // the floor this staircase stands on (usually 0)
   const top = baseY + LIFT_FLOOR_H;
   const goingUp = player.pos.y < baseY + LIFT_FLOOR_H * 0.5;
+  if (goingUp && !liftHasLanding(entry, top)) {          // 🪜 no second floor yet → teach, don't teleport
+    toast('🪜 No floor up there yet! Build one ' + LIFT_FLOOR_H + ' blocks up next to the stairs — press C twice for 🦅 bird\'s eye and use 🌉 Fill across to lay it fast!', 4200);
+    if (Sound.wrong) Sound.wrong();
+    return;
+  }
   rideTo(goingUp ? top : baseY);
   if (Sound.slide) Sound.slide();
   toast(goingUp ? '🪜 Up you go — to the next floor!' : '🪜 Back down you come!', 1600);
@@ -11019,6 +11278,11 @@ function renderLiftPad() {
     const label = f === 0 ? 'Ground Floor' : (f + 1) + (f === 1 ? 'nd' : f === 2 ? 'rd' : 'th') + ' Floor';
     btn.innerHTML = '🛗 ' + label + (Math.abs(fy - here) < 0.6 ? '  •  you are here' : '');
     btn.onclick = () => {
+      if (fy > 0 && !liftHasLanding(liftActive, fy)) {   // 🛗 don't ride into thin air
+        $('liftMsg').textContent = '🛗 No floor at ' + label + ' yet — build one ' + LIFT_FLOOR_H + ' blocks up first!';
+        if (Sound.wrong) Sound.wrong();
+        return;
+      }
       Sound.click(); rideTo(fy);
       if (Sound.bell) Sound.bell();
       toast('🛗 Ding! ' + label, 1500);
@@ -11115,13 +11379,15 @@ function setAvatar(index) {
     const data = AVATARS[index].build();
     // give the avatar an expressive face on its front (best seen in selfie mode).
     // bipeds have a flat face + arms; quads get a smaller mouth on the muzzle.
-    data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
-    setFaceExpr(data.face, 'smile');
+    if (!data.face) data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
+    setFaceExpr(data.face, 'smile');           // (builders may pre-make their own softer face — don't double the mouth!)
     // remember each arm's resting pose so we can return to it after a wave
     if (data.arms) data.armRest = data.arms.map(a => ({ x: a.rotation.x, z: a.rotation.z }));
     player.avatar = data.group;
     player.avatarData = data;
+    player.avatarIndexLoading = index;
     applyHeadwear();
+    maybeUpgradeAvatarToModel(index);        // 🎨 quietly swap in avatars/<id>.glb if one exists
   } finally { ROUND_AV = false; }
   scene.add(player.avatar);
 }
@@ -11131,7 +11397,7 @@ function applyHeadwear() {
   if (!d) return;
   if (d.headwear) { d.head.remove(d.headwear); d.headwear = null; }
   if (profile.hideHat) return;         // player chose to go bare-headed (toggle in 🏅 Badges)
-  const topY = d.quad ? 0.13 : 0.25;   // top of the head box (quads sit the crown lower so it rests ON the head)
+  const topY = d.hatY != null ? d.hatY : (d.quad ? 0.13 : 0.25);   // top of the head (round-headed kids set their own)
   let h = null;
   if (G.owned.usahat) {                 // a bought cosmetic the player chose to wear — it wins
     h = new THREE.Group();
@@ -11772,7 +12038,9 @@ function updatePlayer(dt) {
   const t = performance.now() / 1000;
   if (player.inWater) av.position.y += 0.18 + Math.sin(t * 4) * 0.07;   // 🏊 bob at the water's surface
   if (player.driving) av.position.y -= 0.2;                             // 🚗 sink down into the seat
-  if (player.driving) {                                                 // 🚗 seated at the wheel — bend legs into the seat, hands forward
+  if (d.glb) {                                                          // 🎨 model avatars: their own clips do the walking
+    updateGlbAvatar(d, moving && !player.driving, t);
+  } else if (player.driving) {                                          // 🚗 seated at the wheel — bend legs into the seat, hands forward
     if (d.quad) { d.legs.forEach(l => l.rotation.x = -0.9); }
     else {
       d.legs[0].rotation.x = -1.3; d.legs[1].rotation.x = -1.3;        // thighs forward into the footwell = sitting
@@ -15358,6 +15626,15 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
       if (pet) { openPetMenu(pet); return; }
     }
   }
+  // 1.75) tap a town friend → they turn and chat right away
+  if ((action === 'place' || action === 'move') && npcs.length) {
+    const nHit = raycaster.intersectObjects(npcs.map(n => n.group), true)[0];
+    if (nHit) {
+      let o = nHit.object; while (o.parent && o.parent !== scene) o = o.parent;
+      const n = npcs.find(nn => nn.group === o);
+      if (n) { n.coolAt = 0; npcSpeak(n, performance.now()); return; }
+    }
+  }
   // 1.8) in BREAK mode, tap a placed item (🐠 fish bowl, 🍎 apple…) to pick it up — even on a table inside a house
   if (action === 'break' && placedFood.length) {
     const fMeshes = placedFood.filter(f => f.kind !== 'cat' && f.kind !== 'dog' && f.kind !== 'bird').map(f => f.mesh);
@@ -15559,7 +15836,65 @@ function toggleCamera() {
     toast(G.firstPerson ? '👁️ First-person view' : (G.birdsEye ? '🦅 Bird\'s eye view' : '🧍 Third-person view'), 1100);
   }
 }
-$('camBtn').onclick = () => { Sound.click(); toggleCamera(); };
+function setCameraMode(mode) {                 // the three views, by name (the menu uses this)
+  G.firstPerson = mode === 'fp';
+  G.birdsEye = mode === 'bird';
+  if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();
+  if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }
+  $('camBtn').textContent = camIcon();
+  toast(mode === 'fp' ? '👁️ Through my eyes!' : mode === 'bird' ? '🦅 Bird\'s eye — tap any block from above to build on it!' : '🧍 Behind me!', 1600);
+}
+$('camBtn').onclick = () => {
+  Sound.click();
+  const m = $('viewMenu');
+  if (m.style.display === 'flex') { m.style.display = 'none'; return; }
+  const cur = G.firstPerson ? 'fp' : (G.birdsEye ? 'bird' : 'third');
+  m.querySelectorAll('.viewOpt').forEach(b => b.classList.toggle('cur', b.dataset.m === cur));
+  const r = $('camBtn').getBoundingClientRect();
+  m.style.top = Math.min(innerHeight - 200, r.bottom + 6) + 'px';
+  m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  m.style.display = 'flex';
+};
+document.querySelectorAll('#viewMenu .viewOpt').forEach(b => b.onclick = () => {
+  Sound.click(); setCameraMode(b.dataset.m); $('viewMenu').style.display = 'none';
+});
+addEventListener('pointerdown', e => {        // tap anywhere else → the choosers tuck away
+  for (const [mid, bid] of [['viewMenu', 'camBtn'], ['hudMenu', 'menuBtn']]) {
+    const m = $(mid);
+    if (m.style.display === 'flex' && !m.contains(e.target) && e.target !== $(bid)) m.style.display = 'none';
+  }
+}, true);
+/* ☰ THE MENU — the extra buttons live here now, each with a label kids can read.
+   The original buttons stay in the DOM (hidden): their onclick IS the feature, we just call it. */
+function openHudMenu() {
+  const m = $('hudMenu');
+  const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
+  const items = [
+    ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
+    ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
+    ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
+    ['cursorBtn', '❔', '<b>How to play</b>'],
+    ['saveBtn',   '💾', '<b>Save game</b>'],
+    ['homeBtn',   '🏠', '<b>Save & go home</b>'],
+  ];
+  m.innerHTML = items.map(([id, ic, html]) => '<button class="viewOpt" data-b="' + id + '">' + ic + ' ' + html + '</button>').join('');
+  m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
+    m.style.display = 'none';
+    const t = $(b.dataset.b);
+    if (t && t.onclick) t.onclick();
+  });
+  const r = $('menuBtn').getBoundingClientRect();
+  m.style.top = (r.bottom + 6) + 'px';
+  m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  m.style.maxHeight = Math.max(150, innerHeight - r.bottom - 14) + 'px';       // short phones: the list scrolls
+  m.style.display = 'flex';
+}
+$('menuBtn').onclick = () => {
+  Sound.click();
+  const m = $('hudMenu');
+  if (m.style.display === 'flex') { m.style.display = 'none'; return; }
+  openHudMenu();
+};
 $('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
 function toggleSelfie() {
   G.selfie = !G.selfie;
@@ -15568,7 +15903,7 @@ function toggleSelfie() {
   $('crosshair').style.display = G.selfie ? 'none' : '';   // hide the aiming + in selfie mode (clean photos)
   G.selfieAngle = 0;                                        // reset to a front-on selfie each time
   const ab = $('selfieAngleBtn'); if (ab) { ab.style.display = G.selfie ? 'block' : 'none'; ab.textContent = '📷 Front'; }
-  toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸! (📷 to turn for a side view)' : '🧍 Back to normal view', 1600);
+  toast(G.selfie ? '🤳 Selfie mode — strike a pose and wave! (📷 to turn for a side view)' : '🧍 Back to normal view', 1600);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
 // 🤳 cycle the selfie camera: front → left profile → right profile
@@ -16025,7 +16360,6 @@ $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' +
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
-$('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
 function freeMouse() {
   toast(G.mouseWalk
     ? '🖱️ 🚶 Click-to-move ON — left-click the ground to walk there; click a math block/shop to use it. Drag to look. (Toggle it bottom-left.)'
@@ -16054,41 +16388,6 @@ $('walkBtn').onclick = () => {
 };
 $('undoBtn').onclick = () => { Sound.click(); undoLast(); };
 $('bridgeBtn').onclick = () => { Sound.click(); fillBridge(); };
-function takePhoto() {
-  renderer.render(scene, camera);                 // fresh frame in the buffer
-  // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
-  const d = new Date();
-  const p2 = n => String(n).padStart(2, '0');
-  const stamp = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + '-' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds());
-  const name = 'Stackadoo-' + (G.playerName || 'build') + '-' + stamp + '.png';
-  const fallbackDownload = url => {
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    // Browsers save to the Downloads folder — we can't target Pictures directly from a webpage.
-    toast('📸 Saved to your Downloads folder!', 2600);
-  };
-  try {
-    renderer.domElement.toBlob(async blob => {
-      if (!blob) { fallbackDownload(renderer.domElement.toDataURL('image/png')); return; }
-      // On tablets/phones, offer the native share sheet (no website needed) → save to Photos, send, post, etc.
-      if (navigator.canShare) {
-        const file = new File([blob], name, { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'My Stackadoo build!', text: 'Look what I built in Stackadoo — and I earned it by doing math! 🧱🚒 Play free at stackadoo.com #Stackadoo', url: 'https://stackadoo.com/' });
-            toast('📸 Shared your build!', 2200);
-            return;
-          } catch (e) { if (e && e.name === 'AbortError') return; }   // user cancelled the share sheet
-        }
-      }
-      fallbackDownload(URL.createObjectURL(blob));
-    }, 'image/png');
-  } catch (e) {
-    try { fallbackDownload(renderer.domElement.toDataURL('image/png')); }
-    catch (e2) { toast('📸 Couldn\'t save the photo on this device.', 2200); }
-  }
-}
 function refreshMuteIcons() {
   const ic = Sound.muted ? '🔇' : '🔊';
   const a = $('soundBtn'), b = $('startSoundBtn');
@@ -16129,6 +16428,27 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
+/* 🔄 phones play SIDEWAYS, Dojo-style. The web can't hard-lock orientation everywhere, so:
+   really lock it where possible (Android: fullscreen + orientation.lock, tried inside the
+   Start tap), and everywhere else (iPhones) freeze the game behind a big friendly
+   "turn your phone" screen whenever a phone is held upright mid-game. Tablets are exempt. */
+function isPhone() { return isTouch && Math.min(screen.width, screen.height) < 520; }
+function updateRotateGate() {
+  const show = G.running && !G.over && isPhone() && innerHeight > innerWidth;
+  G.rotateGate = show;                                  // the game loop freezes while this is up
+  const el = $('rotateOverlay'); if (el) el.style.display = show ? 'flex' : 'none';
+}
+addEventListener('resize', updateRotateGate);
+try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
+function tryLandscapeLock() {
+  if (!isPhone() || document.fullscreenElement) return;
+  try {
+    const fs = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    (fs && fs.then ? fs : Promise.reject()).then(() => {
+      if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape');
+    }).catch(() => {});                                 // iOS etc: the rotate screen handles it
+  } catch (e) {}
+}
 const touch = { joyX: 0, joyY: 0, jump: false, placeMode: true };
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
@@ -16307,6 +16627,7 @@ function buildMenu() {
   pvRenderer.setSize(PV, PV);
 
   AVATARS.forEach((av, i) => {
+    if (av.hidden) return;                 // ⏸️ hidden heroes keep working in old saves, just can't be picked
     const card = document.createElement('button');
     card.className = 'avatarCard' + (i === 0 ? ' selected' : '');
     const cv = document.createElement('canvas');
@@ -16316,25 +16637,30 @@ function buildMenu() {
     card.appendChild(cv); card.appendChild(nm);
     grid.appendChild(card);
 
+    const ctx = cv.getContext('2d');
+    const drawThumb = (group, quad) => {                 // paint one hero onto this card
+      group.rotation.y = quad ? 0.85 : 0.5;              // angle quadrupeds to show all four legs
+      pvScene.add(group);
+      pvRenderer.render(pvScene, pvCam);
+      pvScene.remove(group);
+      const bg = ctx.createLinearGradient(0, 0, 0, PV);  // medium periwinkle so every hero stands out
+      bg.addColorStop(0, '#dbe7f6'); bg.addColorStop(1, '#b7cde8');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, PV, PV);
+      ctx.save();                                        // soft ground shadow under the feet
+      ctx.translate(PV * 0.5, PV * 0.84); ctx.scale(1, 0.3);
+      const sh = ctx.createRadialGradient(0, 0, 2, 0, 0, PV * 0.28);
+      sh.addColorStop(0, 'rgba(33,52,82,0.34)'); sh.addColorStop(1, 'rgba(33,52,82,0)');
+      ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(0, 0, PV * 0.28, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      ctx.drawImage(pvRenderer.domElement, 0, 0, PV, PV);   // hero on top of the backdrop
+    };
     ROUND_AV = true;
     let data;
     try { data = av.build(); } finally { ROUND_AV = false; }
-    data.group.rotation.y = data.quad ? 0.85 : 0.5;   // angle quadrupeds to show all four legs
-    pvScene.add(data.group);
-    pvRenderer.render(pvScene, pvCam);
-    pvScene.remove(data.group);
-
-    const ctx = cv.getContext('2d');
-    const bg = ctx.createLinearGradient(0, 0, 0, PV);   // medium periwinkle so every hero stands out
-    bg.addColorStop(0, '#dbe7f6'); bg.addColorStop(1, '#b7cde8');
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, PV, PV);
-    ctx.save();                                          // soft ground shadow under the feet
-    ctx.translate(PV * 0.5, PV * 0.84); ctx.scale(1, 0.3);
-    const sh = ctx.createRadialGradient(0, 0, 2, 0, 0, PV * 0.28);
-    sh.addColorStop(0, 'rgba(33,52,82,0.34)'); sh.addColorStop(1, 'rgba(33,52,82,0)');
-    ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(0, 0, PV * 0.28, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-    ctx.drawImage(pvRenderer.domElement, 0, 0, PV, PV);  // hero on top of the backdrop
+    drawThumb(data.group, data.quad);
+    if (typeof parseAvatarModel === 'function') {        // 🎨 got a real model? repaint the card with it
+      parseAvatarModel(av.id).then(mdl => { if (mdl) drawThumb(mdl.group, false); });
+    }
 
     card.onclick = () => {
       Sound.click();
@@ -16773,8 +17099,11 @@ function startGame() {
   spawnBerries();
   syncCars();                                   // park the active car out front if owned (else hide all)
   syncPack();                                   // your backpack (blocks/doors/furniture) follows you here
+  respawnNpcs();                                // 🧑‍🤝‍🧑 town friends stroll near spawn (restore & travel come through here too)
   refreshHUD();
   G.running = true;
+  tryLandscapeLock();                             // 🔄 phones: lock to landscape where the browser allows it...
+  updateRotateGate();                             // ...and gate portrait play everywhere else
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
   $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
@@ -16816,6 +17145,155 @@ function doomsdayStart() {
 }
 $('againBtn').onclick = () => location.reload();
 
+/* ============================ 🧑‍🤝‍🧑 TOWN FRIENDS (NPCs) ============================
+   Three or four heroes stroll near spawn like Dojo-style townsfolk. Walk up (or tap them)
+   and they chat in a speech bubble — mostly about the 🛝 playground, planting the seed so
+   kids build one... and so a later update can have the friends actually PLAY on it. */
+const NPC_CAST = [
+  { id: 'spark', name: 'Spark', lines: [
+    'Hi {name}! Have you seen the 🛝 playground yet?',
+    'I want to try the swings — will you come with me?',
+    'Race you to the 🛝 playground!',
+    'The curly slide looks SO twisty. Is it fast?',
+  ] },
+  { id: 'panda', name: 'Momma Panda', lines: [
+    'Hello {name}! Is the ⚖️ see-saw fun? I\'ve never tried one!',
+    'Could you build a see-saw at the 🛝 playground for us?',
+    'A picnic by the playground sounds lovely. 🧺',
+    'Which is better — the swings or the slide?',
+  ] },
+  { id: 'bunny', name: 'Bounce', lines: [
+    'Boing! I bet I can hop higher than the swings!',
+    'Meet me at the 🛝 playground later?',
+    'Is there a 🏖️ sandbox? I dig SUPER fast!',
+    'Tag — you\'re it, {name}! First one to the playground wins! 🛝',
+  ] },
+  { id: 'trex', name: 'Rexy', lines: [
+    'ROAR! ...too scary? I\'m friendly, promise. 🦖',
+    'My little arms can\'t reach the monkey bars. 😅',
+    'Will you go down the 🛝 slide with me later?',
+    'You earn 🪙 answering ❓ questions? You\'re so smart, {name}!',
+  ] },
+];
+let npcs = [];
+const npcV = new THREE.Vector3();
+function clearNpcs() {
+  for (const n of npcs) scene.remove(n.group);
+  npcs = [];
+  const holder = $('npcBubbles'); if (holder) holder.innerHTML = '';
+}
+function npcFindSpot(ax, az) {           // nearest clear 3×3 cell to the anchor (rings outward)
+  for (let r = 0; r < 9; r++) {
+    const steps = Math.max(1, r * 6);
+    for (let t = 0; t < steps; t++) {
+      const ang = (t / steps) * Math.PI * 2 + r * 0.7;
+      const x = Math.round(ax + Math.cos(ang) * r), z = Math.round(az + Math.sin(ang) * r);
+      if (cellClearArea(x, z)) return { x: x + 0.5, z: z + 0.5 };
+    }
+  }
+  return null;
+}
+function respawnNpcs() {
+  clearNpcs();
+  const P = PARK_ZONE[G.world] || { cx: 0, cz: 18 };
+  const anchors = [
+    { x: P.cx + 2, z: P.cz - 4 },        // the playground greeter, right by the park gate
+    { x: -6, z: 4 }, { x: 7, z: -3 }, { x: -3, z: -8 },
+  ];
+  NPC_CAST.forEach((cast, i) => {
+    const av = AVATARS.find(a => a.id === cast.id); if (!av) return;
+    const spot = npcFindSpot(anchors[i].x, anchors[i].z); if (!spot) return;
+    ROUND_AV = true;                      // same soft look as the hero picker cards
+    let d; try { d = av.build(); } catch (e) { ROUND_AV = false; return; } finally { ROUND_AV = false; }
+    d.group.scale.setScalar(0.92);        // a touch smaller than the hero
+    d.group.position.set(spot.x, 0, spot.z);
+    d.group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(d.group);
+    npcs.push({ cast, d, group: d.group, home: spot,
+      mode: 'idle', timer: 1 + Math.random() * 3, target: null,
+      phase: Math.random() * 9, lineIx: Math.floor(Math.random() * cast.lines.length),
+      coolAt: 0, say: '', sayUntil: 0, el: null });
+  });
+}
+function npcSpeak(n, now) {
+  const text = n.cast.lines[n.lineIx % n.cast.lines.length].replace('{name}', G.playerName || 'friend');
+  n.lineIx++;
+  n.coolAt = now + 16000 + Math.random() * 9000;     // don't repeat at the same kid right away
+  n.say = text; n.sayUntil = now + 4600;
+  const holder = $('npcBubbles'); if (!holder) return;
+  if (!n.el) { n.el = document.createElement('div'); n.el.className = 'npcBubble'; holder.appendChild(n.el); }
+  n.el.innerHTML = '<b>' + n.cast.name + '</b><br>' + text;
+  Sound.click();
+}
+function npcBubblePlace(n, now) {         // pin the bubble over the friend's head (screen space)
+  if (!n.el) return;
+  if (now > n.sayUntil) { n.el.style.display = 'none'; return; }
+  const g = n.group;
+  const dist = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
+  npcV.set(g.position.x, g.position.y + (n.d.quad ? 1.75 : 2.1) * 0.92, g.position.z).project(camera);
+  if (npcV.z > 1 || dist > 14) { n.el.style.display = 'none'; return; }   // behind the camera / far away
+  n.el.style.display = 'block';
+  n.el.style.left = ((npcV.x * 0.5 + 0.5) * innerWidth) + 'px';
+  n.el.style.top = ((-npcV.y * 0.5 + 0.5) * innerHeight) + 'px';
+}
+function npcLegsRest(n) {
+  const d = n.d;
+  d.legs.forEach(l => l.rotation.x *= 0.8);
+  if (d.arms) d.arms.forEach(a => a.rotation.x *= 0.8);
+}
+function updateNpcs(dt, now) {
+  if (!npcs.length) return;
+  for (const n of npcs) {
+    n.phase += dt;
+    const g = n.group, d = n.d;
+    const pd = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
+    const talking = now < n.sayUntil;
+    if (talking || pd < 3.2) {                                   // 👋 a kid is here — stop and face them
+      const want = Math.atan2(player.pos.x - g.position.x, player.pos.z - g.position.z);
+      let dy = want - g.rotation.y;
+      while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      g.rotation.y += dy * Math.min(1, dt * 6);
+      npcLegsRest(n);
+      if (pd < 3.4 && now >= n.coolAt && !popupOpen && !player.driving) npcSpeak(n, now);
+      n.mode = 'idle'; n.timer = 1.5 + Math.random() * 2;
+    } else if (n.mode === 'walk' && n.target) {
+      const dx = n.target.x - g.position.x, dz = n.target.z - g.position.z;
+      if (Math.hypot(dx, dz) < 0.25) { n.mode = 'idle'; n.timer = 2 + Math.random() * 4; npcLegsRest(n); }
+      else {
+        const want = Math.atan2(dx, dz);
+        let dy = want - g.rotation.y;
+        while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+        g.rotation.y += dy * Math.min(1, dt * 5);
+        g.position.x += Math.sin(g.rotation.y) * 1.1 * dt;       // stroll, don't march
+        g.position.z += Math.cos(g.rotation.y) * 1.1 * dt;
+        const s = Math.sin(n.phase * 8) * 0.55;                  // same gait as the hero
+        if (d.quad) { d.legs[0].rotation.x = s; d.legs[3].rotation.x = s; d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s; }
+        else {
+          d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
+          if (d.arms && d.arms.length >= 2) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
+        }
+      }
+    } else {                                                      // idle: settle, then pick a new stroll target
+      npcLegsRest(n);
+      n.timer -= dt;
+      if (n.timer <= 0) {
+        for (let t = 0; t < 12; t++) {
+          const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
+          const x = n.home.x + Math.cos(a) * r, z = n.home.z + Math.sin(a) * r;
+          const mx = (g.position.x + x) / 2, mz = (g.position.z + z) / 2;   // midpoint too — don't cut through walls
+          if (cellClearArea(Math.floor(x), Math.floor(z)) && cellClearArea(Math.floor(mx), Math.floor(mz))) {
+            n.target = { x, z }; n.mode = 'walk'; break;
+          }
+        }
+        if (n.mode !== 'walk') n.timer = 2 + Math.random() * 3;
+      }
+    }
+    if (d.wings) { const f = Math.sin(n.phase * 12) * 0.26; d.wings.forEach(w => { w.rotation.y = w.userData.baseRY + (w.userData.baseRY >= 0 ? f : -f); }); }
+    if (d.tail) d.tail.rotation.y = Math.sin(n.phase * (n.mode === 'walk' ? 6 : 3)) * 0.35;
+    npcBubblePlace(n, now);
+  }
+}
+
 /* ============================ GAME LOOP ============================ */
 let lastT = performance.now();
 let shelterTimer = 0;
@@ -16832,6 +17310,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
+  if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
   if (shadowWatch) {                                   // sustained sub-~22fps → shadows off (one-time)
     if (dt > 0.045) slowFrames++; else slowFrames = Math.max(0, slowFrames - 2);
@@ -16845,6 +17324,7 @@ function loop(now) {
   if (poolWater.length) { const tw = performance.now() / 480; for (const w of poolWater) if (w.mesh.parent) w.mesh.position.y = w.baseY + Math.sin(tw + (w.x + w.z) * 0.7) * 0.05; }   // rippling pool water
   if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
   if (!popupOpen && !G.over) updatePets(dt, now);
+  if (!popupOpen && !G.over) updateNpcs(dt, now);
   if (!G.over) updateQuest(dt, now);
 
   // pulse the math stations
