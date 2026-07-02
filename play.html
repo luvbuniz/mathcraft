@@ -150,7 +150,7 @@
   #menuBtn { position:absolute; top:10px; right:10px; pointer-events:auto; font-size:21px; font-weight:bold;
     background:rgba(255,255,255,.88); border-radius:12px; padding:9px 13px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   /* these buttons now live INSIDE the ☰ menu (kept in the DOM — their onclick IS the feature) */
-  #soundBtn, #homeBtn, #saveBtn, #questBtn, #selfieBtn, #photoBtn, #cursorBtn { display:none !important; }
+  #soundBtn, #homeBtn, #saveBtn, #questBtn, #selfieBtn, #cursorBtn { display:none !important; }
   /* 📷 view chooser + ☰ menu — labeled options so kids can FIND things.
      z-index above the touch JUMP/USE cluster so menu taps never hit the buttons beneath. */
   #viewMenu, #hudMenu { display:none; position:fixed; z-index:65; pointer-events:auto; flex-direction:column; gap:6px;
@@ -428,11 +428,10 @@
   #invBtn  { top:114px; }   /* third in the visible column: ☰ menu, 📷 view, 🎒 backpack */
   #questBtn { top:300px; font-size:17px; font-weight:bold; }   /* the quest board */
   #selfieBtn { top:360px; }
-  #photoBtn { top:420px; }
   #cursorBtn { top:480px; font-size:18px; font-weight:bold; }
-  #modeBtn { top:540px; font-size:16px; font-weight:bold; }
+  #modeBtn { top:222px; font-size:16px; font-weight:bold; }   /* below ☰ 📷 🎒 (+🚨 while driving) */
   #modeBtn.remove { background:#ffd2cc; box-shadow:0 3px 0 #d98b80; }
-  #undoBtn { top:530px; font-size:14px; font-weight:bold; background:#cdeed1; box-shadow:0 3px 0 #a4ccaa; }
+  #undoBtn { top:282px; font-size:14px; font-weight:bold; background:#cdeed1; box-shadow:0 3px 0 #a4ccaa; }
   #mouseLegend { position:absolute; left:12px; bottom:12px; display:none; pointer-events:none;
     background:rgba(0,0,0,.5); color:#fff; padding:6px 13px; border-radius:13px;
     font-size:14px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.25); }
@@ -963,6 +962,14 @@
        grow and scroll with the WHOLE page, so it's easy to drag to a saved game or the hero picker. */
     #savedList { max-height:none !important; overflow:visible !important; }
   }
+  /* 🔄 phones play SIDEWAYS (like Dojo Island): a friendly full-screen ask when held upright in-game */
+  #rotateOverlay { position:fixed; inset:0; z-index:100; display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; text-align:center; padding:40px 24px;
+    background:rgba(30,50,82,.96); color:#fff; }
+  #rotateOverlay .ph { font-size:72px; animation:rotPhone 1.8s ease-in-out infinite; }
+  @keyframes rotPhone { 0%,18% { transform:rotate(0) } 55%,82% { transform:rotate(90deg) } 100% { transform:rotate(90deg) } }
+  #rotateOverlay b { font-size:clamp(20px,6vw,30px); }
+  #rotateOverlay span { color:#cfe0f5; font-size:15px; max-width:340px; }
   /* 🚂 TRAIN RIDE — a clean cinematic lap. Hide ALL the gameplay UI so nothing overlaps the view. */
   #rideOverlay { position:fixed; inset:0; z-index:70; display:none; pointer-events:none; }
   body.riding #hud, body.riding #touchUI, body.riding #viewMenu, body.riding #hudMenu { display:none !important; }
@@ -1219,7 +1226,6 @@
   <button id="invBtn" class="hudBtn" title="Backpack (I)">🎒</button>
   <button id="questBtn" class="hudBtn" title="Quest Board">🗺️</button>
   <button id="selfieBtn" class="hudBtn" title="Selfie mode: see the front of your character">🤳</button>
-  <button id="photoBtn" class="hudBtn" title="Take a photo of your build">📸</button>
   <button id="cursorBtn" class="hudBtn" title="Controls help (M)">❔</button>
   <button id="modeBtn" class="hudBtn" title="Switch: build blocks / remove blocks (X key)">🧱 Build</button>
   <button id="undoBtn" class="hudBtn" title="Undo — put back the last thing you removed (Z key)">↩️ Undo</button>
@@ -1719,6 +1725,7 @@
 
 <!-- ================= TRAIN RIDE OVERLAY (cinematic; hides the HUD) ================= -->
 <div id="rideOverlay"><div id="rideCaption">🚂 All aboard the Silver Creek Express!</div></div>
+<div id="rotateOverlay"><div class="ph">📱</div><b>Turn your phone sideways!</b><span>Stackadoo plays in landscape — flip your phone and keep building. 🧱</span></div>
 
 <script>
 'use strict';
@@ -4738,6 +4745,7 @@ function goHome() {
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
   if (typeof clearNpcs === 'function') clearNpcs();
   G.running = false; popupOpen = false;
+  if (typeof updateRotateGate === 'function') updateRotateGate();   // the menu is fine in any orientation
   ['mathPopup', 'shopPopup', 'invPopup', 'badgePopup', 'endScreen'].forEach(id => $(id).style.display = 'none');
   $('viewMenu').style.display = 'none'; $('hudMenu').style.display = 'none';
   $('placingTag').style.display = 'none';
@@ -4818,7 +4826,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 40, 90);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 200);
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });  // preserve so photos work
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 /* ✨ Soft sunlight shadows — one shadow map covers the whole play field (it's only ±24
@@ -15864,7 +15872,6 @@ function openHudMenu() {
   const items = [
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
-    ['photoBtn',  '📸', '<b>Take a photo</b>'],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
@@ -15896,7 +15903,7 @@ function toggleSelfie() {
   $('crosshair').style.display = G.selfie ? 'none' : '';   // hide the aiming + in selfie mode (clean photos)
   G.selfieAngle = 0;                                        // reset to a front-on selfie each time
   const ab = $('selfieAngleBtn'); if (ab) { ab.style.display = G.selfie ? 'block' : 'none'; ab.textContent = '📷 Front'; }
-  toast(G.selfie ? '🤳 Selfie mode — strike a pose, then tap 📸! (📷 to turn for a side view)' : '🧍 Back to normal view', 1600);
+  toast(G.selfie ? '🤳 Selfie mode — strike a pose and wave! (📷 to turn for a side view)' : '🧍 Back to normal view', 1600);
 }
 $('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
 // 🤳 cycle the selfie camera: front → left profile → right profile
@@ -16353,7 +16360,6 @@ $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' +
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
 $('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
-$('photoBtn').onclick = () => { Sound.click(); takePhoto(); };
 function freeMouse() {
   toast(G.mouseWalk
     ? '🖱️ 🚶 Click-to-move ON — left-click the ground to walk there; click a math block/shop to use it. Drag to look. (Toggle it bottom-left.)'
@@ -16382,41 +16388,6 @@ $('walkBtn').onclick = () => {
 };
 $('undoBtn').onclick = () => { Sound.click(); undoLast(); };
 $('bridgeBtn').onclick = () => { Sound.click(); fillBridge(); };
-function takePhoto() {
-  renderer.render(scene, camera);                 // fresh frame in the buffer
-  // Unique, dated filename so photos never overwrite each other and sort nicely: Stackadoo-Fiona-2026-06-16-14-30-05.png
-  const d = new Date();
-  const p2 = n => String(n).padStart(2, '0');
-  const stamp = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + '-' + p2(d.getHours()) + '-' + p2(d.getMinutes()) + '-' + p2(d.getSeconds());
-  const name = 'Stackadoo-' + (G.playerName || 'build') + '-' + stamp + '.png';
-  const fallbackDownload = url => {
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    // Browsers save to the Downloads folder — we can't target Pictures directly from a webpage.
-    toast('📸 Saved to your Downloads folder!', 2600);
-  };
-  try {
-    renderer.domElement.toBlob(async blob => {
-      if (!blob) { fallbackDownload(renderer.domElement.toDataURL('image/png')); return; }
-      // On tablets/phones, offer the native share sheet (no website needed) → save to Photos, send, post, etc.
-      if (navigator.canShare) {
-        const file = new File([blob], name, { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'My Stackadoo build!', text: 'Look what I built in Stackadoo — and I earned it by doing math! 🧱🚒 Play free at stackadoo.com #Stackadoo', url: 'https://stackadoo.com/' });
-            toast('📸 Shared your build!', 2200);
-            return;
-          } catch (e) { if (e && e.name === 'AbortError') return; }   // user cancelled the share sheet
-        }
-      }
-      fallbackDownload(URL.createObjectURL(blob));
-    }, 'image/png');
-  } catch (e) {
-    try { fallbackDownload(renderer.domElement.toDataURL('image/png')); }
-    catch (e2) { toast('📸 Couldn\'t save the photo on this device.', 2200); }
-  }
-}
 function refreshMuteIcons() {
   const ic = Sound.muted ? '🔇' : '🔊';
   const a = $('soundBtn'), b = $('startSoundBtn');
@@ -16457,6 +16428,27 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
+/* 🔄 phones play SIDEWAYS, Dojo-style. The web can't hard-lock orientation everywhere, so:
+   really lock it where possible (Android: fullscreen + orientation.lock, tried inside the
+   Start tap), and everywhere else (iPhones) freeze the game behind a big friendly
+   "turn your phone" screen whenever a phone is held upright mid-game. Tablets are exempt. */
+function isPhone() { return isTouch && Math.min(screen.width, screen.height) < 520; }
+function updateRotateGate() {
+  const show = G.running && !G.over && isPhone() && innerHeight > innerWidth;
+  G.rotateGate = show;                                  // the game loop freezes while this is up
+  const el = $('rotateOverlay'); if (el) el.style.display = show ? 'flex' : 'none';
+}
+addEventListener('resize', updateRotateGate);
+try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
+function tryLandscapeLock() {
+  if (!isPhone() || document.fullscreenElement) return;
+  try {
+    const fs = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    (fs && fs.then ? fs : Promise.reject()).then(() => {
+      if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape');
+    }).catch(() => {});                                 // iOS etc: the rotate screen handles it
+  } catch (e) {}
+}
 const touch = { joyX: 0, joyY: 0, jump: false, placeMode: true };
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
@@ -17110,6 +17102,8 @@ function startGame() {
   respawnNpcs();                                // 🧑‍🤝‍🧑 town friends stroll near spawn (restore & travel come through here too)
   refreshHUD();
   G.running = true;
+  tryLandscapeLock();                             // 🔄 phones: lock to landscape where the browser allows it...
+  updateRotateGate();                             // ...and gate portrait play everywhere else
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
   $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
@@ -17316,6 +17310,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
+  if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
   if (shadowWatch) {                                   // sustained sub-~22fps → shadows off (one-time)
     if (dt > 0.045) slowFrames++; else slowFrames = Math.max(0, slowFrames - 2);

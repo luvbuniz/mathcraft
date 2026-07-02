@@ -13,8 +13,9 @@ A living plan for where Stackadoo is going. Update freely.
 - **Math Meadow** — the full, free math game (adaptive grades 2–5, fresh
   questions, hint button that teaches the *method* not the answer).
 - Building sandbox: blocks (paint, stack), doors/windows/roofs that orient to
-  walls, furniture, a **stove & oven** with cooking, sleeping in bed, photos
-  (with share), berries/trees, the Gloomies mode (stair-climbing, difficulty
+  walls, furniture, a **stove & oven** with cooking, sleeping in bed, selfie
+  posing (📸 photo export removed 2026-07 — parent feedback), berries/trees,
+  the Gloomies mode (stair-climbing, difficulty
   ramp, math shield), badges (cap 25), parent dashboard with a pencil-paper tip.
 - **Worlds + portal** framework: pick a world, travel via the 🌀 portal,
   per-world saves, per-world themes/decor.
@@ -202,10 +203,16 @@ build budget on one or two "wow" features.
 - ☰ **Labeled menu instead of button clutter** (from phone playtests: "too many
   buttons, too small, Leo couldn't find the views"): the HUD now shows just
   **☰ / 📷 view / 🎒 backpack** (+ 🚨 siren while driving). Everything else —
-  Quest Board (live count), Selfie, Photo, Sound, How to play, Save, Save & go
+  Quest Board (live count), Selfie, Sound, How to play, Save, Save & go
   home — moved into the ☰ menu as a **labeled list**, same pattern as the 📷
   view chooser. Bigger tap targets on tablets; single-row layout on landscape
-  phones; menus render above the touch JUMP/USE cluster.
+  phones; menus render above the touch JUMP/USE cluster. Follow-ups from the
+  same playtest: **📸 photo mode removed** (files in Downloads + share sheets =
+  parent annoyance; selfie posing stays), the desktop **🧱 Build/⛏️ Remove
+  toggle un-buried** (it sat *underneath* the Undo button at nearly the same
+  pixel), and **🔄 phones lock to landscape** once a game starts, Dojo-style —
+  a real orientation lock on Android (fullscreen), a friendly frozen "turn
+  your phone" screen on iOS. Tablets exempt.
 - 🧑‍🤝‍🧑 **Town friends (NPCs) + speech bubbles** (Dojo-Island-style life): Spark,
   Momma Panda, Bounce & Rexy stroll near spawn in every world (one waits by
   the 🛝 playground gate). They wander on their own, stop and turn to face you

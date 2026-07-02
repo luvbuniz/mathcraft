@@ -165,8 +165,14 @@ four-legged animals really walk on four legs:
 On-screen buttons (top-right corner): just three now — **☰ menu**, **🧍/👁️/🦅
 view** (opens a labeled chooser), and **🎒 backpack**. Everything else lives
 in the ☰ menu as a **labeled list** kids can read: 🗺️ Quest Board (with live
-progress), 🤳 Selfie mode, 📸 Take a photo, 🔊 Sound, ❔ How to play, 💾 Save
-game, and 🏠 Save & go home.
+progress), 🤳 Selfie mode, 🔊 Sound, ❔ How to play, 💾 Save game, and 🏠 Save
+& go home. (The old 📸 photo button is gone — it dropped files into Downloads
+and popped share sheets, which annoyed parents more than it delighted kids.)
+
+**🔄 Phones play sideways:** once a game starts on a phone, Stackadoo locks to
+landscape where the browser allows it (Android), and everywhere else shows a
+big friendly "Turn your phone sideways!" screen — the game pauses safely until
+the phone is flipped. Tablets can play either way.
 
 **🎨 Paint:** open the backpack and pick a paint color, then the blocks you
 place come out in that color — great for decorating houses.
