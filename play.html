@@ -186,6 +186,16 @@
   .npcBubble b { color:#7A4EA0; }
   .npcBubble::after { content:''; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%);
     border:9px solid transparent; border-top-color:rgba(255,255,255,.96); border-bottom:none; }
+  .npcBubble.mine { background:#e8f4ff; }             /* the kid's own words — a gentle blue */
+  .npcBubble.mine b { color:#2b6cb0; }
+  .npcBubble.mine::after { border-top-color:#e8f4ff; }
+  /* 💬 preset chat chips — tap a phrase to say it (no typing, no mischief) */
+  #npcChat { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:32; display:none;
+    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,720px); pointer-events:auto; }
+  #npcChat button { font-family:inherit; font-weight:800; font-size:15px; color:#34495e; background:rgba(255,255,255,.96);
+    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); }
+  #npcChat button:active { transform:translateY(2px); box-shadow:none; }
+  body.npcChatting #hintBar { display:none !important; }   /* the chips ARE the hint while chatting */
 
   /* ---------- Math popup ---------- */
   .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
@@ -940,8 +950,10 @@
     #camBtn  { top:8px; right:64px; }
     #invBtn  { top:8px; right:120px; }
     #sirenBtn { font-size:19px; padding:9px 12px; top:8px; right:176px; }
-    #hudMenu { gap:4px; padding:6px; }                       /* all 7 choices fit a short phone */
+    #hudMenu { gap:4px; padding:6px; }                       /* all the choices fit a short phone */
     #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
+    #npcChat { bottom:8px; gap:6px; max-width:64vw; }        /* chat chips clear of the joystick + JUMP cluster */
+    #npcChat button { font-size:13px; padding:7px 11px; }
     #modeBtn, #undoBtn { display:none; }
     .touchBtn { font-size:18px; padding:16px 22px; border-radius:18px; }
     #btnAction    { right:16px;  bottom:158px; }
@@ -1238,6 +1250,7 @@
   <div id="placingTag"></div>
   <div id="toast"></div>
   <div id="npcBubbles"></div>
+  <div id="npcChat"></div>
   <button id="bridgeBtn" style="display:none; position:fixed; left:50%; bottom:158px; transform:translateX(-50%); z-index:40; background:#3f9d34; color:#fff; font-weight:800; font-size:16px; padding:12px 20px; border:none; border-radius:999px; box-shadow:0 4px 0 #2c6f24; cursor:pointer; font-family:inherit; pointer-events:auto"></button>
 </div>
 
@@ -4545,6 +4558,7 @@ function saveGame() {
       foods: (syncPetState(), placedFood.map(f => [f.x, f.z, f.onTable ? 1 : 0, f.kind || 'apple', f.y, f.variant || 0, f.petName || '', f.hunger == null ? '' : Math.round(f.hunger), f.bond == null ? '' : Math.round(f.bond), f.petMode || '', f.cageKey || '', f.cageSlot == null ? '' : f.cageSlot])),
       quest: G.quest,
       homes: G.homes || [],
+      npcHomes: G.npcHomes || {},
       pos: [player.pos.x, player.pos.y, player.pos.z],
       when: Date.now()
     }));
@@ -4594,6 +4608,7 @@ function restoreGame(s) {
   G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex;
   G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = s.homes || [];
+  G.npcHomes = s.npcHomes || {};               // 🏠 which friend lives in which of the kid's houses
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0; G.tickets = s.tickets || 0;
   G.prizeTickets = s.prizeTickets || 0;
@@ -4738,6 +4753,7 @@ function resetGameState() {
   G.pickupColor = 0x3f7fbf; G.activeCar = null; G.carColors = {};
   G.quest = { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = [];
+  G.npcHomes = {};
   G.pendingLevelQuest = null;
 }
 function goHome() {
@@ -14795,7 +14811,21 @@ function updateBird(p, dt, now) {
     return;
   }
   const step = Math.min(d, 3.6 * dt);
-  if (d > 0.001) { m.position.x += dx / d * step; m.position.y += dy / d * step; m.position.z += dz / d * step; }
+  if (d > 0.001) {
+    // 🧱 Fiona's rule: birds may NOT fly through walls. The one exception is the final
+    // flare onto a perch (chair top, branch, cage) — those cells are solid on purpose.
+    const nx = m.position.x + dx / d * step, ny = m.position.y + dy / d * step, nz = m.position.z + dz / d * step;
+    const cellSolid = (x, y, z) => solidAt(Math.floor(x), Math.max(0, Math.floor(y)), Math.floor(z));
+    const landing = p.wantPerch && d < 1.4;
+    if (cellSolid(m.position.x, m.position.y, m.position.z)) {
+      m.position.y += 2.2 * dt;                                      // taking off from a perch (or an old save
+    } else if (!landing && cellSolid(nx, ny, nz)) {                  //  inside a wall) — flutter UP and out
+      p.target = null; p.wantPerch = false; p.flyTimer = 0;          // bonk! pick somewhere reachable instead
+      m.position.y += 0.8 * dt;                                      // a little hop, like bumping a window
+    } else {
+      m.position.x = nx; m.position.y = ny; m.position.z = nz;
+    }
+  }
   const flap = Math.sin(p.phase * 16) * 0.95;                        // wing flap
   if (p.wings) { p.wings[0].rotation.z = 0.35 - flap; p.wings[1].rotation.z = -0.35 + flap; }
   if (p.tail) p.tail.rotation.x = -0.12 + Math.sin(p.phase * 4) * 0.05;
@@ -17155,32 +17185,65 @@ const NPC_CAST = [
     'I want to try the swings — will you come with me?',
     'Race you to the 🛝 playground!',
     'The curly slide looks SO twisty. Is it fast?',
-  ] },
+  ], replies: {
+    hi: 'Hi {name}! ✨ You sparkle extra bright today!',
+    playground: 'Swings first, then the twisty slide! Meet you there 🛝',
+    fun: ['I can fly... but the swings are still my favorite. Wheee! ✨', 'My wand only makes sparkles. Okay — MOSTLY sparkles. 🪄'],
+    live: '🏠 I LOVE it! A sparkly home sweet home — thank you, {name}! ✨',
+    bye: 'Bye {name}! Come find me later! ✨',
+  } },
   { id: 'panda', name: 'Momma Panda', lines: [
     'Hello {name}! Is the ⚖️ see-saw fun? I\'ve never tried one!',
     'Could you build a see-saw at the 🛝 playground for us?',
     'A picnic by the playground sounds lovely. 🧺',
     'Which is better — the swings or the slide?',
-  ] },
+  ], replies: {
+    hi: 'Hello, dear {name}! 🐼 Have you had a snack today?',
+    playground: 'I\'ll bring the picnic basket for after the see-saw! 🧺',
+    fun: ['Bamboo crunches louder than carrots. True fact! 🎍', 'I give the BEST hugs. It\'s a panda thing. 🤗'],
+    live: '🏠 A home for me? {name}, you are the kindest builder! 🐼💚',
+    bye: 'Take care, little builder! 🐼',
+  } },
   { id: 'bunny', name: 'Bounce', lines: [
     'Boing! I bet I can hop higher than the swings!',
     'Meet me at the 🛝 playground later?',
     'Is there a 🏖️ sandbox? I dig SUPER fast!',
     'Tag — you\'re it, {name}! First one to the playground wins! 🛝',
-  ] },
+  ], replies: {
+    hi: 'Boing! Hi {name}! Watch how high I can hop!',
+    playground: 'Sandbox! Sandbox! I call the 🏖️ sandbox!',
+    fun: ['I once hopped over a WHOLE fence. It was a tiny fence. Don\'t ask. 🐰', 'Carrots are just orange candy. That\'s my whole speech. 🥕'],
+    live: '🏠 MY house?! This is the best day EVER! 🥕',
+    bye: 'Catch me if you can! Byeee! 💨',
+  } },
   { id: 'trex', name: 'Rexy', lines: [
     'ROAR! ...too scary? I\'m friendly, promise. 🦖',
     'My little arms can\'t reach the monkey bars. 😅',
     'Will you go down the 🛝 slide with me later?',
     'You earn 🪙 answering ❓ questions? You\'re so smart, {name}!',
-  ] },
+  ], replies: {
+    hi: 'RAWR! That means "hi" in dinosaur, {name}! 🦖',
+    playground: 'I\'m the FASTEST down the slide. My tail is a racing stripe! 🛝',
+    fun: ['My arms are small but my heart is HUGE. 🦖💚', 'I tried the monkey bars once. Once. 😅'],
+    live: '🏠 A rex-sized home! Thank you, {name}! 🦖💚',
+    bye: 'Stomp stomp! See ya, {name}!',
+  } },
 ];
+const NPC_ACT_LINES = {                        // little thoughts while using the furniture in their house
+  stove: ['🍲 Soup for everyone!', '🍪 Who wants cookies?', '👩‍🍳 Dinner is almost ready!'],
+  couch: ['🛋️ Sooo comfy!', '📺 Movie night at my place?'],
+  chair: ['🪑 Ahh, my favorite seat.', '😌 Just resting my feet!'],
+  bed: ['😴 Five more minutes...', '🛏️ This bed is JUST right.'],
+  parkbench: ['🌳 What a nice view!', '☀️ What a lovely day!'],
+};
 let npcs = [];
 const npcV = new THREE.Vector3();
 function clearNpcs() {
   for (const n of npcs) scene.remove(n.group);
   npcs = [];
+  hideNpcChat();
   const holder = $('npcBubbles'); if (holder) holder.innerHTML = '';
+  playerBubbleEl = null;                  // its div was just wiped with the container
 }
 function npcFindSpot(ax, az) {           // nearest clear 3×3 cell to the anchor (rings outward)
   for (let r = 0; r < 9; r++) {
@@ -17189,6 +17252,23 @@ function npcFindSpot(ax, az) {           // nearest clear 3×3 cell to the ancho
       const ang = (t / steps) * Math.PI * 2 + r * 0.7;
       const x = Math.round(ax + Math.cos(ang) * r), z = Math.round(az + Math.sin(ang) * r);
       if (cellClearArea(x, z)) return { x: x + 0.5, z: z + 0.5 };
+    }
+  }
+  return null;
+}
+function npcStepBlocked(x, z) {          // may a friend stand at this exact spot? (walls, furniture, closed doors)
+  const cx = Math.floor(x), cz = Math.floor(z);
+  if (Math.abs(cx) >= WORLD_R || Math.abs(cz) >= WORLD_R) return true;
+  if (solidAt(cx, 0, cz) || solidAt(cx, 1, cz)) return true;
+  return false;
+}
+function npcSpawnSpot(ax, az) {          // nearest single WALKABLE cell — works inside a cozy house room
+  for (let r = 0; r < 9; r++) {
+    const steps = Math.max(1, r * 6);
+    for (let t = 0; t < steps; t++) {
+      const ang = (t / steps) * Math.PI * 2 + r * 0.7;
+      const x = Math.round(ax + Math.cos(ang) * r), z = Math.round(az + Math.sin(ang) * r);
+      if (!npcStepBlocked(x + 0.5, z + 0.5) && !inShopZone(x, z)) return { x: x + 0.5, z: z + 0.5 };
     }
   }
   return null;
@@ -17202,28 +17282,165 @@ function respawnNpcs() {
   ];
   NPC_CAST.forEach((cast, i) => {
     const av = AVATARS.find(a => a.id === cast.id); if (!av) return;
-    const spot = npcFindSpot(anchors[i].x, anchors[i].z); if (!spot) return;
+    const assigned = (G.npcHomes || {})[cast.id];              // 🏠 a kid gave this friend a house here
+    const anchor = assigned ? { x: assigned[0], z: assigned[1] } : anchors[i];
+    const spot = assigned ? npcSpawnSpot(anchor.x, anchor.z) : npcFindSpot(anchor.x, anchor.z);
+    if (!spot) return;
     ROUND_AV = true;                      // same soft look as the hero picker cards
     let d; try { d = av.build(); } catch (e) { ROUND_AV = false; return; } finally { ROUND_AV = false; }
     d.group.scale.setScalar(0.92);        // a touch smaller than the hero
     d.group.position.set(spot.x, 0, spot.z);
     d.group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(d.group);
-    npcs.push({ cast, d, group: d.group, home: spot,
-      mode: 'idle', timer: 1 + Math.random() * 3, target: null,
+    npcs.push({ cast, d, group: d.group, home: assigned ? anchor : spot, housed: !!assigned,
+      mode: 'idle', timer: 1 + Math.random() * 3, target: null, act: null,
       phase: Math.random() * 9, lineIx: Math.floor(Math.random() * cast.lines.length),
-      coolAt: 0, say: '', sayUntil: 0, el: null });
+      coolAt: 0, say: '', sayUntil: 0, el: null, trapN: 0 });
   });
 }
-function npcSpeak(n, now) {
-  const text = n.cast.lines[n.lineIx % n.cast.lines.length].replace('{name}', G.playerName || 'friend');
-  n.lineIx++;
-  n.coolAt = now + 16000 + Math.random() * 9000;     // don't repeat at the same kid right away
-  n.say = text; n.sayUntil = now + 4600;
+function npcSay(n, text, ms) {           // put words in a friend's bubble
+  n.say = text; n.sayUntil = performance.now() + (ms || 4600);
   const holder = $('npcBubbles'); if (!holder) return;
   if (!n.el) { n.el = document.createElement('div'); n.el.className = 'npcBubble'; holder.appendChild(n.el); }
   n.el.innerHTML = '<b>' + n.cast.name + '</b><br>' + text;
   Sound.click();
+}
+function npcSpeak(n, now) {              // their own chatter — cycles the playground lines
+  const text = n.cast.lines[n.lineIx % n.cast.lines.length].replace('{name}', G.playerName || 'friend');
+  n.lineIx++;
+  n.coolAt = now + 16000 + Math.random() * 9000;     // don't repeat at the same kid right away
+  npcSay(n, text);
+}
+/* 💬 PRESET CHAT — Leo wanted to talk to the friends. No keyboard (typed chat = mischief +
+   nothing the friends could understand anyway): big word-chips with hand-written replies. */
+const NPC_CHIPS = [
+  { id: 'hi', label: '👋 Hi!' },
+  { id: 'playground', label: '🛝 Playground?' },
+  { id: 'fun', label: '😄 Tell me something!' },
+  { id: 'live', label: '🏠 Live here!' },
+  { id: 'bye', label: '👋 Bye!' },
+];
+let chatNpc = null;
+let playerBubbleEl = null, playerBubbleUntil = 0;
+function showNpcChat(n) {
+  chatNpc = n;
+  const el = $('npcChat'); if (!el) return;
+  el.innerHTML = NPC_CHIPS.map(c => '<button data-c="' + c.id + '">' + c.label + '</button>').join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { Sound.click(); npcChipTap(b.dataset.c); });
+  el.style.display = 'flex';
+  document.body.classList.add('npcChatting');       // the hint bar rests while you chat
+}
+function hideNpcChat() {
+  chatNpc = null;
+  const el = $('npcChat'); if (el) el.style.display = 'none';
+  document.body.classList.remove('npcChatting');
+}
+function playerSay(text) {               // the kid's chosen words appear over THEIR head too
+  const holder = $('npcBubbles'); if (!holder) return;
+  if (!playerBubbleEl) { playerBubbleEl = document.createElement('div'); playerBubbleEl.className = 'npcBubble mine'; holder.appendChild(playerBubbleEl); }
+  playerBubbleEl.innerHTML = '<b>' + (G.playerName || 'Me') + '</b><br>' + text;
+  playerBubbleUntil = performance.now() + 2100;
+}
+function placePlayerBubble(now) {
+  if (!playerBubbleEl) return;
+  if (now > playerBubbleUntil || G.firstPerson) { playerBubbleEl.style.display = 'none'; return; }
+  npcV.set(player.pos.x, player.pos.y + 2.15, player.pos.z).project(camera);
+  if (npcV.z > 1) { playerBubbleEl.style.display = 'none'; return; }
+  playerBubbleEl.style.display = 'block';
+  playerBubbleEl.style.left = ((npcV.x * 0.5 + 0.5) * innerWidth) + 'px';
+  playerBubbleEl.style.top = ((-npcV.y * 0.5 + 0.5) * innerHeight) + 'px';
+}
+function npcChipTap(id) {
+  const n = chatNpc; if (!n) return;
+  const chip = NPC_CHIPS.find(c => c.id === id);
+  if (chip) playerSay(chip.label);
+  const R = n.cast.replies || {};
+  let reply;
+  if (id === 'fun') {
+    const arr = R.fun || ['Hee hee! 😊'];
+    n.funIx = ((n.funIx == null ? -1 : n.funIx) + 1) % arr.length;
+    reply = arr[n.funIx];
+  } else if (id === 'live') {
+    // 🏠 "Live here!" — the friend moves into wherever the kid is standing (Fiona's houses!)
+    const hx = Math.round(player.pos.x * 10) / 10, hz = Math.round(player.pos.z * 10) / 10;
+    const had = !!((G.npcHomes || {})[n.cast.id]);
+    G.npcHomes = G.npcHomes || {};
+    G.npcHomes[n.cast.id] = [hx, hz];
+    n.home = { x: hx, z: hz };
+    n.housed = true;
+    n.mode = 'idle'; n.timer = 1.2; n.target = null;   // they'll head for the couch/stove soon
+    reply = had ? '🏠 Moving day! This one is even better!' : (R.live || '🏠 I love it!');
+    saveGame();
+  } else {
+    reply = R[id] || 'Hee hee! 😊';
+  }
+  n.coolAt = performance.now() + 9000;
+  // schedule the reply on GAME time (setTimeout starves behind the render loop on slow machines)
+  n.replyText = reply.replace('{name}', G.playerName || 'friend');
+  n.replyAt = performance.now() + 650;
+  if (id === 'bye') {                    // wave goodbye, then actually wander off
+    n.byeUntil = performance.now() + 5200;
+    n.byeWalkAt = performance.now() + 1500;
+  }
+}
+/* 🏠 HOUSE LIFE — a friend with a house uses the furniture in it: sits on the couch,
+   naps on the bed, "cooks" at the stove. (Fiona builds them houses; now they LIVE.) */
+const NPC_SIT_Y = { chair: 0.46, couch: 0.4, bed: 0.5, parkbench: 0.46 };
+function npcApproach(mx, mz) {           // a free spot beside a piece of furniture
+  for (const [ox, oz] of [[0, 0.85], [0, -0.85], [0.85, 0], [-0.85, 0]]) {
+    if (!npcStepBlocked(mx + ox, mz + oz)) return { x: mx + ox, z: mz + oz };
+  }
+  return null;
+}
+function npcPickHouseAction(n) {
+  const opts = [];
+  for (const ty of ['couch', 'chair', 'bed', 'parkbench', 'stove']) {
+    const t = nearestPetTarget(ty, n.home.x, n.home.z);
+    if (t && t.dist < 8) opts.push({ t, ty });
+  }
+  if (!opts.length) return false;
+  const pick = opts[Math.floor(Math.random() * opts.length)];
+  const mx = pick.t.entry.mesh.position.x, mz = pick.t.entry.mesh.position.z;
+  const ap = npcApproach(mx, mz); if (!ap) return false;
+  n.act = { type: pick.ty, entry: pick.t.entry, mx, mz, wx: ap.x, wz: ap.z, lineIx: Math.floor(Math.random() * 2) };
+  n.mode = 'goact';
+  return true;
+}
+function npcStandUp(n) {
+  const g = n.group;
+  g.position.y = 0;
+  if (n.act) { const off = npcApproach(n.act.mx, n.act.mz); if (off) { g.position.x = off.x; g.position.z = off.z; } }
+  if (n.d.head) n.d.head.rotation.x = 0;
+  npcLegsRest(n);
+  n.act = null; n.mode = 'idle'; n.timer = 2 + Math.random() * 3;
+}
+function npcTryEscape(n) {               // 🧱 boxed in by bricks (nice fort, Leo) → find a "secret door"
+  n.trapN = 0;
+  const out = npcFindSpot(n.home.x, n.home.z);
+  if (out && Math.hypot(out.x - n.group.position.x, out.z - n.group.position.z) > 1.2) {
+    n.group.position.set(out.x, 0, out.z);
+    npcSay(n, '🧱 Whoa, what a fort! Good thing I know a secret door 🤫', 4200);
+  }
+}
+function npcWalkToward(n, tx, tz, dt) {  // shared stroll: returns true = arrived, 'blocked' = bonked a wall
+  const g = n.group, d = n.d;
+  const dx = tx - g.position.x, dz = tz - g.position.z;
+  if (Math.hypot(dx, dz) < 0.3) return true;
+  const want = Math.atan2(dx, dz);
+  let dy = want - g.rotation.y;
+  while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+  g.rotation.y += dy * Math.min(1, dt * 5);
+  const nx = g.position.x + Math.sin(g.rotation.y) * 1.1 * dt;
+  const nz = g.position.z + Math.cos(g.rotation.y) * 1.1 * dt;
+  if (npcStepBlocked(nx, nz)) return 'blocked';      // 🧱 no ghost-walking through Leo's bricks
+  g.position.x = nx; g.position.z = nz;
+  const s = Math.sin(n.phase * 8) * 0.55;            // same gait as the hero
+  if (d.quad) { d.legs[0].rotation.x = s; d.legs[3].rotation.x = s; d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s; }
+  else {
+    d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
+    if (d.arms && d.arms.length >= 2) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
+  }
+  return false;
 }
 function npcBubblePlace(n, now) {         // pin the bubble over the friend's head (screen space)
   if (!n.el) return;
@@ -17242,13 +17459,72 @@ function npcLegsRest(n) {
   if (d.arms) d.arms.forEach(a => a.rotation.x *= 0.8);
 }
 function updateNpcs(dt, now) {
-  if (!npcs.length) return;
+  placePlayerBubble(now);
+  if (!npcs.length) { if (chatNpc) hideNpcChat(); return; }
+  // 💬 offer the word-chips for the closest friend (with a little hysteresis so they don't flicker)
+  let nearest = null, nd = 4.2;
+  for (const n of npcs) {
+    const d0 = Math.hypot(player.pos.x - n.group.position.x, player.pos.z - n.group.position.z);
+    if (d0 < nd) { nd = d0; nearest = n; }
+  }
+  if (nearest && nd < 3.5 && !player.driving && !trainRide) { if (chatNpc !== nearest) showNpcChat(nearest); }
+  else if (chatNpc && (!nearest || nd > 4.0 || player.driving || trainRide)) hideNpcChat();
+
   for (const n of npcs) {
     n.phase += dt;
     const g = n.group, d = n.d;
     const pd = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
     const talking = now < n.sayUntil;
-    if (talking || pd < 3.2) {                                   // 👋 a kid is here — stop and face them
+    if (n.replyText && now >= n.replyAt) {                       // 💬 the chat-chip answer lands on game time
+      npcSay(n, n.replyText, 5200); n.replyText = null;
+    }
+    if (n.byeWalkAt && now >= n.byeWalkAt) {                     // 👋 after a goodbye, actually toddle off
+      n.byeWalkAt = 0;
+      for (let t = 0; t < 10; t++) {
+        const a = Math.random() * Math.PI * 2;
+        const x = g.position.x + Math.cos(a) * 5, z = g.position.z + Math.sin(a) * 5;
+        const mx = (g.position.x + x) / 2, mz = (g.position.z + z) / 2;
+        if (!npcStepBlocked(x, z) && !npcStepBlocked(mx, mz)) { n.target = { x, z }; n.mode = 'walk'; break; }
+      }
+    }
+
+    if (n.mode === 'goact' && n.act) {                           // 🚶 heading for the couch / stove / bed
+      const r = npcWalkToward(n, n.act.wx, n.act.wz, dt);
+      if (r === true) { n.mode = 'act'; n.actT = 7 + Math.random() * 6; n._stillT = 0; }
+      else if (r === 'blocked') { n.mode = 'idle'; n.timer = 1.5; n.act = null; }
+    } else if (n.mode === 'act' && n.act) {                      // 🛋️ using the furniture
+      const a = n.act;
+      n._stillT = (n._stillT || 0) - dt;
+      if (n._stillT <= 0) {                                      // once a second: still placed? (kids remove things!)
+        n._stillT = 1;
+        let still = false; blocks.forEach(b => { if (b.mesh === a.entry.mesh) still = true; });
+        if (!still) { npcStandUp(n); npcBubblePlace(n, now); continue; }
+      }
+      n.actT -= dt;
+      if (a.type === 'stove') {                                  // 👩‍🍳 stand at it and stir
+        g.position.x += (a.wx - g.position.x) * 0.15; g.position.z += (a.wz - g.position.z) * 0.15;
+        const want = Math.atan2(a.mx - g.position.x, a.mz - g.position.z);
+        let dy = want - g.rotation.y;
+        while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+        g.rotation.y += dy * Math.min(1, dt * 5);
+        if (d.arms && d.arms.length >= 2) {
+          d.arms[0].rotation.x = -0.9 + Math.sin(n.phase * 5) * 0.16;
+          d.arms[1].rotation.x = -0.9 - Math.sin(n.phase * 5) * 0.16;
+        }
+        if (d.head) d.head.rotation.x = 0.16;
+      } else {                                                   // 🪑 sit right on it, facing its way
+        g.position.x = a.mx; g.position.z = a.mz + 0.05;
+        g.position.y = NPC_SIT_Y[a.type] != null ? NPC_SIT_Y[a.type] : 0.44;
+        g.rotation.y = a.entry.mesh.rotation.y || 0;
+        if (d.quad) d.legs.forEach(l => { l.rotation.x = -1.05; });
+        else { d.legs.forEach(l => { l.rotation.x = -1.3; }); if (d.arms) d.arms.forEach(ar => { ar.rotation.x = -0.4; }); }
+      }
+      if (pd < 5 && now >= n.coolAt && !popupOpen) {             // a little homey thought while they're at it
+        const arr = NPC_ACT_LINES[a.type] || [];
+        if (arr.length) { a.lineIx = (a.lineIx + 1) % arr.length; npcSay(n, arr[a.lineIx]); n.coolAt = now + 14000 + Math.random() * 6000; }
+      }
+      if (n.actT <= 0) npcStandUp(n);
+    } else if ((talking || pd < 3.2) && !(n.byeUntil > now)) {   // 👋 a kid is here — stop and face them
       const want = Math.atan2(player.pos.x - g.position.x, player.pos.z - g.position.z);
       let dy = want - g.rotation.y;
       while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
@@ -17257,35 +17533,36 @@ function updateNpcs(dt, now) {
       if (pd < 3.4 && now >= n.coolAt && !popupOpen && !player.driving) npcSpeak(n, now);
       n.mode = 'idle'; n.timer = 1.5 + Math.random() * 2;
     } else if (n.mode === 'walk' && n.target) {
-      const dx = n.target.x - g.position.x, dz = n.target.z - g.position.z;
-      if (Math.hypot(dx, dz) < 0.25) { n.mode = 'idle'; n.timer = 2 + Math.random() * 4; npcLegsRest(n); }
-      else {
-        const want = Math.atan2(dx, dz);
-        let dy = want - g.rotation.y;
-        while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
-        g.rotation.y += dy * Math.min(1, dt * 5);
-        g.position.x += Math.sin(g.rotation.y) * 1.1 * dt;       // stroll, don't march
-        g.position.z += Math.cos(g.rotation.y) * 1.1 * dt;
-        const s = Math.sin(n.phase * 8) * 0.55;                  // same gait as the hero
-        if (d.quad) { d.legs[0].rotation.x = s; d.legs[3].rotation.x = s; d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s; }
-        else {
-          d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
-          if (d.arms && d.arms.length >= 2) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
-        }
+      const r = npcWalkToward(n, n.target.x, n.target.z, dt);
+      if (r === true) { n.mode = 'idle'; n.timer = 2 + Math.random() * 4; n.trapN = 0; npcLegsRest(n); }
+      else if (r === 'blocked') {
+        n.mode = 'idle'; n.target = null; n.timer = 0.7 + Math.random();
+        // bonking bricks on EVERY walk = walled in (a far target can clear the wall on the
+        // midpoint check, so failed *picks* alone never catch a snug one-brick box)
+        n.trapN = (n.trapN || 0) + 1;
+        if (n.trapN >= 4) npcTryEscape(n);
       }
-    } else {                                                      // idle: settle, then pick a new stroll target
+    } else {                                                      // idle: settle, then decide what's next
       npcLegsRest(n);
       n.timer -= dt;
       if (n.timer <= 0) {
-        for (let t = 0; t < 12; t++) {
-          const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
-          const x = n.home.x + Math.cos(a) * r, z = n.home.z + Math.sin(a) * r;
-          const mx = (g.position.x + x) / 2, mz = (g.position.z + z) / 2;   // midpoint too — don't cut through walls
-          if (cellClearArea(Math.floor(x), Math.floor(z)) && cellClearArea(Math.floor(mx), Math.floor(mz))) {
-            n.target = { x, z }; n.mode = 'walk'; break;
+        // 🏠 friends with a house head inside to sit & cook nearly half the time
+        if (n.housed && Math.random() < 0.45 && npcPickHouseAction(n)) { n.trapN = 0; }
+        else {
+          for (let t = 0; t < 12; t++) {
+            const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
+            const x = n.home.x + Math.cos(a) * r, z = n.home.z + Math.sin(a) * r;
+            const mx = (g.position.x + x) / 2, mz = (g.position.z + z) / 2;   // midpoint too — no cutting through walls
+            if (!npcStepBlocked(x, z) && !npcStepBlocked(mx, mz) && !inShopZone(Math.floor(x), Math.floor(z))) {
+              n.target = { x, z }; n.mode = 'walk'; break;
+            }
+          }
+          if (n.mode !== 'walk') {
+            n.timer = 2 + Math.random() * 3;
+            n.trapN = (n.trapN || 0) + 1;                         // couldn't even pick a target near home
+            if (n.trapN >= 4) npcTryEscape(n);
           }
         }
-        if (n.mode !== 'walk') n.timer = 2 + Math.random() * 3;
       }
     }
     if (d.wings) { const f = Math.sin(n.phase * 12) * 0.26; d.wings.forEach(w => { w.rotation.y = w.userData.baseRY + (w.userData.baseRY >= 0 ? f : -f); }); }

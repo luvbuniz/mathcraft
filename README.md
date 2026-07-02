@@ -77,6 +77,19 @@ playground**: they ask about the swings and see-saw and invite you to meet
 them there, a friendly nudge to build one (playground gear is in the Stack
 Barn's 🏞️ Park & Playground shelf).
 
+💬 **Talk back with word-chips:** stand near a friend and five big preset
+phrases appear — 👋 Hi! / 🛝 Playground? / 😄 Tell me something! / 🏠 Live
+here! / 👋 Bye! Your words pop up over your own head and the friend answers
+in character. No typing and no free chat — on purpose.
+
+🏠 **Give a friend a house:** build them a house, stand inside it, and tap
+**🏠 Live here!** — that friend moves in (saved per world). Friends with a
+home actually *live*: they sit on the couch, nap on the bed, and "cook" at
+the stove, with little homey thoughts in their bubbles. They can't walk
+through walls or furniture, and if someone bricks a friend in completely
+(looking at you, Leo 😄), they find a "secret door" and pop back out. Pet
+birds respect walls now too.
+
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
 to another world without going back to the home screen — your house in each world
 is saved separately, so you can build different houses in different places.

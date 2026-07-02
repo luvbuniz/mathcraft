@@ -219,8 +219,18 @@ build budget on one or two "wow" features.
   when you come close or tap them, and chat in name-personalized speech
   bubbles — mostly **asking about / hyping the playground** ("Will you build a
   see-saw?", "Meet me at the 🛝 playground later!") to seed the build-and-play
-  loop. Next step later: the friends actually **play on** playground gear kids
-  place (sit the swings, ride the see-saw), closing that loop.
+  loop. Same-day playtest additions: 💬 **word-chip chat** (Leo asked to talk
+  to them — five preset phrases instead of a keyboard, per parent: typed chat
+  = mischief), 🏠 **"Live here!"** house assignment (Fiona builds them houses;
+  they move in, persist per save, and **sit the couch / nap the bed / cook at
+  the stove** with homey bubble-thoughts), 🧱 **wall collision + "secret
+  door" escape** (Leo bricked Momma Panda into a box — friends can't ghost
+  through walls anymore, and a fully boxed-in friend pops out with a cheeky
+  "nice fort" line), and 🦜 **pet birds respect walls** (Fiona's bug report —
+  flight now bonks and re-routes instead of clipping through bricks; landing
+  on perches/cages still allowed). Next steps: the friends actually **play
+  on** playground gear kids place (sit the swings, ride the see-saw), and
+  **NPC pets** (a little companion that follows each housed friend).
 
 ### 🎬 Grammar Cinema (Reading Town) — HIGH value, build next-ish
 Grammar is an underserved gap and rounds Reading Town into three pillars:
