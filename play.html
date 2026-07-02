@@ -144,18 +144,22 @@
     50%{ transform:scale(1.16); box-shadow:0 3px 0 rgba(0,0,0,.15), 0 0 0 9px rgba(255,196,0,0); } }
   #camBtn.peek { background:#FFE07A; animation:camPeek 1s ease-in-out infinite; }
   /* 🚨 siren toggle — only shown while driving an emergency vehicle (set in JS) */
-  #sirenBtn { position:absolute; top:114px; right:10px; pointer-events:auto; font-size:20px;
+  #sirenBtn { position:absolute; top:166px; right:10px; pointer-events:auto; font-size:20px;
     background:rgba(255,255,255,.88); border-radius:12px; padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
-  /* ⋯ "more buttons" tray toggle — only appears on cramped landscape phones */
-  #moreBtn { position:absolute; pointer-events:auto; font-size:19px; font-weight:bold;
-    background:rgba(255,255,255,.88); border-radius:12px; padding:9px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15); display:none; }
-  /* 📷 the view chooser — labeled camera options so kids can FIND bird's-eye */
-  #viewMenu { display:none; position:fixed; z-index:46; pointer-events:auto; flex-direction:column; gap:6px;
+  /* ☰ THE MENU — one labeled list instead of a wall of mystery icons */
+  #menuBtn { position:absolute; top:10px; right:10px; pointer-events:auto; font-size:21px; font-weight:bold;
+    background:rgba(255,255,255,.88); border-radius:12px; padding:9px 13px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
+  /* these buttons now live INSIDE the ☰ menu (kept in the DOM — their onclick IS the feature) */
+  #soundBtn, #homeBtn, #saveBtn, #questBtn, #selfieBtn, #photoBtn, #cursorBtn { display:none !important; }
+  /* 📷 view chooser + ☰ menu — labeled options so kids can FIND things.
+     z-index above the touch JUMP/USE cluster so menu taps never hit the buttons beneath. */
+  #viewMenu, #hudMenu { display:none; position:fixed; z-index:65; pointer-events:auto; flex-direction:column; gap:6px;
     background:#fff; border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.3); padding:8px; min-width:236px; }
-  #viewMenu .viewOpt { text-align:left; border:2px solid #dce6f2; background:#f6f9fd; border-radius:12px;
+  #hudMenu { overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #viewMenu .viewOpt, #hudMenu .viewOpt { text-align:left; border:2px solid #dce6f2; background:#f6f9fd; border-radius:12px;
     padding:9px 12px; font-size:16px; cursor:pointer; line-height:1.25; font-family:inherit; }
-  #viewMenu .viewOpt small { color:#6c84a6; }
-  #viewMenu .viewOpt.cur { border-color:#3f9d34; background:#eaf7e6; }
+  #viewMenu .viewOpt small, #hudMenu .viewOpt small { color:#6c84a6; }
+  #viewMenu .viewOpt.cur, #hudMenu .viewOpt.cur { border-color:#3f9d34; background:#eaf7e6; }
   #sirenBtn.off { opacity:.5; filter:grayscale(.8); }
   #hotbar { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
     display:flex; gap:8px; pointer-events:auto; }
@@ -173,6 +177,15 @@
     background:rgba(47,125,39,.92); color:#fff; padding:12px 26px; border-radius:16px;
     font-size:clamp(17px,3vw,24px); font-weight:bold; display:none; text-align:center; max-width:90vw;
     box-shadow:0 6px 22px rgba(0,0,0,.3); }
+  /* 💬 town-friend speech bubbles — pinned over each NPC's head */
+  #npcBubbles { position:fixed; inset:0; pointer-events:none; z-index:30; }
+  .npcBubble { position:fixed; transform:translate(-50%,-100%) translateY(-10px); display:none;
+    background:rgba(255,255,255,.96); color:#34495e; border-radius:14px; padding:7px 13px;
+    font-size:clamp(13px,2.2vw,16px); font-weight:600; max-width:min(58vw,290px);
+    box-shadow:0 3px 12px rgba(0,0,0,.28); text-align:center; line-height:1.3; }
+  .npcBubble b { color:#7A4EA0; }
+  .npcBubble::after { content:''; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%);
+    border:9px solid transparent; border-top-color:rgba(255,255,255,.96); border-bottom:none; }
 
   /* ---------- Math popup ---------- */
   .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
@@ -412,7 +425,7 @@
     background:rgba(255,255,255,.88); border-radius:14px; padding:11px 15px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   #homeBtn { top:120px; }
   #saveBtn { top:180px; }
-  #invBtn  { top:240px; }
+  #invBtn  { top:114px; }   /* third in the visible column: ☰ menu, 📷 view, 🎒 backpack */
   #questBtn { top:300px; font-size:17px; font-weight:bold; }   /* the quest board */
   #selfieBtn { top:360px; }
   #photoBtn { top:420px; }
@@ -609,17 +622,11 @@
     #timerBar { width:108px; margin:3px 0 0 auto; }
     #hudShelter { font-size:10.5px; }
     #badgeBtn { font-size:12px; padding:4px 8px; }
-    #soundBtn, #camBtn, .hudBtn { font-size:20px; padding:9px 12px; }
-    #soundBtn { top:8px; right:8px; }
+    #menuBtn, #camBtn, .hudBtn { font-size:20px; padding:9px 12px; }
+    #menuBtn { top:8px; right:8px; }
     #camBtn  { top:58px; right:8px; }
-    #homeBtn { top:108px; right:8px; }
-    #saveBtn { top:158px; right:8px; }
-    #invBtn  { top:208px; right:8px; }
-    #questBtn { top:258px; right:8px; }
-    #selfieBtn { top:308px; right:8px; }
-    #photoBtn { top:358px; right:8px; }
-    #cursorBtn { top:408px; right:8px; }
-    #sirenBtn { font-size:20px; padding:9px 12px; top:458px; right:8px; }
+    #invBtn  { top:108px; right:8px; }
+    #sirenBtn { font-size:20px; padding:9px 12px; top:158px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
     #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
     #btnUndoTouch { right:134px; bottom:150px; background:rgba(196,238,201,.92); }
@@ -921,34 +928,21 @@
   }
   /* 📱 Tablets & tall touch screens: bigger, easier tap targets for small fingers */
   @media (pointer:coarse) and (min-height:640px) {
-    #soundBtn,#camBtn,#homeBtn,#saveBtn,#invBtn,#selfieBtn,#photoBtn { font-size:27px; padding:12px 15px; border-radius:16px; }
-    #questBtn,#cursorBtn { font-size:20px; padding:12px 13px; border-radius:16px; }
-    #modeBtn { font-size:19px; padding:12px 13px; border-radius:16px; }
-    #soundBtn { top:10px; } #camBtn { top:80px; } #sirenBtn { top:150px; }
-    #homeBtn { top:150px; } #saveBtn { top:220px; } #invBtn { top:290px; }
-    #questBtn { top:360px; } #selfieBtn { top:430px; } #photoBtn { top:500px; }
-    #cursorBtn { top:570px; } #modeBtn { top:640px; }
+    #menuBtn,#camBtn,#invBtn,#sirenBtn { font-size:27px; padding:12px 16px; border-radius:16px; }
+    #menuBtn { top:10px; } #camBtn { top:84px; } #invBtn { top:158px; } #sirenBtn { top:232px; }
+    #hudMenu .viewOpt, #viewMenu .viewOpt { font-size:18px; padding:12px 14px; }
   }
-  /* Touch phones in LANDSCAPE (short height): the right-side utility buttons would stack
-     down into the gameplay buttons. Lay them in two compact rows across the top-right,
-     leaving the lower-right clear for JUMP / USE / Place. (pointer:coarse = touch only,
-     so desktop short windows are unaffected.) */
+  /* Touch phones in LANDSCAPE (short height): lay the three visible buttons (☰ 📷 🎒) in one
+     compact row across the top-right, leaving the lower-right clear for JUMP / USE / Place.
+     (pointer:coarse = touch only, so desktop short windows are unaffected.) */
   @media (orientation:landscape) and (max-height:520px) and (pointer:coarse) {
-    #soundBtn,#camBtn,#homeBtn,#saveBtn,#invBtn,#questBtn,#selfieBtn,#photoBtn,#cursorBtn {
-      font-size:19px; padding:9px 12px;
-    }
-    #soundBtn  { top:8px; right:8px; }
-    #camBtn    { top:8px; right:66px; }
-    #homeBtn   { top:8px; right:124px; }
-    #saveBtn   { top:8px; right:182px; }
-    #invBtn    { top:8px; right:240px; }
-    #questBtn  { top:66px; right:8px; }
-    #moreBtn   { display:block; top:66px; right:66px; }
-    #selfieBtn, #photoBtn, #cursorBtn { display:none; }   /* tucked into the ⋯ tray */
-    body.hudExtras #selfieBtn { display:block; top:66px; right:124px; }
-    body.hudExtras #photoBtn  { display:block; top:66px; right:182px; }
-    body.hudExtras #cursorBtn { display:block; top:66px; right:240px; }
-    #sirenBtn  { font-size:19px; padding:9px 12px; top:124px; right:8px; }
+    #menuBtn,#camBtn,#invBtn { font-size:19px; padding:9px 12px; }
+    #menuBtn { top:8px; right:8px; }
+    #camBtn  { top:8px; right:64px; }
+    #invBtn  { top:8px; right:120px; }
+    #sirenBtn { font-size:19px; padding:9px 12px; top:8px; right:176px; }
+    #hudMenu { gap:4px; padding:6px; }                       /* all 7 choices fit a short phone */
+    #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
     #modeBtn, #undoBtn { display:none; }
     .touchBtn { font-size:18px; padding:16px 22px; border-radius:18px; }
     #btnAction    { right:16px;  bottom:158px; }
@@ -971,7 +965,7 @@
   }
   /* 🚂 TRAIN RIDE — a clean cinematic lap. Hide ALL the gameplay UI so nothing overlaps the view. */
   #rideOverlay { position:fixed; inset:0; z-index:70; display:none; pointer-events:none; }
-  body.riding #hud, body.riding #touchUI { display:none !important; }
+  body.riding #hud, body.riding #touchUI, body.riding #viewMenu, body.riding #hudMenu { display:none !important; }
   body.riding #rideOverlay { display:block; }
   /* a dark train-window frame for the passenger seats (so it feels like you're looking out a window) */
   #rideOverlay.window::before { content:''; position:absolute; inset:0; pointer-events:none;
@@ -1215,9 +1209,9 @@
     <div id="hudShelter">🏗️ Not enclosed yet</div>
   </div>
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
+  <button id="menuBtn" title="Menu">☰</button>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes / bird's eye for building">🧍</button>
-<button id="moreBtn" title="More buttons">⋯</button>
   <button id="sirenBtn" title="Siren on/off (only while driving a fire truck or police car)">🚨</button>
   <button id="homeBtn" class="hudBtn" title="Save & go home">🏠</button>
   <button id="unstuckBtn" class="hudBtn" title="Stuck? Tap to pop back outside" style="display:none">🆘 Unstuck</button>
@@ -1237,13 +1231,18 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
-  <div id="viewMenu">
-    <button class="viewOpt" data-m="third">🧍 <b>Behind me</b><br><small>see your hero</small></button>
-    <button class="viewOpt" data-m="fp">👁️ <b>Through my eyes</b><br><small>first-person look</small></button>
-    <button class="viewOpt" data-m="bird">🦅 <b>Bird's eye</b><br><small>build & remove from above!</small></button>
-  </div>
+  <div id="npcBubbles"></div>
   <button id="bridgeBtn" style="display:none; position:fixed; left:50%; bottom:158px; transform:translateX(-50%); z-index:40; background:#3f9d34; color:#fff; font-weight:800; font-size:16px; padding:12px 20px; border:none; border-radius:999px; box-shadow:0 4px 0 #2c6f24; cursor:pointer; font-family:inherit; pointer-events:auto"></button>
 </div>
+
+<!-- 📷 view chooser + ☰ menu — OUTSIDE #hud so its z-index:20 stacking context can't trap
+     them under the touch JUMP/USE cluster (z-index:25). goHome() hides both explicitly. -->
+<div id="viewMenu">
+  <button class="viewOpt" data-m="third">🧍 <b>Behind me</b><br><small>see your hero</small></button>
+  <button class="viewOpt" data-m="fp">👁️ <b>Through my eyes</b><br><small>first-person look</small></button>
+  <button class="viewOpt" data-m="bird">🦅 <b>Bird's eye</b><br><small>build & remove from above!</small></button>
+</div>
+<div id="hudMenu"></div>
 
 <!-- ================= MATH POPUP ================= -->
 <div class="popup" id="mathPopup">
@@ -4737,8 +4736,10 @@ function resetGameState() {
 function goHome() {
   if (G.running && !G.over) saveGame();
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
+  if (typeof clearNpcs === 'function') clearNpcs();
   G.running = false; popupOpen = false;
   ['mathPopup', 'shopPopup', 'invPopup', 'badgePopup', 'endScreen'].forEach(id => $(id).style.display = 'none');
+  $('viewMenu').style.display = 'none'; $('hudMenu').style.display = 'none';
   $('placingTag').style.display = 'none';
   $('hud').style.display = 'none';
   $('touchUI').style.display = 'none';
@@ -8324,7 +8325,6 @@ function arcadeLobby() {
   wrap.style.cssText = 'display:flex; flex-direction:column; gap:10px';
   const canPay = G.coins >= ARCADE_PLAY_COST;
   wrap.appendChild(arcadeBtn('📖 WORD QUIZ <small style="opacity:.85">— what\'s a noun? (easiest!)</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2f8a52' : '#9cc0a8', () => startWordQuiz()));
-  wrap.appendChild(arcadeBtn('🔤 WORD HUNT <small style="opacity:.85">— find the hidden words</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#8e44ad' : '#b3a4c4', () => startWordHunt()));
   wrap.appendChild(arcadeBtn('⛄ SNOWMAN SPELL <small style="opacity:.85">— guess letters, save him!</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2980b9' : '#9fb8ca', () => startSnowman()));
   wrap.appendChild(arcadeBtn('🎫 PRIZE COUNTER <small style="opacity:.85">— spend your tickets</small>', '#27ae60', () => arcadePrizes()));
   body.appendChild(wrap);
@@ -8422,110 +8422,6 @@ function finishWordQuiz() {
   Sound.fanfare && Sound.fanfare();
   arcadeWallet();
   arcadeGameOver('📖 Quiz done — <b>' + a.right + '/' + a.total + '</b> on the first try! <b>+' + a.ticketsWon + ' 🎫</b>' + (bonus ? ' 🌟 perfect bonus!' : ''), a.right);
-}
-/* ---- 🔤 WORD HUNT: a 7×7 word search. Tap the FIRST letter, then the LAST letter. ---- */
-function startWordHunt() {
-  if (!arcadePay()) return;
-  const lvl = arcadeLevel();
-  const S = lvl <= 2 ? 6 : 7;                              // little spellers get a smaller grid
-  const words = pickArcadeWords(lvl <= 2 ? 3 : 4, S);      // ...and one word fewer
-  const grid = Array.from({ length: S }, () => Array(S).fill(null));
-  const dirs = lvl >= 3 ? [[1, 0], [0, 1], [1, 1]] : [[1, 0], [0, 1]];   // little kids: across & down only
-  const placed = [];
-  for (const [word, sentence] of words) {
-    const W = word.toUpperCase();
-    for (let t = 0; t < 200; t++) {
-      const d = dirs[Math.floor(Math.random() * dirs.length)];
-      const sx = Math.floor(Math.random() * (S - (W.length - 1) * d[0]));
-      const sy = Math.floor(Math.random() * (S - (W.length - 1) * d[1]));
-      let ok = true;
-      for (let i = 0; i < W.length; i++) { const c = grid[sy + d[1] * i][sx + d[0] * i]; if (c && c !== W[i]) { ok = false; break; } }
-      if (!ok) continue;
-      for (let i = 0; i < W.length; i++) grid[sy + d[1] * i][sx + d[0] * i] = W[i];
-      placed.push({ word: W, sentence, found: false });
-      break;
-    }
-  }
-  const FILLER = 'AABCDEEFGHIIJKLMNOOPQRSTUUVWXYZ';         // vowel-weighted so it reads word-ish
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (!grid[y][x]) grid[y][x] = FILLER[Math.floor(Math.random() * FILLER.length)];
-  arcade = { kind: 'hunt', S, grid, words: placed, anchor: null, wrongPicks: 0, ticketsWon: 0 };
-  renderWordHunt();
-}
-function huntCellAt(x, y) { return document.querySelector('.huntCell[data-x="' + x + '"][data-y="' + y + '"]'); }
-function huntBaseStyle(el) {
-  if (el.dataset.found === '1') return;                     // found cells keep their green
-  el.style.background = '#faf6ff'; el.style.borderColor = '#d9c8ec'; el.style.color = '#5a3f7a';
-}
-function renderWordHunt() {
-  const a = arcade, S = a.S;
-  $('arcadeTitle').innerHTML = '🔤 Word Hunt';
-  arcadeWallet();
-  const short = innerHeight < 620;             // landscape phone: grid sized by HEIGHT, words BESIDE it
-  const gridW = short ? 'min(300px, 58vh)' : 'min(340px, 92vw)';
-  let h = '<div style="color:#6c84a6; font-size:13px; margin-bottom:6px">Tap the <b>first</b> letter of a word, then its <b>last</b> letter!</div>';
-  h += '<div style="display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:' + (short ? 'nowrap' : 'wrap') + '">';
-  h += '<div style="display:grid; grid-template-columns:repeat(' + S + ',1fr); gap:4px; width:' + gridW + '; flex:none">';
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    h += '<button class="huntCell" data-x="' + x + '" data-y="' + y + '" style="aspect-ratio:1; font-weight:800; font-size:clamp(12px,' + (short ? '3.4vh' : '17px') + ',17px); border-radius:9px; border:2px solid #d9c8ec; background:#faf6ff; color:#5a3f7a; cursor:pointer; padding:0">' + a.grid[y][x] + '</button>';
-  }
-  h += '</div><div id="huntWords" style="display:flex; flex-direction:' + (short ? 'column' : 'row') + '; flex-wrap:wrap; gap:7px; justify-content:center; align-items:center;' + (short ? '' : ' margin-top:10px; width:100%') + '"></div>';
-  h += '</div>';
-  $('arcadeBody').innerHTML = h;
-  document.querySelectorAll('.huntCell').forEach(c => c.onclick = () => huntTap(+c.dataset.x, +c.dataset.y, c));
-  renderHuntWords();
-}
-function renderHuntWords() {
-  const el = document.getElementById('huntWords'); if (!el || !arcade) return;
-  el.innerHTML = arcade.words.map(w =>
-    '<span style="padding:4px 10px; border-radius:999px; font-weight:800; font-size:14px; ' +
-    (w.found ? 'background:#d9f5e0; color:#2f8a52; text-decoration:line-through' : 'background:#f0e8fb; color:#7a4ea0') + '">' + w.word.toLowerCase() + '</span>').join('');
-}
-function huntTap(x, y, cell) {
-  const a = arcade; if (!a || a.kind !== 'hunt') return;
-  if (!a.anchor) {
-    a.anchor = { x, y };
-    cell.style.background = '#ffe9a8'; cell.style.borderColor = '#e8b93e';
-    Sound.click(); return;
-  }
-  const prev = huntCellAt(a.anchor.x, a.anchor.y);
-  if (a.anchor.x === x && a.anchor.y === y) { if (prev) huntBaseStyle(prev); a.anchor = null; return; }   // same cell = cancel
-  const dx = Math.sign(x - a.anchor.x), dy = Math.sign(y - a.anchor.y);
-  const len = Math.max(Math.abs(x - a.anchor.x), Math.abs(y - a.anchor.y)) + 1;
-  const straight = (a.anchor.x + dx * (len - 1) === x) && (a.anchor.y + dy * (len - 1) === y);
-  if (!straight) {                                          // not in a line — treat the tap as a fresh start
-    if (prev) huntBaseStyle(prev);
-    a.anchor = { x, y };
-    cell.style.background = '#ffe9a8'; cell.style.borderColor = '#e8b93e';
-    return;
-  }
-  let s = ''; const cells = [];
-  for (let i = 0; i < len; i++) { const cx = a.anchor.x + dx * i, cy = a.anchor.y + dy * i; s += a.grid[cy][cx]; cells.push([cx, cy]); }
-  const rev = s.split('').reverse().join('');
-  const hit = a.words.find(w => !w.found && (w.word === s || w.word === rev));
-  if (prev) huntBaseStyle(prev);
-  a.anchor = null;
-  if (hit) {
-    hit.found = true; Sound.correct();
-    cells.forEach(([cx, cy]) => { const el = huntCellAt(cx, cy); if (el) { el.dataset.found = '1'; el.style.background = '#c8f0d2'; el.style.borderColor = '#57b06f'; el.style.color = '#22633a'; } });
-    const t = arcadeLevel() >= 3 ? 2 : 1;
-    a.ticketsWon += t; G.prizeTickets = (G.prizeTickets || 0) + t;
-    recordPractice('spelling', true);
-    $('arcadeMsg').style.color = '#2f8a52';
-    $('arcadeMsg').innerHTML = '✓ <b>' + hit.word.toLowerCase() + '</b> +' + t + ' 🎫 — <i>' + hit.sentence + '</i>';
-    arcadeWallet(); renderHuntWords();
-    if (a.words.every(w => w.found)) finishHunt();
-  } else {
-    a.wrongPicks++;
-    Sound.wrong();
-    $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '✗ Not one of the hidden words — look again!';
-  }
-}
-function finishHunt() {
-  const a = arcade;
-  const bonus = 2; G.prizeTickets += bonus; a.ticketsWon += bonus;
-  Sound.fanfare && Sound.fanfare();
-  arcadeWallet();
-  arcadeGameOver('🎉 You found them all! <b>+' + a.ticketsWon + ' 🎫</b>', Math.max(0, 6 - a.wrongPicks));
 }
 /* ---- ⛄ SNOWMAN SPELL: guess letters before the sun melts him (a friendly hangman) ---- */
 function startSnowman() {
@@ -15722,6 +15618,15 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
       if (pet) { openPetMenu(pet); return; }
     }
   }
+  // 1.75) tap a town friend → they turn and chat right away
+  if ((action === 'place' || action === 'move') && npcs.length) {
+    const nHit = raycaster.intersectObjects(npcs.map(n => n.group), true)[0];
+    if (nHit) {
+      let o = nHit.object; while (o.parent && o.parent !== scene) o = o.parent;
+      const n = npcs.find(nn => nn.group === o);
+      if (n) { n.coolAt = 0; npcSpeak(n, performance.now()); return; }
+    }
+  }
   // 1.8) in BREAK mode, tap a placed item (🐠 fish bowl, 🍎 apple…) to pick it up — even on a table inside a house
   if (action === 'break' && placedFood.length) {
     const fMeshes = placedFood.filter(f => f.kind !== 'cat' && f.kind !== 'dog' && f.kind !== 'bird').map(f => f.mesh);
@@ -15945,11 +15850,44 @@ $('camBtn').onclick = () => {
 document.querySelectorAll('#viewMenu .viewOpt').forEach(b => b.onclick = () => {
   Sound.click(); setCameraMode(b.dataset.m); $('viewMenu').style.display = 'none';
 });
-addEventListener('pointerdown', e => {        // tap anywhere else → the chooser tucks away
-  const m = $('viewMenu');
-  if (m.style.display === 'flex' && !m.contains(e.target) && e.target !== $('camBtn')) m.style.display = 'none';
+addEventListener('pointerdown', e => {        // tap anywhere else → the choosers tuck away
+  for (const [mid, bid] of [['viewMenu', 'camBtn'], ['hudMenu', 'menuBtn']]) {
+    const m = $(mid);
+    if (m.style.display === 'flex' && !m.contains(e.target) && e.target !== $(bid)) m.style.display = 'none';
+  }
 }, true);
-$('moreBtn').onclick = () => { Sound.click(); document.body.classList.toggle('hudExtras'); $('moreBtn').textContent = document.body.classList.contains('hudExtras') ? '✕' : '⋯'; };
+/* ☰ THE MENU — the extra buttons live here now, each with a label kids can read.
+   The original buttons stay in the DOM (hidden): their onclick IS the feature, we just call it. */
+function openHudMenu() {
+  const m = $('hudMenu');
+  const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
+  const items = [
+    ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
+    ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
+    ['photoBtn',  '📸', '<b>Take a photo</b>'],
+    ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
+    ['cursorBtn', '❔', '<b>How to play</b>'],
+    ['saveBtn',   '💾', '<b>Save game</b>'],
+    ['homeBtn',   '🏠', '<b>Save & go home</b>'],
+  ];
+  m.innerHTML = items.map(([id, ic, html]) => '<button class="viewOpt" data-b="' + id + '">' + ic + ' ' + html + '</button>').join('');
+  m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
+    m.style.display = 'none';
+    const t = $(b.dataset.b);
+    if (t && t.onclick) t.onclick();
+  });
+  const r = $('menuBtn').getBoundingClientRect();
+  m.style.top = (r.bottom + 6) + 'px';
+  m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  m.style.maxHeight = Math.max(150, innerHeight - r.bottom - 14) + 'px';       // short phones: the list scrolls
+  m.style.display = 'flex';
+}
+$('menuBtn').onclick = () => {
+  Sound.click();
+  const m = $('hudMenu');
+  if (m.style.display === 'flex') { m.style.display = 'none'; return; }
+  openHudMenu();
+};
 $('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
 function toggleSelfie() {
   G.selfie = !G.selfie;
@@ -17169,6 +17107,7 @@ function startGame() {
   spawnBerries();
   syncCars();                                   // park the active car out front if owned (else hide all)
   syncPack();                                   // your backpack (blocks/doors/furniture) follows you here
+  respawnNpcs();                                // 🧑‍🤝‍🧑 town friends stroll near spawn (restore & travel come through here too)
   refreshHUD();
   G.running = true;
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
@@ -17212,6 +17151,155 @@ function doomsdayStart() {
 }
 $('againBtn').onclick = () => location.reload();
 
+/* ============================ 🧑‍🤝‍🧑 TOWN FRIENDS (NPCs) ============================
+   Three or four heroes stroll near spawn like Dojo-style townsfolk. Walk up (or tap them)
+   and they chat in a speech bubble — mostly about the 🛝 playground, planting the seed so
+   kids build one... and so a later update can have the friends actually PLAY on it. */
+const NPC_CAST = [
+  { id: 'spark', name: 'Spark', lines: [
+    'Hi {name}! Have you seen the 🛝 playground yet?',
+    'I want to try the swings — will you come with me?',
+    'Race you to the 🛝 playground!',
+    'The curly slide looks SO twisty. Is it fast?',
+  ] },
+  { id: 'panda', name: 'Momma Panda', lines: [
+    'Hello {name}! Is the ⚖️ see-saw fun? I\'ve never tried one!',
+    'Could you build a see-saw at the 🛝 playground for us?',
+    'A picnic by the playground sounds lovely. 🧺',
+    'Which is better — the swings or the slide?',
+  ] },
+  { id: 'bunny', name: 'Bounce', lines: [
+    'Boing! I bet I can hop higher than the swings!',
+    'Meet me at the 🛝 playground later?',
+    'Is there a 🏖️ sandbox? I dig SUPER fast!',
+    'Tag — you\'re it, {name}! First one to the playground wins! 🛝',
+  ] },
+  { id: 'trex', name: 'Rexy', lines: [
+    'ROAR! ...too scary? I\'m friendly, promise. 🦖',
+    'My little arms can\'t reach the monkey bars. 😅',
+    'Will you go down the 🛝 slide with me later?',
+    'You earn 🪙 answering ❓ questions? You\'re so smart, {name}!',
+  ] },
+];
+let npcs = [];
+const npcV = new THREE.Vector3();
+function clearNpcs() {
+  for (const n of npcs) scene.remove(n.group);
+  npcs = [];
+  const holder = $('npcBubbles'); if (holder) holder.innerHTML = '';
+}
+function npcFindSpot(ax, az) {           // nearest clear 3×3 cell to the anchor (rings outward)
+  for (let r = 0; r < 9; r++) {
+    const steps = Math.max(1, r * 6);
+    for (let t = 0; t < steps; t++) {
+      const ang = (t / steps) * Math.PI * 2 + r * 0.7;
+      const x = Math.round(ax + Math.cos(ang) * r), z = Math.round(az + Math.sin(ang) * r);
+      if (cellClearArea(x, z)) return { x: x + 0.5, z: z + 0.5 };
+    }
+  }
+  return null;
+}
+function respawnNpcs() {
+  clearNpcs();
+  const P = PARK_ZONE[G.world] || { cx: 0, cz: 18 };
+  const anchors = [
+    { x: P.cx + 2, z: P.cz - 4 },        // the playground greeter, right by the park gate
+    { x: -6, z: 4 }, { x: 7, z: -3 }, { x: -3, z: -8 },
+  ];
+  NPC_CAST.forEach((cast, i) => {
+    const av = AVATARS.find(a => a.id === cast.id); if (!av) return;
+    const spot = npcFindSpot(anchors[i].x, anchors[i].z); if (!spot) return;
+    ROUND_AV = true;                      // same soft look as the hero picker cards
+    let d; try { d = av.build(); } catch (e) { ROUND_AV = false; return; } finally { ROUND_AV = false; }
+    d.group.scale.setScalar(0.92);        // a touch smaller than the hero
+    d.group.position.set(spot.x, 0, spot.z);
+    d.group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(d.group);
+    npcs.push({ cast, d, group: d.group, home: spot,
+      mode: 'idle', timer: 1 + Math.random() * 3, target: null,
+      phase: Math.random() * 9, lineIx: Math.floor(Math.random() * cast.lines.length),
+      coolAt: 0, say: '', sayUntil: 0, el: null });
+  });
+}
+function npcSpeak(n, now) {
+  const text = n.cast.lines[n.lineIx % n.cast.lines.length].replace('{name}', G.playerName || 'friend');
+  n.lineIx++;
+  n.coolAt = now + 16000 + Math.random() * 9000;     // don't repeat at the same kid right away
+  n.say = text; n.sayUntil = now + 4600;
+  const holder = $('npcBubbles'); if (!holder) return;
+  if (!n.el) { n.el = document.createElement('div'); n.el.className = 'npcBubble'; holder.appendChild(n.el); }
+  n.el.innerHTML = '<b>' + n.cast.name + '</b><br>' + text;
+  Sound.click();
+}
+function npcBubblePlace(n, now) {         // pin the bubble over the friend's head (screen space)
+  if (!n.el) return;
+  if (now > n.sayUntil) { n.el.style.display = 'none'; return; }
+  const g = n.group;
+  const dist = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
+  npcV.set(g.position.x, g.position.y + (n.d.quad ? 1.75 : 2.1) * 0.92, g.position.z).project(camera);
+  if (npcV.z > 1 || dist > 14) { n.el.style.display = 'none'; return; }   // behind the camera / far away
+  n.el.style.display = 'block';
+  n.el.style.left = ((npcV.x * 0.5 + 0.5) * innerWidth) + 'px';
+  n.el.style.top = ((-npcV.y * 0.5 + 0.5) * innerHeight) + 'px';
+}
+function npcLegsRest(n) {
+  const d = n.d;
+  d.legs.forEach(l => l.rotation.x *= 0.8);
+  if (d.arms) d.arms.forEach(a => a.rotation.x *= 0.8);
+}
+function updateNpcs(dt, now) {
+  if (!npcs.length) return;
+  for (const n of npcs) {
+    n.phase += dt;
+    const g = n.group, d = n.d;
+    const pd = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
+    const talking = now < n.sayUntil;
+    if (talking || pd < 3.2) {                                   // 👋 a kid is here — stop and face them
+      const want = Math.atan2(player.pos.x - g.position.x, player.pos.z - g.position.z);
+      let dy = want - g.rotation.y;
+      while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      g.rotation.y += dy * Math.min(1, dt * 6);
+      npcLegsRest(n);
+      if (pd < 3.4 && now >= n.coolAt && !popupOpen && !player.driving) npcSpeak(n, now);
+      n.mode = 'idle'; n.timer = 1.5 + Math.random() * 2;
+    } else if (n.mode === 'walk' && n.target) {
+      const dx = n.target.x - g.position.x, dz = n.target.z - g.position.z;
+      if (Math.hypot(dx, dz) < 0.25) { n.mode = 'idle'; n.timer = 2 + Math.random() * 4; npcLegsRest(n); }
+      else {
+        const want = Math.atan2(dx, dz);
+        let dy = want - g.rotation.y;
+        while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+        g.rotation.y += dy * Math.min(1, dt * 5);
+        g.position.x += Math.sin(g.rotation.y) * 1.1 * dt;       // stroll, don't march
+        g.position.z += Math.cos(g.rotation.y) * 1.1 * dt;
+        const s = Math.sin(n.phase * 8) * 0.55;                  // same gait as the hero
+        if (d.quad) { d.legs[0].rotation.x = s; d.legs[3].rotation.x = s; d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s; }
+        else {
+          d.legs[0].rotation.x = s; d.legs[1].rotation.x = -s;
+          if (d.arms && d.arms.length >= 2) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
+        }
+      }
+    } else {                                                      // idle: settle, then pick a new stroll target
+      npcLegsRest(n);
+      n.timer -= dt;
+      if (n.timer <= 0) {
+        for (let t = 0; t < 12; t++) {
+          const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
+          const x = n.home.x + Math.cos(a) * r, z = n.home.z + Math.sin(a) * r;
+          const mx = (g.position.x + x) / 2, mz = (g.position.z + z) / 2;   // midpoint too — don't cut through walls
+          if (cellClearArea(Math.floor(x), Math.floor(z)) && cellClearArea(Math.floor(mx), Math.floor(mz))) {
+            n.target = { x, z }; n.mode = 'walk'; break;
+          }
+        }
+        if (n.mode !== 'walk') n.timer = 2 + Math.random() * 3;
+      }
+    }
+    if (d.wings) { const f = Math.sin(n.phase * 12) * 0.26; d.wings.forEach(w => { w.rotation.y = w.userData.baseRY + (w.userData.baseRY >= 0 ? f : -f); }); }
+    if (d.tail) d.tail.rotation.y = Math.sin(n.phase * (n.mode === 'walk' ? 6 : 3)) * 0.35;
+    npcBubblePlace(n, now);
+  }
+}
+
 /* ============================ GAME LOOP ============================ */
 let lastT = performance.now();
 let shelterTimer = 0;
@@ -17241,6 +17329,7 @@ function loop(now) {
   if (poolWater.length) { const tw = performance.now() / 480; for (const w of poolWater) if (w.mesh.parent) w.mesh.position.y = w.baseY + Math.sin(tw + (w.x + w.z) * 0.7) * 0.05; }   // rippling pool water
   if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
   if (!popupOpen && !G.over) updatePets(dt, now);
+  if (!popupOpen && !G.over) updateNpcs(dt, now);
   if (!G.over) updateQuest(dt, now);
 
   // pulse the math stations

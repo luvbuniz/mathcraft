@@ -165,9 +165,11 @@ build budget on one or two "wow" features.
 - Coin rebalance (Library pays most; spelling bee no longer farmable).
 - 4 Reading Town **city vehicles**: fire truck 🚒, ambulance 🚑 (both siren+lights), taxi 🚕, bus 🚌.
 - Whole-item **pools** (3 sizes) + **Mega Pool water slide** (first-person ride).
-- 🕹️ **Stack Arcade** (Reading Town, next door to the Cinema): **Word Hunt**
-  (7×7 tap-start/tap-end word search) + **Snowman Spell** (friendly hangman — no
-  gallows — with sentence clues from the graded spelling lists), 2-coin entry,
+- 🕹️ **Stack Arcade** (Reading Town, next door to the Cinema): **Word Quiz**
+  (five gentle "which word is a noun?" questions with a real 💡 hint button —
+  added after the first games tested too hard) + **Snowman Spell** (friendly
+  hangman — no gallows — with sentence clues from the graded spelling lists;
+  8 lives, short words & a free first letter for young spellers), 2-coin entry,
   🎫 prize-ticket payouts scaled by level (its own currency, distinct from the
   Western's 🎟️ ride tickets), a **Gloomy Bop** no-reading bonus round
   after wins (cleaner spelling = longer bonus), and a ticket-only **prize
@@ -197,6 +199,21 @@ build budget on one or two "wow" features.
   straight with another at the same height, a one-tap **🌉 Fill across**
   button lays the whole row — flat "old-fashioned" roofs in three taps per
   row instead of balancing along the wall placing bricks one by one.
+- ☰ **Labeled menu instead of button clutter** (from phone playtests: "too many
+  buttons, too small, Leo couldn't find the views"): the HUD now shows just
+  **☰ / 📷 view / 🎒 backpack** (+ 🚨 siren while driving). Everything else —
+  Quest Board (live count), Selfie, Photo, Sound, How to play, Save, Save & go
+  home — moved into the ☰ menu as a **labeled list**, same pattern as the 📷
+  view chooser. Bigger tap targets on tablets; single-row layout on landscape
+  phones; menus render above the touch JUMP/USE cluster.
+- 🧑‍🤝‍🧑 **Town friends (NPCs) + speech bubbles** (Dojo-Island-style life): Spark,
+  Momma Panda, Bounce & Rexy stroll near spawn in every world (one waits by
+  the 🛝 playground gate). They wander on their own, stop and turn to face you
+  when you come close or tap them, and chat in name-personalized speech
+  bubbles — mostly **asking about / hyping the playground** ("Will you build a
+  see-saw?", "Meet me at the 🛝 playground later!") to seed the build-and-play
+  loop. Next step later: the friends actually **play on** playground gear kids
+  place (sit the swings, ride the see-saw), closing that loop.
 
 ### 🎬 Grammar Cinema (Reading Town) — HIGH value, build next-ish
 Grammar is an underserved gap and rounds Reading Town into three pillars:
@@ -222,8 +239,10 @@ Leveling up grants a bonus quest that **rotates through mini-games**, length/dif
 **auto-scaled by level** (younger kids get easier ones — no manual age setting). Pool so far:
 - ✅ **Treasure Map** (read X,Y coordinates), **Describing Words** (adjectives),
   **Unscramble** (anagram, picture hint, 3–6 letters by level). *Shipped.*
-- ✅ **Word Search** — shipped as **Word Hunt in the 🕹️ Stack Arcade** instead (7×7,
-  tap start+end cell — easier than drag on touch; diagonals join at spelling level 3+).
+- ❌ **Word Search** — shipped as **Word Hunt in the 🕹️ Stack Arcade**, then
+  **removed** (2026-07): even with a smaller kid grid it stayed too hard/fiddly
+  for the target ages — replaced by the 📖 **Word Quiz** machine. If it ever
+  returns it should be for the older grades only.
 - 🤔 **Mini Crossword** — *older kids only* (younger won't get it, per parent). A 5×5 with
   picture/short clues is doable but a **bigger build**; do it after word search.
 - ⏭️ **Sudoku** — honest take: the "too hard for little kids" worry is right, and even a
