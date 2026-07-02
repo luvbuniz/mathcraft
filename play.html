@@ -3180,7 +3180,7 @@ const AVATARS = [
   {
     // ⭐ The cartoon stars — play AS Leo or Fiona. Looks match the Stackadoo World cartoons so a
     // kid who loves the shows can be their favourite character (the cartoon→game bridge).
-    id: 'leo', name: 'Leo 👦',
+    id: 'leo', name: 'Leo 👦', hidden: true,   // ⏸️ picker-hidden until the real 3D model lands (avatars/leo.glb)
     build() {
       const tee = 0xF6C744, trim = 0xE8862E, jeans = 0x3579C8, cuff = 0x6FA8E8, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x7A4A28, hairHi = 0x8F5C33;
       const a = buildBiped(tee, skin, jeans, skin);                  // yellow tee, blue jeans, bare arms
@@ -3242,7 +3242,7 @@ const AVATARS = [
     }
   },
   {
-    id: 'fiona', name: 'Fiona 👧',
+    id: 'fiona', name: 'Fiona 👧', hidden: true,   // ⏸️ picker-hidden until the real 3D model lands (avatars/fiona.glb)
     build() {
       const dress = 0xB07CD6, dressD = 0x7D3C98, band = 0x6C3391, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x7A4E28, hairHi = 0x8F5C33;
       const a = buildBiped(dress, skin, skin, skin);                 // lilac bodice; bare legs — the skirt is below
@@ -3695,7 +3695,8 @@ const SHOP_ITEMS = [
   { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
   // 🪜🛗 Get between the floors of your house the easy way — no more hopping up blocks!
   { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 18, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
-  { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
+  // ⏸️ shelved for now (felt hasty; placed/owned elevators still work — re-add to sell again):
+  // { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
   // 🎆 July 4th — summer cookout & celebration
   { id: 'usahat',  icon: '🎩', name: 'Uncle Sam Hat', price: 10, kind: 'own',  desc: 'A star-spangled top hat your hero wears. Red, white & blue!' },
   { id: 'flag',    icon: '🇺🇸', name: 'USA Flag', price: 6,    kind: 'many',  desc: 'Stars & stripes on a tall pole for your yard.' },
@@ -8324,8 +8325,9 @@ function pickArcadeWords(n, maxLen) {
 /* ---- 🔤 WORD HUNT: a 7×7 word search. Tap the FIRST letter, then the LAST letter. ---- */
 function startWordHunt() {
   if (!arcadePay()) return;
-  const S = 7, lvl = arcadeLevel();
-  const words = pickArcadeWords(4, S);
+  const lvl = arcadeLevel();
+  const S = lvl <= 2 ? 6 : 7;                              // little spellers get a smaller grid
+  const words = pickArcadeWords(lvl <= 2 ? 3 : 4, S);      // ...and one word fewer
   const grid = Array.from({ length: S }, () => Array(S).fill(null));
   const dirs = lvl >= 3 ? [[1, 0], [0, 1], [1, 1]] : [[1, 0], [0, 1]];   // little kids: across & down only
   const placed = [];
@@ -8423,9 +8425,22 @@ function finishHunt() {
 /* ---- ⛄ SNOWMAN SPELL: guess letters before the sun melts him (a friendly hangman) ---- */
 function startSnowman() {
   if (!arcadePay()) return;
-  const pick = pickArcadeWords(1, 9)[0];
-  arcade = { kind: 'snow', word: pick[0].toUpperCase(), sentence: pick[1], hits: new Set(), used: new Set(), misses: 0, maxMiss: 6, done: false };
+  const lvl = arcadeLevel();
+  const pick = pickArcadeWords(1, lvl <= 2 ? 5 : lvl === 3 ? 7 : 9)[0];   // little spellers get little words
+  const word = pick[0].toUpperCase();
+  arcade = { kind: 'snow', word, sentence: pick[1],
+    hits: new Set([word[0]]), used: new Set([word[0]]),    // 🆓 the first letter comes free
+    misses: 0, maxMiss: lvl <= 2 ? 8 : lvl === 3 ? 7 : 6,  // younger kids get more snow to spare
+    hints: 2, hintCost: 0, done: false };
   renderSnowman();
+}
+function snowHint() {                          // 💡 reveal one letter (docked from the prize, never below 1)
+  const a = arcade; if (!a || a.kind !== 'snow' || a.done || a.hints <= 0) return;
+  const left = a.word.split('').filter(c => !a.hits.has(c));
+  if (!left.length) return;
+  a.hints--; a.hintCost++;
+  Sound.click();
+  snowGuess(left[Math.floor(Math.random() * left.length)]);
 }
 function renderSnowman() {
   const a = arcade;
@@ -8447,9 +8462,13 @@ function renderSnowman() {
       (used ? 'background:#e8e4ee; color:#b8b0c8' : 'background:#7a4ea0; color:#fff; box-shadow:0 3px 0 #5a3a78') + '">' + ch + '</button>';
   }
   h += '</div>';
-  if (!a.done) h += '<div style="margin-top:6px; color:#8a7aa0; font-size:13px">❄️ ' + (a.maxMiss - a.misses) + ' wrong guesses before he melts!</div>';
+  if (!a.done) {
+    h += '<div style="margin-top:6px; color:#8a7aa0; font-size:13px">❄️ ' + (a.maxMiss - a.misses) + ' wrong guesses before he melts!</div>';
+    if (a.hints > 0) h += '<button id="snowHint" style="margin-top:8px; font-weight:bold; padding:9px 16px; border-radius:999px; border:none; cursor:pointer; color:#fff; background:#E8A33D; box-shadow:0 3px 0 #B57D24">💡 Reveal a letter (' + a.hints + ' left · costs 1 🎫)</button>';
+  }
   $('arcadeBody').innerHTML = h;
   document.querySelectorAll('.snowKey').forEach(k => k.onclick = () => snowGuess(k.dataset.ch));
+  const hb = document.getElementById('snowHint'); if (hb) hb.onclick = () => snowHint();
 }
 function snowGuess(ch) {
   const a = arcade; if (!a || a.kind !== 'snow' || a.done) return;
@@ -8459,7 +8478,7 @@ function snowGuess(ch) {
     if (a.word.split('').every(c => a.hits.has(c))) {                             // ⛄ saved!
       a.done = true;
       recordPractice('spelling', true);
-      const t = 2 + (a.misses <= 1 ? 2 : a.misses <= 3 ? 1 : 0) + (arcadeLevel() >= 4 ? 1 : 0);
+      const t = Math.max(1, 2 + (a.misses <= 1 ? 2 : a.misses <= 3 ? 1 : 0) + (arcadeLevel() >= 4 ? 1 : 0) - (a.hintCost || 0));
       G.prizeTickets = (G.prizeTickets || 0) + t;
       if (typeof speakWord === 'function') { try { speakWord(a.word.toLowerCase()); } catch (e) {} }
       Sound.fanfare && Sound.fanfare();
@@ -11205,10 +11224,22 @@ function rideTo(targetY) {
   player.pos.y = y; player.vel.set(0, 0, 0); player.onGround = true;
   player.restingBed = null; player.sittingChair = null; player.playing = null;
 }
+function liftHasLanding(entry, targetY) {   // is there a floor to stand on at targetY around the lift?
+  if (targetY <= 0.01) return true;         // the ground floor always exists
+  const cx = Math.floor(entry.mesh.position.x), cz = Math.floor(entry.mesh.position.z);
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++)
+    if (solidAt(cx + dx, Math.round(targetY) - 1, cz + dz)) return true;
+  return false;
+}
 function useStairs(entry) {
   const baseY = Math.round(entry.mesh.position.y);       // the floor this staircase stands on (usually 0)
   const top = baseY + LIFT_FLOOR_H;
   const goingUp = player.pos.y < baseY + LIFT_FLOOR_H * 0.5;
+  if (goingUp && !liftHasLanding(entry, top)) {          // 🪜 no second floor yet → teach, don't teleport
+    toast('🪜 No floor up there yet! Build one ' + LIFT_FLOOR_H + ' blocks up next to the stairs — press C twice for 🦅 bird\'s eye and use 🌉 Fill across to lay it fast!', 4200);
+    if (Sound.wrong) Sound.wrong();
+    return;
+  }
   rideTo(goingUp ? top : baseY);
   if (Sound.slide) Sound.slide();
   toast(goingUp ? '🪜 Up you go — to the next floor!' : '🪜 Back down you come!', 1600);
@@ -11237,6 +11268,11 @@ function renderLiftPad() {
     const label = f === 0 ? 'Ground Floor' : (f + 1) + (f === 1 ? 'nd' : f === 2 ? 'rd' : 'th') + ' Floor';
     btn.innerHTML = '🛗 ' + label + (Math.abs(fy - here) < 0.6 ? '  •  you are here' : '');
     btn.onclick = () => {
+      if (fy > 0 && !liftHasLanding(liftActive, fy)) {   // 🛗 don't ride into thin air
+        $('liftMsg').textContent = '🛗 No floor at ' + label + ' yet — build one ' + LIFT_FLOOR_H + ' blocks up first!';
+        if (Sound.wrong) Sound.wrong();
+        return;
+      }
       Sound.click(); rideTo(fy);
       if (Sound.bell) Sound.bell();
       toast('🛗 Ding! ' + label, 1500);
@@ -16529,6 +16565,7 @@ function buildMenu() {
   pvRenderer.setSize(PV, PV);
 
   AVATARS.forEach((av, i) => {
+    if (av.hidden) return;                 // ⏸️ hidden heroes keep working in old saves, just can't be picked
     const card = document.createElement('button');
     card.className = 'avatarCard' + (i === 0 ? ' selected' : '');
     const cv = document.createElement('canvas');
