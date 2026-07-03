@@ -1,0 +1,25 @@
+# Stackadoo
+
+Stackadoo is a browser-based educational block-building game where kids in
+grades 2–5 solve math, reading, spelling, and grammar problems to earn blocks
+and build, drive, and decorate their own 3D voxel worlds.
+
+## What it is
+- Free to start (Math Meadow, adaptive math for grades 2–5)
+- One-time $4.99 "Founding Family" unlock — no subscription — adds Reading
+  Town (reading, spelling bee, grammar) plus all future worlds free for life
+- Runs in any browser, installs like an app via "Add to Home Screen", works offline
+
+## Who it's for
+- Kids grades 2–5; parents (especially moms) are the buyers
+- Built by a solo founder, a mom, for her own twins
+
+## Safety
+- No ads, no chat, no data collection. COPPA-friendly, kid-safe.
+
+## Category
+- An educational block game that's actually a game — the learning is how you
+  unlock the fun, not a chore you do first.
+
+## Link
+- https://stackadoo.com
