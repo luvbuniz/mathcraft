@@ -189,11 +189,12 @@
   .npcBubble.mine { background:#e8f4ff; }             /* the kid's own words — a gentle blue */
   .npcBubble.mine b { color:#2b6cb0; }
   .npcBubble.mine::after { border-top-color:#e8f4ff; }
-  /* 💬 preset chat chips — tap a phrase to say it (no typing, no mischief) */
+  /* 💬 preset chat chips — tap a phrase to say it (no typing, no mischief).
+     The container ignores taps (only the chips catch them) so the move-joystick still works around them. */
   #npcChat { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:32; display:none;
-    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,720px); pointer-events:auto; }
+    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,720px); pointer-events:none; }
   #npcChat button { font-family:inherit; font-weight:800; font-size:15px; color:#34495e; background:rgba(255,255,255,.96);
-    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); }
+    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto; }
   #npcChat button:active { transform:translateY(2px); box-shadow:none; }
   body.npcChatting #hintBar { display:none !important; }   /* the chips ARE the hint while chatting */
 
@@ -952,15 +953,20 @@
     #sirenBtn { font-size:19px; padding:9px 12px; top:8px; right:176px; }
     #hudMenu { gap:4px; padding:6px; }                       /* all the choices fit a short phone */
     #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
-    #npcChat { bottom:8px; gap:6px; max-width:64vw; }        /* chat chips clear of the joystick + JUMP cluster */
+    /* chat chips hug the bottom-LEFT so they never crowd the button grid */
+    #npcChat { left:12px; right:auto; bottom:12px; transform:none; justify-content:flex-start;
+      gap:6px; max-width:calc(100vw - 264px); }
     #npcChat button { font-size:13px; padding:7px 11px; }
     #modeBtn, #undoBtn { display:none; }
-    .touchBtn { font-size:18px; padding:16px 22px; border-radius:18px; }
-    #btnAction    { right:16px;  bottom:158px; }
-    #btnJump      { right:16px;  bottom:82px; }
-    #btnModeTouch { right:132px; bottom:82px; }
-    #btnShoot     { right:132px; bottom:158px; }
-    #btnUndoTouch { right:248px; bottom:82px; }
+    /* 🎮 the action buttons: one tidy 2×2 grid tucked into the corner (Dojo-style),
+       every button the SAME size so nothing staircases or wraps to two lines */
+    .touchBtn { box-sizing:border-box; width:106px; height:58px; padding:0 6px; font-size:16px;
+      border-radius:16px; display:flex; align-items:center; justify-content:center; white-space:nowrap; }
+    #btnJump      { right:12px;  bottom:14px; }
+    #btnAction    { right:12px;  bottom:80px; }   /* ⭐ USE sits right above JUMP */
+    #btnModeTouch { right:126px; bottom:14px; }   /* 🧱 Place beside JUMP */
+    #btnUndoTouch { right:126px; bottom:80px; }   /* ↩️ Undo above Place */
+    #btnShoot     { right:240px; bottom:14px; }   /* 🎯 only during a Gloomies rush */
   }
   /* Short screens (landscape phones AND landscape tablets): the start/setup screen
      vertically centers the card (flex-direction:column + justify-content:center), which
@@ -17349,6 +17355,7 @@ function placePlayerBubble(now) {
   playerBubbleEl.style.display = 'block';
   playerBubbleEl.style.left = ((npcV.x * 0.5 + 0.5) * innerWidth) + 'px';
   playerBubbleEl.style.top = ((-npcV.y * 0.5 + 0.5) * innerHeight) + 'px';
+  npcResolveBubble(playerBubbleEl);       // the kid's bubble claims its spot first; friends climb above
 }
 function npcChipTap(id) {
   const n = chatNpc; if (!n) return;
@@ -17442,6 +17449,27 @@ function npcWalkToward(n, tx, tz, dt) {  // shared stroll: returns true = arrive
   }
   return false;
 }
+/* 🫧 bubbles must never stack on each other (kid + friend chat face-to-face = same screen
+   spot). Every placed bubble registers its rect for the frame; a new bubble that would
+   cover one climbs up until it's clear. The chat chips count as "taken" space too. */
+let npcRects = [];
+function npcRectsReset() {
+  npcRects.length = 0;
+  const chat = $('npcChat');
+  if (chat && chat.style.display === 'flex') npcRects.push(chat.getBoundingClientRect());
+}
+function npcResolveBubble(el) {
+  for (let k = 0; k < 5; k++) {
+    const r = el.getBoundingClientRect();
+    let hit = null;
+    for (const p of npcRects) {
+      if (!(r.right < p.left + 4 || r.left > p.right - 4 || r.bottom < p.top + 4 || r.top > p.bottom - 4)) { hit = p; break; }
+    }
+    if (!hit) { npcRects.push(r); return; }
+    el.style.top = (parseFloat(el.style.top) - (r.bottom - hit.top + 8)) + 'px';   // hop above the taken spot
+  }
+  npcRects.push(el.getBoundingClientRect());
+}
 function npcBubblePlace(n, now) {         // pin the bubble over the friend's head (screen space)
   if (!n.el) return;
   if (now > n.sayUntil) { n.el.style.display = 'none'; return; }
@@ -17452,6 +17480,7 @@ function npcBubblePlace(n, now) {         // pin the bubble over the friend's he
   n.el.style.display = 'block';
   n.el.style.left = ((npcV.x * 0.5 + 0.5) * innerWidth) + 'px';
   n.el.style.top = ((-npcV.y * 0.5 + 0.5) * innerHeight) + 'px';
+  npcResolveBubble(n.el);
 }
 function npcLegsRest(n) {
   const d = n.d;
@@ -17459,6 +17488,7 @@ function npcLegsRest(n) {
   if (d.arms) d.arms.forEach(a => a.rotation.x *= 0.8);
 }
 function updateNpcs(dt, now) {
+  npcRectsReset();
   placePlayerBubble(now);
   if (!npcs.length) { if (chatNpc) hideNpcChat(); return; }
   // 💬 offer the word-chips for the closest friend (with a little hysteresis so they don't flicker)
