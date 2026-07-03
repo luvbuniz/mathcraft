@@ -3444,7 +3444,18 @@ function prepareAvatarModel(id, gltf) {
     o.material = wasArray ? mats : mats[0];
   });
   const tweaks = AVATAR_MODEL_TWEAKS[id] || {};
-  const bb = new THREE.Box3().setFromObject(inner);
+  // 🦴 rigged models: glTF skinned vertices are authored in SCENE units (the inverse-bind
+  // matrices fold the node chain in), so the raw geometry bounds ARE the rendered size.
+  // Measuring through the node transforms would apply the rig's unit conversion twice
+  // (Meshy armatures carry a 0.01 there) and we'd "normalize" Leo into a giant.
+  let bb = null;
+  inner.traverse(o => {
+    if (o.isSkinnedMesh) {
+      o.geometry.computeBoundingBox();
+      bb = bb ? bb.union(o.geometry.boundingBox) : o.geometry.boundingBox.clone();
+    }
+  });
+  if (!bb) bb = new THREE.Box3().setFromObject(inner);   // unrigged: node transforms count
   const size = new THREE.Vector3(); bb.getSize(size);
   const s = (size.y > 0.0001 ? AVATAR_MODEL_HEIGHT / size.y : 1) * (tweaks.scale || 1);
   const c = new THREE.Vector3(); bb.getCenter(c);
@@ -3467,7 +3478,8 @@ function prepareAvatarModel(id, gltf) {
     const find = (re, strict) => { const cl = clips.find(k => re.test(k.name) && !(strict && POSTURE.test(k.name))); return cl ? mixer.clipAction(cl) : null; };
     idle = find(/idle|breath|stand/i, true) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
     walk = find(/walk|run|jog|trot/i, true) || idle;
-    if (!idle) idle = walk || mixer.clipAction(clips[0]);
+    // no idle clip in the file? leave it null — the game gives a breathing stand instead
+    // (much nicer than looping the walk in place). An added Idle clip later just wins.
     const used = [idle, walk].filter(Boolean).map(a => a.getClip());
     extras = clips.filter(k => used.indexOf(k) < 0)
       .map(k => { const a = mixer.clipAction(k); a.setLoop(THREE.LoopOnce, 1); return a; });
@@ -3556,9 +3568,16 @@ function updateGlbAvatar(d, moving, t) {
       if (d.curAction) d.curAction.fadeOut(0.2);
       want.reset().fadeIn(0.2).play();
       d.curAction = want;
+    } else if (!want && d.curAction) {           // standing with NO idle clip → stop the walk…
+      d.curAction.fadeOut(0.2);
+      d.curAction = null;
     }
     d.mixer.update(mdt);
     d.inner.position.y = d._baseY || 0;
+    if (!moving && !d.idleAction) {              // …and breathe gently instead of marching in place
+      if (d._breath == null) d._breath = d.inner.scale.y;
+      d.inner.scale.y = d._breath * (1 + Math.sin(t * 1.7) * 0.006);
+    } else if (d._breath != null) d.inner.scale.y = d._breath;
   } else {
     // 🍃 unrigged models get LIFE, not just a bob: a lean into their stride with a little
     // side-to-side rock while walking, and slow breathing (tiny scale swell) while standing.
