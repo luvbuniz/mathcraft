@@ -3504,8 +3504,20 @@ function updateGlbAvatar(d, moving, t) {
     d.mixer.update(mdt);
     d.inner.position.y = d._baseY || 0;
   } else {
+    // 🍃 unrigged models get LIFE, not just a bob: a lean into their stride with a little
+    // side-to-side rock while walking, and slow breathing (tiny scale swell) while standing.
     if (d._baseY == null) d._baseY = d.inner.position.y;
-    d.inner.position.y = d._baseY + (moving ? Math.abs(Math.sin(t * 8)) * 0.05 : Math.sin(t * 2) * 0.015);
+    if (d._breath == null) d._breath = d.inner.scale.y;
+    if (moving) {
+      d.inner.position.y = d._baseY + Math.abs(Math.sin(t * 8)) * 0.05;
+      d.inner.rotation.x += (0.085 - d.inner.rotation.x) * 0.12;              // eager forward lean
+      d.inner.rotation.z = Math.sin(t * 8) * 0.028;                            // step-step sway
+      d.inner.scale.y += (d._breath - d.inner.scale.y) * 0.2;
+    } else {
+      d.inner.position.y = d._baseY + Math.sin(t * 2) * 0.015;
+      d.inner.rotation.x *= 0.85; d.inner.rotation.z *= 0.85;                  // settle upright
+      d.inner.scale.y = d._breath * (1 + Math.sin(t * 1.7) * 0.006);           // gentle breathing
+    }
   }
 }
 
