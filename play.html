@@ -1747,6 +1747,24 @@
 <div id="rotateOverlay"><div class="ph">📱</div><b>Turn your phone sideways!</b><span>Stackadoo plays in landscape — flip your phone and keep building. 🧱</span></div>
 
 <script>
+/* 🛡️ STORAGE ARMOR — privacy modes (Brave "Block all cookies", strict shields, some private
+   windows) make ANY touch of localStorage/sessionStorage THROW a SecurityError. The game must
+   still play — saving just degrades. These facades absorb the denial: when storage is blocked
+   they fall back to in-memory maps, so kids can play (and even save within the tab); only
+   persistence across visits is lost, and the start screen says so. Every storage call in the
+   game goes through LS/SS. */
+function _memStore() {
+  const mem = new Map();
+  return { blocked: true,
+    getItem: function (k) { return mem.has(String(k)) ? mem.get(String(k)) : null; },
+    setItem: function (k, v) { mem.set(String(k), String(v)); },
+    removeItem: function (k) { mem.delete(String(k)); },
+    key: function (i) { return Array.from(mem.keys())[i] || null; },
+    get length() { return mem.size; },
+    clear: function () { mem.clear(); } };
+}
+const LS = (function () { try { const t = window["localStorage"]; t.getItem("t"); return t; } catch (e) { return _memStore(); } })();
+const SS = (function () { try { const t = window["sessionStorage"]; t.getItem("t"); return t; } catch (e) { return _memStore(); } })();
 'use strict';
 /* =====================================================================
    Stackadoo — a voxel math adventure for grades 2–5.
@@ -1916,9 +1934,9 @@ const Sound = {
     try { this.sirenGain.gain.setTargetAtTime(0.0001, t, 0.05); this.siren.stop(t + 0.2); this.sirenLFO.stop(t + 0.2); } catch (e) {}
     this.siren = this.sirenLFO = this.sirenLFOGain = this.sirenBP = this.sirenGain = null;
   },
-  toggleMute() { this.muted = !this.muted; try { localStorage.setItem('stackadooMuted', this.muted ? '1' : '0'); } catch (e) {} return this.muted; }
+  toggleMute() { this.muted = !this.muted; try { LS.setItem('stackadooMuted', this.muted ? '1' : '0'); } catch (e) {} return this.muted; }
 };
-try { Sound.muted = localStorage.getItem('stackadooMuted') === '1'; } catch (e) {}   // 🔊 remember the on/off choice
+try { Sound.muted = LS.getItem('stackadooMuted') === '1'; } catch (e) {}   // 🔊 remember the on/off choice
 document.addEventListener('pointerdown', function initAudioOnce() {
   Sound.init();
   if (Sound.ctx && Sound.ctx.state === 'suspended') Sound.ctx.resume();
@@ -3563,15 +3581,15 @@ const TRIAL_KEY = 'stackadooTrialStart';    // ms timestamp the free "taste of p
    remember it for the rest of the session. (Phase 2 later: wire Play Billing here.) */
 const IS_ANDROID_APP = (function () {
   try {
-    if (sessionStorage.getItem('twa') === '1') return true;
+    if (SS.getItem('twa') === '1') return true;
     const fromApp = (document.referrer || '').startsWith('android-app://') || ('getDigitalGoodsService' in window);
-    if (fromApp) sessionStorage.setItem('twa', '1');
+    if (fromApp) SS.setItem('twa', '1');
     return fromApp;
   } catch (e) { return false; }
 })();
 function isUnlocked() {
   if (IS_ANDROID_APP) return true;                                  // Android app = full game, free
-  try { return localStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; }
+  try { return LS.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; }
 }
 function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !premiumActive(); }
 /* ===== Monetization levers (all default OFF — flip the knobs in PAY when you're ready to gate) =====
@@ -3582,19 +3600,19 @@ function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !premi
 function premiumActive() { return isUnlocked() || inTrial(); }      // full access = bought OR mid free-trial
 function inTrial() {
   if (!PAY.trialDays) return false;
-  try { const t = +(localStorage.getItem(TRIAL_KEY) || 0); return t > 0 && (Date.now() - t) < PAY.trialDays * 864e5; }
+  try { const t = +(LS.getItem(TRIAL_KEY) || 0); return t > 0 && (Date.now() - t) < PAY.trialDays * 864e5; }
   catch (e) { return false; }
 }
 function trialDaysLeft() {
-  try { const t = +(localStorage.getItem(TRIAL_KEY) || 0); return t ? Math.max(0, Math.ceil((t + PAY.trialDays * 864e5 - Date.now()) / 864e5)) : 0; }
+  try { const t = +(LS.getItem(TRIAL_KEY) || 0); return t ? Math.max(0, Math.ceil((t + PAY.trialDays * 864e5 - Date.now()) / 864e5)) : 0; }
   catch (e) { return 0; }
 }
 function trialAvailable() {   // can a fresh trial start? (trials on, not already bought, never started one)
   if (!PAY.trialDays || isUnlocked()) return false;
-  try { return !localStorage.getItem(TRIAL_KEY); } catch (e) { return false; }
+  try { return !LS.getItem(TRIAL_KEY); } catch (e) { return false; }
 }
 function startTrial() {
-  try { localStorage.setItem(TRIAL_KEY, String(Date.now())); } catch (e) {}
+  try { LS.setItem(TRIAL_KEY, String(Date.now())); } catch (e) {}
   if (typeof toast === 'function') toast('🎉 Free trial started — every world is open for ' + PAY.trialDays + ' days. Have fun!', 4200);
 }
 
@@ -3636,7 +3654,7 @@ function beginPurchase() {
      flow is testable today. Gift link: stackadoo.com/?code=STK-XXXXX ===== */
 const REDEEM_URL = 'https://script.google.com/macros/s/AKfycbxwa9NZi9kGFa3cjWQ_lUCtCNLuX4CK_z2QEy-21n5a2SS4Jbz4AuTYHuLnFZpZgnpr/exec';   // Apps Script gift-code backend (one-use-each)
 const PROMO_CODES = ['STK-E8UZD', 'STK-8CSPM', 'STK-XYBJ6', 'STK-K7MUE', 'STK-7SN4K', 'STK-EKEDD', 'STK-FBGY4', 'STK-Z3X58', 'STK-7KG4E', 'STK-EY934'];
-function unlockNow() { try { localStorage.setItem(UNLOCK_KEY, '1'); if (!localStorage.getItem(FOUNDING_KEY)) localStorage.setItem(FOUNDING_KEY, new Date().toISOString()); } catch (e) {} }
+function unlockNow() { try { LS.setItem(UNLOCK_KEY, '1'); if (!LS.getItem(FOUNDING_KEY)) LS.setItem(FOUNDING_KEY, new Date().toISOString()); } catch (e) {} }
 async function redeemCode(raw) {                 // -> { ok, reason }
   const code = (raw || '').trim().toUpperCase();
   if (!code) return { ok: false, reason: 'empty' };
@@ -3846,7 +3864,7 @@ function loadProfileFor(name) {
   profile = freshProfile();
   let saved = null;
   try {
-    saved = JSON.parse(localStorage.getItem(profileKey(name)));
+    saved = JSON.parse(LS.getItem(profileKey(name)));
     if (saved && saved.badges) Object.assign(profile, saved);   // merge so old saves gain new fields
   } catch (e) {}
   profile.byOp = profile.byOp || {};
@@ -3910,7 +3928,7 @@ function masteryStage(correct) {
 }
 function saveProfile() {
   profile.lastPlayed = Date.now();
-  try { localStorage.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) {}
+  try { LS.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) {}
   try { cloudSyncUp(); } catch (e) {}                       // mirror to the cloud account if signed in
 }
 
@@ -4139,7 +4157,7 @@ function openUnlock() {
 function closeUnlock() { $('unlockPopup').style.display = 'none'; if (G.running) popupOpen = false; }
 function doUnlock() {
   // TODO: wire to a real payment (Stripe Checkout / RevenueCat). For now this flips the local flag.
-  try { localStorage.setItem(UNLOCK_KEY, '1'); if (!localStorage.getItem(FOUNDING_KEY)) localStorage.setItem(FOUNDING_KEY, new Date().toISOString()); } catch (e) {}
+  try { LS.setItem(UNLOCK_KEY, '1'); if (!LS.getItem(FOUNDING_KEY)) LS.setItem(FOUNDING_KEY, new Date().toISOString()); } catch (e) {}
   try { cloudSyncUp(); } catch (e) {}            // push the unlock to the account → follows to other devices
   closeUnlock();
   renderWorldLocks();
@@ -4161,10 +4179,10 @@ function renderWorldLocks() {
 /* ---------- Grown-ups progress dashboard ---------- */
 function listProfiles() {
   const out = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (let i = 0; i < LS.length; i++) {
+    const k = LS.key(i);
     if (k && k.indexOf(PROFILE_PREFIX) === 0) {
-      try { const p = JSON.parse(localStorage.getItem(k)); if (p) { p._name = k.slice(PROFILE_PREFIX.length); out.push(p); } } catch (e) {}
+      try { const p = JSON.parse(LS.getItem(k)); if (p) { p._name = k.slice(PROFILE_PREFIX.length); out.push(p); } } catch (e) {}
     }
   }
   return out.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
@@ -4361,7 +4379,7 @@ function renderGrownup() {
 // ✏️ Rename a player — keeps ALL their progress (profile + saves in every world), just
 // changes the displayed name. Great for swapping a kid's name to "Player One" before filming.
 function saveExistsFor(name) {
-  return ['meadow', 'city', 'beach'].some(w => localStorage.getItem(saveKey(name, w)) != null);
+  return ['meadow', 'city', 'beach'].some(w => LS.getItem(saveKey(name, w)) != null);
 }
 function startRename(oldName, row) {
   row.innerHTML = '';
@@ -4382,14 +4400,14 @@ function doRename(oldName, newName) {
   newName = (newName || '').trim().slice(0, 14);
   if (!newName) { toast('Type a name first!', 1600); return; }
   if (newName === oldName) { renderGrownup(); return; }
-  if (localStorage.getItem(profileKey(newName)) || saveExistsFor(newName)) { toast('“' + newName + '” is already taken — pick another.', 2600); return; }
-  const prof = localStorage.getItem(profileKey(oldName));               // move the profile (keyed by name)
-  if (prof != null) { localStorage.setItem(profileKey(newName), prof); localStorage.removeItem(profileKey(oldName)); }
+  if (LS.getItem(profileKey(newName)) || saveExistsFor(newName)) { toast('“' + newName + '” is already taken — pick another.', 2600); return; }
+  const prof = LS.getItem(profileKey(oldName));               // move the profile (keyed by name)
+  if (prof != null) { LS.setItem(profileKey(newName), prof); LS.removeItem(profileKey(oldName)); }
   ['meadow', 'city', 'beach'].forEach(w => {                            // move every world's save, fixing the name inside
-    const raw = localStorage.getItem(saveKey(oldName, w));
+    const raw = LS.getItem(saveKey(oldName, w));
     if (raw == null) return;
     let out = raw; try { const o = JSON.parse(raw); o.name = newName; out = JSON.stringify(o); } catch (e) {}
-    localStorage.setItem(saveKey(newName, w), out); localStorage.removeItem(saveKey(oldName, w));
+    LS.setItem(saveKey(newName, w), out); LS.removeItem(saveKey(oldName, w));
   });
   if (G.playerName === oldName) {                                       // update the live game if it's this player
     G.playerName = newName; if (typeof profile === 'object' && profile) profile._name = newName;
@@ -4402,8 +4420,8 @@ function doRename(oldName, newName) {
 }
 /* Optional parent PIN — locks the dashboard so older kids can't peek. Device-level. */
 const PARENT_PIN_KEY = 'stackadooParentPIN';
-function parentPIN() { try { return localStorage.getItem(PARENT_PIN_KEY) || ''; } catch (e) { return ''; } }
-function setParentPINval(v) { try { if (v) localStorage.setItem(PARENT_PIN_KEY, v); else localStorage.removeItem(PARENT_PIN_KEY); } catch (e) {} }
+function parentPIN() { try { return LS.getItem(PARENT_PIN_KEY) || ''; } catch (e) { return ''; } }
+function setParentPINval(v) { try { if (v) LS.setItem(PARENT_PIN_KEY, v); else LS.removeItem(PARENT_PIN_KEY); } catch (e) {} }
 let parentUnlocked = false;
 function showGuLock() {
   $('grownupList').innerHTML = '';                 // don't render any data while locked
@@ -4522,17 +4540,17 @@ const saveKey = (name, world) => SAVE_PREFIX + (name || 'Player') + (world && wo
   try {
     const pairs = [['mathcraftSave:', SAVE_PREFIX], ['mathcraftProfile:', PROFILE_PREFIX]];
     const moves = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
+    for (let i = 0; i < LS.length; i++) {
+      const k = LS.key(i);
       if (!k) continue;
       for (const [oldP, newP] of pairs) {
         if (k.indexOf(oldP) === 0) moves.push([k, newP + k.slice(oldP.length)]);
       }
     }
     moves.forEach(([oldK, newK]) => {
-      if (localStorage.getItem(newK) == null) {
-        const v = localStorage.getItem(oldK);
-        if (v != null) localStorage.setItem(newK, v);
+      if (LS.getItem(newK) == null) {
+        const v = LS.getItem(oldK);
+        if (v != null) LS.setItem(newK, v);
       }
     });
   } catch (e) {}
@@ -4552,7 +4570,7 @@ let lastSaveAt = 0;
 function saveGame() {
   if (!G.playerName) return;
   try {
-    localStorage.setItem(saveKey(G.playerName, G.world), JSON.stringify({
+    LS.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
       blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, prizeTickets: G.prizeTickets, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
@@ -4574,18 +4592,18 @@ function saveGame() {
 }
 function listSaves() {
   const out = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (let i = 0; i < LS.length; i++) {
+    const k = LS.key(i);
     if (k && k.indexOf(SAVE_PREFIX) === 0) {
-      try { const s = JSON.parse(localStorage.getItem(k)); if (s) out.push(s); } catch (e) {}
+      try { const s = JSON.parse(LS.getItem(k)); if (s) out.push(s); } catch (e) {}
     }
   }
   return out.sort((a, b) => (b.when || 0) - (a.when || 0));
 }
 function loadSaveFor(name, world) {
-  try { return JSON.parse(localStorage.getItem(saveKey(name, world))); } catch (e) { return null; }
+  try { return JSON.parse(LS.getItem(saveKey(name, world))); } catch (e) { return null; }
 }
-function clearSave(name, world) { try { localStorage.removeItem(saveKey(name || G.playerName, world)); } catch (e) {} }
+function clearSave(name, world) { try { LS.removeItem(saveKey(name || G.playerName, world)); } catch (e) {} }
 /* Parent setting for the home-screen 🗑️ delete buttons (on top of the typed-code gate):
    'auto'  → hidden for young grades (1–3), shown & code-gated for grade 4+   [default]
    'hide'  → always hidden
@@ -4593,13 +4611,13 @@ function clearSave(name, world) { try { localStorage.removeItem(saveKey(name || 
 const DELETE_POLICY_KEY = 'stackadooDeletePolicy';
 function deletePolicy() {
   try {
-    const v = localStorage.getItem(DELETE_POLICY_KEY);
+    const v = LS.getItem(DELETE_POLICY_KEY);
     if (v === 'auto' || v === 'hide' || v === 'show') return v;
-    if (localStorage.getItem('stackadooHideDelete') === '1') return 'hide';   // carry over the older on/off toggle
+    if (LS.getItem('stackadooHideDelete') === '1') return 'hide';   // carry over the older on/off toggle
   } catch (e) {}
   return 'auto';
 }
-function setDeletePolicy(v) { try { localStorage.setItem(DELETE_POLICY_KEY, v); } catch (e) {} }
+function setDeletePolicy(v) { try { LS.setItem(DELETE_POLICY_KEY, v); } catch (e) {} }
 function deleteAllowedFor(grade) {
   const pol = deletePolicy();
   if (pol === 'hide') return false;
@@ -16737,12 +16755,12 @@ function askDeletePlayer(name) {
 }
 function deletePlayer(name) {                          // wipe a player's saves (every world) + their progress profile
   const savePrefixes = ['stackadooSave:', 'mathcraftSave:'], toRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i); if (!k) continue;
+  for (let i = 0; i < LS.length; i++) {
+    const k = LS.key(i); if (!k) continue;
     for (const sp of savePrefixes) { if (k === sp + name || k.indexOf(sp + name + '::') === 0) { toRemove.push(k); break; } }
   }
-  toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
-  try { localStorage.removeItem('stackadooProfile:' + name); localStorage.removeItem('mathcraftProfile:' + name); } catch (e) {}
+  toRemove.forEach(k => { try { LS.removeItem(k); } catch (e) {} });
+  try { LS.removeItem('stackadooProfile:' + name); LS.removeItem('mathcraftProfile:' + name); } catch (e) {}
   if (name === G.playerName) { profile = freshProfile(); profile.firstPlayed = Date.now(); }
 }
 function closeDel() { $('delPopup').style.display = 'none'; delTarget = null; }
@@ -16855,11 +16873,11 @@ $('reportClose').onclick = () => { Sound.click(); closeReportCard(); };
 /* ---- Export / Import all saves & progress (move builds between devices/addresses) ---- */
 function gatherSaveData() {
   const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (let i = 0; i < LS.length; i++) {
+    const k = LS.key(i);
     if (!k) continue;
     if (k.indexOf(SAVE_PREFIX) === 0 || k.indexOf(PROFILE_PREFIX) === 0 || k === UNLOCK_KEY) {
-      data[k] = localStorage.getItem(k);
+      data[k] = LS.getItem(k);
     }
   }
   return data;
@@ -16872,7 +16890,7 @@ async function exportSaves() {
   const json = JSON.stringify(payload, null, 2);
   const stamp = new Date().toISOString().slice(0, 10);
   const fname = 'stackadoo-saves-' + stamp + '.json';
-  const markBackedUp = () => { try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {} };
+  const markBackedUp = () => { try { LS.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {} };
   // On a tablet/phone the native share sheet is the one-tap path → "Save to Files", email, Drive, etc.
   // (A plain download is hard to find again on iPad/Android.) Desktop keeps the simple download.
   if (isTouch && navigator.canShare) {
@@ -16906,9 +16924,9 @@ function renderBackupNudge() {
   const el = $('backupNudge'); if (!el) return;
   // only nudge if there's actually something to lose
   let hasSaves = false;
-  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf(SAVE_PREFIX) === 0) { hasSaves = true; break; } } } catch (e) {}
+  try { for (let i = 0; i < LS.length; i++) { const k = LS.key(i); if (k && k.indexOf(SAVE_PREFIX) === 0) { hasSaves = true; break; } } } catch (e) {}
   if (!hasSaves) { el.style.display = 'none'; return; }
-  let last = 0; try { last = +(localStorage.getItem(BACKUP_KEY) || 0); } catch (e) {}
+  let last = 0; try { last = +(LS.getItem(BACKUP_KEY) || 0); } catch (e) {}
   const days = last ? Math.floor((Date.now() - last) / 86400000) : 999;
   if (last && days < 14) {
     el.style.display = 'block';
@@ -16931,7 +16949,7 @@ function importSaves(file) {
       let saves = 0, profs = 0;
       Object.keys(data).forEach(k => {
         if (k.indexOf(SAVE_PREFIX) === 0 || k.indexOf(PROFILE_PREFIX) === 0 || k === UNLOCK_KEY) {
-          localStorage.setItem(k, data[k]);
+          LS.setItem(k, data[k]);
           if (k.indexOf(SAVE_PREFIX) === 0) saves++;
           if (k.indexOf(PROFILE_PREFIX) === 0) profs++;
         }
@@ -16998,15 +17016,15 @@ async function cloudSyncDown() {
   const merged = mergeSaveMaps(gatherSaveData(), cloudMap);
   const unlocked = !!cloud.unlocked || isUnlocked();
   let changed = false;
-  for (const k in merged) { if (localStorage.getItem(k) !== merged[k]) { try { localStorage.setItem(k, merged[k]); changed = true; } catch (e) {} } }
-  if (unlocked && !isUnlocked()) { try { localStorage.setItem(UNLOCK_KEY, '1'); changed = true; } catch (e) {} }
+  for (const k in merged) { if (LS.getItem(k) !== merged[k]) { try { LS.setItem(k, merged[k]); changed = true; } catch (e) {} } }
+  if (unlocked && !isUnlocked()) { try { LS.setItem(UNLOCK_KEY, '1'); changed = true; } catch (e) {} }
   await cloudWrite(merged, unlocked);
   if (changed) {
     if (G.running && !G.over) {              // 🛟 mid-game: NEVER reload — that yanked kids out of their game back to the menu
       if (typeof refreshSavedList === 'function') { try { refreshSavedList(); } catch (e) {} }
       if (typeof toast === 'function') toast('☁️ Synced! Your worlds are saved to your account.', 3200);
     } else {                                 // at the menu: reload to show the freshly-synced saved games
-      try { sessionStorage.setItem('stackadooJustSynced', '1'); } catch (e) {}
+      try { SS.setItem('stackadooJustSynced', '1'); } catch (e) {}
       location.reload();
     }
   }
@@ -17024,6 +17042,8 @@ function friendlyAuthErr(e) {
   if (c.indexOf('weak-password') >= 0) return 'Pick a password with at least 6 characters.';
   if (c.indexOf('invalid-email') >= 0) return 'That doesn\'t look like an email address.';
   if (c.indexOf('popup') >= 0 || c.indexOf('cancel') >= 0) return 'Sign-in was cancelled.';
+  if (c.indexOf('web-storage-unsupported') >= 0 || c.indexOf('operation-not-supported') >= 0)
+    return 'Your browser is blocking sign-in storage (often Brave Shields or “Block all cookies”). Allow cookies for stackadoo.com, then try again.';
   if (c.indexOf('network') >= 0) return 'Network problem — check your connection.';
   return 'Hmm, that didn\'t work. Please try again.';
 }
@@ -17072,11 +17092,11 @@ $('authOutBtn').onclick = () => authSignOut();
 $('authEntryGrown').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
 $('authEntryUnlock').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
 $('authEntryHome').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
-try { if (sessionStorage.getItem('stackadooJustSynced')) { sessionStorage.removeItem('stackadooJustSynced'); setTimeout(() => { if (typeof toast === 'function') toast('☁️ Synced! Your worlds & unlock are up to date on this device.', 3600); }, 900); } } catch (e) {}
+try { if (SS.getItem('stackadooJustSynced')) { SS.removeItem('stackadooJustSynced'); setTimeout(() => { if (typeof toast === 'function') toast('☁️ Synced! Your worlds & unlock are up to date on this device.', 3600); }, 900); } } catch (e) {}
 
 $('resetPurchaseBtn').onclick = () => {
   Sound.click();
-  try { localStorage.removeItem(UNLOCK_KEY); } catch (e) {}
+  try { LS.removeItem(UNLOCK_KEY); } catch (e) {}
   $('purchaseStatus').textContent = 'Free (Math Meadow only)';
   renderWorldLocks();
   toast('🔒 Premium worlds locked again (for testing).', 2600);
@@ -17894,6 +17914,20 @@ addEventListener('resize', () => {
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+/* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
+   the game still plays, worlds even save within this tab; they just can't persist. */
+if (LS.blocked || SS.blocked) {
+  try {
+    const host = $('startScreen');
+    if (host) {
+      const w = document.createElement('div');
+      w.id = 'storageWarn';
+      w.style.cssText = 'order:-1; margin:10px auto 0; max-width:600px; background:#FFF3D6; color:#7a5c00; border:2px solid #EAC96B; border-radius:14px; padding:10px 16px; font-weight:700; font-size:14px; text-align:center; line-height:1.4;';
+      w.innerHTML = '⚠️ Your browser is blocking cookies/site data, so worlds <b>won\'t be saved between visits</b>. You can still play! To keep progress, allow cookies for <b>stackadoo.com</b> (Brave: tap the 🦁 lion icon → Advanced controls → Allow all cookies), then reload.';
+      host.prepend(w);
+    }
+  } catch (e) {}
+}
 // Don't nag newcomers with the browser's automatic "Install app?" pop-up. Suppress it and stash
 // the event so we *could* offer install from a button later. Install is still available any time
 // via the browser menu (⋮ → Install / Add to Home Screen).
@@ -17907,13 +17941,13 @@ const ANALYTICS_URL = 'https://script.google.com/macros/s/AKfycbyug41VsbpGVy5cod
 const Analytics = (function () {
   let aid = '';
   try {
-    aid = localStorage.getItem('sa_aid') || '';
-    if (!aid) { aid = 'a' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('sa_aid', aid); }
+    aid = LS.getItem('sa_aid') || '';
+    if (!aid) { aid = 'a' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); LS.setItem('sa_aid', aid); }
   } catch (e) {}
   function hasGame() {                          // a saved build or math profile = they actually played
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
+      for (let i = 0; i < LS.length; i++) {
+        const k = LS.key(i);
         if (k && (k.indexOf('stackadooProfile:') === 0 || k.indexOf('stackadooSave:') === 0)) return true;
       }
     } catch (e) {}
