@@ -3461,11 +3461,15 @@ function prepareAvatarModel(id, gltf) {
   const clips = gltf.animations || [];
   if (clips.length) {
     mixer = new THREE.AnimationMixer(inner);
-    const find = re => { const cl = clips.find(k => re.test(k.name)); return cl ? mixer.clipAction(cl) : null; };
-    idle = find(/idle|breath|stand/i) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
-    walk = find(/walk|run|jog|trot/i) || idle;
+    // "Sitting Idle" / "Lying Down" style clips must NOT become the main standing idle —
+    // posture qualifiers push a clip into the special-move pool instead.
+    const POSTURE = /sit|lay|lie|lying|sleep|crouch|kneel|ground/i;
+    const find = (re, strict) => { const cl = clips.find(k => re.test(k.name) && !(strict && POSTURE.test(k.name))); return cl ? mixer.clipAction(cl) : null; };
+    idle = find(/idle|breath|stand/i, true) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
+    walk = find(/walk|run|jog|trot/i, true) || idle;
     if (!idle) idle = walk || mixer.clipAction(clips[0]);
-    extras = clips.filter(k => !/idle|breath|stand|walk|run|jog|trot/i.test(k.name))
+    const used = [idle, walk].filter(Boolean).map(a => a.getClip());
+    extras = clips.filter(k => used.indexOf(k) < 0)
       .map(k => { const a = mixer.clipAction(k); a.setLoop(THREE.LoopOnce, 1); return a; });
     const cel = extras.find(a => /dance|cheer|jump|spin|victor|celebr|excit|happy|agree|clap|wave/i.test(a.getClip().name));
     celebrate = cel || extras[0] || null;
