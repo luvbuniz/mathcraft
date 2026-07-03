@@ -90,3 +90,31 @@ const AVATAR_MODEL_TWEAKS = {
   we can add poses later.
 - Keep the source renders you fed Meshy! When you generate more of the cast
   later, feeding the same style keeps everyone looking like one family.
+
+
+## 🎬 Animations — what to pick in Meshy (the game auto-wires them)
+
+Rig the model (Auto-Rig), then add animations from Meshy's library before exporting:
+
+1. **Walking** and **Idle** — the two the game *drives*: it crossfades them as the
+   hero starts/stops moving. Clips named like `walk/run/jog/trot` and
+   `idle/breath/stand` are detected automatically.
+2. **Up to 2–4 fun extras** — ANY other clip in the file becomes a **special move**:
+   - 🎉 On a **right answer**, the hero plays their celebrate move (the first clip
+     whose name matches `dance / cheer / jump / spin / victory / celebrate /
+     excited / happy / agree / clap / wave` — otherwise the first extra).
+   - 🕺 Standing around, they occasionally **fidget** with a random extra.
+   - Specials play once, then the hero settles back to idle. Walking cancels them.
+3. Per-avatar personality is exactly this: give the dragon a roar-ish move, Leo a
+   360 spin-jump, Fiona a dance — the game does the rest, no code changes needed.
+
+Skeletal animation data is small — extras barely grow the file. Export ONE GLB with
+all clips included ("bake/include animations" in the export dialog).
+
+## ✏️ Redo checklist for the reference image (learned from Leo v1)
+
+Ask ChatGPT for: *front view + side view, full body, standing in a neutral A-pose,
+arms relaxed slightly away from the body, open relaxed hands (NOT on hips, NOT in
+pockets), gentle soft smile with the mouth closed, cute 3D cartoon style for kids,
+plain white background.* The pose and expression are baked in from this image —
+fix them here, not in Meshy.

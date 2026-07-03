@@ -3453,26 +3453,53 @@ function prepareAvatarModel(id, gltf) {
   inner.position.set(-c.x * s, -bb.min.y * s, -c.z * s);
   if (tweaks.rotY) { const spin = new THREE.Group(); spin.rotation.y = tweaks.rotY; spin.add(inner); wrap.add(spin); }
   else wrap.add(inner);
-  // animations: find idle + walk clips by name (Meshy/Mixamo conventions); one clip = use for both
-  let mixer = null, idle = null, walk = null;
+  // animations: idle + walk drive movement (Meshy/Mixamo naming) — and EVERY other clip in the
+  // file becomes a "special move" (Meshy's library dances, spins, gestures…). Specials play once
+  // when a right answer lands (the celebrate pick) and as occasional idle fidgets, then the hero
+  // settles back to idle. So: export with Walking + Idle + any fun moves, and they all just work.
+  let mixer = null, idle = null, walk = null, celebrate = null, extras = [];
   const clips = gltf.animations || [];
   if (clips.length) {
     mixer = new THREE.AnimationMixer(inner);
-    const find = re => { const cl = clips.find(k => re.test(k.name)); return cl ? mixer.clipAction(cl) : null; };
-    idle = find(/idle|breath|stand/i) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
-    walk = find(/walk|run|jog/i) || idle;
+    // "Sitting Idle" / "Lying Down" style clips must NOT become the main standing idle —
+    // posture qualifiers push a clip into the special-move pool instead.
+    const POSTURE = /sit|lay|lie|lying|sleep|crouch|kneel|ground/i;
+    const find = (re, strict) => { const cl = clips.find(k => re.test(k.name) && !(strict && POSTURE.test(k.name))); return cl ? mixer.clipAction(cl) : null; };
+    idle = find(/idle|breath|stand/i, true) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
+    walk = find(/walk|run|jog|trot/i, true) || idle;
     if (!idle) idle = walk || mixer.clipAction(clips[0]);
+    const used = [idle, walk].filter(Boolean).map(a => a.getClip());
+    extras = clips.filter(k => used.indexOf(k) < 0)
+      .map(k => { const a = mixer.clipAction(k); a.setLoop(THREE.LoopOnce, 1); return a; });
+    const cel = extras.find(a => /dance|cheer|jump|spin|victor|celebr|excit|happy|agree|clap|wave/i.test(a.getClip().name));
+    celebrate = cel || extras[0] || null;
     if (idle) { idle.play(); }
   }
   const height = AVATAR_MODEL_HEIGHT * (tweaks.scale || 1);
   const head = new THREE.Group();             // proxy head so badge hats & head-tilt flourishes still work
   head.position.set(0, height * 0.82, 0);
   wrap.add(head);
-  return {
+  const data = {
     group: wrap, inner, head, glb: true, face: null,
     mixer, idleAction: idle, walkAction: walk, curAction: idle,
+    specials: extras, celebrateAction: celebrate, _special: null, _fidgetAt: 0, _celebratedAt: 0,
     hatY: (tweaks.hatY != null ? tweaks.hatY : height * 0.99) - height * 0.82
   };
+  if (mixer) mixer.addEventListener('finished', e => {   // a special move ended → ease back to normal
+    if (data._special === e.action) {
+      data._special = null;
+      e.action.fadeOut(0.25);
+      const back = data.curAction || data.idleAction;
+      if (back) back.reset().fadeIn(0.25).play();
+    }
+  });
+  return data;
+}
+function playGlbMove(d, action) {             // 🎬 one special move (dance/spin/gesture), then back to normal
+  if (!d || !d.mixer || !action || d._special) return;
+  if (d.curAction) d.curAction.fadeOut(0.2);
+  d._special = action;
+  action.reset().fadeIn(0.2).play();
 }
 /* After the instant procedural hero appears, quietly upgrade it to the real model. */
 function maybeUpgradeAvatarToModel(index) {
@@ -3495,6 +3522,35 @@ function updateGlbAvatar(d, moving, t) {
   const mdt = d._t == null ? 0.016 : Math.min(0.066, Math.max(0.001, t - d._t));
   d._t = t;
   if (d.mixer) {
+    const nowMs = performance.now();
+    if (d._special) {
+      if (moving) {                            // walking cancels the show — back to business
+        d._special.fadeOut(0.15); d._special = null;
+        const back = d.walkAction || d.idleAction;
+        if (back) { d.curAction = back; back.reset().fadeIn(0.15).play(); }
+      } else {
+        d.mixer.update(mdt);
+        d.inner.position.y = d._baseY || 0;
+        return;
+      }
+    }
+    // 🎉 a right answer just landed → celebrate move (dance/cheer/spin — whatever the model has)
+    if (!moving && d.celebrateAction && player.happyUntil && nowMs < player.happyUntil && nowMs - d._celebratedAt > 4000) {
+      d._celebratedAt = nowMs;
+      playGlbMove(d, d.celebrateAction);
+      d.mixer.update(mdt);
+      return;
+    }
+    // 🕺 stood around a while → a little fidget from the special-move pool (keeps heroes alive)
+    if (!moving && d.specials && d.specials.length) {
+      if (!d._fidgetAt) d._fidgetAt = nowMs + 18000 + Math.random() * 14000;
+      if (nowMs >= d._fidgetAt) {
+        d._fidgetAt = nowMs + 22000 + Math.random() * 16000;
+        playGlbMove(d, d.specials[Math.floor(Math.random() * d.specials.length)]);
+        d.mixer.update(mdt);
+        return;
+      }
+    } else if (moving) d._fidgetAt = 0;
     const want = (moving && d.walkAction) ? d.walkAction : d.idleAction;
     if (want && d.curAction !== want) {
       if (d.curAction) d.curAction.fadeOut(0.2);
