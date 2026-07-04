@@ -1499,9 +1499,11 @@
 </div>
 
 <!-- 📸 photo-dash overlay (first-person driving, normal cars) — image + live dial canvases -->
+<!-- the canvases sit UNDER the image and show through transparent holes punched in the art,
+     so the painted wheel rim naturally overlaps the live dials like a real cockpit -->
 <img id="dashOverlay" alt="" aria-hidden="true" style="position:fixed;left:0;top:0;width:100vw;height:100vh;object-fit:cover;object-position:center bottom;z-index:6;pointer-events:none;display:none">
-<canvas id="dashCluster" width="560" height="240" style="position:fixed;z-index:7;pointer-events:none;display:none"></canvas>
-<canvas id="dashNav" width="344" height="216" style="position:fixed;z-index:7;pointer-events:none;display:none"></canvas>
+<canvas id="dashCluster" width="560" height="240" style="position:fixed;z-index:5;pointer-events:none;display:none"></canvas>
+<canvas id="dashNav" width="344" height="216" style="position:fixed;z-index:5;pointer-events:none;display:none"></canvas>
 
 <!-- ================= PIZZERIA (fractions minigame) POPUP ================= -->
 <div class="popup" id="pizzaPopup">
@@ -11916,8 +11918,9 @@ function dashStyleFor(def) {
    No dash.png on the server (or it fails to load)? Everything falls back to the 3D
    cockpit — this whole feature is dormant until the artwork ships. */
 const DASH_IMG = { ok: false, tried: false };
-// where the cluster + radio live INSIDE the artwork, as fractions of its full size
-const DASH_RECTS = { cluster: { x: 0.315, y: 0.695, w: 0.320, h: 0.235 }, nav: { x: 0.723, y: 0.742, w: 0.124, h: 0.100 } };
+// where the cluster + radio holes live INSIDE the artwork, as fractions of its full size —
+// canvases get a hair of extra bleed so no world pixels leak around the hole edges
+const DASH_RECTS = { cluster: { x: 0.3106, y: 0.6889, w: 0.3255, h: 0.2340 }, nav: { x: 0.7196, y: 0.7351, w: 0.1333, h: 0.1090 } };
 function dashOverlayReady() {
   if (!DASH_IMG.tried) {
     DASH_IMG.tried = true;
