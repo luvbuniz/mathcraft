@@ -3477,7 +3477,10 @@ function prepareAvatarModel(id, gltf) {
     // posture qualifiers push a clip into the special-move pool instead.
     const POSTURE = /sit|lay|lie|lying|sleep|crouch|kneel|ground/i;
     const find = (re, strict) => { const cl = clips.find(k => re.test(k.name) && !(strict && POSTURE.test(k.name))); return cl ? mixer.clipAction(cl) : null; };
-    idle = find(/idle|breath|stand/i, true) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
+    // a file with ONE clip: if it's a walk (Meshy's quadrupeds only get Walking), it must NOT
+    // also become the standing idle — marching in place looks broken; breathing stand instead.
+    idle = find(/idle|breath|stand/i, true) ||
+      (clips.length === 1 && !/walk|run|jog|trot/i.test(clips[0].name) ? mixer.clipAction(clips[0]) : null);
     walk = find(/walk/i, true) || find(/run|jog|trot/i, true) || idle;
     // no idle clip in the file? leave it null — the game gives a breathing stand instead
     // (much nicer than looping the walk in place). An added Idle clip later just wins.
