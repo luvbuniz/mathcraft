@@ -11,7 +11,7 @@ Ship one character at a time, in any order.
 | File | Hero | | File | Hero |
 | --- | --- | --- | --- | --- |
 | `leo.glb` ✅ shipped | Leo 👦 | | `fiona.glb` ✅ shipped | Fiona 👧 |
-| `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` | Princess |
+| `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` ✅ shipped | Princess 👑 |
 | `peacock.glb` | Peacock | | `unicorn.glb` | Unicorn Dancer |
 | `tiger.glb` | Tiger | | `dragon.glb` | Dragon |
 | `deer.glb` | Deer | | `kinglion.glb` | King Lion |
