@@ -11761,8 +11761,8 @@ function dashTexture(style, emOn, dyn) {
     for (let i = 0; i <= (N - 1) * 2; i++) { const a = A0 + i / ((N - 1) * 2) * SW; c.beginPath(); c.moveTo(cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4)); c.lineTo(cx + Math.cos(a) * (r - 9), cy + Math.sin(a) * (r - 9)); c.stroke(); }
     c.font = 'bold 10px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle';
     for (let i = 0; i < N; i++) { const a = A0 + i / (N - 1) * SW;
-      c.strokeStyle = '#e6ebf2'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4)); c.lineTo(cx + Math.cos(a) * (r - 12), cy + Math.sin(a) * (r - 12)); c.stroke();
-      c.fillStyle = '#e6ebf2'; c.fillText(nums[i], cx + Math.cos(a) * (r - 22), cy + Math.sin(a) * (r - 22)); }
+      c.strokeStyle = '#9fe4f2'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4)); c.lineTo(cx + Math.cos(a) * (r - 12), cy + Math.sin(a) * (r - 12)); c.stroke();
+      c.fillStyle = '#9fe4f2'; c.fillText(nums[i], cx + Math.cos(a) * (r - 22), cy + Math.sin(a) * (r - 22)); }   // cool cyan numerals, reference-style
     const na = A0 + Math.max(0, Math.min(1, frac)) * SW;
     c.shadowColor = '#ffb13b'; c.shadowBlur = 10; c.strokeStyle = '#ffb13b'; c.lineWidth = 4; c.lineCap = 'round';
     c.beginPath(); c.moveTo(cx - Math.cos(na) * (r * 0.18), cy - Math.sin(na) * (r * 0.18)); c.lineTo(cx + Math.cos(na) * (r - 15), cy + Math.sin(na) * (r - 15)); c.stroke();
@@ -11792,18 +11792,41 @@ function dashTexture(style, emOn, dyn) {
     c.fillStyle = emOn ? '#06120a' : '#1a1206'; rr(312, 150, 190, 20, 3); c.fill();
     c.fillStyle = emOn ? '#39e06a' : '#ffb340'; c.font = 'bold 13px monospace'; c.textAlign = 'left';
     c.fillText(emOn ? (fire ? 'WATER 80%   PSI 120' : 'UNIT 12   CODE 3') : 'LIGHTS + SIREN  OFF', 320, 165);
-  } else {                                                // 🚗 normal car — a twin numbered-gauge cluster like the reference dashboard
-    c.fillStyle = '#191d24'; rr(82, 24, 364, 154, 40); c.fill(); c.strokeStyle = '#0c0f13'; c.lineWidth = 3; rr(82, 24, 364, 154, 40); c.stroke();   // binnacle hood
-    bigDial(170, 100, 66, spd, 'km/h', 0.8, ['0', '20', '40', '60', '80', '100', '120', '140']);
-    bigDial(358, 100, 66, (dyn ? dyn.rpm : 0.12), 'RPM x1000', 0.78, ['0', '1', '2', '3', '4', '5', '6', '7', '8']);
+  } else {                                                // 🚗 normal car — gauge cluster LEFT + nav screen RIGHT (the reference-trailer dash)
+    const vent = vx => { c.fillStyle = '#15191f'; rr(vx, 64, 52, 72, 9); c.fill(); c.strokeStyle = '#0a0d11'; c.lineWidth = 4; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(vx + 7, 78 + i * 12); c.lineTo(vx + 45, 78 + i * 12); c.stroke(); } };
+    vent(10);                                                                                        // air vent, driver's edge
+    c.fillStyle = '#191d24'; rr(70, 22, 264, 158, 30); c.fill(); c.strokeStyle = '#0c0f13'; c.lineWidth = 3; rr(70, 22, 264, 158, 30); c.stroke();   // binnacle hood
+    bigDial(138, 100, 58, spd, 'km/h', 0.8, ['0', '20', '40', '60', '80', '100', '120', '140']);
+    bigDial(268, 100, 58, (dyn ? dyn.rpm : 0.12), 'RPM x1000', 0.78, ['0', '1', '2', '3', '4', '5', '6', '7', '8']);
     c.fillStyle = '#36d96a';
-    c.beginPath(); c.moveTo(246, 56); c.lineTo(256, 48); c.lineTo(256, 64); c.closePath(); c.fill();   // left turn arrow
-    c.beginPath(); c.moveTo(282, 56); c.lineTo(272, 48); c.lineTo(272, 64); c.closePath(); c.fill();   // right turn arrow
-    c.font = 'bold 15px Arial'; c.textAlign = 'center'; c.fillText('D', 264, 100);                     // gear indicator
-    c.fillStyle = '#10141a'; rr(248, 116, 32, 8, 3); c.fill(); c.fillStyle = '#ffd60a'; rr(250, 118, 21, 4, 2); c.fill();   // fuel bar
-    c.fillStyle = '#8a929e'; c.font = 'bold 7px Arial'; c.fillText('E', 244, 122); c.fillText('F', 284, 122);
-    const vent = vx => { c.fillStyle = '#15191f'; rr(vx, 64, 58, 72, 9); c.fill(); c.strokeStyle = '#0a0d11'; c.lineWidth = 4; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(vx + 7, 78 + i * 12); c.lineTo(vx + 51, 78 + i * 12); c.stroke(); } };
-    vent(12); vent(458);   // air vents on the far sides
+    c.beginPath(); c.moveTo(188, 54); c.lineTo(198, 46); c.lineTo(198, 62); c.closePath(); c.fill();   // left turn arrow
+    c.beginPath(); c.moveTo(218, 54); c.lineTo(208, 46); c.lineTo(208, 62); c.closePath(); c.fill();   // right turn arrow
+    c.font = 'bold 15px Arial'; c.textAlign = 'center'; c.fillText('D', 203, 98);                      // gear indicator
+    c.fillStyle = '#10141a'; rr(187, 112, 32, 8, 3); c.fill(); c.fillStyle = '#ffd60a'; rr(189, 114, 21, 4, 2); c.fill();   // fuel bar
+    c.fillStyle = '#8a929e'; c.font = 'bold 7px Arial'; c.fillText('E', 183, 118); c.fillText('F', 223, 118);
+    // ⚠️ hazard button on the little center console
+    c.fillStyle = '#2a2f37'; rr(179, 148, 48, 24, 7); c.fill(); c.strokeStyle = '#41474f'; c.lineWidth = 2; rr(179, 148, 48, 24, 7); c.stroke();
+    c.strokeStyle = '#e0352b'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(203, 153); c.lineTo(212, 168); c.lineTo(194, 168); c.closePath(); c.stroke();
+    // 🗺️ navigation screen — a friendly little map with a route and a you-are-here arrow
+    c.fillStyle = '#0d1015'; rr(344, 26, 172, 108, 10); c.fill(); c.strokeStyle = '#31363e'; c.lineWidth = 3; rr(344, 26, 172, 108, 10); c.stroke();
+    c.save(); rr(352, 33, 156, 94, 6); c.clip();
+    c.fillStyle = '#e9e4d3'; c.fillRect(352, 33, 156, 94);                                            // parchment map
+    c.strokeStyle = '#ffffff'; c.lineWidth = 7; c.lineCap = 'butt';
+    [382, 428, 474].forEach(x => { c.beginPath(); c.moveTo(x, 33); c.lineTo(x, 127); c.stroke(); }); // streets
+    [60, 94].forEach(y => { c.beginPath(); c.moveTo(352, y); c.lineTo(508, y); c.stroke(); });
+    c.strokeStyle = '#f7c948'; c.lineWidth = 5;                                                       // the route home
+    c.beginPath(); c.moveTo(356, 118); c.lineTo(428, 118); c.lineTo(428, 60); c.lineTo(504, 60); c.stroke();
+    c.fillStyle = '#3b82f6'; c.strokeStyle = '#fff'; c.lineWidth = 2;                                 // you-are-here
+    c.beginPath(); c.moveTo(428, 88); c.lineTo(436, 106); c.lineTo(428, 100); c.lineTo(420, 106); c.closePath(); c.fill(); c.stroke();
+    c.restore();
+    // 🎵📞⚙️ app buttons under the screen
+    const app = (x, col, draw) => { c.fillStyle = col; rr(x, 146, 46, 26, 8); c.fill(); c.fillStyle = '#fff'; draw(x + 23, 159); };
+    app(352, '#e0457b', (x, y) => { c.font = 'bold 17px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('♪', x, y + 1); c.textBaseline = 'alphabetic'; });
+    app(407, '#2fb85c', (x, y) => { c.save(); c.translate(x, y); c.rotate(-0.7); rr(-10, -4, 20, 8, 4); c.fill(); c.restore(); });
+    app(462, '#6b7280', (x, y) => {
+      c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 6, 0, 6.3); c.stroke();
+      for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283; c.beginPath(); c.moveTo(x + Math.cos(a) * 8, y + Math.sin(a) * 8); c.lineTo(x + Math.cos(a) * 11, y + Math.sin(a) * 11); c.stroke(); }
+    });
   }
   const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; return t;
 }
@@ -11824,12 +11847,17 @@ function buildCockpit() {
   const emHit = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.62, 0.2), new THREE.MeshBasicMaterial({ visible: false }));
   emHit.position.set(-0.55, 0.85, 0.99); emHit.rotation.x = 0.42; g.add(emHit);
   g.userData.emSwitch = emHit;
-  // steering wheel (driver on the left) — top arc sits in the lower view
-  const wg = new THREE.Group(); wg.position.set(-0.5, 0.7, 0.8); wg.rotation.x = 1.25; g.add(wg);
+  // 🧢 the hood peeks over the dash — tinted to the active vehicle's body colour (see drive loop)
+  const hood = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.09, 1.1), new THREE.MeshLambertMaterial({ color: 0xc0392b }));
+  hood.position.set(0, 1.07, 2.05); hood.rotation.x = -0.1; g.add(hood);
+  g.userData.hoodMat = hood.material;
+  box(2.6, 0.06, 0.34, 0, 1.0, 1.28, 0x14171c);               // dark cowl strip between dash and hood
+  // steering wheel — bottom-LEFT of the view like the reference, top arc in the lower view
+  const wg = new THREE.Group(); wg.position.set(0.5, 0.7, 0.8); wg.rotation.x = 1.25; g.add(wg);
   wg.add(new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.06, 12, 30), M(0x14161a)));
   wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.04), M(0x14161a)));
   wg.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.04), M(0x14161a)));
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 16), M(0xcc2b2b)); hub.rotation.x = Math.PI / 2; wg.add(hub);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 16), M(0x1c1f24)); hub.rotation.x = Math.PI / 2; wg.add(hub);
   // 🙌 driver's hands gripping the wheel at 9 & 3 — the thing that makes first-person read as "I'm driving"
   const SKIN = (player.skin || 0xF0C9A0), hand = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(SKIN)); m.position.set(x, y, z); wg.add(m); return m; };
   [-1, 1].forEach(s => {
@@ -11837,9 +11865,9 @@ function buildCockpit() {
     hand(0.12, 0.24, 0.08, s * 0.285, 0, 0.11);       // fingers curling toward the driver
     hand(0.08, 0.09, 0.12, s * 0.30, 0.13, 0.06);     // thumb on top of the rim
   });
-  // passenger seat (right) + driver seat hint (left)
-  box(0.6, 0.16, 0.6, 0.66, 0.4, 0.2, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.05, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.05, 0x6e2a2a);
-  box(0.6, 0.16, 0.6, -0.5, 0.4, 0.2, 0x44494f);
+  // passenger seat + driver seat hint — tucked BEHIND the camera so the windshield stays clear
+  box(0.6, 0.16, 0.6, -0.66, 0.4, -0.75, 0x6e2a2a); box(0.6, 0.7, 0.16, -0.66, 0.78, -1.0, 0x6e2a2a); box(0.44, 0.16, 0.16, -0.66, 1.15, -1.0, 0x6e2a2a);
+  box(0.6, 0.16, 0.6, 0.5, 0.4, -0.75, 0x44494f);
   box(0.12, 0.9, 1.9, 1.2, 0.66, 0.55, TRIM); box(0.12, 0.9, 1.9, -1.2, 0.66, 0.55, TRIM);   // door interiors
   g.visible = false; scene.add(g);
   return g;
@@ -11967,9 +11995,9 @@ function updatePlayer(dt) {
     }
     if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
       const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
-      const eyeH = player.pos.y + 1.2;
+      const eyeH = player.pos.y + 1.28;                    // sit tall — big windshield, dash as a bottom strip
       camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.45, eyeH, player.pos.z + fwdz * 0.45), 0.4);
-      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 1.7, player.pos.z + fwdz * 14);   // look down so the dashboard/dials show
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 0.85, player.pos.z + fwdz * 14);   // gentle down-glance keeps the dials in view
       const closed = !(v.def && v.def.open);               // closed car → hide its body, show a clean cockpit; open (bike/boat) keep its body
       v.group.visible = !closed;
       if (closed) {
@@ -11983,7 +12011,10 @@ function updatePlayer(dt) {
           player._dashHintPending = false;
           toast('🚨 Tap the TRUCK CONTROL panel to switch the lights & siren on/off!', 4200);
         }
-        cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
+        // 🎨 the hood wears the active vehicle's paint job
+        if (cockpit.userData.hoodMat && v.def && v.def.color != null) cockpit.userData.hoodMat.color.setHex(v.def.color);
+        // dash rides ahead and low → slim bottom strip, trailer-style windshield
+        cockpit.position.set(player.pos.x + fwdx * 0.72, player.pos.y - 0.2, player.pos.z + fwdz * 0.72);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
       } else if (cockpit) cockpit.visible = false;
