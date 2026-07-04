@@ -119,8 +119,9 @@ Rig the model (Auto-Rig), then add animations from Meshy's library before export
 
 ### 🤫 Secret move codes (for testing — and for kids who find them)
 
-- **Keyboard:** while playing, **hold SHIFT and type** `SPIN`, `CHEER`, `SIT`,
-  `SLEEP` or `RUN`. (Shift keeps the letters from steering the hero.)
+- **Keyboard:** while playing, **press SHIFT, then type** `SPIN`, `CHEER`, `SIT`,
+  `SLEEP` or `RUN` (holding Shift while typing works too). A little 🤫 chip echoes
+  the letters; plain WASD still steers — only real code letters are captured.
 - **Touch:** tap the 🧱 block counter (or 🪙 coins) **5 times fast** → the
   **🎬 Secret Move Lab** opens with a button for every move the hero knows.
 - `RUN` grants an 8-second super-speed sprint with the Running clip. The codes

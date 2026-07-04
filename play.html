@@ -11830,9 +11830,10 @@ function buildCockpit() {
     hand(0.12, 0.24, 0.08, s * 0.285, 0, 0.11);       // fingers curling toward the driver
     hand(0.08, 0.09, 0.12, s * 0.30, 0.13, 0.06);     // thumb on top of the rim
   });
-  // passenger seat (right) + driver seat hint (left)
-  box(0.6, 0.16, 0.6, 0.66, 0.4, 0.2, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.05, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.05, 0x6e2a2a);
-  box(0.6, 0.16, 0.6, -0.5, 0.4, 0.2, 0x44494f);
+  // passenger seat (right) + driver seat hint (left) — tucked BEHIND the camera so the
+  // windshield stays clear (the dash now rides ahead + low for a big trailer-style view)
+  box(0.6, 0.16, 0.6, 0.66, 0.4, -0.55, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.8, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.8, 0x6e2a2a);
+  box(0.6, 0.16, 0.6, -0.5, 0.4, -0.55, 0x44494f);
   box(0.12, 0.9, 1.9, 1.2, 0.66, 0.55, TRIM); box(0.12, 0.9, 1.9, -1.2, 0.66, 0.55, TRIM);   // door interiors
   g.visible = false; scene.add(g);
   return g;
@@ -11960,9 +11961,9 @@ function updatePlayer(dt) {
     }
     if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
       const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
-      const eyeH = player.pos.y + 1.2;
+      const eyeH = player.pos.y + 1.28;                    // sit tall — more windshield, less hood
       camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.45, eyeH, player.pos.z + fwdz * 0.45), 0.4);
-      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 1.7, player.pos.z + fwdz * 14);   // look down so the dashboard/dials show
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 0.85, player.pos.z + fwdz * 14);   // a gentle down-glance keeps the dials in the bottom strip
       const closed = !(v.def && v.def.open);               // closed car → hide its body, show a clean cockpit; open (bike/boat) keep its body
       v.group.visible = !closed;
       if (closed) {
@@ -11976,7 +11977,9 @@ function updatePlayer(dt) {
           player._dashHintPending = false;
           toast('🚨 Tap the TRUCK CONTROL panel to switch the lights & siren on/off!', 4200);
         }
-        cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
+        // dash sits a bit ahead and low → a slim bottom strip with a BIG windshield
+        // (before it filled over half the screen on landscape phones)
+        cockpit.position.set(player.pos.x + fwdx * 0.72, player.pos.y - 0.2, player.pos.z + fwdz * 0.72);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
       } else if (cockpit) cockpit.visible = false;
@@ -16050,8 +16053,10 @@ addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 /* ========================= 🤫 SECRET MOVE CODES =========================
    For grown-ups and sharp-eyed kids. Two ways in:
-   • Keyboard: HOLD SHIFT and type a magic word while playing — SPIN, CHEER,
-     SIT, SLEEP or RUN. (Shift keeps the letters from steering the hero.)
+   • Keyboard: press SHIFT, then type a magic word — SPIN, CHEER, SIT, SLEEP
+     or RUN. Holding Shift while typing works too. A little 🤫 chip echoes
+     the letters so you can SEE the code going in. Only letters that continue
+     a real code are captured — plain WASD keeps steering the hero.
    • Touch: tap the 🧱 block counter 5 times fast → the Secret Move Lab.
    Moves only exist on studio heroes (GLB models with those clips) — others
    get a friendly nudge to try Leo. */
@@ -16075,19 +16080,51 @@ function secretMove(word) {
   if (Sound.click) Sound.click();
   return true;
 }
-let secretBuf = '', secretKeyAt = 0;
+function secretTail(buf) {                  // longest tail of buf that still starts some code ('' = none)
+  for (let L = Math.min(buf.length, 6); L >= 1; L--) {
+    const t = buf.slice(-L);
+    for (const w in SECRET_MOVES) if (w.slice(0, L) === t) return t;
+  }
+  return '';
+}
+function secretHint(t) {                    // the little 🤫 chip that echoes code letters as you type
+  let el = $('secretHint');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'secretHint';
+    el.style.cssText = 'position:fixed;left:50%;bottom:17%;transform:translateX(-50%);z-index:70;' +
+      'background:rgba(20,26,40,.86);color:#ffe66d;font:700 19px Fredoka,Nunito,sans-serif;letter-spacing:5px;' +
+      'padding:7px 15px 7px 20px;border-radius:12px;pointer-events:none;display:none';
+    document.body.appendChild(el);
+  }
+  clearTimeout(el._hideT);
+  if (!t) { el.style.display = 'none'; return; }
+  el.textContent = '🤫 ' + t.toUpperCase();
+  el.style.display = 'block';
+  el._hideT = setTimeout(() => { el.style.display = 'none'; }, 2600);
+}
+let secretBuf = '', secretKeyAt = 0, secretArmedUntil = 0;
 addEventListener('keydown', e => {
-  if (!G.running || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!G.running || e.ctrlKey || e.metaKey || e.altKey) return;
   const el = e.target;
   if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-  const k = (e.key || '').toLowerCase();
-  if (!/^[a-z]$/.test(k)) return;
-  e.preventDefault(); e.stopImmediatePropagation();        // secret letters must not steer the game
   const n = performance.now();
-  if (n - secretKeyAt > 1800) secretBuf = '';               // typed too slowly → start over
-  secretKeyAt = n;
-  secretBuf = (secretBuf + k).slice(-12);
-  for (const w in SECRET_MOVES) if (secretBuf.endsWith(w)) { if (secretMove(w)) secretBuf = ''; break; }
+  if (e.key === 'Shift') {                  // press (or press-and-release) Shift = "I'm about to type a code"
+    if (!e.repeat) { secretBuf = ''; secretHint('…'); }
+    secretArmedUntil = n + 4000;
+    return;
+  }
+  if (e.repeat) return;                     // held-down auto-repeat is never code typing — let it steer
+  const k = (e.key || '').toLowerCase();
+  if (!/^[a-z]$/.test(k)) { if (e.key !== 'CapsLock') { secretBuf = ''; secretHint(''); } return; }
+  if (!e.shiftKey && n >= secretArmedUntil) { secretBuf = ''; return; }   // not in code mode → normal key
+  if (n - secretKeyAt > 2600) secretBuf = '';                             // typed too slowly → start over
+  const tail = secretTail(secretBuf + k);
+  if (!tail) { secretBuf = ''; secretHint(''); return; }    // letter fits no code (like W) → let it through
+  e.preventDefault(); e.stopImmediatePropagation();          // code letters must not steer the game
+  secretKeyAt = n; secretArmedUntil = Math.max(secretArmedUntil, n + 2600);   // stay armed while typing
+  secretBuf = tail;
+  secretHint(secretBuf);
+  for (const w in SECRET_MOVES) if (secretBuf === w) { secretMove(w); secretBuf = ''; secretHint(''); break; }
 }, true);
 /* any tap or key says "I'm here" — it resets the doze-off timer and wakes a dozing hero */
 addEventListener('pointerdown', () => { const d = player.avatarData; if (d && d.glb) d._lastInputAt = performance.now(); }, true);
@@ -16664,6 +16701,21 @@ function topOpenPopup() {
   for (let i = 0; i < ps.length; i++) { if (getComputedStyle(ps[i]).display !== 'none') return ps[i]; }
   return null;
 }
+/* 📐 POPUP AUTO-FIT — landscape phones are SHORT: a popup taller than the screen used to
+   force scrolling, and kids missed the answers below the fold. Now whichever popup is open
+   measures itself and zooms DOWN just enough to fit — one rule for every popup, current and
+   future. Re-fits when content grows mid-game (pizza orders, quiz feedback) and on rotate. */
+function fitOpenPopup() {
+  const pop = topOpenPopup(); if (!pop) return;
+  const card = pop.querySelector('.popupCard'); if (!card) return;
+  card.style.zoom = '';                                     // measure at natural size…
+  const avail = innerHeight - 26, need = card.offsetHeight + 8;
+  if (need > avail) card.style.zoom = Math.max(0.55, avail / need).toFixed(3);   // …then shrink-to-fit
+}
+const _fitObs = new MutationObserver(() => setTimeout(fitOpenPopup, 0));
+document.querySelectorAll('.popup').forEach(p => _fitObs.observe(p, { attributes: true, attributeFilter: ['style'] }));
+addEventListener('resize', fitOpenPopup);
+setInterval(fitOpenPopup, 700);                             // catches content that grows while a popup is open
 function armBackGuard() { try { history.pushState({ sg: 1 }, ''); } catch (e) {} }
 addEventListener('load', armBackGuard);
 addEventListener('popstate', () => {
