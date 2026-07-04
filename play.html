@@ -3469,6 +3469,7 @@ function prepareAvatarModel(id, gltf) {
   // when a right answer lands (the celebrate pick) and as occasional idle fidgets, then the hero
   // settles back to idle. So: export with Walking + Idle + any fun moves, and they all just work.
   let mixer = null, idle = null, walk = null, celebrate = null, extras = [];
+  let run = null, sit = null, sleep = null, spin = null, fidgets = [];
   const clips = gltf.animations || [];
   if (clips.length) {
     mixer = new THREE.AnimationMixer(inner);
@@ -3477,14 +3478,23 @@ function prepareAvatarModel(id, gltf) {
     const POSTURE = /sit|lay|lie|lying|sleep|crouch|kneel|ground/i;
     const find = (re, strict) => { const cl = clips.find(k => re.test(k.name) && !(strict && POSTURE.test(k.name))); return cl ? mixer.clipAction(cl) : null; };
     idle = find(/idle|breath|stand/i, true) || (clips.length === 1 ? mixer.clipAction(clips[0]) : null);
-    walk = find(/walk|run|jog|trot/i, true) || idle;
+    walk = find(/walk/i, true) || find(/run|jog|trot/i, true) || idle;
     // no idle clip in the file? leave it null — the game gives a breathing stand instead
     // (much nicer than looping the walk in place). An added Idle clip later just wins.
-    const used = [idle, walk].filter(Boolean).map(a => a.getClip());
+    // Named roles beyond idle/walk — each unlocks a behavior when the file has such a clip:
+    //   run  → snack zoomies & the secret RUN sprint (never a fidget: jogging in place looks broken)
+    //   sit  → the hero dozes off after ~12 quiet seconds; sleep → …and nods off fully a bit later
+    //   spin → saved for quest fanfares & the secret SPIN code (too big to spend on a fidget)
+    run = find(/run|sprint|jog/i, true); if (run === walk) run = null;
+    sit = find(/sit/i);
+    sleep = find(/sleep|snooze|nap|lying|lie.?down/i);
+    const used = [idle, walk, run, sit, sleep].filter(Boolean).map(a => a.getClip());
     extras = clips.filter(k => used.indexOf(k) < 0)
       .map(k => { const a = mixer.clipAction(k); a.setLoop(THREE.LoopOnce, 1); return a; });
     const cel = extras.find(a => /dance|cheer|jump|spin|victor|celebr|excit|happy|agree|clap|wave/i.test(a.getClip().name));
     celebrate = cel || extras[0] || null;
+    spin = extras.find(a => /spin|flip|cartwheel|twirl|somersault/i.test(a.getClip().name)) || null;
+    fidgets = extras.filter(a => a !== spin);
     if (idle) { idle.play(); }
   }
   const height = AVATAR_MODEL_HEIGHT * (tweaks.scale || 1);
@@ -3494,7 +3504,9 @@ function prepareAvatarModel(id, gltf) {
   const data = {
     group: wrap, inner, head, glb: true, face: null,
     mixer, idleAction: idle, walkAction: walk, curAction: idle,
-    specials: extras, celebrateAction: celebrate, _special: null, _fidgetAt: 0, _celebratedAt: 0,
+    runAction: run, sitAction: sit, sleepAction: sleep, spinAction: spin,
+    specials: extras, fidgets, celebrateAction: celebrate, _special: null, _fidgetAt: 0, _celebratedAt: 0,
+    _stillAt: 0, _lastInputAt: 0, _afk: null, _afkAt: 0, _afkDeepAt: 0, _spinPending: 0, _sprintUntil: 0, _lastTick: 0,
     hatY: (tweaks.hatY != null ? tweaks.hatY : height * 0.99) - height * 0.82
   };
   if (mixer) mixer.addEventListener('finished', e => {   // a special move ended → ease back to normal
@@ -3512,6 +3524,36 @@ function playGlbMove(d, action) {             // 🎬 one special move (dance/sp
   if (d.curAction) d.curAction.fadeOut(0.2);
   d._special = action;
   action.reset().fadeIn(0.2).play();
+}
+function glbDoze(d, act) {                    // 🪑/😴 settle into a looping sit or sleep
+  if (!d || !d.mixer || !act || d._afk === act) return;
+  if (d._special) { d._special.fadeOut(0.15); d._special = null; }
+  if (d._afk) d._afk.fadeOut(0.4); else if (d.curAction) d.curAction.fadeOut(0.4);
+  d.curAction = null;
+  d._afk = act; d._afkAt = performance.now();
+  d._afkDeepAt = d._afkAt + 60000;            // left seated a whole minute → fully asleep
+  act.reset().fadeIn(0.4).play();
+}
+function glbWake(d, fade) {                   // hop back up from a doze; the next frame picks idle/walk
+  if (!d || !d._afk) return;
+  d._afk.fadeOut(fade || 0.15); d._afk = null;
+  d._stillAt = 0; d._fidgetAt = 0;
+}
+/* 🌀 the quest spin needs room to shine: a 3×3 column of open air around the hero (3 blocks
+   high) and no town friend within a couple of blocks — otherwise it falls back to a cheer. */
+function spinRoomClear() {
+  const px = Math.floor(player.pos.x), py = Math.max(0, Math.floor(player.pos.y + 0.05)), pz = Math.floor(player.pos.z);
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (let dy = 0; dy <= 2; dy++) {
+    if (solidAt(px + dx, py + dy, pz + dz)) return false;
+  }
+  for (const n of npcs) {
+    if (n.group && Math.hypot(n.group.position.x - player.pos.x, n.group.position.z - player.pos.z) < 2.6) return false;
+  }
+  return true;
+}
+function questSpinSoon() {                    // 🗺️→🌀 quest finished! cue the power spin (see updateGlbAvatar)
+  const d = player && player.avatarData;
+  if (d && d.glb && d.mixer && (d.spinAction || d.celebrateAction)) d._spinPending = performance.now() + 6000;
 }
 /* After the instant procedural hero appears, quietly upgrade it to the real model. */
 function maybeUpgradeAvatarToModel(index) {
@@ -3535,6 +3577,10 @@ function updateGlbAvatar(d, moving, t) {
   d._t = t;
   if (d.mixer) {
     const nowMs = performance.now();
+    // a long gap since the last tick (ride/menu/scene swap)? that time wasn't "standing around"
+    if (nowMs - (d._lastTick || nowMs) > 1500) d._stillAt = 0;
+    d._lastTick = nowMs;
+    const busySeat = player.driving || player.restingBed || player.sittingChair || player.playing;
     if (d._special) {
       if (moving) {                            // walking cancels the show — back to business
         d._special.fadeOut(0.15); d._special = null;
@@ -3546,24 +3592,63 @@ function updateGlbAvatar(d, moving, t) {
         return;
       }
     }
+    // 😴 dozed off? any step — or any fresh tap/keypress — hops them right back up
+    if (d._afk) {
+      if (moving || busySeat || d._lastInputAt > d._afkAt + 500) {
+        glbWake(d, 0.15);                      // …and fall through: this same frame picks idle/walk
+      } else {
+        if (d._afk === d.sitAction && d.sleepAction && nowMs >= d._afkDeepAt) {
+          d._afk.fadeOut(0.5);                 // sat alone long enough → slump over, fast asleep
+          d._afk = d.sleepAction; d._afkAt = nowMs;
+          d.sleepAction.reset().fadeIn(0.5).play();
+        }
+        d.mixer.update(mdt);
+        d.inner.position.y = d._baseY || 0;
+        return;
+      }
+    }
+    // 🌀 an earned quest spin waits for a calm moment — and checks for room before takeoff
+    if (!moving && d._spinPending) {
+      const act = nowMs < d._spinPending ? ((d.spinAction && spinRoomClear()) ? d.spinAction : d.celebrateAction) : null;
+      d._spinPending = 0;
+      if (act) {
+        playGlbMove(d, act);
+        d.mixer.update(mdt);
+        d.inner.position.y = d._baseY || 0;
+        return;
+      }
+    }
     // 🎉 a right answer just landed → celebrate move (dance/cheer/spin — whatever the model has)
     if (!moving && d.celebrateAction && player.happyUntil && nowMs < player.happyUntil && nowMs - d._celebratedAt > 4000) {
-      d._celebratedAt = nowMs;
+      d._celebratedAt = nowMs; d._stillAt = nowMs;
       playGlbMove(d, d.celebrateAction);
       d.mixer.update(mdt);
       return;
     }
-    // 🕺 stood around a while → a little fidget from the special-move pool (keeps heroes alive)
-    if (!moving && d.specials && d.specials.length) {
-      if (!d._fidgetAt) d._fidgetAt = nowMs + 18000 + Math.random() * 14000;
-      if (nowMs >= d._fidgetAt) {
-        d._fidgetAt = nowMs + 22000 + Math.random() * 16000;
-        playGlbMove(d, d.specials[Math.floor(Math.random() * d.specials.length)]);
+    if (!moving) {
+      if (!d._stillAt) d._stillAt = nowMs;
+      // 🪑 left alone a little while (no steps, no taps, no keys) → pull up some grass and sit
+      if (d.sitAction && !busySeat && !G.selfie &&
+          nowMs - d._stillAt > 12000 && nowMs - (d._lastInputAt || 0) > 12000) {
+        glbDoze(d, d.sitAction);
         d.mixer.update(mdt);
+        d.inner.position.y = d._baseY || 0;
         return;
       }
-    } else if (moving) d._fidgetAt = 0;
-    const want = (moving && d.walkAction) ? d.walkAction : d.idleAction;
+      // 🕺 stood around a while → a little fidget from the pool (keeps heroes alive)
+      if (d.fidgets && d.fidgets.length) {
+        if (!d._fidgetAt) d._fidgetAt = nowMs + 18000 + Math.random() * 14000;
+        if (nowMs >= d._fidgetAt) {
+          d._fidgetAt = nowMs + 22000 + Math.random() * 16000;
+          playGlbMove(d, d.fidgets[Math.floor(Math.random() * d.fidgets.length)]);
+          d.mixer.update(mdt);
+          return;
+        }
+      }
+    } else { d._stillAt = 0; d._fidgetAt = 0; }
+    // 💨 zoomies: the RUN clip takes over the stride during snack boosts & the secret sprint
+    const fast = d.runAction && (nowMs < (d._sprintUntil || 0) || (G.snackUntil && nowMs < G.snackUntil));
+    const want = (moving && d.walkAction) ? (fast ? d.runAction : d.walkAction) : d.idleAction;
     if (want && d.curAction !== want) {
       if (d.curAction) d.curAction.fadeOut(0.2);
       want.reset().fadeIn(0.2).play();
@@ -12047,6 +12132,8 @@ function updatePlayer(dt) {
 
   let speed = G.owned.shoes ? 7 : 5;
   if (G.snackUntil && performance.now() < G.snackUntil) speed *= 1.4;   // apple snack zoomies!
+  const _sd = player.avatarData;
+  if (_sd && _sd._sprintUntil && performance.now() < _sd._sprintUntil) speed *= 1.55;   // 🤫 the secret RUN code
   if (player.ridingBuggy) speed *= 1.7;                                 // 🐴 a trotting horse is faster than walking!
   // 🏊 in the pool? wade/swim — a little slower, with a splash the moment you jump in
   const _wb = blocks.get(key(Math.floor(player.pos.x), 0, Math.floor(player.pos.z)));
@@ -15496,7 +15583,7 @@ function checkQuests() {
     }
   }
   if (baseline) { profile.questsBaselined = true; profileDirty = true; saveProfile(); updateQuestBtn(); }
-  if (any) { profileDirty = true; saveProfile(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); updateQuestBtn(); }
+  if (any) { profileDirty = true; saveProfile(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount'); updateQuestBtn(); questSpinSoon(); }
 }
 function updateQuestBtn() {
   const btn = $('questBtn'); if (!btn) return;
@@ -15960,6 +16047,100 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+/* ========================= 🤫 SECRET MOVE CODES =========================
+   For grown-ups and sharp-eyed kids. Two ways in:
+   • Keyboard: HOLD SHIFT and type a magic word while playing — SPIN, CHEER,
+     SIT, SLEEP or RUN. (Shift keeps the letters from steering the hero.)
+   • Touch: tap the 🧱 block counter 5 times fast → the Secret Move Lab.
+   Moves only exist on studio heroes (GLB models with those clips) — others
+   get a friendly nudge to try Leo. */
+const SECRET_MOVES = {
+  spin:  { icon: '🌀', label: '360 Power Spin', has: d => !!d.spinAction, go: d => playGlbMove(d, d.spinAction) },
+  cheer: { icon: '🎉', label: 'Victory Cheer', has: d => !!d.celebrateAction, go: d => playGlbMove(d, d.celebrateAction) },
+  sit:   { icon: '🪑', label: 'Sit down', has: d => !!d.sitAction, go: d => glbDoze(d, d.sitAction) },
+  sleep: { icon: '😴', label: 'Zzz…', has: d => !!d.sleepAction, go: d => glbDoze(d, d.sleepAction) },
+  run:   { icon: '💨', label: 'Super-speed sprint', has: d => !!d.runAction, go: d => { d._sprintUntil = performance.now() + 8000; } },
+};
+function secretMove(word) {
+  const mv = SECRET_MOVES[word]; if (!mv) return false;
+  if (!G.running || player.driving) return false;
+  const d = player.avatarData;
+  if (!d || !d.glb || !d.mixer) { toast('🤫 This hero has no studio moves yet — Leo knows them all!', 2400); return false; }
+  if (!mv.has(d)) { toast('🤔 This hero hasn\'t learned that move yet!', 2200); return false; }
+  if (d._afk && word !== 'sit' && word !== 'sleep') glbWake(d, 0.2);
+  if (d._special && word !== 'run') { d._special.fadeOut(0.15); d._special = null; }   // the new show replaces the old
+  mv.go(d);
+  toast(mv.icon + ' ' + mv.label + '!', 1800);
+  if (Sound.click) Sound.click();
+  return true;
+}
+let secretBuf = '', secretKeyAt = 0;
+addEventListener('keydown', e => {
+  if (!G.running || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+  const el = e.target;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+  const k = (e.key || '').toLowerCase();
+  if (!/^[a-z]$/.test(k)) return;
+  e.preventDefault(); e.stopImmediatePropagation();        // secret letters must not steer the game
+  const n = performance.now();
+  if (n - secretKeyAt > 1800) secretBuf = '';               // typed too slowly → start over
+  secretKeyAt = n;
+  secretBuf = (secretBuf + k).slice(-12);
+  for (const w in SECRET_MOVES) if (secretBuf.endsWith(w)) { if (secretMove(w)) secretBuf = ''; break; }
+}, true);
+/* any tap or key says "I'm here" — it resets the doze-off timer and wakes a dozing hero */
+addEventListener('pointerdown', () => { const d = player.avatarData; if (d && d.glb) d._lastInputAt = performance.now(); }, true);
+addEventListener('keydown', () => { const d = player.avatarData; if (d && d.glb) d._lastInputAt = performance.now(); }, true);
+/* the touch-screen secret: 5 quick taps on the 🧱 or 🪙 counter opens the Move Lab */
+let labTaps = 0, labTapAt = 0;
+function moveLabTap() {
+  const n = performance.now();
+  labTaps = (n - labTapAt < 2600) ? labTaps + 1 : 1; labTapAt = n;
+  if (labTaps >= 5) { labTaps = 0; openMoveLab(); }
+}
+['blockCount', 'coinCount'].forEach(id => { const el = $(id) && $(id).parentElement; if (el) el.addEventListener('pointerdown', moveLabTap); });
+function openMoveLab() {
+  const old = $('moveLab');
+  if (old) { old.remove(); return; }                        // the secret toggles it closed too
+  if (!G.running) return;
+  if (Sound.click) Sound.click();
+  const lab = document.createElement('div');
+  lab.id = 'moveLab';
+  lab.style.cssText = 'position:fixed;left:12px;top:106px;z-index:80;' +          // side stage: the hero stays visible mid-move
+    'background:rgba(18,24,38,.95);border:2px solid #7ec3ff;border-radius:18px;padding:13px 15px;' +
+    'display:flex;flex-direction:column;gap:7px;min-width:210px;max-height:calc(100vh - 130px);overflow-y:auto;' +
+    'box-shadow:0 12px 40px rgba(0,0,0,.45)';
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px';
+  head.innerHTML = '<span style="font-family:Fredoka,sans-serif;font-size:17px;color:#ffe66d">🎬 Secret Move Lab</span>';
+  const x = document.createElement('button');
+  x.textContent = '✕';
+  x.style.cssText = 'background:none;border:none;color:#9db7dd;font-size:17px;cursor:pointer;padding:2px 6px';
+  x.onclick = () => lab.remove();
+  head.appendChild(x);
+  lab.appendChild(head);
+  const d = player.avatarData;
+  if (!d || !d.glb || !d.mixer) {
+    const p = document.createElement('div');
+    p.style.cssText = 'color:#cfe3ff;font-size:13px;max-width:230px;line-height:1.45';
+    p.textContent = 'This hero has no studio moves yet — pick Leo in the hero menu to try them!';
+    lab.appendChild(p);
+  } else {
+    for (const w in SECRET_MOVES) {
+      const mv = SECRET_MOVES[w];
+      if (!mv.has(d)) continue;
+      const b = document.createElement('button');
+      b.textContent = mv.icon + '  ' + mv.label;
+      b.style.cssText = 'display:block;width:100%;text-align:left;background:rgba(126,195,255,.12);' +
+        'border:1px solid rgba(126,195,255,.35);border-radius:11px;color:#eaf4ff;' +
+        'font-family:Nunito,sans-serif;font-weight:700;font-size:14.5px;padding:9px 12px;cursor:pointer';
+      b.onclick = () => secretMove(w);
+      lab.appendChild(b);
+    }
+  }
+  document.body.appendChild(lab);
+}
 
 function camIcon() { return G.firstPerson ? '👁️' : (G.birdsEye ? '🦅' : '🧍'); }
 function toggleCamera() {
