@@ -17,7 +17,7 @@ Ship one character at a time, in any order.
 | `deer.glb` | Deer | | `kinglion.glb` | King Lion |
 | `piratecat.glb` | Pirate Cat | | `ninjadog.glb` | Ninja Dog |
 | `robot.glb` | Robot | | `astronaut.glb` | Astronaut |
-| `wizard.glb` | Wizard | | `panda.glb` | Panda |
+| `wizard.glb` | Wizard | | `panda.glb` ✅ shipped | Panda 🐼 |
 | `penguin.glb` | Penguin | | `bunny.glb` | Bunny |
 | `superhero.glb` | Superhero | | `spark.glb` | Spark the Fairy |
 | `knight.glb` | Knight | | `trex.glb` | T-Rex |
