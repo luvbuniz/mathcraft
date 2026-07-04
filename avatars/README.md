@@ -11,7 +11,7 @@ Ship one character at a time, in any order.
 | File | Hero | | File | Hero |
 | --- | --- | --- | --- | --- |
 | `leo.glb` ✅ shipped | Leo 👦 | | `fiona.glb` ✅ shipped | Fiona 👧 |
-| `queenfox.glb` | Queen Fox | | `princess.glb` | Princess |
+| `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` | Princess |
 | `peacock.glb` | Peacock | | `unicorn.glb` | Unicorn Dancer |
 | `tiger.glb` | Tiger | | `dragon.glb` | Dragon |
 | `deer.glb` | Deer | | `kinglion.glb` | King Lion |
@@ -82,6 +82,10 @@ const AVATAR_MODEL_TWEAKS = {
 
 ## What to know
 
+- **Four-legged friends only walk** — Meshy's animation library for quadrupeds
+  has Walking and little else. That's fine: the game gives a walk-only model a
+  gentle breathing stand when still (it never marches in place), and it simply
+  skips celebrate/sit/sleep moves the file doesn't have.
 - **Faces are static** on models for now (the procedural kids' animated
   smiles/frowns don't carry over). The plan for expressive models: paint 3–4
   face-texture variants (happy/grin/sad/blink) or add Blender morph targets —
