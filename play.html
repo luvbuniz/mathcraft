@@ -11830,10 +11830,9 @@ function buildCockpit() {
     hand(0.12, 0.24, 0.08, s * 0.285, 0, 0.11);       // fingers curling toward the driver
     hand(0.08, 0.09, 0.12, s * 0.30, 0.13, 0.06);     // thumb on top of the rim
   });
-  // passenger seat (right) + driver seat hint (left) — tucked BEHIND the camera so the
-  // windshield stays clear (the dash now rides ahead + low for a big trailer-style view)
-  box(0.6, 0.16, 0.6, 0.66, 0.4, -0.55, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.8, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.8, 0x6e2a2a);
-  box(0.6, 0.16, 0.6, -0.5, 0.4, -0.55, 0x44494f);
+  // passenger seat (right) + driver seat hint (left)
+  box(0.6, 0.16, 0.6, 0.66, 0.4, 0.2, 0x6e2a2a); box(0.6, 0.7, 0.16, 0.66, 0.78, -0.05, 0x6e2a2a); box(0.44, 0.16, 0.16, 0.66, 1.15, -0.05, 0x6e2a2a);
+  box(0.6, 0.16, 0.6, -0.5, 0.4, 0.2, 0x44494f);
   box(0.12, 0.9, 1.9, 1.2, 0.66, 0.55, TRIM); box(0.12, 0.9, 1.9, -1.2, 0.66, 0.55, TRIM);   // door interiors
   g.visible = false; scene.add(g);
   return g;
@@ -11961,9 +11960,9 @@ function updatePlayer(dt) {
     }
     if (G.firstPerson) {                                   // 👁️ look out the windshield (Leo's favourite)
       const fwdx = -Math.sin(v.yaw), fwdz = -Math.cos(v.yaw);
-      const eyeH = player.pos.y + 1.28;                    // sit tall — more windshield, less hood
+      const eyeH = player.pos.y + 1.2;
       camera.position.lerp(new THREE.Vector3(player.pos.x + fwdx * 0.45, eyeH, player.pos.z + fwdz * 0.45), 0.4);
-      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 0.85, player.pos.z + fwdz * 14);   // a gentle down-glance keeps the dials in the bottom strip
+      camera.lookAt(player.pos.x + fwdx * 14, eyeH - 1.7, player.pos.z + fwdz * 14);   // look down so the dashboard/dials show
       const closed = !(v.def && v.def.open);               // closed car → hide its body, show a clean cockpit; open (bike/boat) keep its body
       v.group.visible = !closed;
       if (closed) {
@@ -11977,9 +11976,7 @@ function updatePlayer(dt) {
           player._dashHintPending = false;
           toast('🚨 Tap the TRUCK CONTROL panel to switch the lights & siren on/off!', 4200);
         }
-        // dash sits a bit ahead and low → a slim bottom strip with a BIG windshield
-        // (before it filled over half the screen on landscape phones)
-        cockpit.position.set(player.pos.x + fwdx * 0.72, player.pos.y - 0.2, player.pos.z + fwdz * 0.72);
+        cockpit.position.set(player.pos.x, player.pos.y, player.pos.z);
         cockpit.rotation.y = v.yaw + Math.PI;
         cockpit.visible = true;
       } else if (cockpit) cockpit.visible = false;
