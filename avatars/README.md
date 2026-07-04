@@ -13,10 +13,10 @@ Ship one character at a time, in any order.
 | `leo.glb` ✅ shipped | Leo 👦 | | `fiona.glb` ✅ shipped | Fiona 👧 |
 | `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` ✅ shipped | Princess 👑 |
 | `peacock.glb` | Peacock | | `unicorn.glb` | Unicorn Dancer |
-| `tiger.glb` | Tiger | | `dragon.glb` | Dragon |
+| `tiger.glb` | Tiger | | `dragon.glb` ✅ shipped | Dragon 🐉 |
 | `deer.glb` | Deer | | `kinglion.glb` | King Lion |
 | `piratecat.glb` | Pirate Cat | | `ninjadog.glb` | Ninja Dog |
-| `robot.glb` | Robot | | `astronaut.glb` | Astronaut |
+| `robot.glb` ✅ shipped | Robot 🤖 | | `astronaut.glb` | Astronaut |
 | `wizard.glb` | Wizard | | `panda.glb` ✅ shipped | Panda 🐼 |
 | `penguin.glb` | Penguin | | `bunny.glb` | Bunny |
 | `superhero.glb` | Superhero | | `spark.glb` ✅ shipped | Spark the Fairy 🧚 |
