@@ -105,8 +105,27 @@ Rig the model (Auto-Rig), then add animations from Meshy's library before export
      excited / happy / agree / clap / wave` — otherwise the first extra).
    - 🕺 Standing around, they occasionally **fidget** with a random extra.
    - Specials play once, then the hero settles back to idle. Walking cancels them.
-3. Per-avatar personality is exactly this: give the dragon a roar-ish move, Leo a
+3. **Named roles get extra behaviors** — clips with these names are pulled OUT of
+   the random-fidget pool and wired to real game moments instead:
+   - `Running` (run/sprint/jog) → the stride during **apple-snack zoomies** and the
+     secret RUN sprint. Never a fidget (jogging in place looks broken).
+   - a **sit** clip (e.g. "Sitting Answering Questions") → left alone ~12 quiet
+     seconds, the hero **sits down**; any tap/key/step hops them back up.
+   - a **sleep** clip → stay away ~1 minute more and they **nod off** where they sat.
+   - a **spin/flip** clip → the 🗺️ **quest-complete fanfare**: plays only with open
+     space around the hero (no walls/friends nearby — otherwise a victory cheer).
+4. Per-avatar personality is exactly this: give the dragon a roar-ish move, Leo a
    360 spin-jump, Fiona a dance — the game does the rest, no code changes needed.
+
+### 🤫 Secret move codes (for testing — and for kids who find them)
+
+- **Keyboard:** while playing, **press SHIFT, then type** `SPIN`, `CHEER`, `SIT`,
+  `SLEEP` or `RUN` (holding Shift while typing works too). A little 🤫 chip echoes
+  the letters; plain WASD still steers — only real code letters are captured.
+- **Touch:** tap the 🧱 block counter (or 🪙 coins) **5 times fast** → the
+  **🎬 Secret Move Lab** opens with a button for every move the hero knows.
+- `RUN` grants an 8-second super-speed sprint with the Running clip. The codes
+  work on any model avatar that has the matching clip — Leo knows all five.
 
 Skeletal animation data is small — extras barely grow the file. Export ONE GLB with
 all clips included ("bake/include animations" in the export dialog).
