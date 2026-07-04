@@ -3472,6 +3472,10 @@ function prepareAvatarModel(id, gltf) {
   let run = null, sit = null, sleep = null, spin = null, fidgets = [];
   const clips = gltf.animations || [];
   if (clips.length) {
+    // Meshy sometimes bakes a stray "fit" scale into a clip's bone-scale tracks (the fox's
+    // walk held her Hips at 0.64 — she shrank mid-stride and popped back on stopping). Our
+    // rigs never squash-and-stretch, so drop scale tracks: bones keep their rest scale.
+    clips.forEach(c => { c.tracks = c.tracks.filter(tr => !/\.scale$/.test(tr.name)); });
     mixer = new THREE.AnimationMixer(inner);
     // "Sitting Idle" / "Lying Down" style clips must NOT become the main standing idle —
     // posture qualifiers push a clip into the special-move pool instead.
