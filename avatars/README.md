@@ -19,7 +19,7 @@ Ship one character at a time, in any order.
 | `robot.glb` | Robot | | `astronaut.glb` | Astronaut |
 | `wizard.glb` | Wizard | | `panda.glb` ✅ shipped | Panda 🐼 |
 | `penguin.glb` | Penguin | | `bunny.glb` | Bunny |
-| `superhero.glb` | Superhero | | `spark.glb` | Spark the Fairy |
+| `superhero.glb` | Superhero | | `spark.glb` ✅ shipped | Spark the Fairy 🧚 |
 | `knight.glb` | Knight | | `trex.glb` | T-Rex |
 
 ## Fully-automated option: the Meshy MCP
