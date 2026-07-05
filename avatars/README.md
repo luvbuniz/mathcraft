@@ -15,7 +15,7 @@ Ship one character at a time, in any order.
 | `peacock.glb` | Peacock | | `unicorn.glb` ✅ shipped | Unicorn Dancer 🦄 |
 | `tiger.glb` | Tiger | | `dragon.glb` ✅ shipped | Dragon 🐉 |
 | `deer.glb` | Deer | | `kinglion.glb` | King Lion |
-| `piratecat.glb` | Pirate Cat | | `ninjadog.glb` | Ninja Dog |
+| `piratecat.glb` ✅ shipped | Pirate Cat 🏴‍☠️ | | `ninjadog.glb` | Ninja Dog |
 | `robot.glb` ✅ shipped | Robot 🤖 | | `astronaut.glb` | Astronaut |
 | `wizard.glb` | Wizard | | `panda.glb` ✅ shipped | Panda 🐼 |
 | `penguin.glb` | Penguin | | `bunny.glb` | Bunny |
@@ -118,6 +118,11 @@ Rig the model (Auto-Rig), then add animations from Meshy's library before export
    - a **sleep** clip → stay away ~1 minute more and they **nod off** where they sat.
    - a **spin/flip** clip → the 🗺️ **quest-complete fanfare**: plays only with open
      space around the hero (no walls/friends nearby — otherwise a victory cheer).
+   - a **swim** clip → takes over in 🏊 pool water, even standing still (treading!).
+     Shortcut: add Swimming to ONE character in Meshy and send that export —
+     every biped shares the same skeleton, so Claude grafts the clip onto the
+     whole cast. No remakes needed.
+   - sleep but NO sit clip? The hero lies straight down — after a full quiet minute.
 4. Per-avatar personality is exactly this: give the dragon a roar-ish move, Leo a
    360 spin-jump, Fiona a dance — the game does the rest, no code changes needed.
 
