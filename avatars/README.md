@@ -14,7 +14,7 @@ Ship one character at a time, in any order.
 | `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` ✅ shipped | Princess 👑 |
 | `peacock.glb` | Peacock | | `unicorn.glb` ✅ shipped | Unicorn Dancer 🦄 |
 | `tiger.glb` | Tiger | | `dragon.glb` ✅ shipped | Dragon 🐉 |
-| `deer.glb` | Deer | | `kinglion.glb` | King Lion |
+| `deer.glb` | Deer | | `kinglion.glb` ✅ shipped | King Lion 🦁 |
 | `piratecat.glb` ✅ shipped | Pirate Cat 🏴‍☠️ | | `ninjadog.glb` | Ninja Dog |
 | `robot.glb` ✅ shipped | Robot 🤖 | | `astronaut.glb` | Astronaut |
 | `wizard.glb` | Wizard | | `panda.glb` ✅ shipped | Panda 🐼 |
