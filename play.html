@@ -17696,7 +17696,76 @@ const NPC_CAST = [
     live: '🏠 A rex-sized home! Thank you, {name}! 🦖💚',
     bye: 'Stomp stomp! See ya, {name}!',
   } },
+  { id: 'queenfox', name: 'Foxy', lines: [
+    'Psst, {name}! I know ALL the shortcuts to the 🛝 playground!',
+    'My tail is fluffier than any pillow. Royal fox fact! 🦊',
+    'Race you! Foxes get a head start — new rule I just made up.',
+    'Something smells like adventure, {name}. Follow me!',
+  ], replies: {
+    hi: 'Well hello, {name}! *swish swish* That\'s my happy tail! 🦊',
+    playground: 'Foxes LOVE tunnels — meet you under the slide! 🛝',
+    fun: ['I\'m secretly royalty. The crown gave it away, didn\'t it? 👑', 'My tail has a mind of its own. We\'ve agreed to disagree. 🦊'],
+    live: '🏠 A royal fox den! You\'re my favorite, {name}! 🦊💚',
+    bye: 'Swish swish! Bye, {name}!',
+  } },
+  { id: 'robot', name: 'Bolt', lines: [
+    'BEEP! Hello {name}! My favorite number is... ALL of them. 🤖',
+    'Computing: the 🛝 slide is 100% fun. Verified!',
+    'Can robots use swings? Requesting a push!',
+    'Your math answers charge my batteries, {name}! ⚡',
+  ], replies: {
+    hi: 'BOOP! Greetings, {name}! Systems: happy! 🤖',
+    playground: 'Calculating shortest path to the swings... follow me! 🛝',
+    fun: ['I dance in ro-bot style. It\'s the only style I have. 🤖', 'My batteries run on high fives. Recharge me any time! ⚡'],
+    live: '🏠 HOME.EXE installed! Thank you, {name}! 🤖💚',
+    bye: 'Powering down... just kidding! Bye, {name}! BEEP!',
+  } },
+  { id: 'dragon', name: 'Ember', lines: [
+    'Don\'t worry {name} — I only breathe WARM air. Mostly. 🐉',
+    'My wings are too little to fly. The swings count, right?',
+    'I could toast marshmallows for the whole 🛝 playground!',
+    'Stomp with me, {name}! It makes the flowers giggle. 🌸',
+  ], replies: {
+    hi: 'Rrrrawr-hello, {name}! You look fireproof to me! 🐉',
+    playground: 'Slide first! My scales make me EXTRA slippery! 🛝',
+    fun: ['My sneezes are 10% sparks. Bless me carefully. 🔥', 'Dragons hoard treasure. I hoard nice friends like you. 💚'],
+    live: '🏠 A dragon den! I promise not to singe the curtains, {name}! 🐉',
+    bye: 'Flap flap! Farewell, {name}!',
+  } },
+  { id: 'princess', name: 'Princess Pea', lines: [
+    'Greetings, {name}! Which way to the royal 🛝 playground?',
+    'A princess NEVER skips the swings. Royal decree!',
+    'Your buildings are castle-worthy, {name}! 🏰',
+    'Shall we have a royal race to the slide?',
+  ], replies: {
+    hi: 'Why hello, {name}! You may skip the bowing. 👑',
+    playground: 'The swings are my throne today! To the playground! 🛝',
+    fun: ['My crown stays on even down the slide. Royal secret: it\'s SPARKLE glue. 👑', 'Royal fact: princesses have the LOUDEST wheee. 🎀'],
+    live: '🏠 My own palace! You\'re hereby knighted, {name}! 👑💚',
+    bye: 'Farewell, {name}! The kingdom awaits!',
+  } },
+  { id: 'unicorn', name: 'Twirl', lines: [
+    'Hi {name}! I dance everywhere I go — it\'s faster than walking! 💃',
+    'Do you think the 🛝 slide works with four... I mean two legs?',
+    'My horn glows when I\'m happy. It\'s VERY glowy today! 🦄',
+    'Twirl with me, {name}! Spinning makes everything sparklier!',
+  ], replies: {
+    hi: 'Hi hi hi {name}! *twirls* That\'s how unicorns wave! 🦄',
+    playground: 'I\'m going to dance ALL the way down the slide! 🛝✨',
+    fun: ['My mane does its own dance. I just follow it. 💫', 'Rainbows are just the sky dancing. True story! 🌈'],
+    live: '🏠 A sparkle-home of my very own! Thank you, {name}! 🦄💖',
+    bye: 'Twirl-bye, {name}! ✨',
+  } },
 ];
+/* 🧑‍🤝‍🧑 four town friends per save — never the hero the kid is currently playing (no
+   doppelgängers!). Order mixes the classics with the new studio cast: the default town
+   is Spark, Momma Panda, Bolt and Twirl, and excluded picks pull the next friend in. */
+const NPC_POOL_ORDER = ['spark', 'panda', 'robot', 'unicorn', 'bunny', 'trex', 'queenfox', 'princess', 'dragon'];
+function npcPickCast() {
+  const mine = (AVATARS[G.avatarIndex] || {}).id;
+  const byId = {}; NPC_CAST.forEach(c => { byId[c.id] = c; });
+  return NPC_POOL_ORDER.map(id => byId[id]).filter(c => c && c.id !== mine).slice(0, 4);
+}
 const NPC_ACT_LINES = {                        // little thoughts while using the furniture in their house
   stove: ['🍲 Soup for everyone!', '🍪 Who wants cookies?', '👩‍🍳 Dinner is almost ready!'],
   couch: ['🛋️ Sooo comfy!', '📺 Movie night at my place?'],
@@ -17748,7 +17817,7 @@ function respawnNpcs() {
     { x: P.cx + 2, z: P.cz - 4 },        // the playground greeter, right by the park gate
     { x: -6, z: 4 }, { x: 7, z: -3 }, { x: -3, z: -8 },
   ];
-  NPC_CAST.forEach((cast, i) => {
+  npcPickCast().forEach((cast, i) => {
     const av = AVATARS.find(a => a.id === cast.id); if (!av) return;
     const assigned = (G.npcHomes || {})[cast.id];              // 🏠 a kid gave this friend a house here
     const anchor = assigned ? { x: assigned[0], z: assigned[1] } : anchors[i];
@@ -17760,10 +17829,26 @@ function respawnNpcs() {
     d.group.position.set(spot.x, 0, spot.z);
     d.group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(d.group);
-    npcs.push({ cast, d, group: d.group, home: assigned ? anchor : spot, housed: !!assigned,
+    const n = { cast, d, group: d.group, home: assigned ? anchor : spot, housed: !!assigned,
       mode: 'idle', timer: 1 + Math.random() * 3, target: null, act: null,
       phase: Math.random() * 9, lineIx: Math.floor(Math.random() * cast.lines.length),
-      coolAt: 0, say: '', sayUntil: 0, el: null, trapN: 0 });
+      coolAt: 0, say: '', sayUntil: 0, el: null, trapN: 0 };
+    npcs.push(n);
+    // 🎨 quietly upgrade this friend to their real studio model (same trick as the hero)
+    parseAvatarModel(cast.id).then(md => {
+      if (!md || npcs.indexOf(n) < 0 || n.d !== d) return;     // world changed meanwhile
+      md.group.position.copy(n.group.position);
+      md.group.rotation.y = n.group.rotation.y;
+      md.group.scale.setScalar(0.92);
+      // 🎯 invisible tap body: the raycaster can't see skinned meshes (r128 tests the rest
+      // pose through the armature's 0.01 scale — a 2 cm phantom), so taps need a real target.
+      const tap = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.9, 1.1), new THREE.MeshBasicMaterial({ visible: false }));
+      tap.position.y = 0.95;
+      md.group.add(tap);
+      scene.remove(n.group);
+      n.d = md; n.group = md.group;
+      scene.add(md.group);
+    });
   });
 }
 function npcSay(n, text, ms) {           // put words in a friend's bubble
@@ -17903,6 +17988,7 @@ function npcWalkToward(n, tx, tz, dt) {  // shared stroll: returns true = arrive
   const nz = g.position.z + Math.cos(g.rotation.y) * 1.1 * dt;
   if (npcStepBlocked(nx, nz)) return 'blocked';      // 🧱 no ghost-walking through Leo's bricks
   g.position.x = nx; g.position.z = nz;
+  if (d.mixer) { npcGlbGait(d, true); return false; }   // 🎨 studio models walk with their real clip
   const s = Math.sin(n.phase * 8) * 0.55;            // same gait as the hero
   if (d.quad) { d.legs[0].rotation.x = s; d.legs[3].rotation.x = s; d.legs[1].rotation.x = -s; d.legs[2].rotation.x = -s; }
   else {
@@ -17910,6 +17996,19 @@ function npcWalkToward(n, tx, tz, dt) {  // shared stroll: returns true = arrive
     if (d.arms && d.arms.length >= 2) { d.arms[0].rotation.x = -s * 0.7; d.arms[1].rotation.x = s * 0.7; }
   }
   return false;
+}
+/* 🎨 GLB town friends: simple idle/walk/sit crossfade — no fidgets or fanfares, the town
+   keeps its calm. No idle clip? The walk fades out and the breathing swell takes over. */
+function npcGlbGait(d, moving, sitting) {
+  const want = sitting && d.sitAction ? d.sitAction : (moving ? (d.walkAction || d.idleAction) : d.idleAction);
+  if (want && d.curAction !== want) {
+    if (d.curAction) d.curAction.fadeOut(0.2);
+    want.reset().fadeIn(0.2).play();
+    d.curAction = want;
+  } else if (!want && d.curAction && !moving) {
+    d.curAction.fadeOut(0.2);
+    d.curAction = null;
+  }
 }
 /* 🫧 bubbles must never stack on each other (kid + friend chat face-to-face = same screen
    spot). Every placed bubble registers its rect for the frame; a new bubble that would
@@ -17946,6 +18045,8 @@ function npcBubblePlace(n, now) {         // pin the bubble over the friend's he
 }
 function npcLegsRest(n) {
   const d = n.d;
+  if (d.mixer) { npcGlbGait(d, false); return; }
+  if (!d.legs) return;
   d.legs.forEach(l => l.rotation.x *= 0.8);
   if (d.arms) d.arms.forEach(a => a.rotation.x *= 0.8);
 }
@@ -17965,6 +18066,14 @@ function updateNpcs(dt, now) {
   for (const n of npcs) {
     n.phase += dt;
     const g = n.group, d = n.d;
+    // 🎨 studio-model friends: tick their animation mixer; breathe gently when no clip runs
+    if (d.mixer) {
+      d.mixer.update(dt);
+      if (!d.curAction) {
+        if (d._breath == null) d._breath = d.inner.scale.y;
+        d.inner.scale.y = d._breath * (1 + Math.sin(now / 588 + n.phase) * 0.006);
+      } else if (d._breath != null) d.inner.scale.y = d._breath;
+    }
     const pd = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
     const talking = now < n.sayUntil;
     if (n.replyText && now >= n.replyAt) {                       // 💬 the chat-chip answer lands on game time
@@ -18008,8 +18117,9 @@ function updateNpcs(dt, now) {
         g.position.x = a.mx; g.position.z = a.mz + 0.05;
         g.position.y = NPC_SIT_Y[a.type] != null ? NPC_SIT_Y[a.type] : 0.44;
         g.rotation.y = a.entry.mesh.rotation.y || 0;
-        if (d.quad) d.legs.forEach(l => { l.rotation.x = -1.05; });
-        else { d.legs.forEach(l => { l.rotation.x = -1.3; }); if (d.arms) d.arms.forEach(ar => { ar.rotation.x = -0.4; }); }
+        if (d.mixer) npcGlbGait(d, false, true);       // 🎨 studio friends use their real sit clip
+        else if (d.quad) d.legs.forEach(l => { l.rotation.x = -1.05; });
+        else if (d.legs) { d.legs.forEach(l => { l.rotation.x = -1.3; }); if (d.arms) d.arms.forEach(ar => { ar.rotation.x = -0.4; }); }
       }
       if (pd < 5 && now >= n.coolAt && !popupOpen) {             // a little homey thought while they're at it
         const arr = NPC_ACT_LINES[a.type] || [];
