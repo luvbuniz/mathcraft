@@ -3487,11 +3487,20 @@ function prepareAvatarModel(id, gltf) {
     // "Sitting Idle" / "Lying Down" style clips must NOT become the main standing idle —
     // posture qualifiers push a clip into the special-move pool instead.
     const POSTURE = /sit|lay|lie|lying|sleep|crouch|kneel|ground/i;
-    const find = (re, strict) => { const cl = clips.find(k => re.test(k.name) && !(strict && POSTURE.test(k.name))); return cl ? mixer.clipAction(cl) : null; };
+    // Each clip holds ONE role, picked most-specific-first — so "Swim Idle" can't claim the
+    // standing idle and "Rising FLYING Kick" can't claim the sleep (both true lion stories).
+    const claimedClips = new Set();
+    const find = (re, strict) => {
+      const cl = clips.find(k => !claimedClips.has(k) && re.test(k.name) && !(strict && POSTURE.test(k.name)));
+      if (cl) claimedClips.add(cl);
+      return cl ? mixer.clipAction(cl) : null;
+    };
+    tread = find(/swim.?idle|tread/i, true);   // 🏊 standing still in the pool = treading water
+    swim = find(/swim|paddle/i, true);         // …and the stride while moving
     // a file with ONE clip: if it's a walk (Meshy's quadrupeds only get Walking), it must NOT
     // also become the standing idle — marching in place looks broken; breathing stand instead.
-    idle = find(/idle|breath|stand/i, true) ||
-      (clips.length === 1 && !/walk|run|jog|trot/i.test(clips[0].name) ? mixer.clipAction(clips[0]) : null);
+    idle = find(/idle|breath|\bstand/i, true) ||
+      (clips.length === 1 && !/walk|run|jog|trot/i.test(clips[0].name) ? (claimedClips.add(clips[0]), mixer.clipAction(clips[0])) : null);
     walk = find(/walk/i, true) || find(/run|jog|trot/i, true) || idle;
     // no idle clip in the file? leave it null — the game gives a breathing stand instead
     // (much nicer than looping the walk in place). An added Idle clip later just wins.
@@ -3499,13 +3508,10 @@ function prepareAvatarModel(id, gltf) {
     //   run  → snack zoomies & the secret RUN sprint (never a fidget: jogging in place looks broken)
     //   sit  → the hero dozes off after ~12 quiet seconds; sleep → …and nods off fully a bit later
     //   spin → saved for quest fanfares & the secret SPIN code (too big to spend on a fidget)
-    run = find(/run|sprint|jog/i, true); if (run === walk) run = null;
+    run = find(/run|sprint|jog/i, true);
     sit = find(/sit/i);
-    sleep = find(/sleep|snooze|nap|lying|lie.?down/i);
-    tread = find(/swim.?idle|tread/i, true);   // 🏊 standing still in the pool = treading water
-    swim = find(/swim|paddle/i, true); if (swim === tread) swim = null;   // …and the stride while moving
-    const used = [idle, walk, run, sit, sleep, swim, tread].filter(Boolean).map(a => a.getClip());
-    extras = clips.filter(k => used.indexOf(k) < 0)
+    sleep = find(/sleep|snooze|nap|\blying|lie.?down/i);
+    extras = clips.filter(k => !claimedClips.has(k))
       .map(k => { const a = mixer.clipAction(k); a.setLoop(THREE.LoopOnce, 1); return a; });
     const cel = extras.find(a => /dance|cheer|jump|spin|victor|celebr|excit|happy|agree|clap|wave/i.test(a.getClip().name));
     celebrate = cel || extras[0] || null;
