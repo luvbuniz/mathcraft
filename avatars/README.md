@@ -12,7 +12,7 @@ Ship one character at a time, in any order.
 | --- | --- | --- | --- | --- |
 | `leo.glb` ✅ shipped | Leo 👦 | | `fiona.glb` ✅ shipped | Fiona 👧 |
 | `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` ✅ shipped | Princess 👑 |
-| `peacock.glb` | Peacock | | `unicorn.glb` | Unicorn Dancer |
+| `peacock.glb` | Peacock | | `unicorn.glb` ✅ shipped | Unicorn Dancer 🦄 |
 | `tiger.glb` | Tiger | | `dragon.glb` ✅ shipped | Dragon 🐉 |
 | `deer.glb` | Deer | | `kinglion.glb` | King Lion |
 | `piratecat.glb` | Pirate Cat | | `ninjadog.glb` | Ninja Dog |
@@ -136,8 +136,12 @@ all clips included ("bake/include animations" in the export dialog).
 
 ## ✏️ Redo checklist for the reference image (learned from Leo v1)
 
-Ask ChatGPT for: *front view + side view, full body, standing in a neutral A-pose,
-arms relaxed slightly away from the body, open relaxed hands (NOT on hips, NOT in
-pockets), gentle soft smile with the mouth closed, cute 3D cartoon style for kids,
-plain white background.* The pose and expression are baked in from this image —
-fix them here, not in Meshy.
+Ask ChatGPT for: *front view + side view + BACK view, full body, standing in a
+neutral A-pose, arms relaxed slightly away from the body, open relaxed hands (NOT
+on hips, NOT in pockets), gentle soft smile with the mouth closed, cute 3D cartoon
+style for kids, plain white background.* The pose and expression are baked in from
+this image — fix them here, not in Meshy.
+
+💡 Field-tested: feeding Meshy the **side and back profiles too** cures the
+"squishy head" — the extra angles give it solid geometry to work from, and the
+auto-rig weights come out much cleaner.
