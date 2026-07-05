@@ -3476,7 +3476,7 @@ function prepareAvatarModel(id, gltf) {
   // when a right answer lands (the celebrate pick) and as occasional idle fidgets, then the hero
   // settles back to idle. So: export with Walking + Idle + any fun moves, and they all just work.
   let mixer = null, idle = null, walk = null, celebrate = null, extras = [];
-  let run = null, sit = null, sleep = null, spin = null, swim = null, fidgets = [];
+  let run = null, sit = null, sleep = null, spin = null, swim = null, tread = null, fidgets = [];
   const clips = gltf.animations || [];
   if (clips.length) {
     // Meshy sometimes bakes a stray "fit" scale into a clip's bone-scale tracks (the fox's
@@ -3502,8 +3502,9 @@ function prepareAvatarModel(id, gltf) {
     run = find(/run|sprint|jog/i, true); if (run === walk) run = null;
     sit = find(/sit/i);
     sleep = find(/sleep|snooze|nap|lying|lie.?down/i);
-    swim = find(/swim|paddle|tread/i, true);   // 🏊 takes over the stride (and the treading) in pool water
-    const used = [idle, walk, run, sit, sleep, swim].filter(Boolean).map(a => a.getClip());
+    tread = find(/swim.?idle|tread/i, true);   // 🏊 standing still in the pool = treading water
+    swim = find(/swim|paddle/i, true); if (swim === tread) swim = null;   // …and the stride while moving
+    const used = [idle, walk, run, sit, sleep, swim, tread].filter(Boolean).map(a => a.getClip());
     extras = clips.filter(k => used.indexOf(k) < 0)
       .map(k => { const a = mixer.clipAction(k); a.setLoop(THREE.LoopOnce, 1); return a; });
     const cel = extras.find(a => /dance|cheer|jump|spin|victor|celebr|excit|happy|agree|clap|wave/i.test(a.getClip().name));
@@ -3519,7 +3520,7 @@ function prepareAvatarModel(id, gltf) {
   const data = {
     group: wrap, inner, head, glb: true, face: null,
     mixer, idleAction: idle, walkAction: walk, curAction: idle,
-    runAction: run, sitAction: sit, sleepAction: sleep, spinAction: spin, swimAction: swim,
+    runAction: run, sitAction: sit, sleepAction: sleep, spinAction: spin, swimAction: swim, treadAction: tread,
     specials: extras, fidgets, celebrateAction: celebrate, _special: null, _fidgetAt: 0, _celebratedAt: 0,
     _stillAt: 0, _lastInputAt: 0, _afk: null, _afkAt: 0, _afkDeepAt: 0, _spinPending: 0, _sprintUntil: 0, _lastTick: 0,
     hatY: (tweaks.hatY != null ? tweaks.hatY : height * 0.99) - height * 0.82
@@ -3666,8 +3667,9 @@ function updateGlbAvatar(d, moving, t) {
     } else if (moving) { d._stillAt = 0; d._fidgetAt = 0; }
     // 💨 zoomies: the RUN clip takes over the stride during snack boosts & the secret sprint
     const fast = d.runAction && (nowMs < (d._sprintUntil || 0) || (G.snackUntil && nowMs < G.snackUntil));
-    // 🏊 in pool water the SWIM clip takes over — even standing still (treading water)
-    const want = (player.inWater && d.swimAction) ? d.swimAction
+    // 🏊 in pool water the swim clips take over — the stride while moving, treading while still
+    const want = (player.inWater && (d.swimAction || d.treadAction))
+      ? (moving ? (d.swimAction || d.treadAction) : (d.treadAction || d.swimAction))
       : (moving && d.walkAction) ? (fast ? d.runAction : d.walkAction) : d.idleAction;
     if (want && d.curAction !== want) {
       if (d.curAction) d.curAction.fadeOut(0.2);
