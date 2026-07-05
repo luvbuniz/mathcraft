@@ -1316,6 +1316,16 @@
   </div>
 </div>
 
+<!-- ================= 🪞 HERO MIRROR (quest unlock: swap heroes mid-save, keep everything) ================= -->
+<div class="popup" id="mirrorPopup">
+  <div class="popupCard" style="width:min(460px,94vw); text-align:center">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="mirrorClose" title="Close" aria-label="Close">✕</button></div>
+    <div style="font-size:42px">🪞</div>
+    <h2 style="color:#7a5ab5; margin:2px 0 8px">Hero Mirror</h2>
+    <div id="mirrorBody"></div>
+  </div>
+</div>
+
 <!-- ================= STACK REALTY (move-in homes) ================= -->
 <div class="popup" id="realtyPopup">
   <div class="popupCard" style="width:min(460px,94vw); text-align:center">
@@ -15698,7 +15708,9 @@ const QUESTS = [
   { id: 'score75',world: 'any', icon: '⭐', title: 'Reach a Learning Score of 75', reward: 12, check: () => (profile.stars != null ? profile.stars : 0) >= 75 },
   { id: 'coins',  world: 'any', icon: '🪙', title: 'Earn 60 coins by learning', reward: 12, check: () => G.coins >= 60 },
   { id: 'house',  world: 'any', icon: '🏠', title: 'Earn blocks & build a house', reward: 12, check: () => !!G.shelterRewarded },
-  { id: 'buyveh', world: 'any', icon: '🚗', title: 'Earn coins & buy a vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) }
+  { id: 'buyveh', world: 'any', icon: '🚗', title: 'Earn coins & buy a vehicle', reward: 12, check: () => VEHICLES.some(v => G.owned[v.id]) },
+  // 🪞 the meta-quest: finish any 3 quests → the ☰ menu grows a Hero Mirror (swap heroes, keep your save)
+  { id: 'mirror', world: 'any', icon: '🪞', title: 'Finish 3 quests to unlock the Hero Mirror', reward: 15, check: () => Object.keys(profile.questsDone || {}).filter(k => k !== 'mirror').length >= 3 }
 ];
 function worldQuests() { return QUESTS.filter(q => q.world === 'any' || q.world === G.world); }
 let questTimer = 0;
@@ -15755,6 +15767,66 @@ function closeQuestBoard() { $('questPopup').style.display = 'none'; popupOpen =
 $('questClose').onclick = () => { Sound.click(); closeQuestBoard(); };
 $('questPopup').addEventListener('click', e => { if (e.target === $('questPopup')) closeQuestBoard(); });
 $('questBtn').onclick = () => { Sound.click(); openQuestBoard(); };
+
+/* ============================ 🪞 HERO MIRROR: swap heroes mid-game — a quest unlock! ============================
+   Kids want to TRY the other avatars without abandoning their save. Finish any 3 quests and the
+   ☰ menu grows a Hero Mirror: tap a hero and poof — same coins, same blocks, same progress.
+   Only G.avatarIndex changes: setAvatar() rebuilds the body on the spot (the real model streams
+   in behind it), and the town friends reshuffle so nobody twins the new you. */
+const heroMirrorUnlocked = () => !!(profile.questsDone || {}).mirror;
+function renderHeroMirror() {
+  const body = $('mirrorBody'); if (!body) return;
+  let html = '<p style="color:#8a7a5a;margin:0 0 8px">Tap a hero to <b>become them</b> — your coins, blocks and progress all come along! ✨</p>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow:auto;padding:2px">';
+  AVATARS.forEach((av, i) => {
+    if (av.hidden) return;
+    const me = i === G.avatarIndex;
+    const sp = av.name.lastIndexOf(' ');                       // names end with their emoji: "Pirate Cat 🐱🏴‍☠️"
+    const emoji = sp > 0 ? av.name.slice(sp + 1) : av.name, label = sp > 0 ? av.name.slice(0, sp) : av.name;
+    html += '<button class="mirrorHero" data-i="' + i + '"' + (me ? ' disabled' : '') +
+      ' style="font-family:inherit;cursor:pointer;border-radius:12px;padding:9px 4px 7px;border:2px solid ' +
+      (me ? '#e8b93c;background:#fdf3d7' : '#dfe7f2;background:#f4f7fb') + '">' +
+      '<div style="font-size:26px;line-height:1.15">' + emoji + '</div>' +
+      '<div style="font-weight:800;font-size:12.5px;color:#34495e">' + label + '</div>' +
+      (me ? '<div style="font-size:11px;color:#b5832a;font-weight:800">⭐ you now</div>' : '') +
+      '</button>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  body.querySelectorAll('.mirrorHero').forEach(b => { if (!b.disabled) b.onclick = () => swapHero(+b.dataset.i); });
+}
+function openHeroMirror() {
+  if (popupOpen || G.over || !G.running) return;
+  if (!heroMirrorUnlocked()) {                                 // locked → show them the way there
+    toast('🔒 Finish 3 quests to unlock the Hero Mirror — check the 🗺️ Quest Board!', 4200);
+    openQuestBoard();
+    return;
+  }
+  if (player.driving || player.restingBed || player.sittingChair || player.playing || trainRide) {
+    toast('🪞 Hop out and stand up first — then you can switch heroes!', 3400);
+    return;
+  }
+  document.exitPointerLock && document.exitPointerLock();
+  popupOpen = true;
+  renderHeroMirror();
+  $('mirrorPopup').style.display = 'flex';
+}
+function closeHeroMirror() { $('mirrorPopup').style.display = 'none'; popupOpen = false; }
+$('mirrorClose').onclick = () => { Sound.click(); closeHeroMirror(); };
+$('mirrorPopup').addEventListener('click', e => { if (e.target === $('mirrorPopup')) closeHeroMirror(); });
+function swapHero(i) {
+  const av = AVATARS[i];
+  if (!av || i === G.avatarIndex) return;
+  Sound.click();
+  G.avatarIndex = i;
+  setAvatar(i);                                   // rebuild on the spot — the real model streams in behind
+  respawnNpcs();                                  // friends reshuffle: nobody twins the new you
+  saveGame();                                     // nothing else changes — the save just remembers the new hero
+  closeHeroMirror();
+  if (Sound.fanfare) Sound.fanfare();
+  toast('🪞✨ POOF! You are now ' + av.name + ' — same coins, same blocks, same you!', 4200);
+  player.happyUntil = performance.now() + 1500;   // the new hero takes a little victory bow
+}
 
 function buildAppleMesh() {
   const g = new THREE.Group();
@@ -16366,6 +16438,7 @@ function openHudMenu() {
   const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
   const items = [
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
+    ['mirrorBtn', '🪞', '<b>Hero Mirror</b> <small>' + (heroMirrorUnlocked() ? 'switch hero' : '🔒 finish 3 quests') + '</small>'],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
@@ -16375,6 +16448,7 @@ function openHudMenu() {
   m.innerHTML = items.map(([id, ic, html]) => '<button class="viewOpt" data-b="' + id + '">' + ic + ' ' + html + '</button>').join('');
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
     m.style.display = 'none';
+    if (b.dataset.b === 'mirrorBtn') { Sound.click(); openHeroMirror(); return; }   // 🪞 lives right here (no hidden HUD button)
     const t = $(b.dataset.b);
     if (t && t.onclick) t.onclick();
   });

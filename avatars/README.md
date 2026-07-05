@@ -79,6 +79,10 @@ const AVATAR_MODEL_TWEAKS = {
 - **Offline** — the service worker caches each model after its first load.
 - **Hats** — badge caps/crowns sit at an estimated head height (tune with
   `hatY` if a hat floats or sinks).
+- **🪞 Hero Mirror** — finishing any 3 quests unlocks hero swapping in the
+  ☰ menu: kids can become ANY hero mid-save (coins, blocks and progress all
+  stay). Every model you ship here is instantly swappable — town friends
+  reshuffle so the new hero never meets their own twin.
 
 ## What to know
 
