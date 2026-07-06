@@ -3442,7 +3442,10 @@ function prepareAvatarModel(id, gltf) {
   if (!inner) return null;
   inner.traverse(o => {
     if (!o.isMesh) return;
-    o.castShadow = true; o.receiveShadow = true;
+    // Cast a shadow on the grass but DON'T receive: the sun's shadow map is world-sized
+    // (±36 units in 2048px ≈ 3.5cm texels), so self-shadowing quantizes into a visible
+    // checker "grid" on smooth bright bodies (the penguin belly). Heroes stay bright.
+    o.castShadow = true; o.receiveShadow = false;
     o.frustumCulled = false;                  // skinned meshes move; don't let stale bounds blink them out
     const wasArray = Array.isArray(o.material);
     const mats = (wasArray ? o.material : [o.material]).map(m => {
