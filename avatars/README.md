@@ -12,7 +12,7 @@ Ship one character at a time, in any order.
 | --- | --- | --- | --- | --- |
 | `leo.glb` ✅ shipped | Leo 👦 | | `fiona.glb` ✅ shipped | Fiona 👧 |
 | `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` ✅ shipped | Princess 👑 |
-| `peacock.glb` | Peacock | | `unicorn.glb` ✅ shipped | Unicorn Dancer 🦄 |
+| `peacock.glb` ✅ shipped | Peacock 🦚 | | `unicorn.glb` ✅ shipped | Unicorn Dancer 🦄 |
 | `tiger.glb` | Tiger | | `dragon.glb` ✅ shipped | Dragon 🐉 |
 | `deer.glb` | Deer | | `kinglion.glb` ✅ shipped | King Lion 🦁 |
 | `piratecat.glb` ✅ shipped | Pirate Cat 🏴‍☠️ | | `ninjadog.glb` | Ninja Dog |
