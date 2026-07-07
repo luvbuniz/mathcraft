@@ -408,15 +408,14 @@
   #joyStick { position:absolute; width:54px; height:54px; border-radius:50%; background:rgba(255,255,255,.65);
     left:33px; top:33px; }
   .touchBtn { position:absolute; pointer-events:auto; touch-action:none; background:rgba(255,255,255,.65);
-    border-radius:18px; font-size:20px; font-weight:bold; padding:17px 22px; color:#333;
+    border-radius:16px; font-size:18px; font-weight:bold; padding:13px 18px; color:#333;
     box-shadow:0 3px 0 rgba(0,0,0,.25); }
-  /* Base layout = tidy 2-column cluster (also the fallback for wide 10" tablets >1250px,
-     where none of the phone breakpoints match — the old single-row base overlapped). */
-  #btnAction { right:18px; bottom:200px; background:rgba(255,233,150,.85); }
-  #btnJump { right:18px; bottom:134px; }
-  #btnModeTouch { right:18px; bottom:68px; }
-  #btnUndoTouch { right:122px; bottom:134px; background:rgba(196,238,201,.92); }
-  #btnShoot { right:122px; bottom:68px; background:rgba(255,170,150,.9); }
+  /* Base layout = tidy compact cluster (also the fallback for wide 10" tablets >1250px).
+     No Place/Break button anymore: TAP the world to place, HOLD a block to break. */
+  #btnAction { right:16px; bottom:148px; background:rgba(255,233,150,.85); }
+  #btnJump { right:16px; bottom:84px; }
+  #btnUndoTouch { right:116px; bottom:84px; background:rgba(196,238,201,.92); }
+  #btnShoot { right:116px; bottom:148px; background:rgba(255,170,150,.9); }
 
   /* ---------- Names + saved games ---------- */
   #nameInput { width:min(420px,90%); font-family:inherit; font-size:clamp(16px,2.6vw,20px);
@@ -639,7 +638,7 @@
     #sirenBtn { font-size:20px; padding:9px 12px; top:158px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
     #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
-    #btnUndoTouch { right:134px; bottom:150px; background:rgba(196,238,201,.92); }
+    #btnUndoTouch { right:122px; bottom:152px; background:rgba(196,238,201,.92); }
     /* messages sit up top, clear of the controls */
     #hintBar { bottom:auto; top:104px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
@@ -649,12 +648,11 @@
     /* joystick tucked into the bottom-left corner */
     #joyBase { bottom:18px; left:14px; width:104px; height:104px; opacity:.8; }
     #joyStick { width:46px; height:46px; left:29px; top:29px; }
-    /* action buttons in a tidy vertical stack, bottom-right */
-    .touchBtn { font-size:18px; padding:15px 0; width:114px; text-align:center; }
-    #btnAction { right:12px; bottom:222px; }
+    /* action buttons in a tidy compact stack, bottom-right (tap=place, hold=break) */
+    .touchBtn { font-size:17px; padding:13px 0; width:104px; text-align:center; }
+    #btnAction { right:12px; bottom:218px; }
     #btnJump   { right:12px; bottom:152px; }
-    #btnModeTouch { right:12px; bottom:82px; left:auto; }
-    #btnShoot { right:134px; bottom:82px; left:auto; }
+    #btnShoot { right:122px; bottom:86px; left:auto; }
     /* compact hotbar, centered above the very bottom */
     #hotbar { bottom:16px; gap:6px; }
     .hotSlot { width:60px; font-size:11px; padding:5px 2px; }
@@ -958,15 +956,28 @@
       gap:6px; max-width:calc(100vw - 264px); }
     #npcChat button { font-size:13px; padding:7px 11px; }
     #modeBtn, #undoBtn { display:none; }
-    /* 🎮 the action buttons: one tidy 2×2 grid tucked into the corner (Dojo-style),
-       every button the SAME size so nothing staircases or wraps to two lines */
-    .touchBtn { box-sizing:border-box; width:106px; height:58px; padding:0 6px; font-size:16px;
-      border-radius:16px; display:flex; align-items:center; justify-content:center; white-space:nowrap; }
+    /* 🎮 the action buttons: one tidy corner grid (Dojo-style), every button the
+       SAME size so nothing staircases — now just three (tap=place, hold=break) */
+    .touchBtn { box-sizing:border-box; width:100px; height:54px; padding:0 6px; font-size:15px;
+      border-radius:15px; display:flex; align-items:center; justify-content:center; white-space:nowrap; }
     #btnJump      { right:12px;  bottom:14px; }
-    #btnAction    { right:12px;  bottom:80px; }   /* ⭐ USE sits right above JUMP */
-    #btnModeTouch { right:126px; bottom:14px; }   /* 🧱 Place beside JUMP */
-    #btnUndoTouch { right:126px; bottom:80px; }   /* ↩️ Undo above Place */
-    #btnShoot     { right:240px; bottom:14px; }   /* 🎯 only during a Gloomies rush */
+    #btnAction    { right:12px;  bottom:76px; }   /* ⭐ USE sits right above JUMP */
+    #btnUndoTouch { right:120px; bottom:14px; }   /* ↩️ Undo beside JUMP */
+    #btnShoot     { right:120px; bottom:76px; }   /* 🎯 only during a Gloomies rush */
+  }
+  /* 📱 PORTRAIT phones play too now (film those vertical shorts!): a compact corner
+     stack, chat chips hug bottom-left, and the joystick pops under the thumb as usual. */
+  @media (orientation:portrait) and (pointer:coarse) and (max-width:540px) {
+    .touchBtn { box-sizing:border-box; width:96px; height:52px; padding:0 4px; font-size:15px;
+      border-radius:14px; display:flex; align-items:center; justify-content:center; white-space:nowrap; }
+    #btnJump      { right:10px;  bottom:12px; }
+    #btnAction    { right:10px;  bottom:70px; }
+    #btnUndoTouch { right:110px; bottom:12px; }
+    #btnShoot     { right:110px; bottom:70px; }
+    #npcChat { left:10px; right:auto; bottom:10px; transform:none; justify-content:flex-start;
+      gap:6px; max-width:calc(100vw - 220px); flex-wrap:wrap; }
+    #npcChat button { font-size:13px; padding:7px 10px; }
+    #hotbar { left:10px; transform:none; bottom:72px; gap:5px; }   /* clear of the corner cluster */
   }
   /* Short screens (landscape phones AND landscape tablets): the start/setup screen
      vertically centers the card (flex-direction:column + justify-content:center), which
@@ -1186,7 +1197,7 @@
           <p><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
           <p>🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. <b>Driving?</b> Just click the road ahead and your vehicle steers there. Drag to look around.</p>
           <p>🔨 <b>Build mode</b> (default): <b>left-click builds</b>, <b>right-click removes</b>, drag to look. Move with the arrow keys / WASD.</p>
-          <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb), tap the world to build, and tap ⭐ Use for math, JUMP to jump, Place to switch build/break.</p>
+          <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb). <b>Tap</b> the world to build a block, <b>hold your finger on a block</b> to break it (keep holding to dig!), and <b>flick up on your hero</b> to jump. ⭐ Use starts math & everything nearby.</p>
           <p>Solve math to earn build blocks, Power Blocks, coins, or ammo — and a 🛡️ Shield from the Gloomies!</p>
           <p>✅ <b>Works best in Chrome</b> — on phones, tablets, <b>and desktop</b>. Other browsers (like Brave) can be janky or block features; if anything looks or feels off, switch to Chrome.</p>
         </div>
@@ -1754,7 +1765,6 @@
   <div id="joyBase"><div id="joyStick"></div></div>
   <button class="touchBtn" id="btnJump">⬆ JUMP</button>
   <button class="touchBtn" id="btnAction">⭐ USE</button>
-  <button class="touchBtn" id="btnModeTouch">🧱 Place</button>
   <button class="touchBtn" id="btnUndoTouch">↩️ Undo</button>
   <button class="touchBtn" id="btnShoot" style="display:none">🎯 Shoot</button>
 </div>
@@ -17060,31 +17070,21 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
-/* 🔄 phones play SIDEWAYS, Dojo-style. The web can't hard-lock orientation everywhere, so:
-   really lock it where possible (Android: fullscreen + orientation.lock, tried inside the
-   Start tap), and everywhere else (iPhones) freeze the game behind a big friendly
-   "turn your phone" screen whenever a phone is held upright mid-game. Tablets are exempt. */
+/* 🔄 Phones now play in ANY orientation — the "turn your phone" gate and the fullscreen
+   landscape lock are retired (portrait is how you film vertical shorts for social!).
+   The touch HUD has a dedicated compact portrait layout instead. updateRotateGate stays
+   as a safety no-op so old callers (and a mid-game rotation) just clear the overlay. */
 function isPhone() { return isTouch && Math.min(screen.width, screen.height) < 520; }
 function updateRotateGate() {
-  const show = G.running && !G.over && isPhone() && innerHeight > innerWidth;
-  G.rotateGate = show;                                  // the game loop freezes while this is up
-  const el = $('rotateOverlay'); if (el) el.style.display = show ? 'flex' : 'none';
+  G.rotateGate = false;                                 // portrait plays too — never freeze
+  const el = $('rotateOverlay'); if (el) el.style.display = 'none';
 }
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
-function tryLandscapeLock() {
-  if (!isPhone() || document.fullscreenElement) return;
-  try {
-    const fs = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-    (fs && fs.then ? fs : Promise.reject()).then(() => {
-      if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape');
-    }).catch(() => {});                                 // iOS etc: the rotate screen handles it
-  } catch (e) {}
-}
-const touch = { joyX: 0, joyY: 0, jump: false, placeMode: true };
+const touch = { joyX: 0, joyY: 0, jump: false };
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
-  const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch uses its own 🧱/⛏️ toggle
+  const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
   const joyBase = $('joyBase'), joyStick = $('joyStick');
   joyBase.style.display = 'none';                       // dynamic move-circle: appears under your thumb (hole.io style)
   joyBase.style.pointerEvents = 'none';
@@ -17099,10 +17099,25 @@ if (isTouch) {
     touch.joyX = cl > 6 ? ux * frac : 0;
     touch.joyY = cl > 6 ? uy * frac : 0;
   }
+  // ⛏️ hold your finger still on a block → it breaks — and KEEP holding to dig block
+  // after block (the raycast reaches the next one each time). Replaces the old
+  // 🧱 Place / ⛏️ Break toggle button: tapping places, holding breaks. Simple as that.
+  let breakT = 0, breakFired = false;
+  const fireBreak = () => {
+    if (moveId === null || moved >= 12 || !G.running || popupOpen) return;
+    breakFired = true;
+    const ndcX = (oX / innerWidth) * 2 - 1, ndcY = -(oY / innerHeight) * 2 + 1;
+    interact(ndcX, ndcY, 'break');
+    if (navigator.vibrate) try { navigator.vibrate(18); } catch (e) {}   // a tiny mining thunk
+    breakT = setTimeout(fireBreak, 520);              // still holding? tunnel onward
+  };
   canvas.addEventListener('touchstart', e => {
     if (moveId !== null) return;
     const t = e.changedTouches[0];
     moveId = t.identifier; oX = t.clientX; oY = t.clientY; moved = 0; t0 = performance.now(); shown = false;
+    breakFired = false;
+    clearTimeout(breakT);
+    breakT = setTimeout(fireBreak, 430);
     e.preventDefault();
   }, { passive: false });
   canvas.addEventListener('touchmove', e => {
@@ -17151,23 +17166,30 @@ if (isTouch) {
     else if (nearestBed()) { Sound.click(); toggleBedRest(); }
     else pickupBlock();
   }, { passive: false });
-  $('btnModeTouch').addEventListener('touchstart', e => {
-    e.preventDefault();
-    touch.placeMode = !touch.placeMode;
-    $('btnModeTouch').textContent = touch.placeMode ? '🧱 Place' : '⛏️ Break';
-    Sound.click();
-  }, { passive: false });
   $('btnUndoTouch').addEventListener('touchstart', e => { e.preventDefault(); Sound.click(); undoLast(); }, { passive: false });
   $('btnShoot').addEventListener('touchstart', e => { e.preventDefault(); shootBall(); }, { passive: false });
 
-  // a quick tap (barely moved) builds/breaks; a drag is movement (handled above).
+  // a quick tap (barely moved) builds; a drag is movement; a hold broke (above).
   // touchcancel is handled too, so a touch interrupted by the browser can never get "stuck".
   function endMove(e) {
     for (const t of e.changedTouches) {
       if (t.identifier !== moveId) continue;
-      if (moved < 12 && performance.now() - t0 < 320 && G.running && !popupOpen) {
+      clearTimeout(breakT);
+      const dt = performance.now() - t0;
+      const dy = t.clientY - oY, dx = t.clientX - oX;
+      // ⬆️ flick UP on your hero → jump! (the film-trick move — no button needed)
+      if (dt < 300 && dy < -64 && Math.abs(dx) < Math.abs(dy) * 0.7 && G.running && !popupOpen && !player.driving) {
+        const p = new THREE.Vector3(player.pos.x, player.pos.y + 0.9, player.pos.z).project(camera);
+        const sx = (p.x * 0.5 + 0.5) * innerWidth, sy = (-p.y * 0.5 + 0.5) * innerHeight;
+        if (Math.hypot(oX - sx, oY - sy) < Math.max(90, innerWidth * 0.09)) {
+          touch.jump = true;
+          clearTimeout(touch._flickT);
+          touch._flickT = setTimeout(() => { touch.jump = false; }, 260);
+        }
+      }
+      if (!breakFired && moved < 12 && dt < 320 && G.running && !popupOpen) {
         const ndcX = (t.clientX / innerWidth) * 2 - 1, ndcY = -(t.clientY / innerHeight) * 2 + 1;
-        interact(ndcX, ndcY, touch.placeMode ? 'place' : 'break');
+        interact(ndcX, ndcY, 'place');
       }
       moveId = null; touch.joyX = 0; touch.joyY = 0;
       joyBase.style.display = 'none'; joyStick.style.left = '33px'; joyStick.style.top = '33px';
@@ -17736,8 +17758,7 @@ function startGame() {
   respawnNpcs();                                // 🧑‍🤝‍🧑 town friends stroll near spawn (restore & travel come through here too)
   refreshHUD();
   G.running = true;
-  tryLandscapeLock();                             // 🔄 phones: lock to landscape where the browser allows it...
-  updateRotateGate();                             // ...and gate portrait play everywhere else
+  updateRotateGate();                             // 🔄 clears any leftover rotate overlay (portrait plays now!)
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
   $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
@@ -18525,7 +18546,7 @@ function loop(now) {
       hint.textContent = isTouch ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';
       hint.style.display = 'block';
     } else if (isTouch && !movedHintDone) {
-      hint.textContent = '🕹️ Drag anywhere to move • tap the world to build!';
+      hint.textContent = '🕹️ Drag anywhere to move • tap to build • hold a block to break it!';
       hint.style.display = 'block';
     } else hint.style.display = 'none';
   }
