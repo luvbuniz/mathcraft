@@ -3646,6 +3646,7 @@ function updateGlbAvatar(d, moving, t) {
     if (d._special) {
       if (moving) {                            // walking cancels the show — back to business
         d._special.fadeOut(0.15); d._special = null;
+        if (danceParty) setDanceParty(false);  // 🕺 the hero walking off ends the party for everyone
         const back = d.walkAction || d.idleAction;
         if (back) { d.curAction = back; back.reset().fadeIn(0.15).play(); }
       } else {
@@ -16300,7 +16301,11 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (e.code === 'KeyP') pickupBlock();
-  if (e.code === 'KeyD') putDownBlock();
+  if (e.code === 'KeyG') putDownBlock();                        // (used to be D — D throws the 🕺 Dance Party now)
+  if (e.code === 'KeyD' && !e.repeat) {                         // 🕺 tap-D detector: remember when D went down…
+    _dDownAt = performance.now();
+    _dHadCompany = !!(keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']);
+  }
   if (e.code === 'KeyR') { if (!removePlacedBlock()) toast('🤲 Walk up to one of your blocks and press R to remove it!', 1800); }
   if (e.code === 'KeyX') { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
   if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
@@ -16314,7 +16319,15 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyI') { Sound.click(); openInv(); }
   if (e.code === 'KeyF') shootBall();
 });
-addEventListener('keyup', e => { keys[e.code] = false; });
+let _dDownAt = 0, _dHadCompany = false;
+addEventListener('keyup', e => {
+  keys[e.code] = false;
+  // 🕺 …and a quick TAP of D (alone, on foot) toggles the Dance Party. HOLDING D still
+  // strafes right like always — the party only fires on a clean sub-quarter-second tap.
+  if (e.code === 'KeyD' && _dDownAt && G.running && !popupOpen && !player.driving &&
+      performance.now() - _dDownAt < 300 && !_dHadCompany) setDanceParty(!danceParty);
+  if (e.code === 'KeyD') _dDownAt = 0;
+});
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 /* ========================= 🤫 SECRET MOVE CODES =========================
@@ -16345,6 +16358,41 @@ function secretMove(word) {
   toast(mv.icon + ' ' + mv.label + '!', 1800);
   if (Sound.click) Sound.click();
   return true;
+}
+/* 🕺✨ DANCE PARTY — built for filming trailers & Play-Store clips (and for pure joy).
+   Tap D (or the Move Lab button) and the hero AND every town friend loop their dance/
+   celebrate move until you tap D again or walk away. Model heroes loop their real dance
+   clip; a procedural hero waves happily along. Friends pause their errands to boogie. */
+let danceParty = false;
+function setDanceParty(on) {
+  if (!G.running) return;
+  danceParty = !!on;
+  const everyone = [player.avatarData].concat(npcs.map(n => n.d));
+  for (const d of everyone) {
+    if (!d) continue;
+    const a = d.glb && d.mixer && d.celebrateAction;
+    if (!a) continue;
+    if (on) {
+      if (d._afk) glbWake(d, 0.2);
+      if (d._special && d._special !== a) d._special.fadeOut(0.2);
+      a.setLoop(THREE.LoopRepeat, Infinity);              // party mode: the dance loops forever
+      if (d.curAction) { d.curAction.fadeOut(0.25); d.curAction = null; }
+      d._special = a;
+      a.reset().fadeIn(0.25).play();
+    } else {
+      a.setLoop(THREE.LoopOnce, 1);                       // back to a one-shot celebrate
+      if (d._special === a) { a.fadeOut(0.3); d._special = null; }
+    }
+  }
+  if (!player.avatarData || !player.avatarData.glb) player.happyUntil = on ? performance.now() + 9e7 : 0;
+  if (on) {                                               // bubbles down — nothing between the dancers and the camera
+    if (typeof hideNpcChat === 'function') hideNpcChat();
+    npcs.forEach(n => { n.say = ''; n.sayUntil = 0; if (n.el) n.el.style.display = 'none'; });
+    if (Sound.fanfare) Sound.fanfare();
+  } else {
+    npcs.forEach(n => { if (n.d && n.d.mixer) npcGlbGait(n.d, false, false); });   // friends ease back to idle
+  }
+  toast(on ? '🕺✨ DANCE PARTY! Tap D again (or walk off) to stop.' : '🧍 Party over — back to adventuring!', 2600);
 }
 function secretTail(buf) {                  // longest tail of buf that still starts some code ('' = none)
   for (let L = Math.min(buf.length, 6); L >= 1; L--) {
@@ -16442,6 +16490,15 @@ function openMoveLab() {
       lab.appendChild(b);
     }
   }
+  // 🕺 the party button works for EVERY hero (friends dance even if the hero only waves)
+  const pb = document.createElement('button');
+  const pbLabel = () => { pb.textContent = danceParty ? '🧍  Stop the Dance Party' : '🕺  DANCE PARTY (everyone!)'; };
+  pb.style.cssText = 'display:block;width:100%;text-align:left;background:rgba(255,214,102,.16);' +
+    'border:1px solid rgba(255,214,102,.5);border-radius:11px;color:#ffe66d;' +
+    'font-family:Nunito,sans-serif;font-weight:700;font-size:14.5px;padding:9px 12px;cursor:pointer';
+  pbLabel();
+  pb.onclick = () => { setDanceParty(!danceParty); pbLabel(); };
+  lab.appendChild(pb);
   document.body.appendChild(lab);
 }
 
@@ -16778,7 +16835,7 @@ function renderInv() {
           G.blockColor = pc.color; selectSlot(isPaint ? 'paint' : 'block', true);
           prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
           sw.classList.add('sel');
-          toast(isPaint ? '🎨 ' + pc.name + ' paint — tap a wall to paint it!' : '🎨 ' + pc.name + ' blocks selected! Press D or tap to build.', 2000);
+          toast(isPaint ? '🎨 ' + pc.name + ' paint — tap a wall to paint it!' : '🎨 ' + pc.name + ' blocks selected! Press G or tap to build.', 2000);
         };
         prow.appendChild(sw);
       });
@@ -18163,6 +18220,7 @@ function npcWalkToward(n, tx, tz, dt) {  // shared stroll: returns true = arrive
 /* 🎨 GLB town friends: simple idle/walk/sit crossfade — no fidgets or fanfares, the town
    keeps its calm. No idle clip? The walk fades out and the breathing swell takes over. */
 function npcGlbGait(d, moving, sitting) {
+  if (danceParty) return;                     // 🕺 mid-party the dance loop owns the mixer
   const want = sitting && d.sitAction ? d.sitAction : (moving ? (d.walkAction || d.idleAction) : d.idleAction);
   if (want && d.curAction !== want) {
     if (d.curAction) d.curAction.fadeOut(0.2);
@@ -18233,6 +18291,7 @@ function updateNpcs(dt, now) {
       n._warmFrames = (n._warmFrames || 0) + 1;
       if (n._warmFrames > 45) g.visible = true;
     }
+    if (danceParty) { if (d.mixer) d.mixer.update(dt); continue; }   // 🕺 errands can wait — keep dancing
     // 🎨 studio-model friends: tick their animation mixer; breathe gently when no clip runs
     if (d.mixer) {
       d.mixer.update(dt);

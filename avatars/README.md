@@ -139,6 +139,9 @@ Rig the model (Auto-Rig), then add animations from Meshy's library before export
   **🎬 Secret Move Lab** opens with a button for every move the hero knows.
 - `RUN` grants an 8-second super-speed sprint with the Running clip. The codes
   work on any model avatar that has the matching clip — Leo knows all five.
+- **🕺 Dance Party (filming mode):** quick-**tap D** (or the Move Lab's party
+  button) → the hero AND all four town friends loop their dance/celebrate clips
+  until you tap D again or walk off. Built for trailer & Play-Store footage.
 
 Skeletal animation data is small — extras barely grow the file. Export ONE GLB with
 all clips included ("bake/include animations" in the export dialog).
