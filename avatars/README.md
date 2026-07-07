@@ -140,8 +140,11 @@ Rig the model (Auto-Rig), then add animations from Meshy's library before export
 - `RUN` grants an 8-second super-speed sprint with the Running clip. The codes
   work on any model avatar that has the matching clip — Leo knows all five.
 - **🕺 Dance Party (filming mode):** quick-**tap D** (or the Move Lab's party
-  button) → the hero AND all four town friends loop their dance/celebrate clips
-  until you tap D again or walk off. Built for trailer & Play-Store footage.
+  button) → the hero AND all four town friends loop their dance clips until you
+  tap D again or walk off. Built for trailer & Play-Store footage. Every shipped
+  hero now HAS a real dance: the ones whose exports lacked one got a clip
+  grafted from a cast-mate (same skeleton trick as the swim clips) — Leo does
+  Hip Hop, King Lion does Gangnam, Fiona dances All Night, Momma Panda pops.
 
 Skeletal animation data is small — extras barely grow the file. Export ONE GLB with
 all clips included ("bake/include animations" in the export dialog).

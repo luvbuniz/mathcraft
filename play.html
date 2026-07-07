@@ -16370,9 +16370,15 @@ function setDanceParty(on) {
   const everyone = [player.avatarData].concat(npcs.map(n => n.d));
   for (const d of everyone) {
     if (!d) continue;
-    const a = d.glb && d.mixer && d.celebrateAction;
+    if (!(d.glb && d.mixer)) continue;
+    // a party wants a real DANCE: prefer any clip named like one (Hip Hop Dance beats
+    // Victory Strut; Gangnam Dance beats a kung-fu kick) — celebrate is the fallback.
+    const a = on
+      ? ((d.specials || []).find(s => /dance|groove|boogie/i.test(s.getClip().name)) || d.celebrateAction)
+      : (d._partyAction || d.celebrateAction);
     if (!a) continue;
     if (on) {
+      d._partyAction = a;
       if (d._afk) glbWake(d, 0.2);
       if (d._special && d._special !== a) d._special.fadeOut(0.2);
       a.setLoop(THREE.LoopRepeat, Infinity);              // party mode: the dance loops forever
@@ -16380,8 +16386,9 @@ function setDanceParty(on) {
       d._special = a;
       a.reset().fadeIn(0.25).play();
     } else {
-      a.setLoop(THREE.LoopOnce, 1);                       // back to a one-shot celebrate
+      a.setLoop(THREE.LoopOnce, 1);                       // back to a one-shot move
       if (d._special === a) { a.fadeOut(0.3); d._special = null; }
+      d._partyAction = null;
     }
   }
   if (!player.avatarData || !player.avatarData.glb) player.happyUntil = on ? performance.now() + 9e7 : 0;
