@@ -3536,8 +3536,19 @@ function prepareAvatarModel(id, gltf) {
   const head = new THREE.Group();             // proxy head so badge hats & head-tilt flourishes still work
   head.position.set(0, height * 0.82, 0);
   wrap.add(head);
+  // 🎩 find the skeleton's Head bone so hats can RIDE the animations — a crown parked at
+  // standing height floats off during flips. The bone→proxy offset is captured HERE, at
+  // bind pose (the mixer hasn't ticked yet), so it's the calm standing-height one.
+  let headBone = null;
+  inner.traverse(o => { if (o.isBone && o.name === 'Head') headBone = o; });
+  let hatBoneMatrix = null;
+  if (headBone) {
+    if (mixer) mixer.update(0);      // settle into the idle's first frame — the pose kids actually see —
+    wrap.updateMatrixWorld(true);    // so the riding hat rests EXACTLY where the old fixed hat did
+    hatBoneMatrix = new THREE.Matrix4().copy(headBone.matrixWorld).invert().multiply(head.matrixWorld);
+  }
   const data = {
-    group: wrap, inner, head, glb: true, face: null,
+    group: wrap, inner, head, headBone, hatBoneMatrix, glb: true, face: null,
     mixer, idleAction: idle, walkAction: walk, curAction: idle,
     runAction: run, sitAction: sit, sleepAction: sleep, spinAction: spin, swimAction: swim, treadAction: tread,
     specials: extras, fidgets, celebrateAction: celebrate, _special: null, _fidgetAt: 0, _celebratedAt: 0,
@@ -3595,14 +3606,20 @@ function maybeUpgradeAvatarToModel(index) {
   const av = AVATARS[index];
   if (!av) return;
   parseAvatarModel(av.id).then(data => {
-    if (!data) return;                                              // no model / bad model → keep procedural
     if (!player.avatarData || player.avatarIndexLoading !== index) return;   // player switched heroes meanwhile
+    if (!data) {                                                    // no model / bad model → keep procedural…
+      player.avatarWarming = false;                                 // …and stop hiding it right away
+      if (player.avatar) player.avatar.visible = !G.firstPerson;
+      return;
+    }
     const old = player.avatar;
     if (old) { data.group.position.copy(old.position); data.group.rotation.copy(old.rotation); scene.remove(old); }
     data.armRest = null;
     player.avatar = data.group;
     player.avatarData = data;
     scene.add(data.group);
+    player.avatarWarming = false;                                   // the real model arrived — show THIS one
+    data.group.visible = !G.firstPerson;
     applyHeadwear();
   });
 }
@@ -11641,6 +11658,15 @@ function setAvatar(index) {
     player.avatarData = data;
     player.avatarIndexLoading = index;
     applyHeadwear();
+    // 🫥 grace window: keep the boxy stand-in hidden for a beat. On any visit after the
+    // first, the real model is already in the offline cache and lands well inside the
+    // window — the hero appears ONCE, no pop-then-morph. A first-ever download overruns
+    // it and reveals the stand-in instead (better than an empty world on slow Wi-Fi).
+    player.avatarWarming = true;
+    player.avatar.visible = false;
+    player._avatarWarmFrames = 0;            // counted in RENDERED frames (~45 ≈ ¾s at 60fps): wall-clock
+                                             // timers burn out while world building blocks the main thread,
+                                             // and frames scale naturally with how fast the device renders
     maybeUpgradeAvatarToModel(index);        // 🎨 quietly swap in avatars/<id>.glb if one exists
   } finally { ROUND_AV = false; }
   scene.add(player.avatar);
@@ -11649,7 +11675,11 @@ function setAvatar(index) {
 function applyHeadwear() {
   const d = player.avatarData;
   if (!d) return;
-  if (d.headwear) { d.head.remove(d.headwear); d.headwear = null; }
+  if (d.headwear) {
+    if (d.headwear.parent) d.headwear.parent.remove(d.headwear);
+    if (d.headwearWrap && d.headwearWrap.parent) d.headwearWrap.parent.remove(d.headwearWrap);
+    d.headwear = null; d.headwearWrap = null;
+  }
   if (profile.hideHat) return;         // player chose to go bare-headed (toggle in 🏅 Badges)
   const topY = d.hatY != null ? d.hatY : (d.quad ? 0.13 : 0.25);   // top of the head (round-headed kids set their own)
   let h = null;
@@ -11681,7 +11711,21 @@ function applyHeadwear() {
     h = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.18, 0.4, 6), mat(0x2BC4E8));
     h.position.y = topY + 0.2;
   }
-  if (h) { d.head.add(h); d.headwear = h; }
+  if (h) {
+    if (d.glb && d.headBone && d.hatBoneMatrix) {
+      // 🦁 on model heroes the hat rides the head BONE — crowns stay on through every move.
+      // The wrap replays the bind-pose proxy transform inside bone space (incl. the
+      // armature's 0.01 scale), so the hat's usual topY offset works unchanged.
+      const wrap = new THREE.Group();
+      d.headBone.add(wrap);
+      d.hatBoneMatrix.decompose(wrap.position, wrap.quaternion, wrap.scale);
+      wrap.add(h);
+      d.headwearWrap = wrap;
+    } else {
+      d.head.add(h);
+    }
+    d.headwear = h;
+  }
 }
 
 function playerBlocked() {
@@ -12399,7 +12443,8 @@ function updatePlayer(dt) {
   const av = player.avatar;
   av.position.copy(player.pos);
   av.rotation.set(0, player.yaw + Math.PI, 0);
-  av.visible = !G.firstPerson;
+  if (player.avatarWarming && ++player._avatarWarmFrames > 45) player.avatarWarming = false;   // 🫥 grace over
+  av.visible = !G.firstPerson && !player.avatarWarming;   // warming = model expected any instant, stand-in stays hidden
   const d = player.avatarData;
   const t = performance.now() / 1000;
   if (player.inWater) av.position.y += 0.18 + Math.sin(t * 4) * 0.07;   // 🏊 bob at the water's surface
@@ -17925,9 +17970,15 @@ function respawnNpcs() {
       phase: Math.random() * 9, lineIx: Math.floor(Math.random() * cast.lines.length),
       coolAt: 0, say: '', sayUntil: 0, el: null, trapN: 0 };
     npcs.push(n);
+    // 🫥 same grace window as the hero: hide the boxy stand-in for a beat so a cached
+    // studio model appears directly — no pop-then-morph on the whole town at login.
+    // (updateNpcs reveals it at a frame-clocked deadline if no model shows up.)
+    d.group.visible = false;
     // 🎨 quietly upgrade this friend to their real studio model (same trick as the hero)
     parseAvatarModel(cast.id).then(md => {
-      if (!md || npcs.indexOf(n) < 0 || n.d !== d) return;     // world changed meanwhile
+      const alive = npcs.indexOf(n) >= 0 && n.d === d;
+      if (alive) d.group.visible = true;                       // model or not, stop hiding the friend
+      if (!md || !alive) return;                               // world changed meanwhile / no model
       md.group.position.copy(n.group.position);
       md.group.rotation.y = n.group.rotation.y;
       md.group.scale.setScalar(0.92);
@@ -18157,6 +18208,10 @@ function updateNpcs(dt, now) {
   for (const n of npcs) {
     n.phase += dt;
     const g = n.group, d = n.d;
+    if (!g.visible && !d.glb) {              // 🫥 still warming: reveal after ~45 rendered frames
+      n._warmFrames = (n._warmFrames || 0) + 1;
+      if (n._warmFrames > 45) g.visible = true;
+    }
     // 🎨 studio-model friends: tick their animation mixer; breathe gently when no clip runs
     if (d.mixer) {
       d.mixer.update(dt);
