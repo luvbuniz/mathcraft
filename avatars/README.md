@@ -13,7 +13,7 @@ Ship one character at a time, in any order.
 | `leo.glb` ✅ shipped | Leo 👦 | | `fiona.glb` ✅ shipped | Fiona 👧 |
 | `queenfox.glb` ✅ shipped | Queen Fox 🦊 | | `princess.glb` ✅ shipped | Princess 👑 |
 | `peacock.glb` ✅ shipped | Peacock 🦚 | | `unicorn.glb` ✅ shipped | Unicorn Dancer 🦄 |
-| `tiger.glb` | Tiger | | `dragon.glb` ✅ shipped | Dragon 🐉 |
+| `tiger.glb` ✅ shipped | Tiger 🐯 | | `dragon.glb` ✅ shipped | Dragon 🐉 |
 | `deer.glb` | Deer | | `kinglion.glb` ✅ shipped | King Lion 🦁 |
 | `piratecat.glb` ✅ shipped | Pirate Cat 🏴‍☠️ | | `ninjadog.glb` | Ninja Dog |
 | `robot.glb` ✅ shipped | Robot 🤖 | | `astronaut.glb` | Astronaut |
@@ -21,6 +21,17 @@ Ship one character at a time, in any order.
 | `penguin.glb` ✅ shipped | Penguin 🐧 | | `bunny.glb` ✅ shipped | Bunny 🐰 |
 | `superhero.glb` | Superhero | | `spark.glb` ✅ shipped | Spark the Fairy 🧚 |
 | `knight.glb` | Knight | | `trex.glb` | T-Rex |
+
+## 🚗 Vehicles get the same magic
+
+Drop a Meshy vehicle export at `vehicles/<id>.glb` (e.g. `vehicles/firetruck.glb`)
+and that ride upgrades automatically — the boxy build stays as the instant
+stand-in and the fallback. No rig or animations needed: the game supplies the
+driving, engine sounds, sirens and the flashing light bar (it climbs onto the
+model's roof by itself). Ids match the garage: `firetruck`, `police`, `pickup`,
+`corvette`, `minivan`, `bus`, `taxi`, `ambulance`, `jeep`, `monster`, `tesla`…
+Face the model +Z like the heroes; fix a backwards export in
+`VEHICLE_MODEL_TWEAKS` in `play.html`.
 
 ## Fully-automated option: the Meshy MCP
 
