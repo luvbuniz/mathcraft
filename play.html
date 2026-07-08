@@ -13241,6 +13241,13 @@ function refreshHUD() {
   const wCnt = subjectSolved(wSubj), nextBadge = BADGE_SETS[wSubj].find(b => wCnt < b.n);
   $('solvedGoal').textContent = nextBadge ? '→' + nextBadge.icon + nextBadge.n : '🏅✓';
   $('shopCoins').textContent = G.coins;
+  // 🧹 build buttons only exist while they're USEFUL: nothing to place and nothing to
+  // undo → they bow out for a cleaner screen (gestures & clicks still work regardless:
+  // tap/left-click places, hold/right-click breaks). They pop back with the first block.
+  const buildy = (G.blocks || 0) + (G.powerBlocks || 0) > 0 || undoStack.length > 0;
+  const mb = $('modeBtn'); if (mb) mb.style.display = (buildy && !isTouch) ? '' : 'none';
+  const ub = $('undoBtn'); if (ub) ub.style.display = buildy ? '' : 'none';
+  const ut = $('btnUndoTouch'); if (ut) ut.style.display = buildy ? '' : 'none';
   updateGoalBar();
 }
 // 🎟️ Ride tickets — the Western theme-park currency, earned by answering STEM questions, spent on rides.
