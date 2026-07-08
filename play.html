@@ -3813,6 +3813,11 @@ function comingSoonNote(id) {
 const UNLOCK_KEY = 'stackadooUnlocked';
 const FOUNDING_KEY = 'stackadooFounding';   // ISO date they unlocked — Founding Families are grandfathered forever
 const TRIAL_KEY = 'stackadooTrialStart';    // ms timestamp the free "taste of premium" trial began
+/* 🎁 RELEASE SWITCH — the WHOLE game is free for everyone (web + Android app). This keeps the
+   Play-Store build 100% policy-safe: with no paywall, a reviewer can never hit an external
+   (Stripe) payment even if the TWA auto-detection misses. All the purchase scaffolding below
+   stays intact and dormant — flip this to false to bring the $5 web unlock back someday. */
+const FREE_FOR_ALL = true;
 /* ===== Are we running inside the Google Play Android app (a Trusted Web Activity)? =====
    The TWA loads this same live site. Google Play forbids external (Stripe) payments for
    digital goods *inside* the app, so on Android we ship the full game FREE: everything is
@@ -3829,7 +3834,7 @@ const IS_ANDROID_APP = (function () {
   } catch (e) { return false; }
 })();
 function isUnlocked() {
-  if (IS_ANDROID_APP) return true;                                  // Android app = full game, free
+  if (FREE_FOR_ALL || IS_ANDROID_APP) return true;                  // 🎁 whole game free (release) / Android app
   try { return LS.getItem(UNLOCK_KEY) === '1'; } catch (e) { return false; }
 }
 function worldLocked(id) { const w = WORLDS[id]; return !!w && !w.free && !premiumActive(); }
