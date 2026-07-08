@@ -6065,11 +6065,11 @@ function buildPoliceShape(g, bm, bm2, gm) {        // police cruiser — sedan +
   carWheels(g, [[-0.6, 0.95], [0.6, 0.95], [-0.6, -1.0], [0.6, -1.0]]);
 }
 function emergencyBar(g, P, x, y, z) {             // shared red+blue flashing light bar
-  P(mat(0x222), 0.7, 0.06, 0.2, x, y - 0.06, z);
+  const base = P(mat(0x222), 0.7, 0.06, 0.2, x, y - 0.06, z);
   const redMat = new THREE.MeshLambertMaterial({ color: 0xD23A3A, emissive: 0x300000 });
   const blueMat = new THREE.MeshLambertMaterial({ color: 0x2b6cb0, emissive: 0x001033 });
-  P(redMat, 0.3, 0.12, 0.2, x - 0.2, y, z); P(blueMat, 0.3, 0.12, 0.2, x + 0.2, y, z);
-  g.userData.policeLights = { redMat, blueMat };
+  const r = P(redMat, 0.3, 0.12, 0.2, x - 0.2, y, z), b = P(blueMat, 0.3, 0.12, 0.2, x + 0.2, y, z);
+  g.userData.policeLights = { redMat, blueMat, parts: [base, r, b] };   // parts: so a model swap can re-seat the bar
 }
 function buildFireTruckShape(g, bm, bm2, gm) {     // 🚒 big city fire engine + ladder
   const P = (m, w, h, d, x, y, z) => carPart(g, m, w, h, d, x, y, z);
@@ -6240,9 +6240,69 @@ VEHICLES.forEach(def => {
   const bm = new THREE.MeshLambertMaterial({ color: def.color });
   const bm2 = new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) });
   def.shape(group, bm, bm2, CAR_GLASS);
+  const pb = new THREE.Box3().setFromObject(group);   // remember the boxy footprint for model swaps
   group.visible = false; scene.add(group);
-  cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false };
+  cars[def.id] = { def, group, bodyMat: bm, bodyMat2: bm2, yaw: Math.PI, spawned: false,
+    protoSize: pb.getSize(new THREE.Vector3()) };
 });
+/* 🚗🎨 REAL vehicle models — the avatar trick, for the garage: drop vehicles/<id>.glb in
+   the repo and that ride upgrades automatically. The boxy build stays as the instant
+   stand-in and the no-file fallback. Shapes face +Z, same as the models should; fix a
+   backwards or mis-sized export with a one-liner in VEHICLE_MODEL_TWEAKS. */
+const VEHICLE_MODEL_TWEAKS = {
+  firetruck: { rotY: -Math.PI / 2 },   // Meshy exported the truck lengthwise along X — swing it onto Z
+};
+function swapVehicleModel(c, gltf) {
+  const inner = gltf.scene || gltf.scenes[0]; if (!inner) return;
+  inner.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.receiveShadow = false;      // same call as the heroes: no shadow acne
+    const m = o.material;
+    const lm = new THREE.MeshLambertMaterial({
+      map: m.map || null,
+      color: m.map ? 0xffffff : (m.color ? m.color.getHex() : 0xffffff),
+      transparent: !!m.transparent, opacity: m.opacity != null ? m.opacity : 1
+    });
+    if (m.map) { m.map.encoding = THREE.LinearEncoding; m.map.needsUpdate = true; }
+    o.material = lm;
+  });
+  const tweaks = VEHICLE_MODEL_TWEAKS[c.def.id] || {};
+  inner.rotation.y = tweaks.rotY || 0;
+  inner.updateMatrixWorld(true);
+  let bb = new THREE.Box3().setFromObject(inner);
+  const size = bb.getSize(new THREE.Vector3());
+  const s = (c.protoSize.z / Math.max(0.001, size.z)) * (tweaks.scale || 1);   // match the boxy LENGTH
+  inner.scale.setScalar(s);
+  inner.updateMatrixWorld(true);
+  bb = new THREE.Box3().setFromObject(inner);
+  const ctr = bb.getCenter(new THREE.Vector3());
+  inner.position.set(-ctr.x, -bb.min.y, -ctr.z);       // wheels on the ground, centered like the boxes
+  // the boxy stand-in bows out — but the flashing light bar climbs onto the new roof
+  const keep = (c.group.userData.policeLights && c.group.userData.policeLights.parts) || [];
+  c.group.children.forEach(k => { if (keep.indexOf(k) < 0 && k !== inner) k.visible = false; });
+  if (keep.length) {
+    const lift = (bb.max.y - bb.min.y) + 0.05 - keep[keep.length - 1].position.y;
+    keep.forEach(k => { k.visible = true; k.position.y += lift; });
+  }
+  c.group.add(inner);
+  c.model = inner;
+}
+function maybeUpgradeVehicleToModel(id) {
+  const c = cars[id]; if (!c || c._modelKicked) return;
+  c._modelKicked = true;
+  if (typeof THREE.GLTFLoader === 'undefined') return;
+  fetch('vehicles/' + id + '.glb')
+    .then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null)
+    .then(buf => {
+      if (!buf) return;                                // no model → the boxy ride stays (that's fine!)
+      try {
+        new THREE.GLTFLoader().parse(buf, '', gltf => {
+          try { swapVehicleModel(c, gltf); } catch (e) { console.warn('vehicle model prep failed', id, e); }
+        }, err => console.warn('vehicle model parse failed', id, err));
+      } catch (e) {}
+    });
+}
+VEHICLES.forEach(def => maybeUpgradeVehicleToModel(def.id));
 // display cars on the lot — each town shows off two of ITS OWN vehicles
 const DEALER_DISPLAY = { meadow: ['monster', 'pickup'], city: ['firetruck', 'corvette'], beach: ['convertible', 'jeep'] };
 let dealerDisplay = [];
