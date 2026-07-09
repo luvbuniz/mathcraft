@@ -1228,6 +1228,7 @@
       <span class="stat" id="powerRow" style="display:none" title="Power Blocks">⚡ <span id="powerCount">0</span></span>
       <span class="stat" id="coinRow" style="display:none" title="Coins">🪙 <span id="coinCount">0</span></span>
       <span class="stat" id="ticketRow" style="display:none" title="Ride Tickets — earn them by answering STEM questions in the Western!">🎟️ <span id="ticketCount">0</span></span>
+      <span class="stat" id="tokenRow" style="display:none" title="Arcade Tokens — earn them by reading & spelling, then play the Stack Arcade!">🎮 <span id="tokenCount">0</span></span>
       <span class="stat" id="berryRow" style="display:none" title="Berries">🍓 <span id="berryCount">0</span></span>
       <span class="stat" id="ballRow" style="display:none" title="Softballs">⚽ <span id="ballCount">0</span></span>
       <span class="stat" id="solvedRow" style="display:none" title="Problems solved">✅ <span id="solvedCount">0</span><span id="solvedGoal"></span></span>
@@ -3754,7 +3755,7 @@ function updateGlbAvatar(d, moving, t) {
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: true,
-  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, berries: 0, solved: 0, balls: 0,
+  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, berries: 0, solved: 0, balls: 0,
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
@@ -4818,7 +4819,7 @@ function saveGame() {
   try {
     LS.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
-      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, prizeTickets: G.prizeTickets, berries: G.berries, solved: G.solved, goal: G.goal,
+      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, prizeTickets: G.prizeTickets, tokens: G.tokens, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel, gradePin: G.gradePin || 0,
@@ -4881,7 +4882,7 @@ function restoreGame(s) {
   G.npcHomes = s.npcHomes || {};               // 🏠 which friend lives in which of the kid's houses
   G.gloomiesEnabled = s.gloomiesEnabled !== false;
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0; G.tickets = s.tickets || 0;
-  G.prizeTickets = s.prizeTickets || 0;
+  G.prizeTickets = s.prizeTickets || 0; G.tokens = s.tokens || 0;
   G.goal = s.goal || null; G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
@@ -5009,7 +5010,7 @@ function resetWorld() {
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
-  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.berries = 0; G.solved = 0; G.balls = 0;
+  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.tokens = 0; G.berries = 0; G.solved = 0; G.balls = 0;
   G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
@@ -8531,7 +8532,7 @@ function libAnswer(opt, q, btn) {
   profileDirty = true; saveProfile();
   lib.qi++;
   if (right) {
-    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++;
+    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++; awardToken(1);   // 🎮 reading earns an arcade token
     $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
     setTimeout(() => { if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, 750);
   } else {
@@ -8644,7 +8645,7 @@ let spell = null;
    Winning a word game unlocks a short no-reading BONUS round (Gloomy Bop!) — cleaner spelling
    earns a longer bonus. Tickets never convert back to coins, so the arcade is a place where
    learning money gets SPENT, not minted — it can't be farmed. */
-const ARCADE_PLAY_COST = 2;                   // coins per game — a real arcade takes tokens!
+const ARCADE_PLAY_COST = 2;                   // 🎮 TOKENS per game (earned by reading & spelling — coins don't work here!)
 const ARCADE_PRIZES = [
   { id: 'trophycup', icon: '🏆', name: 'Arcade Trophy', cost: 12, desc: 'A shiny gold cup for your house.' },
   { id: 'plushie',   icon: '🧸', name: 'Claw-Machine Bear', cost: 18, desc: 'A soft bear plushie — hug tested.' },
@@ -8656,7 +8657,7 @@ function arcadeLevel() {                      // same 1–5 level the Spelling B
   if (G.spellLevel == null) G.spellLevel = Math.max(1, Math.min(5, profile.spellLevel || G.grade));
   return Math.max(1, Math.min(5, G.spellLevel));
 }
-function arcadeWallet() { $('arcadeWallet').innerHTML = '🪙 ' + G.coins + ' &nbsp;•&nbsp; 🎫 ' + (G.prizeTickets || 0); }
+function arcadeWallet() { $('arcadeWallet').innerHTML = '🎮 ' + (G.tokens || 0) + ' tokens &nbsp;•&nbsp; 🎫 ' + (G.prizeTickets || 0) + ' tickets'; }
 function openArcade() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
@@ -8681,25 +8682,132 @@ function arcadeLobby() {
   $('arcadeTitle').innerHTML = '🕹️ Stack Arcade';
   $('arcadeMsg').textContent = '';
   const body = $('arcadeBody');
-  body.innerHTML = '<div style="color:#6c84a6; font-size:14px; margin-bottom:10px">Play word games to win <b>🎫 tickets</b> — beat one and the ✨ <b>bonus round</b> opens! Trade tickets for prizes at the counter.</div>';
+  body.innerHTML = '<div style="color:#6c84a6; font-size:14px; margin-bottom:10px">Insert <b>🎮 tokens</b> to play — earn tokens by <b>reading &amp; spelling</b> in town! Win <b>🎫 tickets</b> and trade them for prizes at the counter.</div>';
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex; flex-direction:column; gap:10px';
-  const canPay = G.coins >= ARCADE_PLAY_COST;
-  wrap.appendChild(arcadeBtn('📖 WORD QUIZ <small style="opacity:.85">— what\'s a noun? (easiest!)</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2f8a52' : '#9cc0a8', () => startWordQuiz()));
-  wrap.appendChild(arcadeBtn('⛄ SNOWMAN SPELL <small style="opacity:.85">— guess letters, save him!</small><br><small>' + ARCADE_PLAY_COST + ' 🪙 a game</small>', canPay ? '#2980b9' : '#9fb8ca', () => startSnowman()));
+  const canPay = (G.tokens || 0) >= ARCADE_PLAY_COST;
+  wrap.appendChild(arcadeBtn('📖 WORD QUIZ <small style="opacity:.85">— what\'s a noun? (easiest!)</small><br><small>' + ARCADE_PLAY_COST + ' 🎮 a game</small>', canPay ? '#2f8a52' : '#9cc0a8', () => startWordQuiz()));
+  wrap.appendChild(arcadeBtn('⛄ SNOWMAN SPELL <small style="opacity:.85">— guess letters, save him!</small><br><small>' + ARCADE_PLAY_COST + ' 🎮 a game</small>', canPay ? '#2980b9' : '#9fb8ca', () => startSnowman()));
+  wrap.appendChild(arcadeBtn('🚀 VOID DRIFT <small style="opacity:.85">— blast asteroids! (' + VOID_SECONDS + 's timed)</small><br><small>' + ARCADE_PLAY_COST + ' 🎮 a game</small>', canPay ? '#7d3cc9' : '#a98fce', () => startVoidDrift()));
   wrap.appendChild(arcadeBtn('🎫 PRIZE COUNTER <small style="opacity:.85">— spend your tickets</small>', '#27ae60', () => arcadePrizes()));
   body.appendChild(wrap);
-  if (!canPay) { $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🪙 — earn coins at the Library, Post Office & Cinema!'; }
+  if (!canPay) { $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🎮 tokens — read a story at the 📚 Library or spell at the 🏤 Post Office to earn them!'; }
 }
 function arcadePay() {
-  if (G.coins < ARCADE_PLAY_COST) {
+  if ((G.tokens || 0) < ARCADE_PLAY_COST) {
     $('arcadeMsg').style.color = '#c0392b';
-    $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🪙 — earn coins by learning, then come play!';
+    $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🎮 tokens — earn them by reading & spelling, then come play!';
     return false;
   }
-  G.coins -= ARCADE_PLAY_COST; Sound.coin(); refreshHUD(); arcadeWallet();
+  G.tokens -= ARCADE_PLAY_COST; Sound.coin(); refreshHUD(); arcadeWallet();
   $('arcadeMsg').textContent = '';
   return true;
+}
+/* 🚀 VOID DRIFT — a real arcade cabinet: the self-contained asteroids game at
+   arcade/voiddrift.html, embedded full-screen. Token-gated, and HARD-TIMED: a
+   VOID_SECONDS session that force-closes when the clock hits zero no matter what
+   the game is doing. The game is keyboard-only, so on-screen buttons dispatch
+   synthetic key events into its window (works on tablets & phones). Your score
+   converts to 🎫 prize tickets. */
+const VOID_SECONDS = 90;
+let voidState = null;
+function voidKey(type, code, key) {
+  const f = $('voidFrame'); if (!f || !f.contentWindow) return;
+  const W = f.contentWindow, Ctor = W.KeyboardEvent || KeyboardEvent;
+  try { W.dispatchEvent(new Ctor(type, { code: code, key: key, bubbles: true })); } catch (e) {}
+}
+/* 🔴 Auto-fire: a gentle repeating Space so little ones just steer (and it auto-restarts
+   the run on a game-over, keeping the timed session going). Toggle it off for manual play. */
+let voidAuto = true, voidFireTimer = null;
+function setVoidAuto(on) {
+  voidAuto = on;
+  if (voidFireTimer) { clearInterval(voidFireTimer); voidFireTimer = null; }
+  if (on) voidFireTimer = setInterval(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 40); }, 220);
+}
+function startVoidDrift() {
+  if (!arcadePay()) return;
+  $('arcadePopup').style.display = 'none';                 // tuck the lobby away; popupOpen stays true (freezes the 3D world)
+  const ov = document.createElement('div');
+  ov.id = 'voidOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:#05060d;display:flex;flex-direction:column';
+  const frame = document.createElement('iframe');
+  frame.id = 'voidFrame'; frame.src = 'arcade/voiddrift.html';
+  frame.style.cssText = 'flex:1;width:100%;border:0;display:block';
+  ov.appendChild(frame);
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;pointer-events:none';
+  const clock = document.createElement('div');
+  clock.id = 'voidClock';
+  clock.style.cssText = 'background:rgba(10,14,30,.82);color:#7ef;font:800 20px ui-monospace,monospace;padding:6px 14px;border-radius:12px;border:1px solid #2a6';
+  clock.textContent = '⏱ ' + VOID_SECONDS;
+  const exit = document.createElement('button');
+  exit.textContent = '✕ Exit';
+  exit.style.cssText = 'pointer-events:auto;background:rgba(200,50,50,.92);color:#fff;border:0;font-weight:800;font-size:16px;padding:8px 16px;border-radius:12px;cursor:pointer';
+  exit.onclick = function () { endVoidDrift(); };
+  bar.appendChild(clock); bar.appendChild(exit); ov.appendChild(bar);
+  // 🎮 touch controls: a circle navigator (steer + thrust) on the left, auto-fire on the right.
+  // The game is keyboard-only, so the stick maps to rotate/thrust key events into its window.
+  const pad = document.createElement('div');
+  pad.style.cssText = 'position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 24px;pointer-events:none';
+  // --- circle navigator (virtual joystick): left/right = turn, push up = thrust ---
+  const joy = document.createElement('div');
+  joy.style.cssText = 'pointer-events:auto;position:relative;width:150px;height:150px;border-radius:50%;background:rgba(18,28,52,.55);border:2px solid rgba(126,238,255,.4);touch-action:none';
+  const thumb = document.createElement('div');
+  thumb.style.cssText = 'position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:rgba(126,238,255,.75);box-shadow:0 0 16px rgba(126,238,255,.5)';
+  joy.appendChild(thumb);
+  const jAct = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
+  const jApply = function (jx, jy) {
+    const want = { ArrowLeft: jx < -0.32, ArrowRight: jx > 0.32, ArrowUp: jy < -0.3 };
+    for (const code in want) {
+      if (want[code] && !jAct[code]) { voidKey('keydown', code, code); jAct[code] = true; }
+      else if (!want[code] && jAct[code]) { voidKey('keyup', code, code); jAct[code] = false; }
+    }
+  };
+  const jMove = function (cx, cy) {
+    const r = joy.getBoundingClientRect();
+    let dx = (cx - (r.left + r.width / 2)) / (r.width / 2);
+    let dy = (cy - (r.top + r.height / 2)) / (r.height / 2);
+    const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
+    thumb.style.left = (50 + dx * 38) + '%'; thumb.style.top = (50 + dy * 38) + '%';
+    jApply(dx, dy);
+  };
+  const jEnd = function () { thumb.style.left = '50%'; thumb.style.top = '50%'; jApply(0, 0); voidState.joyId = null; };
+  joy.addEventListener('touchstart', function (e) { e.preventDefault(); const t = e.changedTouches[0]; voidState.joyId = t.identifier; jMove(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchmove', function (e) { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === voidState.joyId) jMove(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchend', function (e) { for (const t of e.changedTouches) if (t.identifier === voidState.joyId) jEnd(); });
+  joy.addEventListener('touchcancel', jEnd);
+  joy.addEventListener('mousedown', function (e) { e.preventDefault(); voidState.joyId = 'm'; jMove(e.clientX, e.clientY); const mm = function (ev) { jMove(ev.clientX, ev.clientY); }; const mu = function () { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); jEnd(); }; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); });
+  // --- auto-fire toggle ---
+  const fire = document.createElement('button');
+  fire.style.cssText = 'pointer-events:auto;width:118px;height:118px;border-radius:50%;border:2px solid rgba(255,120,120,.6);color:#fff;font-size:17px;font-weight:800;touch-action:none;line-height:1.2';
+  const setFireUI = function () { fire.innerHTML = voidAuto ? '🔴<br>AUTO' : '⚪<br>manual'; fire.style.background = voidAuto ? 'rgba(200,45,55,.88)' : 'rgba(55,65,95,.72)'; };
+  fire.onclick = function () { setVoidAuto(!voidAuto); setFireUI(); };
+  setFireUI();
+  pad.appendChild(joy); pad.appendChild(fire); ov.appendChild(pad);
+  document.body.appendChild(ov);
+  voidState = { left: VOID_SECONDS, timer: null, joyId: null };
+  frame.addEventListener('load', function () {
+    setTimeout(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 70); setVoidAuto(true); }, 300);   // auto-launch + start auto-fire
+  });
+  voidState.timer = setInterval(function () {
+    voidState.left--;
+    clock.textContent = '⏱ ' + Math.max(0, voidState.left);
+    if (voidState.left <= 3) clock.style.color = '#f77';
+    if (voidState.left <= 0) endVoidDrift();               // ⏰ HARD close — time's up, no matter what
+  }, 1000);
+}
+function endVoidDrift() {
+  const ov = $('voidOverlay'); if (!ov) return;
+  if (voidState && voidState.timer) clearInterval(voidState.timer);
+  setVoidAuto(false);                                      // stop the auto-fire loop
+  let score = 0;
+  try { score = parseInt($('voidFrame').contentDocument.getElementById('scoreVal').textContent, 10) || 0; } catch (e) {}
+  ov.remove(); voidState = null;
+  const won = Math.min(12, Math.floor(score / 250));       // 🎫 prize tickets from the run
+  if (won > 0) { G.prizeTickets = (G.prizeTickets || 0) + won; refreshHUD(); }
+  if (Sound.fanfare) Sound.fanfare();
+  $('arcadePopup').style.display = 'flex'; arcadeLobby();   // back to the lobby (popupOpen was kept true)
+  toast('🚀 VOID DRIFT — score ' + score + '!' + (won ? '  🎫 +' + won + ' prize tickets!' : '  Read more to earn 🎮 tokens & try again!'), 4200);
 }
 function pickArcadeWords(n, maxLen) {
   const lvl = arcadeLevel();
@@ -9393,7 +9501,7 @@ function spellAnswer(ans, w, btn) {
     const m = profile.spellMastered[spell.level] || [];
     if (m.indexOf(norm(w)) === -1) m.push(norm(w));
     profile.spellMastered[spell.level] = m;
-    Sound.correct(); G.solved++; recordSolve({ skill: 'spelling', level: spell.level }); refreshHUD(); bumpHud('solvedCount'); spell.right++;
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spelling', level: spell.level }); refreshHUD(); bumpHud('solvedCount'); spell.right++; awardToken(1);   // 🎮 spelling earns an arcade token
     $('spellMsg').style.color = '#2f8a52'; $('spellMsg').textContent = '✓ Spelled it!';
     setTimeout(() => { if (spell.qi >= spell.words.length) finishSpell(); else renderSpell(); }, 650);
   } else {
@@ -13243,6 +13351,8 @@ function refreshHUD() {
   $('coinCount').textContent = G.coins;
   $('ticketCount').textContent = G.tickets || 0;
   const tr = $('ticketRow'); if (tr) tr.style.display = (G.world === 'west' || (G.tickets || 0) > 0) ? 'inline-block' : 'none';   // 🎟️ tickets matter in the Western
+  $('tokenCount').textContent = G.tokens || 0;
+  const tk = $('tokenRow'); if (tk) tk.style.display = (G.world === 'city' || (G.tokens || 0) > 0) ? 'inline-block' : 'none';   // 🎮 arcade tokens matter in Reading Town
   $('berryCount').textContent = G.berries;
   $('ballCount').textContent = G.balls;
   // show lifetime problems solved and the next goal (no more "16/10"!)
@@ -13262,6 +13372,13 @@ function refreshHUD() {
   updateGoalBar();
 }
 // 🎟️ Ride tickets — the Western theme-park currency, earned by answering STEM questions, spent on rides.
+/* 🎮 Arcade tokens — the Stack Arcade's own currency, earned ONLY by reading & spelling
+   (not by coins, which pile up too easily). Insert tokens to play the machines. */
+function awardToken(n) {
+  n = n || 1;
+  G.tokens = (G.tokens || 0) + n;
+  refreshHUD(); if (typeof bumpHud === 'function') bumpHud('tokenCount');
+}
 function awardTicket(n) {
   n = n || 1;
   G.tickets = (G.tickets || 0) + n;
