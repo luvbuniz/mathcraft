@@ -8716,6 +8716,14 @@ function voidKey(type, code, key) {
   const W = f.contentWindow, Ctor = W.KeyboardEvent || KeyboardEvent;
   try { W.dispatchEvent(new Ctor(type, { code: code, key: key, bubbles: true })); } catch (e) {}
 }
+/* 🔴 Auto-fire: a gentle repeating Space so little ones just steer (and it auto-restarts
+   the run on a game-over, keeping the timed session going). Toggle it off for manual play. */
+let voidAuto = true, voidFireTimer = null;
+function setVoidAuto(on) {
+  voidAuto = on;
+  if (voidFireTimer) { clearInterval(voidFireTimer); voidFireTimer = null; }
+  if (on) voidFireTimer = setInterval(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 40); }, 220);
+}
 function startVoidDrift() {
   if (!arcadePay()) return;
   $('arcadePopup').style.display = 'none';                 // tuck the lobby away; popupOpen stays true (freezes the 3D world)
@@ -8737,29 +8745,49 @@ function startVoidDrift() {
   exit.style.cssText = 'pointer-events:auto;background:rgba(200,50,50,.92);color:#fff;border:0;font-weight:800;font-size:16px;padding:8px 16px;border-radius:12px;cursor:pointer';
   exit.onclick = function () { endVoidDrift(); };
   bar.appendChild(clock); bar.appendChild(exit); ov.appendChild(bar);
-  // 🎮 on-screen controls (game is keyboard-only → we synth key events into it)
+  // 🎮 touch controls: a circle navigator (steer + thrust) on the left, auto-fire on the right.
+  // The game is keyboard-only, so the stick maps to rotate/thrust key events into its window.
   const pad = document.createElement('div');
-  pad.style.cssText = 'position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:0 16px 20px;pointer-events:none';
-  const mkBtn = function (label, code, key, tint) {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.style.cssText = 'pointer-events:auto;width:80px;height:80px;border-radius:50%;border:2px solid rgba(126,238,255,.5);background:' + (tint || 'rgba(20,30,55,.7)') + ';color:#cfe;font-size:28px;font-weight:800;touch-action:none;user-select:none';
-    const down = function (e) { e.preventDefault(); voidKey('keydown', code, key); b.style.filter = 'brightness(1.7)'; };
-    const up = function (e) { if (e) e.preventDefault(); voidKey('keyup', code, key); b.style.filter = ''; };
-    b.addEventListener('touchstart', down, { passive: false });
-    b.addEventListener('touchend', up); b.addEventListener('touchcancel', up);
-    b.addEventListener('mousedown', down); b.addEventListener('mouseup', up); b.addEventListener('mouseleave', up);
-    return b;
+  pad.style.cssText = 'position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 24px;pointer-events:none';
+  // --- circle navigator (virtual joystick): left/right = turn, push up = thrust ---
+  const joy = document.createElement('div');
+  joy.style.cssText = 'pointer-events:auto;position:relative;width:150px;height:150px;border-radius:50%;background:rgba(18,28,52,.55);border:2px solid rgba(126,238,255,.4);touch-action:none';
+  const thumb = document.createElement('div');
+  thumb.style.cssText = 'position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:rgba(126,238,255,.75);box-shadow:0 0 16px rgba(126,238,255,.5)';
+  joy.appendChild(thumb);
+  const jAct = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
+  const jApply = function (jx, jy) {
+    const want = { ArrowLeft: jx < -0.32, ArrowRight: jx > 0.32, ArrowUp: jy < -0.3 };
+    for (const code in want) {
+      if (want[code] && !jAct[code]) { voidKey('keydown', code, code); jAct[code] = true; }
+      else if (!want[code] && jAct[code]) { voidKey('keyup', code, code); jAct[code] = false; }
+    }
   };
-  const lft = document.createElement('div'); lft.style.cssText = 'display:flex;gap:12px';
-  lft.appendChild(mkBtn('◀', 'ArrowLeft', 'ArrowLeft')); lft.appendChild(mkBtn('▶', 'ArrowRight', 'ArrowRight'));
-  const rgt = document.createElement('div'); rgt.style.cssText = 'display:flex;gap:12px';
-  rgt.appendChild(mkBtn('🔥', 'ArrowUp', 'ArrowUp')); rgt.appendChild(mkBtn('🔴', 'Space', ' ', 'rgba(90,30,40,.78)'));
-  pad.appendChild(lft); pad.appendChild(rgt); ov.appendChild(pad);
+  const jMove = function (cx, cy) {
+    const r = joy.getBoundingClientRect();
+    let dx = (cx - (r.left + r.width / 2)) / (r.width / 2);
+    let dy = (cy - (r.top + r.height / 2)) / (r.height / 2);
+    const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
+    thumb.style.left = (50 + dx * 38) + '%'; thumb.style.top = (50 + dy * 38) + '%';
+    jApply(dx, dy);
+  };
+  const jEnd = function () { thumb.style.left = '50%'; thumb.style.top = '50%'; jApply(0, 0); voidState.joyId = null; };
+  joy.addEventListener('touchstart', function (e) { e.preventDefault(); const t = e.changedTouches[0]; voidState.joyId = t.identifier; jMove(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchmove', function (e) { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === voidState.joyId) jMove(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchend', function (e) { for (const t of e.changedTouches) if (t.identifier === voidState.joyId) jEnd(); });
+  joy.addEventListener('touchcancel', jEnd);
+  joy.addEventListener('mousedown', function (e) { e.preventDefault(); voidState.joyId = 'm'; jMove(e.clientX, e.clientY); const mm = function (ev) { jMove(ev.clientX, ev.clientY); }; const mu = function () { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); jEnd(); }; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); });
+  // --- auto-fire toggle ---
+  const fire = document.createElement('button');
+  fire.style.cssText = 'pointer-events:auto;width:118px;height:118px;border-radius:50%;border:2px solid rgba(255,120,120,.6);color:#fff;font-size:17px;font-weight:800;touch-action:none;line-height:1.2';
+  const setFireUI = function () { fire.innerHTML = voidAuto ? '🔴<br>AUTO' : '⚪<br>manual'; fire.style.background = voidAuto ? 'rgba(200,45,55,.88)' : 'rgba(55,65,95,.72)'; };
+  fire.onclick = function () { setVoidAuto(!voidAuto); setFireUI(); };
+  setFireUI();
+  pad.appendChild(joy); pad.appendChild(fire); ov.appendChild(pad);
   document.body.appendChild(ov);
-  voidState = { left: VOID_SECONDS, timer: null };
+  voidState = { left: VOID_SECONDS, timer: null, joyId: null };
   frame.addEventListener('load', function () {
-    setTimeout(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 70); }, 300);   // auto-launch
+    setTimeout(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 70); setVoidAuto(true); }, 300);   // auto-launch + start auto-fire
   });
   voidState.timer = setInterval(function () {
     voidState.left--;
@@ -8771,6 +8799,7 @@ function startVoidDrift() {
 function endVoidDrift() {
   const ov = $('voidOverlay'); if (!ov) return;
   if (voidState && voidState.timer) clearInterval(voidState.timer);
+  setVoidAuto(false);                                      // stop the auto-fire loop
   let score = 0;
   try { score = parseInt($('voidFrame').contentDocument.getElementById('scoreVal').textContent, 10) || 0; } catch (e) {}
   ov.remove(); voidState = null;
