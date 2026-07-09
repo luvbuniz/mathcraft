@@ -6059,12 +6059,12 @@ function buildPoliceShape(g, bm, bm2, gm) {        // police cruiser — sedan +
   P(gm, 1.0, 0.32, 0.06, 0, 0.84, 0.62); P(gm, 1.0, 0.32, 0.06, 0, 0.86, -0.86);
   P(gm, 0.04, 0.3, 1.3, -0.53, 0.84, -0.1); P(gm, 0.04, 0.3, 1.3, 0.53, 0.84, -0.1);
   P(mat(0xF2F2F2), 0.55, 0.34, 0.04, -0.6, 0.46, 0.2); P(mat(0xF2F2F2), 0.55, 0.34, 0.04, 0.6, 0.46, 0.2);  // white doors
-  P(mat(0x222), 0.66, 0.06, 0.22, 0, 1.0, -0.1);    // light bar base
+  const lbBase = P(mat(0x222), 0.66, 0.06, 0.22, 0, 1.0, -0.1);    // light bar base
   // red + blue light-bar lights — own materials so they can flash (emissive) while driving
   const redMat = new THREE.MeshLambertMaterial({ color: 0xD23A3A, emissive: 0x300000 });
   const blueMat = new THREE.MeshLambertMaterial({ color: 0x2b6cb0, emissive: 0x001033 });
-  P(redMat, 0.3, 0.12, 0.2, -0.2, 1.06, -0.1); P(blueMat, 0.3, 0.12, 0.2, 0.2, 1.06, -0.1);
-  g.userData.policeLights = { redMat, blueMat };
+  const lbR = P(redMat, 0.3, 0.12, 0.2, -0.2, 1.06, -0.1), lbB = P(blueMat, 0.3, 0.12, 0.2, 0.2, 1.06, -0.1);
+  g.userData.policeLights = { redMat, blueMat, parts: [lbBase, lbR, lbB] };   // parts → a model swap re-seats the bar on the roof
   P(mat(0xFFF6C0), 0.3, 0.08, 0.05, -0.4, 0.5, 1.5); P(mat(0xFFF6C0), 0.3, 0.08, 0.05, 0.4, 0.5, 1.5);
   P(mat(0xD23A3A), 1.0, 0.07, 0.05, 0, 0.6, -1.55);
   carWheels(g, [[-0.6, 0.95], [0.6, 0.95], [-0.6, -1.0], [0.6, -1.0]]);
@@ -6302,23 +6302,29 @@ function maybeUpgradeVehicleToModel(id) {
       if (!buf) return;                                // no model → the boxy ride stays (that's fine!)
       try {
         new THREE.GLTFLoader().parse(buf, '', gltf => {
-          try { swapVehicleModel(c, gltf); } catch (e) { console.warn('vehicle model prep failed', id, e); }
+          try { swapVehicleModel(c, gltf); if (G.world && (DEALER_DISPLAY[G.world] || []).indexOf(id) >= 0) setDealerDisplay(G.world); } catch (e) { console.warn('vehicle model prep failed', id, e); }
         }, err => console.warn('vehicle model parse failed', id, err));
       } catch (e) {}
     });
 }
 VEHICLES.forEach(def => maybeUpgradeVehicleToModel(def.id));
-// display cars on the lot — each town shows off two of ITS OWN vehicles
-const DEALER_DISPLAY = { meadow: ['monster', 'pickup'], city: ['firetruck', 'corvette'], beach: ['convertible', 'jeep'] };
+// The showroom shows off two of the town's vehicles — but NEVER one the kid already owns
+// and parks nearby (that's what made "two fire trucks at Stack Motors" once Leo drove his
+// everywhere). Each town has a small pool; we display the first two they DON'T own yet, and
+// use the real GLB model when we have one so the showroom matches what you drive.
+const DEALER_DISPLAY = { meadow: ['monster', 'pickup', 'jeep'], city: ['firetruck', 'police', 'corvette', 'taxi'], beach: ['convertible', 'jeep', 'pickup'] };
 let dealerDisplay = [];
 function setDealerDisplay(world) {
   dealerDisplay.forEach(d => motorsGroup.remove(d)); dealerDisplay = [];
-  const ids = DEALER_DISPLAY[world] || DEALER_DISPLAY.meadow;
+  const owned = G.owned || {};
+  const ids = (DEALER_DISPLAY[world] || DEALER_DISPLAY.meadow).filter(id => !owned[id]).slice(0, 2);
   const slots = [[0.55, 1.95, 0.45, 0.92], [-0.95, 0.2, 0.3, 0.62]];   // hero out front, one tucked on the pad
   ids.forEach((id, i) => {
     const def = VEHICLES.find(v => v.id === id); if (!def) return;
     const disp = new THREE.Group();
-    def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
+    const c = cars[id];
+    if (c && c.model) disp.add(c.model.clone());                        // 🎨 real model in the showroom (no light bar — static)
+    else def.shape(disp, new THREE.MeshLambertMaterial({ color: def.color }), new THREE.MeshLambertMaterial({ color: shade(def.color, 0.8) }), CAR_GLASS);
     const s = slots[i] || slots[0]; disp.position.set(s[0], 0, s[1]); disp.rotation.y = s[2]; disp.scale.setScalar(s[3]);
     motorsGroup.add(disp); dealerDisplay.push(disp);
   });
