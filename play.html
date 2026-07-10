@@ -3427,6 +3427,12 @@ const AVATAR_MODEL_TWEAKS = {
   // leo:   { rotY: Math.PI },
   // fiona: { scale: 0.95, hatY: 1.62 },
 };
+/* 🧱 CLASSIC HEROES — a per-player style choice (☰ menu): keep the beloved original boxy
+   heroes instead of the studio models. The blocky cast was never deleted — it's the built-in
+   stand-in under every model — so classic mode simply never swaps it out. Heroes + town
+   friends only: vehicles keep their studio models either way (the fire truck stays fancy).
+   Lives on the player's profile (like hideHat), so each kid keeps their own look. */
+const classicHeroes = () => !!(profile && profile.classicHeroes);
 const glbBytes = new Map();                   // id → ArrayBuffer | null (null = tried, no file)
 function fetchAvatarBytes(id) {
   if (glbBytes.has(id)) return Promise.resolve(glbBytes.get(id));
@@ -3616,6 +3622,11 @@ function questSpinSoon() {                    // 🗺️→🌀 quest finished! 
 function maybeUpgradeAvatarToModel(index) {
   const av = AVATARS[index];
   if (!av) return;
+  if (classicHeroes()) {                        // 🧱 this player picked the blocky look — it IS the hero
+    player.avatarWarming = false;
+    if (player.avatar) player.avatar.visible = !G.firstPerson;
+    return;
+  }
   parseAvatarModel(av.id).then(data => {
     if (!player.avatarData || player.avatarIndexLoading !== index) return;   // player switched heroes meanwhile
     if (!data) {                                                    // no model / bad model → keep procedural…
@@ -11852,8 +11863,9 @@ function setAvatar(index) {
     // first, the real model is already in the offline cache and lands well inside the
     // window — the hero appears ONCE, no pop-then-morph. A first-ever download overruns
     // it and reveals the stand-in instead (better than an empty world on slow Wi-Fi).
-    player.avatarWarming = true;
-    player.avatar.visible = false;
+    // (🧱 classic mode: no model is coming, so skip the hide — the boxy hero shows instantly)
+    player.avatarWarming = !classicHeroes();
+    player.avatar.visible = !player.avatarWarming && !G.firstPerson;
     player._avatarWarmFrames = 0;            // counted in RENDERED frames (~45 ≈ ¾s at 60fps): wall-clock
                                              // timers burn out while world building blocks the main thread,
                                              // and frames scale naturally with how fast the device renders
@@ -16081,6 +16093,25 @@ function swapHero(i) {
   toast('🪞✨ POOF! You are now ' + av.name + ' — same coins, same blocks, same you!', 4200);
   player.happyUntil = performance.now() + 1500;   // the new hero takes a little victory bow
 }
+/* 🧱 Hero style toggle (☰ menu) — Leo's request: he loves the ORIGINAL blocky heroes. Flips
+   live between classic and studio looks: the hero + all town friends rebuild on the spot,
+   nothing else changes (coins, blocks, save — all untouched). Per-player, like hideHat. */
+function toggleClassicHeroes() {
+  if (!G.running || G.over) return;
+  if (player.driving || player.restingBed || player.sittingChair || player.playing || trainRide) {
+    toast('🧱 Hop out and stand up first — then you can change the hero style!', 3400);
+    return;
+  }
+  if (danceParty) setDanceParty(false);           // fresh avatars know nothing of the old party
+  profile.classicHeroes = !profile.classicHeroes;
+  saveProfile();
+  setAvatar(G.avatarIndex);                       // rebuild the hero in the new style right here
+  respawnNpcs();                                  // …and the whole town matches it
+  toast(profile.classicHeroes
+    ? '🧱 Classic heroes ON — the original blocky crew is back!'
+    : '🎬 Studio heroes ON — the movie-star models are back!', 4200);
+  player.happyUntil = performance.now() + 1500;   // either way, strike a happy pose about it
+}
 
 function buildAppleMesh() {
   const g = new THREE.Group();
@@ -16756,6 +16787,7 @@ function openHudMenu() {
   const items = [
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
     ['mirrorBtn', '🪞', '<b>Hero Mirror</b> <small>' + (heroMirrorUnlocked() ? 'switch hero' : '🔒 finish 3 quests') + '</small>'],
+    ['classicBtn', profile.classicHeroes ? '🧱' : '🎬', '<b>Hero style</b> <small>' + (profile.classicHeroes ? 'classic blocky' : 'studio models') + '</small>'],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
@@ -16766,6 +16798,7 @@ function openHudMenu() {
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
     m.style.display = 'none';
     if (b.dataset.b === 'mirrorBtn') { Sound.click(); openHeroMirror(); return; }   // 🪞 lives right here (no hidden HUD button)
+    if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }   // 🧱 same — a menu-only feature
     const t = $(b.dataset.b);
     if (t && t.onclick) t.onclick();
   });
@@ -17572,7 +17605,7 @@ function buildMenu() {
     try { data = av.build(); } finally { ROUND_AV = false; }
     drawThumb(data.group, data.quad);
     if (typeof parseAvatarModel === 'function') {        // 🎨 got a real model? repaint the card with it
-      parseAvatarModel(av.id).then(mdl => { if (mdl) drawThumb(mdl.group, false); });
+      parseAvatarModel(av.id).then(mdl => { if (mdl && !classicHeroes()) drawThumb(mdl.group, false); });
     }
 
     card.onclick = () => {
@@ -18250,6 +18283,7 @@ function respawnNpcs() {
       phase: Math.random() * 9, lineIx: Math.floor(Math.random() * cast.lines.length),
       coolAt: 0, say: '', sayUntil: 0, el: null, trapN: 0 };
     npcs.push(n);
+    if (classicHeroes()) return;          // 🧱 classic look: the boxy friend IS the friend, no swap
     // 🫥 same grace window as the hero: hide the boxy stand-in for a beat so a cached
     // studio model appears directly — no pop-then-morph on the whole town at login.
     // (updateNpcs reveals it at a frame-clocked deadline if no model shows up.)

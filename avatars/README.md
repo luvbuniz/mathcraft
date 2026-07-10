@@ -94,6 +94,13 @@ const AVATAR_MODEL_TWEAKS = {
   ☰ menu: kids can become ANY hero mid-save (coins, blocks and progress all
   stay). Every model you ship here is instantly swappable — town friends
   reshuffle so the new hero never meets their own twin.
+- **🧱 Classic heroes toggle** — ☰ menu → *Hero style*. Some kids (hi Leo!)
+  prefer the original blocky cast, so each player can flip between **classic
+  blocky** and **studio models** any time — the hero + all town friends switch
+  on the spot, saves untouched. The choice lives on the player's profile, so
+  each kid keeps their own look on a shared tablet. Vehicles keep their studio
+  models either way, and classic mode skips the model parsing entirely —
+  snappier logins on older devices.
 
 ## What to know
 
