@@ -6268,6 +6268,7 @@ VEHICLES.forEach(def => {
    backwards or mis-sized export with a one-liner in VEHICLE_MODEL_TWEAKS. */
 const VEHICLE_MODEL_TWEAKS = {
   firetruck: { rotY: -Math.PI / 2 },   // Meshy exported the truck lengthwise along X — swing it onto Z
+  police:    { rotY: -Math.PI / 2 },   // same Meshy convention — without this the cruiser drove sideways (the kids caught it!)
 };
 function swapVehicleModel(c, gltf) {
   const inner = gltf.scene || gltf.scenes[0]; if (!inner) return;
@@ -6950,7 +6951,14 @@ const FEED_ROT = 0;                                  // faces SOUTH, toward the 
 function feedDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - FEED_POS.x, player.pos.z - FEED_POS.z) : 999; }
 const FEED_CUSTOMERS = ['🧑‍🌾', '👩‍🌾', '👨‍🌾', '🐴', '🐄', '🐔', '🐑', '🐖', '🐐', '🦆', '🐕', '🐰'];
 const FEED_ITEMS = [['🌽', 'Corn'], ['🌾', 'Hay Bale'], ['🥕', 'Carrots'], ['🐔', 'Chick Feed'], ['🦴', 'Dog Chow'], ['🍎', 'Apples'], ['🌻', 'Seed'], ['🥜', 'Peanuts'], ['🪣', 'Oats'], ['🧺', 'Bran'], ['🥚', 'Eggs'], ['🧀', 'Cheese']];
-function feedLevel() { return Math.max(1, Math.min(5, (G.skillLevel && G.skillLevel.money) || G.mathLevel || G.grade || 2)); }
+function feedLevel() {
+  G.skillLevel = G.skillLevel || {};
+  // 🌱 the first visit seeds the money skill GENTLY (multiple choice, small prices) no matter
+  // the math grade — the register keypad is EARNED by climbing this skill, not inherited.
+  // (Kid-tested: grade-3+ kids met the bare keypad cold on visit one and simply never came back.)
+  if (!G.skillLevel.money) G.skillLevel.money = Math.min(2, G.grade || 2);
+  return Math.max(1, Math.min(5, G.skillLevel.money));
+}
 function makeChangeOrder() {
   const lvl = feedLevel(), manual = lvl >= 3;
   let nItems, pMin, pMax;
@@ -6991,6 +6999,7 @@ function renderFeed() {
   o.items.forEach(it => { html += '<div>' + it.emoji + ' ' + it.name + ' &middot;&middot;&middot; <b>' + it.price + '</b> 🪙</div>'; });
   html += '</div><div style="border-top:2px dashed #c9b27e; margin-top:5px; padding-top:5px">Total: <b style="color:#7a5a1f">' + o.total + '</b> 🪙 &nbsp;•&nbsp; Pays with: <b style="color:#2f8a52">' + o.bill + '</b> 🪙 💵</div>';
   html += '<div style="margin-top:5px; font-weight:800; color:#7a5a1f">💰 How much change do you give back?</div>';
+  html += '<div style="margin-top:3px; font-size:0.82em; color:#8a6d3b">⚡ Every 3rd customer tips a <b>Power Block</b>!</div>';
   $('feedOrder').innerHTML = html;
   $('feedMsg').textContent = '';
   if (o.manual) renderFeedKeypad(); else renderFeedChoices();
@@ -7020,11 +7029,17 @@ function submitFeed(val) {
   const o = feed.order;
   if (val === o.change) {
     feed.locked = true; feed.done++;
+    profile.feedServed = (profile.feedServed || 0) + 1; profileDirty = true;      // 🌾 quest fuel
     Sound.correct(); G.solved++; recordSolve({ skill: 'money', level: o.lvl }); bumpSkill('money', true); bumpHud('solvedCount');
-    const reward = 5 + o.lvl * 2;
+    const reward = 8 + o.lvl * 3;               // cashier work pays BETTER than pizza — counting change is harder!
     G.coins += reward; refreshHUD(); bumpHud('coinCount'); if (Sound.chaching) Sound.chaching();   // 💵 ka-ching!
     $('feedMsg').style.color = '#2f8a52';
-    $('feedMsg').innerHTML = '✓ Correct change! ' + o.bill + ' − ' + o.total + ' = <b>' + o.change + '</b> 🪙. &nbsp;🪙 +' + reward;
+    let tip = '';
+    if (feed.done % 3 === 0) {                  // ⚡ every 3rd customer in a visit tips a Power Block
+      G.powerBlocks = (G.powerBlocks || 0) + 1; bumpHud('powerCount');
+      tip = ' &nbsp;⚡ <b>+1 Power Block tip!</b>';
+    }
+    $('feedMsg').innerHTML = '✓ Correct change! ' + o.bill + ' − ' + o.total + ' = <b>' + o.change + '</b> 🪙. &nbsp;🪙 +' + reward + tip;
     const pad = $('feedPad'); pad.innerHTML = '';
     const next = document.createElement('button'); next.className = 'bakeBtn'; next.style.background = '#3f9d34'; next.style.color = '#fff'; next.textContent = '🧑‍🌾 Next customer';
     next.onclick = () => { feed.order = makeChangeOrder(); feed.entry = ''; feed.locked = false; renderFeed(); };
@@ -8711,6 +8726,7 @@ function arcadePay() {
     return false;
   }
   G.tokens -= ARCADE_PLAY_COST; Sound.coin(); refreshHUD(); arcadeWallet();
+  profile.arcadePlays = (profile.arcadePlays || 0) + 1; profileDirty = true;    // 🕹️ quest fuel (any machine counts)
   $('arcadeMsg').textContent = '';
   return true;
 }
@@ -8979,7 +8995,7 @@ function snowGuess(ch) {
       $('arcadeMsg').innerHTML = '💧 Oh no, he melted! The word was <b>' + a.word.toLowerCase() + '</b> — <i>' + a.sentence + '</i><br><span style="color:#8a7aa0; font-size:0.86em">He\'ll be rebuilt for next time — you\'ve got this! 💪</span>';
       const bar = document.createElement('div');
       bar.style.cssText = 'margin-top:10px; display:flex; gap:9px; justify-content:center; flex-wrap:wrap';
-      bar.appendChild(arcadeBtn('🔁 Try again (' + ARCADE_PLAY_COST + ' 🪙)', '#2980b9', () => startSnowman()));
+      bar.appendChild(arcadeBtn('🔁 Try again (' + ARCADE_PLAY_COST + ' 🎮)', '#2980b9', () => startSnowman()));
       bar.appendChild(arcadeBtn('🕹️ Arcade lobby', '#8a7aa0', () => arcadeLobby()));
       $('arcadeBody').appendChild(bar);
       return;
@@ -13389,6 +13405,7 @@ function refreshHUD() {
 function awardToken(n) {
   n = n || 1;
   G.tokens = (G.tokens || 0) + n;
+  profile.tokensEarned = (profile.tokensEarned || 0) + n; profileDirty = true;   // 🎮 lifetime count (quest fuel)
   refreshHUD(); if (typeof bumpHud === 'function') bumpHud('tokenCount');
 }
 function awardTicket(n) {
@@ -15951,6 +15968,7 @@ const QUESTS = [
   { id: 'm20',    world: 'meadow', icon: '🧠', title: 'Answer 20 math questions', reward: 16, check: () => mathSolved() >= 20 },
   { id: 'streak', world: 'meadow', icon: '🔥', title: 'Get 6 math questions right in a row', reward: 14, check: () => (profile.bestStreak || 0) >= 6 },
   { id: 'mul5',   world: 'meadow', icon: '✖️', title: 'Solve 5 times-table questions', reward: 16, check: () => byOpN('mul') >= 5 },
+  { id: 'feed3',  world: 'meadow', icon: '🌾', title: 'Serve 3 customers at the Feed Store', reward: 16, check: () => (profile.feedServed || 0) >= 3 },
   { id: 'm40',    world: 'meadow', icon: '🏆', title: 'Answer 40 math questions', reward: 24, check: () => mathSolved() >= 40 },
   { id: 'm75',    world: 'meadow', icon: '🌟', title: 'Answer 75 math questions', reward: 35, check: () => mathSolved() >= 75 },
   // 🏘️ Reading Town — reading & spelling
@@ -15961,6 +15979,8 @@ const QUESTS = [
   { id: 'r_spell5',world: 'city', icon: '🐝', title: 'Spell 5 words at the Post Office', reward: 12, check: () => (profile.spellFirstTotal || 0) >= 5 },
   { id: 'r_spell15',world:'city', icon: '✏️', title: 'Spell 15 words right', reward: 18, check: () => (profile.spellFirstRight || 0) >= 15 },
   { id: 'r_slevel3',world:'city', icon: '🔤', title: 'Reach Spelling Level 3', reward: 14, check: () => (profile.spellLevel || 0) >= 3 },
+  { id: 'r_tokens', world: 'city', icon: '🎮', title: 'Earn 4 arcade tokens (read & spell!)', reward: 12, check: () => (profile.tokensEarned || 0) >= 4 },
+  { id: 'r_arcade', world: 'city', icon: '🕹️', title: 'Play a game at the Stack Arcade', reward: 14, check: () => (profile.arcadePlays || 0) >= 1 },
   { id: 'r_q40',   world: 'city', icon: '🏆', title: 'Answer 40 reading questions', reward: 28, check: () => (profile.readFirstTotal || 0) >= 40 },
   // 🤠 Country Western (Science Park) — STEM building & the rides
   { id: 'w_stem1', world: 'west', icon: '🧰', title: 'Answer a STEM building question', reward: 8,  check: () => (profile.stemSolved || 0) >= 1 },
