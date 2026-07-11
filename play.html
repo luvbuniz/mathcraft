@@ -4112,7 +4112,8 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 function freshProfile() {
   return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, wrongByDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, stemSolved: 0, ticketsEarned: 0, trainRides: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
     garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
-    pack: null, packMigrated: false, level: null, grade: null };
+    pack: null, packMigrated: false, level: null, grade: null,
+    pizzaTaught: {} };                        // 🍕 which pizzeria levels have shown their how-to card
 }
 let profile = freshProfile();
 let profileDirty = false;
@@ -6840,24 +6841,113 @@ function fracWord(n, d) {                            // friendly name for the co
   if (n === d) return 'the WHOLE pizza';
   return { '1/2': 'HALF', '1/3': 'a THIRD', '2/3': 'TWO-THIRDS', '1/4': 'a QUARTER', '3/4': 'THREE-QUARTERS', '1/6': 'a SIXTH', '1/8': 'an EIGHTH' }[n + '/' + d] || null;
 }
-function pizzaPool(g) {                              // [slicesToServe, slicesToCut] pairs, simpler for the little ones
-  if (g <= 1) return [[1, 2], [1, 2], [1, 4], [2, 2]];                                  // halves, a quarter, the whole pie
-  if (g === 2) return [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [2, 2]];                 // + thirds & quarters
-  if (g === 3) return [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 6], [5, 6], [2, 6]]; // + sixths
-  return [[3, 4], [2, 3], [1, 4], [5, 6], [3, 8], [5, 8], [7, 8], [2, 8], [1, 6]];      // grade 4–5: eighths & trickier
+/* 📈 The pizzeria is a LADDER now, not a flat coin farm (kid-tested: they parked here and
+   stacked coins). Level = the 'fractions' skill: it seeds gently and climbs on a 4-streak
+   (same engine as every station). Every order is still answered the same tactile way —
+   tap slices, serve — only the THINKING gets bigger:
+     L1 meet fractions · L2 bigger pies · L3 EQUAL fractions (1/2 of an 8-slice pie!)
+     L4 add & subtract orders · L5 times & fair sharing */
+function pizzaLevel() {
+  G.skillLevel = G.skillLevel || {};
+  if (!G.skillLevel.fractions) G.skillLevel.fractions = (G.grade || 2) <= 2 ? 1 : 2;   // 🌱 gentle first slice
+  return Math.max(1, Math.min(5, G.skillLevel.fractions));
 }
 function makePizzaOrder() {
-  const g = G.grade || 2, pool = pizzaPool(g), pick = pool[Math.floor(Math.random() * pool.length)];
-  const need = pick[0], slices = pick[1], word = fracWord(need, slices), sym = need + '/' + slices, showSym = g >= 3;
+  const lvl = pizzaLevel();
   const cust = PIZZA_CUSTOMERS[Math.floor(Math.random() * PIZZA_CUSTOMERS.length)];
   const nm = PIZZA_NAMES[Math.floor(Math.random() * PIZZA_NAMES.length)];
-  let order;
-  if (need === slices) order = '<b>' + nm + '</b> wants <b style="color:#C0392B">the WHOLE pizza</b>! 🍕';
-  else if (word) order = '<b>' + nm + '</b> wants <b style="color:#C0392B">' + word + '</b>' + (showSym ? ' (<b>' + sym + '</b>)' : '') + ' of the pizza.';
-  else order = '<b>' + nm + '</b> wants <b style="color:#C0392B">' + sym + '</b> — <b>' + need + ' out of ' + slices + '</b> slices.';
-  const teach = need === slices ? 'Tap all ' + slices + ' slices!' : 'Cut into ' + slices + ' equal slices, then tap ' + need + ' to serve.';
-  return { need: need, slices: slices, cust: cust, nm: nm, order: order, teach: teach, served: new Set() };
+  const nm2 = PIZZA_NAMES.filter(x => x !== nm)[Math.floor(Math.random() * (PIZZA_NAMES.length - 1))];
+  const o = { lvl, cust, nm, served: new Set() };
+  const fr = (n, d) => '<b style="color:#C0392B">' + n + '/' + d + '</b>';
+  if (lvl <= 2) {                                          // 🍕 L1–2: serve a fraction you can SEE
+    const pool = lvl === 1
+      ? [[1, 2], [1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [2, 2]]
+      : [[1, 3], [2, 3], [3, 4], [1, 6], [5, 6], [2, 6], [3, 8], [5, 8], [7, 8], [2, 2]];
+    const [need, slices] = pool[Math.floor(Math.random() * pool.length)];
+    const word = fracWord(need, slices), sym = need + '/' + slices;
+    o.need = need; o.slices = slices;
+    if (need === slices) o.order = '<b>' + nm + '</b> wants <b style="color:#C0392B">the WHOLE pizza</b>! 🍕';
+    else if (word) o.order = '<b>' + nm + '</b> wants <b style="color:#C0392B">' + word + '</b> (' + fr(need, slices) + ') of the pizza.';
+    else o.order = '<b>' + nm + '</b> wants ' + fr(need, slices) + ' — <b>' + need + ' out of ' + slices + '</b> slices.';
+    o.teach = need === slices ? 'Tap all ' + slices + ' slices!' : 'The bottom number cuts the pie into ' + slices + ' equal slices — the top says serve ' + need + '.';
+  } else if (lvl === 3) {                                  // ⚖️ L3: EQUAL fractions — 1/2 of an 8-slice pie
+    const pool = [[1, 2, 4], [1, 2, 6], [1, 2, 8], [1, 2, 10], [1, 3, 6], [1, 3, 9], [2, 3, 6], [2, 3, 9], [1, 4, 8], [3, 4, 8], [1, 2, 12], [1, 4, 12], [1, 3, 12]];
+    const [n, d, pie] = pool[Math.floor(Math.random() * pool.length)];
+    o.need = n * pie / d; o.slices = pie;
+    const word = fracWord(n, d);
+    o.order = '<b>' + nm + '</b> wants ' + fr(n, d) + (word ? ' (<b>' + word + '</b>)' : '') + ' of the pizza — but it\'s cut into <b>' + pie + '</b> slices!';
+    o.teach = n + '/' + d + ' of ' + pie + ' slices: split ' + pie + ' into ' + d + ' equal shares (' + (pie / d) + ' each)' + (n > 1 ? ', serve ' + n + ' shares' : ' — serve one share') + ' = ' + o.need + ' slices. Equal fractions!';
+  } else if (lvl === 4) {                                  // ➕➖ L4: add & subtract same-size slices
+    const d = [6, 8, 10, 12][Math.floor(Math.random() * 4)];
+    if (Math.random() < 0.55) {
+      const a = 1 + Math.floor(Math.random() * (d - 3)), b = 1 + Math.floor(Math.random() * (d - a - 1));
+      o.need = a + b; o.slices = d;
+      o.order = '<b>' + nm + '</b> wants ' + fr(a, d) + ' and <b>' + nm2 + '</b> wants ' + fr(b, d) + ' — serve them <b>together</b>!';
+      o.teach = 'Same-size slices, so just add the tops: ' + a + ' + ' + b + ' = ' + o.need + ' slices. (' + a + '/' + d + ' + ' + b + '/' + d + ' = ' + o.need + '/' + d + ')';
+    } else {
+      const a = 3 + Math.floor(Math.random() * (d - 3)), b = 1 + Math.floor(Math.random() * (a - 1));
+      o.need = a - b; o.slices = d;
+      o.order = '<b>' + nm + '</b> ordered ' + fr(a, d) + ' but sent ' + fr(b, d) + ' back — serve what they <b>keep</b>!';
+      o.teach = 'Take away the tops: ' + a + ' − ' + b + ' = ' + o.need + ' slices. (' + a + '/' + d + ' − ' + b + '/' + d + ' = ' + o.need + '/' + d + ')';
+    }
+  } else {                                                 // ✖️➗ L5: times & fair sharing
+    const d = [8, 10, 12][Math.floor(Math.random() * 3)];
+    if (Math.random() < 0.55) {
+      const k = 2 + Math.floor(Math.random() * 3);                       // 2–4 friends
+      const m = 1 + Math.floor(Math.random() * Math.max(1, Math.floor((d - 1) / k)));
+      o.need = k * m; o.slices = d;
+      o.order = '<b>' + k + ' friends</b> EACH want ' + fr(m, d) + ' — serve <b>all of them</b>!';
+      o.teach = m + ' slice' + (m > 1 ? 's' : '') + ' each × ' + k + ' friends = ' + o.need + ' slices. (' + k + ' × ' + m + '/' + d + ' = ' + o.need + '/' + d + ')';
+    } else {
+      const k = [2, 3][Math.floor(Math.random() * 2)];
+      const each = 1 + Math.floor(Math.random() * Math.floor((d - 1) / k));
+      const total = k * each;
+      o.need = each; o.slices = d;
+      o.order = '<b>' + nm + '</b> and friends share ' + fr(total, d) + ' equally between <b>' + k + '</b> of them — serve <b>ONE</b> share!';
+      o.teach = total + ' slices split into ' + k + ' equal shares = ' + each + ' each. (' + total + '/' + d + ' ÷ ' + k + ' = ' + each + '/' + d + ')';
+    }
+  }
+  return o;
 }
+/* 🎓 One-time "NEW SKILL" cards — a picture BEFORE the first order of each level (and any
+   time the ❓ button is tapped). Demo pies reuse pizzaSVG with pre-served slices. */
+function pizzaDemoPie(slices, servedN, w) {
+  const set = new Set(); for (let i = 0; i < servedN; i++) set.add(i);
+  return '<div style="width:' + (w || 44) + '%;pointer-events:none">' + pizzaSVG(slices, set) + '</div>';
+}
+const PIZZA_LESSONS = {
+  1: { title: 'Serving fractions', blurb: '<b>1/4</b> means: cut into <b>4</b> equal slices (bottom), serve <b>1</b> (top).',
+       demo: () => pizzaDemoPie(4, 1, 52) },
+  2: { title: 'Bigger pies', blurb: 'Same trick, more slices: <b>5/6</b> = cut into <b>6</b>, serve <b>5</b>.',
+       demo: () => pizzaDemoPie(6, 5, 52) },
+  3: { title: 'Equal fractions', blurb: '<b>1/2 = 4/8</b> — the SAME amount of pizza, just smaller slices! Split the pie into the bottom number of equal shares.',
+       demo: () => pizzaDemoPie(2, 1) + '<div style="font-size:30px;font-weight:800;color:#C0392B">=</div>' + pizzaDemoPie(8, 4) },
+  4: { title: 'Adding & taking away', blurb: 'Slices the SAME size? Just add (or take away) the tops: <b>2/8 + 3/8 = 5/8</b>.',
+       demo: () => pizzaDemoPie(8, 5, 52) },
+  5: { title: 'Times & fair sharing', blurb: '<b>3 friends × 2/12 each = 6/12</b>. Sharing? Split the slices into equal piles.',
+       demo: () => pizzaDemoPie(12, 6, 52) }
+};
+function renderPizzaLesson(lvl) {
+  const L = PIZZA_LESSONS[lvl]; if (!L || !pizza) return;
+  pizza.teaching = true;
+  $('pizzaTitle').innerHTML = '🍕 Mama Mia Pizzeria — <span style="color:#b5832a">⭐ Level ' + lvl + '</span>';
+  $('pizzaOrder').innerHTML = '🎓 <b>NEW PIZZA SKILL:</b> ' + L.title + '<br><span style="font-size:0.85em;font-weight:600">' + L.blurb + '</span>';
+  $('pizzaPie').innerHTML = '<div style="display:flex;gap:8px;justify-content:center;align-items:center">' + L.demo() + '</div>';
+  $('pizzaCount').innerHTML = '';
+  $('pizzaMsg').textContent = '';
+  const wrap = $('pizzaChoices'); wrap.innerHTML = '';
+  const go = document.createElement('button'); go.className = 'bakeBtn'; go.style.background = '#3f9d34'; go.style.color = '#fff'; go.textContent = '👍 Got it — let\'s cook!';
+  go.onclick = () => {
+    Sound.click();
+    profile.pizzaTaught = profile.pizzaTaught || {};
+    profile.pizzaTaught[lvl] = true; profileDirty = true; saveProfile();
+    pizza.teaching = false;
+    if (!pizza.order || pizza.order.lvl !== lvl) pizza.order = makePizzaOrder();
+    renderPizza();
+  };
+  wrap.appendChild(go);
+}
+let pizzaRightAt = {};                                     // session count of rights per level → hints fade with mastery
 function pizzaSVG(slices, served) {
   const cx = 108, cy = 108, r = 84, crust = 92;
   let s = '<svg viewBox="0 0 216 216" width="100%" style="touch-action:manipulation;display:block">';
@@ -6884,7 +6974,9 @@ function openPizza() {
   if (popupOpen || G.over || !G.running) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   pizza = { order: makePizzaOrder(), done: 0, locked: false };
-  renderPizza();
+  // 🎓 never seen this level before? the how-to picture comes BEFORE the first order
+  if (!(profile.pizzaTaught || {})[pizza.order.lvl]) renderPizzaLesson(pizza.order.lvl);
+  else renderPizza();
   $('pizzaPopup').style.display = 'flex';
 }
 function closePizza() { $('pizzaPopup').style.display = 'none'; popupOpen = false; pizza = null; }
@@ -6905,11 +6997,14 @@ function updatePizzaCount() {
   $('pizzaCount').innerHTML = '🍕 Served <b>' + o.served.size + '</b> of <b>' + o.slices + '</b> slices' + (o.served.size === o.need ? '  ✅' : '');
 }
 function renderPizza() {
-  if (!pizza) return;
+  if (!pizza || !pizza.order) return;
   const o = pizza.order;
-  $('pizzaTitle').innerHTML = '🍕 Mama Mia Pizzeria' + (pizza.done ? ' — served ' + pizza.done + '!' : '');
+  $('pizzaTitle').innerHTML = '🍕 Mama Mia Pizzeria — <span style="color:#b5832a">⭐ Level ' + o.lvl + '</span>' + (pizza.done ? ' <small style="color:#8a8a6a">• served ' + pizza.done + '</small>' : '');
+  // 👉 hints "in the beginning": every order type shows its how-to until this level has
+  // 3 rights this session (and it always comes back on a wrong answer — see servePizza)
+  const hinting = (pizzaRightAt[o.lvl] || 0) < 3;
   $('pizzaOrder').innerHTML = '<span style="font-size:1.3em">' + o.cust + '</span> ' + o.order +
-    ((G.grade || 2) <= 3 ? '<br><span style="font-size:0.82em;color:#8a6d3b">👉 ' + o.teach + '</span>' : '');
+    (hinting ? '<br><span style="font-size:0.82em;color:#8a6d3b">👉 ' + o.teach + '</span>' : '');
   $('pizzaPie').innerHTML = pizzaSVG(o.slices, o.served);
   wirePizzaSlices(); updatePizzaCount();
   const wrap = $('pizzaChoices'); wrap.innerHTML = ''; $('pizzaMsg').textContent = '';
@@ -6917,28 +7012,41 @@ function renderPizza() {
   serve.onclick = servePizza;
   const clr = document.createElement('button'); clr.className = 'bakeBtn'; clr.textContent = '↩️ Clear';
   clr.onclick = () => { Sound.click(); o.served.clear(); $('pizzaPie').innerHTML = pizzaSVG(o.slices, o.served); wirePizzaSlices(); updatePizzaCount(); };
-  wrap.appendChild(serve); wrap.appendChild(clr);
+  const how = document.createElement('button'); how.className = 'bakeBtn'; how.textContent = '❓ How?';
+  how.title = 'Show me this level\'s trick again';
+  how.onclick = () => { Sound.click(); renderPizzaLesson(o.lvl); };
+  wrap.appendChild(serve); wrap.appendChild(clr); wrap.appendChild(how);
 }
 function servePizza() {
-  if (!pizza || pizza.locked) return;
+  if (!pizza || pizza.locked || !pizza.order) return;
   const o = pizza.order;
   if (o.served.size === o.need) {
     pizza.locked = true; pizza.done++;
-    Sound.correct(); G.solved++; recordSolve({ skill: 'fractions', level: G.grade }); bumpHud('solvedCount');
-    const reward = 5 + (G.grade || 2) * 2;
+    pizzaRightAt[o.lvl] = (pizzaRightAt[o.lvl] || 0) + 1;
+    Sound.correct(); G.solved++; recordSolve({ skill: 'fractions', level: o.lvl }); bumpSkill('fractions', true); bumpHud('solvedCount');
+    const reward = 5 + o.lvl * 2;               // 📈 pay climbs WITH the level (the ladder beats the farm)
     G.coins += reward; refreshHUD(); bumpHud('coinCount'); if (Sound.fanfare) Sound.fanfare();
+    const newLvl = pizzaLevel();                // did that 4-streak just level them up?
     $('pizzaMsg').style.color = '#2f8a52';
-    $('pizzaMsg').innerHTML = '✓ Perfect — ' + (fracWord(o.need, o.slices) || (o.need + '/' + o.slices)) + ' served!  🪙 +' + reward;
+    $('pizzaMsg').innerHTML = '✓ Perfect — <b>' + o.need + '</b> of <b>' + o.slices + '</b> slices served!  🪙 +' + reward +
+      (newLvl > o.lvl ? '<br>🎉 <b>PIZZA LEVEL UP!</b> Level ' + newLvl + ': ' + PIZZA_LESSONS[newLvl].title + '!' : '');
     const wrap = $('pizzaChoices'); wrap.innerHTML = '';
-    const next = document.createElement('button'); next.className = 'bakeBtn'; next.style.background = '#3f9d34'; next.style.color = '#fff'; next.textContent = '🍕 Next customer';
-    next.onclick = () => { pizza.order = makePizzaOrder(); pizza.locked = false; renderPizza(); };
+    const next = document.createElement('button'); next.className = 'bakeBtn'; next.style.background = '#3f9d34'; next.style.color = '#fff';
+    next.textContent = newLvl > o.lvl ? '⭐ Level ' + newLvl + ' — next customer!' : '🍕 Next customer';
+    next.onclick = () => {
+      pizza.locked = false; pizza.order = makePizzaOrder();
+      // 🎓 first order of a level they've never seen → the how-to picture comes first
+      if (!(profile.pizzaTaught || {})[pizza.order.lvl]) renderPizzaLesson(pizza.order.lvl);
+      else renderPizza();
+    };
     const done = document.createElement('button'); done.className = 'bakeBtn'; done.textContent = 'Done';
     done.onclick = closePizza;
     wrap.appendChild(next); wrap.appendChild(done);
   } else {
-    Sound.wrong(); if (typeof recordWrong === 'function') recordWrong({ skill: 'fractions' });
+    Sound.wrong(); if (typeof recordWrong === 'function') recordWrong({ skill: 'fractions' }); bumpSkill('fractions', false);
     $('pizzaMsg').style.color = '#c0392b';
-    $('pizzaMsg').innerHTML = '✗ Not yet — they wanted <b>' + o.need + '</b> of <b>' + o.slices + '</b>. You served <b>' + o.served.size + '</b>. Tap slices to fix it!';
+    $('pizzaMsg').innerHTML = '✗ Not yet — they need <b>' + o.need + '</b> slices and you served <b>' + o.served.size + '</b>. Tap slices to fix it!' +
+      '<br><span style="font-weight:600;color:#8a6d3b">👉 ' + o.teach + '</span>';
   }
 }
 
