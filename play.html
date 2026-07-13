@@ -3512,7 +3512,30 @@ function prepareAvatarModel(id, gltf) {
     // Meshy sometimes bakes a stray "fit" scale into a clip's bone-scale tracks (the fox's
     // walk held her Hips at 0.64 — she shrank mid-stride and popped back on stopping). Our
     // rigs never squash-and-stretch, so drop scale tracks: bones keep their rest scale.
-    clips.forEach(c => { c.tracks = c.tracks.filter(tr => !/\.scale$/.test(tr.name)); });
+    // 🩹 Same hygiene for POSITION tracks: every clip bakes each bone's position, and a
+    // clip GRAFTED from a cast-mate bakes the DONOR's skeleton — Leo's Hip Hop carried a
+    // head 4× further off the neck (29.3 vs his 6.8) and shorter forearms, warping him
+    // mid-dance. Rotations retarget cleanly across the shared rig; positions never should:
+    // inner bones keep THIS hero's proportions (native clips just bake rest values there,
+    // so nothing changes for them), and the root keeps its dance bounce but re-centered
+    // onto THIS hero's own hip point (native clips shift by ~zero — self-neutralizing).
+    clips.forEach(c => {
+      c.tracks = c.tracks.filter(tr => {
+        if (/\.scale$/.test(tr.name)) return false;
+        if (!/\.position$/.test(tr.name)) return true;
+        const bone = inner.getObjectByName(tr.name.slice(0, tr.name.lastIndexOf('.')));
+        if (!bone || !bone.isBone) return true;             // scene-object motion: not ours to touch
+        if (bone.parent && bone.parent.isBone) return false; // inner bone → rest position wins
+        const v = tr.values, n = (v.length / 3) | 0;         // root bone (Hips): re-center the bounce
+        if (n > 0) {
+          let mx = 0, my = 0, mz = 0;
+          for (let i = 0; i < v.length; i += 3) { mx += v[i]; my += v[i + 1]; mz += v[i + 2]; }
+          const dx = bone.position.x - mx / n, dy = bone.position.y - my / n, dz = bone.position.z - mz / n;
+          for (let i = 0; i < v.length; i += 3) { v[i] += dx; v[i + 1] += dy; v[i + 2] += dz; }
+        }
+        return true;
+      });
+    });
     mixer = new THREE.AnimationMixer(inner);
     // "Sitting Idle" / "Lying Down" style clips must NOT become the main standing idle —
     // posture qualifiers push a clip into the special-move pool instead.
