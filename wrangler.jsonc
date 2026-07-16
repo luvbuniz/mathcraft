@@ -1,3 +1,8 @@
+// Stackadoo is a plain static site (HTML/JS/images, no build step). This tells
+// Cloudflare Workers Builds to serve the repo root as static assets — no Worker
+// script needed. IMPORTANT: this must be the ONLY wrangler config file in the
+// repo. A wrangler.toml existed alongside this once, and Wrangler refuses to
+// build when it finds both ("Latest build failed" on the dashboard).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "stackadoo",
@@ -7,8 +12,5 @@
   },
   "assets": {
     "directory": "."
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+  }
 }
