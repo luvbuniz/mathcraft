@@ -1,5 +1,12 @@
 # Files in the repo that should NOT be published to the public website.
 # (Code still lives on GitHub; this only controls what Cloudflare serves.)
+# Cloudflare Workers asset uploads max out at 25 MiB per file — without
+# ignoring .git, Workers Builds tries to upload the pack file (~174 MiB)
+# and fails ("Asset too large").
+.git/
+.github/
+.wrangler/
+node_modules/
 admin.html
 *.md
 character-sheets/
