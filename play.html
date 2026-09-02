@@ -241,7 +241,8 @@
   }
   .answerBlock:active { transform:translateY(3px); }
   .answerBlock.blank { background:linear-gradient(180deg,#cfc4b2,#b3a68f); color:transparent;
-    border-color:#9a8d75; box-shadow:inset 0 6px 0 rgba(255,255,255,.25), 0 5px 0 #8a7c63; }
+    border-color:#9a8d75; box-shadow:inset 0 6px 0 rgba(255,255,255,.25), 0 5px 0 #8a7c63;
+    pointer-events:none; }
   .answerBlock.shake { animation:shake .35s; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
   #mathFeedback { min-height:28px; font-size:clamp(18px,2.8vw,26px); font-weight:bold; margin-top:10px; color:#2f7d27; }
@@ -2029,7 +2030,14 @@ const ALL_READ_WORDS = [].concat(...RHYME_FAMILIES, ...OPPOSITES, ...SYNONYMS);
 function langReward(level) { return 3 + Math.min(3, level); }     // 4..6, similar to easy math
 function fourChoices(answer, distractors) {
   const opts = [answer];
-  for (const w of shuffle(distractors.slice())) { if (opts.length >= 4) break; if (!opts.includes(w)) opts.push(w); }
+  const seen = new Set([String(answer)]);
+  for (const w of shuffle(distractors.slice())) {
+    if (opts.length >= 4) break;
+    const sw = String(w);
+    if (seen.has(sw)) continue;
+    seen.add(sw);
+    opts.push(w);
+  }
   return shuffle(opts);
 }
 function makeReadingQuestion(level) {
@@ -14180,10 +14188,16 @@ function solveHTML(eq) {
     html += '<div class="fixStep">Read the green answer above out loud. You\'ve got this! 🙂</div>';
   return html;
 }
-function showFixIt(note) {
+function showFixIt(note, tapped) {
   if (!currentEq) return;
   $('fixProblem').textContent = eqDisplay(currentEq);
   $('fixAns').innerHTML = '✅ The answer is <b>' + currentEq.answer + '</b>';
+  const tapEl = $('fixTapped');
+  if (tapEl) {
+    const tv = (tapped == null || tapped === '') ? '' : String(tapped);
+    if (tv) { tapEl.style.display = 'block'; tapEl.innerHTML = '👆 You tapped <b>' + tv + '</b>'; }
+    else { tapEl.style.display = 'none'; tapEl.textContent = ''; }
+  }
   $('fixBody').innerHTML = solveHTML(currentEq);
   $('fixNote').textContent = note || '';
   $('fixIt').classList.add('show');
@@ -14244,10 +14258,12 @@ function updateMathNote() {
 }
 function answerPicked(btn, opt) {
   if (!currentEq || mathLocked) return;
-  // Accept dataset / label too — string vs number and hit-test mismatches were grading correct taps as Oops.
+  if (btn && btn.disabled) return;   // ignore synthetic clicks on locked tiles
+  const eqAtClick = currentEq;       // freeze — never grade against a swapped question
   const picked = (opt != null ? opt : (btn && btn.dataset && btn.dataset.answer));
-  const label = btn && (btn.dataset && btn.dataset.answer != null ? btn.dataset.answer : btn.textContent);
-  const correct = answersMatch(picked, currentEq.answer) || answersMatch(label, currentEq.answer);
+  const label = btn && (btn.dataset && btn.dataset.answer != null ? btn.dataset.answer : (btn.textContent || '').trim());
+  const correct = answersMatch(picked, eqAtClick.answer) || answersMatch(label, eqAtClick.answer);
+  if (currentEq !== eqAtClick) return;
   if (correct) {
     Sound.correct();
     mathLocked = true;
@@ -14347,7 +14363,7 @@ function answerPicked(btn, opt) {
     // Teach the method automatically on every miss: reveal the answer + the easiest way,
     // and hold it on screen (locked) so younger kids read it before the next question.
     $('mathFeedback').textContent = '';
-    showFixIt(easierNote);
+    showFixIt(easierNote, (picked != null && picked !== '') ? picked : label);
   }
 }
 $('hintBtn').onclick = () => { Sound.click(); showHint(); };
@@ -18334,8 +18350,8 @@ $('startBtn').onclick = () => {
   resetWorld();
   resetGameState();
   G.gloomiesEnabled = false;           // always calm — Gloomies entry removed from setup
-  G.blocks = Math.max(G.blocks || 0, 8); // starter blocks — no Build-walls dead end
-  G.mouseWalk = true;
+  G.blocks = Math.max(G.blocks || 0, 16); // starter blocks — no Build-walls dead end
+  G.mouseWalk = false;                 // Pip QA: start in place-blocks mode (WASD to move)
   loadProfileFor(nm);
   startGame();
   try { saveGame(); } catch (e) {}     // persist calm mode immediately
@@ -18618,19 +18634,10 @@ function startGame() {
   $('camBtn').textContent = camIcon();
   G.selfie = false; $('selfieBtn').classList.remove('on');
   setRemoveMode(false);                        // always start in 🧱 Build mode
-  if (G.mouseWalk == null) G.mouseWalk = true;
-  {
-    const wb = $('walkBtn');
-    if (wb) {
-      wb.classList.toggle('on', !!G.mouseWalk);
-      wb.textContent = G.mouseWalk ? '🚶 Click-to-move: ON' : '🚶 Click-to-move: OFF';
-    }
-    const lt = $('legendText');
-    if (lt) lt.innerHTML = G.mouseWalk
-      ? '🖱️ Drag to look • Left-click the ground to <b>walk</b> there • click a math block or shop to use it'
-      : '🖱️ Drag to look • Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️';
-  }
-  if ((G.blocks || 0) < 1 && (G.solved || 0) === 0) G.blocks = 8;  // safety starter pack
+  if (G.mouseWalk == null) G.mouseWalk = false; // Pip QA: click places blocks; WASD/joystick to move
+  G.buildMode = true;
+  if (typeof syncMouseWalkUI === 'function') syncMouseWalkUI(true);
+  if ((G.blocks || 0) < 1 && (G.solved || 0) === 0) G.blocks = 16;  // safety starter pack
   $('mouseLegend').style.display = isTouch ? 'none' : 'block';   // show the click shortcut on desktop
   $('useBtnDesk').style.display = isTouch ? 'none' : 'block';    // desktop ⭐ USE button (mouse-only players)
   if (isTouch) {                                                 // touch has its own 🧱 Place / ↩️ Undo in the bottom cluster —
