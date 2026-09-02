@@ -1140,30 +1140,36 @@
         </div>
       </div>
 
-      <div class="field">
-        <span class="fieldLabel">Should Gloomies visit?</span>
-        <div class="choiceGrid two" id="gloomyRow">
-          <button class="choice" data-gloomies="on">
-            <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
-            <b>Gloomies On</b><small>Beat the timer or they appear!</small>
-          </button>
-          <button class="choice" data-gloomies="off">
-            <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14c0-3 2.4-5 5.5-5 0 3.3-2.4 5-5.5 5z"/><path d="M12 14c0-2.4-1.9-4.3-4.6-4.3C7 12.4 8.9 14 12 14z"/></svg>
-            <b>No Gloomies</b><small>Calm, open-ended building</small>
-          </button>
-        </div>
-        <div id="timeRow" class="subField">
-          <span class="fieldLabel small">Build time</span>
-          <div class="segment">
-            <button class="timeBtn" data-mins="5">5 min</button>
-            <button class="timeBtn" data-mins="10">10 min</button>
-            <button class="timeBtn selected" data-mins="15">15 min</button>
-            <button class="timeBtn" data-mins="20">20 min</button>
-            <button class="timeBtn" data-mins="25">25 min</button>
-            <button class="timeBtn" data-mins="30">30 min</button>
+      <!-- Gloomies hidden from primary setup so kids don't auto-pick scare mode.
+           Soft-hidden under a grown-up/advanced disclosure; new adventures default calm. -->
+      <details class="howto" id="gloomyAdvanced">
+        <summary>Grown-up option: Gloomies (timed scare mode)</summary>
+        <div class="howtoBody">
+          <p style="margin:0 0 8px;color:#7a6a35;font-weight:700;line-height:1.4">New adventures stay <b>calm (No Gloomies)</b> by default. Only turn this on if a grown-up wants a timed challenge.</p>
+          <span class="fieldLabel">Should Gloomies visit?</span>
+          <div class="choiceGrid two" id="gloomyRow">
+            <button class="choice" data-gloomies="on">
+              <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+              <b>Gloomies On</b><small>Beat the timer or they appear!</small>
+            </button>
+            <button class="choice selected" data-gloomies="off">
+              <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14c0-3 2.4-5 5.5-5 0 3.3-2.4 5-5.5 5z"/><path d="M12 14c0-2.4-1.9-4.3-4.6-4.3C7 12.4 8.9 14 12 14z"/></svg>
+              <b>No Gloomies</b><small>Calm, open-ended building</small>
+            </button>
+          </div>
+          <div id="timeRow" class="subField" style="display:none">
+            <span class="fieldLabel small">Build time</span>
+            <div class="segment">
+              <button class="timeBtn" data-mins="5">5 min</button>
+              <button class="timeBtn" data-mins="10">10 min</button>
+              <button class="timeBtn selected" data-mins="15">15 min</button>
+              <button class="timeBtn" data-mins="20">20 min</button>
+              <button class="timeBtn" data-mins="25">25 min</button>
+              <button class="timeBtn" data-mins="30">30 min</button>
+            </div>
           </div>
         </div>
-      </div>
+      </details>
 
       <div class="stepNav">
         <button class="btn btn-secondary" data-go="screenLanding">
@@ -3800,7 +3806,7 @@ function updateGlbAvatar(d, moving, t) {
 /* ============================ GAME STATE ============================ */
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
-  gloomiesEnabled: true,
+  gloomiesEnabled: false,   // calm by default — Gloomies only via grown-up/advanced
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, berries: 0, solved: 0, balls: 0,
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
@@ -13850,6 +13856,12 @@ function bumpHud(id) {                    // a happy little pop when a counter g
   el.classList.remove('countPop'); void el.offsetWidth; el.classList.add('countPop');
 }
 function refreshHUD() {
+  if (G.running && $('modeLabel')) {
+    try {
+      $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
+    } catch (e) {}
+  }
+
   $('blockCount').textContent = G.blocks;
   $('powerCount').textContent = G.powerBlocks;
   $('coinCount').textContent = G.coins;
@@ -14016,13 +14028,36 @@ function isTrickyQuestion(eq) {
   }
   return false;
 }
+/* Normalize quiz answers so "64" === 64 and fancy minus / whitespace can't false-fail. */
+function answersMatch(a, b) {
+  const sa = String(a == null ? '' : a).replace(/\u2212/g, '-').trim();
+  const sb = String(b == null ? '' : b).replace(/\u2212/g, '-').trim();
+  if (sa === sb) return true;
+  // Pure numeric compare (not fractions, money, or word answers)
+  if (/^[-+]?\d+(\.\d+)?$/.test(sa) && /^[-+]?\d+(\.\d+)?$/.test(sb)) {
+    return Number(sa) === Number(sb);
+  }
+  return false;
+}
 function renderMathQuestion() {
   if (answerUnlockTimer) clearTimeout(answerUnlockTimer);
   if (nextQuestionTimer) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
+  // Clear stale Oops / reward UI so they never overlap the next question's buttons
+  if (typeof hideFixIt === 'function') hideFixIt();
+  pendingReward = 0;
+  const rc = $('rewardChoice'); if (rc) { rc.style.display = 'none'; rc.innerHTML = ''; }
+  const mf = $('mathFeedback'); if (mf) mf.textContent = '';
+  // Lock + destroy old buttons BEFORE swapping currentEq — stops stale clicks comparing
+  // an old option against a brand-new answer (Oops-on-correct / wrong feedback).
+  mathLocked = true;
+  const wrap = $('mathChoices');
+  wrap.innerHTML = '';
   const level = adaptiveMathLevel();
   currentEq = makeQuestion(level);
   currentEq.level = level;
-  mathLocked = false;
+  // Ensure answer + options are comparable strings (guards any non-math path too)
+  currentEq.answer = String(currentEq.answer);
+  currentEq.options = (currentEq.options || []).map(String);
   questionShownAt = performance.now();
   answerUnlockedAt = 0;
   $('hintBox').style.display = 'none';
@@ -14035,16 +14070,16 @@ function renderMathQuestion() {
   // nudge kids to use paper — but only on genuinely tricky problems, not easy ones like "8 - 1"
   $('paperTip').style.display = isTrickyQuestion(currentEq) ? 'block' : 'none';
   $('mathPrompt').textContent = 'Read the whole question. Answers unlock in a moment...';
-  const wrap = $('mathChoices');
-  wrap.innerHTML = '';
   currentEq.options.forEach(opt => {
     const b = document.createElement('button');
     b.className = 'answerBlock';
     b.textContent = opt;
+    b.dataset.answer = opt;                 // hit-test source of truth (not closure drift)
     b.disabled = true;
-    b.onclick = () => answerPicked(b, opt);
+    b.onclick = (ev) => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } answerPicked(b, b.dataset.answer); };
     wrap.appendChild(b);
   });
+  mathLocked = false;
   const question = currentEq;
   answerUnlockTimer = setTimeout(() => {
     if (currentEq !== question || mathLocked) return;
@@ -14211,12 +14246,17 @@ function updateMathNote() {
 }
 function answerPicked(btn, opt) {
   if (!currentEq || mathLocked) return;
-  if (opt === currentEq.answer) {
+  // Accept dataset / label too — string vs number and hit-test mismatches were grading correct taps as Oops.
+  const picked = (opt != null ? opt : (btn && btn.dataset && btn.dataset.answer));
+  const label = btn && (btn.dataset && btn.dataset.answer != null ? btn.dataset.answer : btn.textContent);
+  const correct = answersMatch(picked, currentEq.answer) || answersMatch(label, currentEq.answer);
+  if (correct) {
     Sound.correct();
     mathLocked = true;
     wrongStreak = 0;
     const reward = currentEq.reward;
-    document.querySelectorAll('.answerBlock').forEach(b => b.classList.add('blank'));  // blocks turn blank!
+    // Remove answer buttons entirely (don't leave blank clickable tiles under/over rewards)
+    const choices = $('mathChoices'); if (choices) choices.innerHTML = '';
     G.solved++;
     if (curWorld().subject !== 'math' && currentEq.text) {   // 📒 log mastered language questions so they retire & stop repeating
       profile.qLog = profile.qLog || {};
@@ -14270,7 +14310,13 @@ function answerPicked(btn, opt) {
     const mk = (cls, label, fn) => {
       const b = document.createElement('button');
       b.className = 'rewardBtn ' + cls; b.textContent = label;
-      b.onclick = () => { if (mathLocked === 'picked') return; mathLocked = 'picked'; pendingReward = 0; fn(); refreshHUD(); closeMath(); };
+      b.onclick = () => {
+        if (mathLocked === 'picked') return;
+        mathLocked = 'picked'; pendingReward = 0; fn(); refreshHUD();
+        const r = $('rewardChoice'); if (r) { r.style.display = 'none'; r.innerHTML = ''; }
+        const f = $('mathFeedback'); if (f) f.textContent = '';
+        closeMath();
+      };
       return b;
     };
     wrap.appendChild(mk('wood', '🧱 +' + reward + ' build blocks', () => { G.blocks += reward; G.blockColor = 0xC9B79A; selectSlot('block', true); bumpHud('blockCount'); }));
@@ -14284,7 +14330,8 @@ function answerPicked(btn, opt) {
     bumpSkill(currentEq.skill, false);
     btn.classList.add('shake');
     mathLocked = true;                 // no button mashing!
-    document.querySelectorAll('.answerBlock').forEach(b => b.disabled = true);
+    const choiceWrap = $('mathChoices');
+    if (choiceWrap) choiceWrap.querySelectorAll('.answerBlock').forEach(b => { b.disabled = true; b.style.pointerEvents = 'none'; });
     wrongStreak++;
     G.mathCorrectStreak = 0;
     G.mathMisses++;
@@ -18255,11 +18302,15 @@ $('startBtn').onclick = () => {
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
   if (worldLocked(G.world)) G.world = 'meadow';   // safety: never start in a locked world
+  // Preserve the (advanced) Gloomies choice across resetGameState — default is calm/false.
+  const wantGloomies = G.gloomiesEnabled === true;
   clearSave(nm, G.world);              // Start Adventure = a brand-new build for this name + chosen world
   resetWorld();
   resetGameState();
+  G.gloomiesEnabled = wantGloomies;    // calm unless a grown-up flipped advanced → Gloomies On
   loadProfileFor(nm);
   startGame();
+  try { saveGame(); } catch (e) {}     // persist No Gloomies immediately so HUD/reload don't flip back
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 function shareGame() {
