@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Stackadoo — Build with Math!</title>
+<!-- pip-minor-pack: blank-tabs, leave-btn, next-fold, starter-blocks, build-click-hint -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%239ed7a3%22%20stroke-width%3D%222%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <!-- Bright, kid-friendly look on every device — opt out of browser "auto dark mode" (Brave/Chrome) -->
 <meta name="color-scheme" content="light">
@@ -151,6 +152,12 @@
     background:rgba(255,255,255,.88); border-radius:12px; padding:9px 13px; box-shadow:0 3px 0 rgba(0,0,0,.15); }
   /* these buttons now live INSIDE the ☰ menu (kept in the DOM — their onclick IS the feature) */
   #soundBtn, #homeBtn, #saveBtn, #questBtn, #selfieBtn, #cursorBtn { display:none !important; }
+  /* Persistent Leave — Save & go home without opening ☰ (Pip QA) */
+  #leaveBtn { position:absolute; top:10px; right:62px; pointer-events:auto; z-index:28;
+    font-size:14px; font-weight:800; background:rgba(255,243,220,.96); color:#7a4a10;
+    border:none; border-radius:12px; padding:9px 12px; box-shadow:0 3px 0 rgba(0,0,0,.15);
+    font-family:inherit; cursor:pointer; white-space:nowrap; }
+  #leaveBtn:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.15); }
   /* 📷 view chooser + ☰ menu — labeled options so kids can FIND things.
      z-index above the touch JUMP/USE cluster so menu taps never hit the buttons beneath. */
   #viewMenu, #hudMenu { display:none; position:fixed; z-index:65; pointer-events:auto; flex-direction:column; gap:6px;
@@ -635,6 +642,7 @@
     #menuBtn { top:8px; right:8px; }
     #camBtn  { top:58px; right:8px; }
     #invBtn  { top:108px; right:8px; }
+    #leaveBtn { top:58px; right:56px; font-size:12px; padding:8px 10px; }
     #sirenBtn { font-size:20px; padding:9px 12px; top:158px; right:8px; }
     #modeBtn { display:none; }   /* touch has its own 🧱/⛏️ toggle */
     #undoBtn { display:none; }   /* touch uses the big ↩️ Undo in the bottom build cluster */
@@ -921,7 +929,8 @@
     border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:3px 7px; color:var(--ink); }
   #setupCard .howtoBody p { flex-basis:100%; margin-top:7px; line-height:1.5; font-weight:600; }
 
-  #setupCard .stepNav { display:flex; gap:12px; margin-top:4px; }
+  #setupCard .stepNav { display:flex; gap:12px; margin-top:4px; position:sticky; bottom:0; z-index:5;
+    background:linear-gradient(180deg,rgba(255,255,255,0),#fff 32%); padding-top:12px; padding-bottom:4px; }
   #setupCard .stepNav .btn-secondary { flex:0 0 auto; }
   #setupCard .stepNav .btn-primary, #setupCard .stepNav .btn-spotlight { flex:1; }
 
@@ -934,6 +943,20 @@
     #setupCard #avatarGrid { grid-template-columns:repeat(3,1fr); }
     #setupCard .stepNav { position:sticky; bottom:0; background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%); padding-top:10px; }
   }
+
+  /* Pip QA: keep Step-1 Next reachable without scrolling on phones / short viewports */
+  @media (max-height:740px), (max-width:560px) {
+    #setupCard #screenSettings { gap:10px; }
+    #setupCard #screenSettings .screenTitle { font-size:clamp(20px,5vw,26px); margin:0; }
+    #setupCard #screenSettings .field { gap:6px; }
+    #setupCard #screenSettings .choice { min-height:52px; padding:10px 12px; }
+    #setupCard #screenSettings .choice b { font-size:15px; }
+    #setupCard #screenSettings .choice small { font-size:12px; }
+    #setupCard .stepNav { position:sticky; bottom:0; z-index:6;
+      background:linear-gradient(180deg,rgba(255,255,255,0),#fff 22%);
+      padding:12px 0 8px; margin-top:8px; }
+  }
+
   /* 📱 Tablets & tall touch screens: bigger, easier tap targets for small fingers */
   @media (pointer:coarse) and (min-height:640px) {
     #menuBtn,#camBtn,#invBtn,#sirenBtn { font-size:27px; padding:12px 16px; border-radius:16px; }
@@ -948,7 +971,8 @@
     #menuBtn { top:8px; right:8px; }
     #camBtn  { top:8px; right:64px; }
     #invBtn  { top:8px; right:120px; }
-    #sirenBtn { font-size:19px; padding:9px 12px; top:8px; right:176px; }
+    #leaveBtn { top:8px; right:176px; font-size:12px; padding:8px 10px; }
+    #sirenBtn { font-size:19px; padding:9px 12px; top:8px; right:248px; }
     #hudMenu { gap:4px; padding:6px; }                       /* all the choices fit a short phone */
     #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
     /* chat chips hug the bottom-LEFT so they never crowd the button grid */
@@ -1225,6 +1249,7 @@
     <div id="hudShelter">🏗️ Not enclosed yet</div>
   </div>
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
+  <button id="leaveBtn" type="button" title="Save & go home">🏠 Leave</button>
   <button id="menuBtn" title="Menu">☰</button>
   <button id="soundBtn" title="Sound on/off">🔊</button>
   <button id="camBtn" title="Switch view: see your character / look through their eyes / bird's eye for building">🧍</button>
@@ -1279,6 +1304,7 @@
       <div class="fixTitle">🛠️ Oops — let's fix it together!</div>
       <div id="fixProblem" class="fixProblem"></div>
       <div id="fixAns" class="fixAns"></div>
+      <div id="fixTapped" class="fixTapped" style="display:none;margin:6px 0 2px;font-weight:800;color:#8a4b1a"></div>
       <div id="fixBody"></div>
       <div id="fixNote"></div>
       <button id="fixClose" class="locked" disabled></button>
@@ -3779,7 +3805,7 @@ function updateGlbAvatar(d, moving, t) {
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: false,   // always calm — Gloomies setup entry removed (logic kept dead)
-  blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, berries: 0, solved: 0, balls: 0,
+  blocks: 16, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, berries: 0, solved: 0, balls: 0,  /* Pip QA: starter blocks so Build walls isn't empty-handed */
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
@@ -5035,7 +5061,7 @@ function resetWorld() {
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
-  G.blocks = 0; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.tokens = 0; G.raceFlags = 0; G.berries = 0; G.solved = 0; G.balls = 0;
+  G.blocks = 16; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.tokens = 0; G.raceFlags = 0; G.berries = 0; G.solved = 0; G.balls = 0;  // Pip QA starter blocks (restoreGame overwrites from save)
   G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
@@ -13529,7 +13555,7 @@ function placeSelectedAt(x, z, blockY) {
     G.furniture.roof -= 1; Sound.place(); refreshHUD(); return true;
   }
   // plain building block
-  if (G.blocks < 1) { toast('🧱 No blocks yet! Earn some at a ❓ station, or buy them at 🏚️ Stack Barn!', 2400); return false; }
+  if (G.blocks < 1) { toast('🧱 Need blocks first — solve a ❓ for some, or buy a pack at 🏚️ Stack Barn!', 2600); return false; }
   const y = blockY == null ? 0 : blockY;
   if (y > 8) { toast('⬆️ That tower is tall enough!', 1400); return false; }
   if (blocks.has(key(x, y, z))) return false;
@@ -17365,6 +17391,9 @@ const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: 
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
+  // Pip QA: picking a build slot means clicks should place, not walk
+  if (!quiet && slot && slot !== 'paint') { G.buildMode = true; if (!G.removeMode) ensureBuildClickPlaces(); }
+  else if (slot) { G.buildMode = true; }
   const tag = $('placingTag');
   if (placingTagTimer) { clearTimeout(placingTagTimer); placingTagTimer = null; }
   if (SLOT_TAGS[slot]) {
@@ -17805,6 +17834,14 @@ const _fitObs = new MutationObserver(() => setTimeout(fitOpenPopup, 0));
 document.querySelectorAll('.popup').forEach(p => _fitObs.observe(p, { attributes: true, attributeFilter: ['style'] }));
 addEventListener('resize', fitOpenPopup);
 setInterval(fitOpenPopup, 700);                             // catches content that grows while a popup is open
+
+/* Pip QA: middle-click / open-in-new-tab on in-game buttons used to spawn about:blank tabs
+   and eject kids from the adventure. Block that for non-link controls. */
+addEventListener('auxclick', (e) => {
+  if (e.button !== 1) return;
+  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud, #setupCard');
+  if (t && !e.target.closest('a[href]')) { e.preventDefault(); e.stopPropagation(); }
+}, true);
 function armBackGuard() { try { history.pushState({ sg: 1 }, ''); } catch (e) {} }
 addEventListener('load', armBackGuard);
 addEventListener('popstate', () => {
@@ -17822,6 +17859,7 @@ addEventListener('popstate', () => {
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $('homeBtn').onclick = () => { Sound.click(); goHome(); };
+$('leaveBtn').onclick = () => { Sound.click(); goHome(); };
 $('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 function freeMouse() {
   toast(G.mouseWalk
@@ -17837,17 +17875,41 @@ function setRemoveMode(on) {
   b.classList.toggle('remove', G.removeMode);
 }
 $('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
-  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click a spot to place a block.', 2600); };
+  if (!G.removeMode) ensureBuildClickPlaces();
+  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click places a block. WASD/joystick to move.', 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
 $('useBtnDesk').onclick = () => { tryUse(); };
+function syncMouseWalkUI(quiet) {
+  const b = $('walkBtn');
+  if (b) {
+    b.classList.toggle('on', !!G.mouseWalk);
+    b.textContent = G.mouseWalk ? '🚶 Click-to-move: ON' : '🚶 Click-to-move: OFF';
+  }
+  const leg = $('legendText');
+  if (leg) {
+    leg.innerHTML = G.mouseWalk
+      ? '🖱️ Drag to look • Left-click the ground to <b>walk</b> there • click a math block or shop to use it'
+      : '🖱️ Drag to look • Left-click <b>places blocks</b> 🧱 • WASD/arrows to move • Right-click <b>Remove</b> ⛏️';
+  }
+  if (!quiet) {
+    toast(G.mouseWalk
+      ? '🚶 Click-to-move ON — left-click the ground to walk there. No keyboard needed!'
+      : '🧱 Build mode — click places blocks. Move with WASD or the joystick.', 2800);
+  }
+}
+/* Pip QA: while placing/building, click-to-move stays off so kids aren't confused */
+function ensureBuildClickPlaces() {
+  if (!G.mouseWalk) return;
+  G.mouseWalk = false; player.walkTo = null;
+  syncMouseWalkUI(true);
+  toast('🧱 Building — click places a block. Move with WASD or the joystick.', 3000);
+}
 $('walkBtn').onclick = () => {
-  Sound.click(); G.mouseWalk = !G.mouseWalk; player.walkTo = null;
-  const b = $('walkBtn'); b.classList.toggle('on', G.mouseWalk);
-  b.textContent = G.mouseWalk ? '🚶 Click-to-move: ON' : '🚶 Click-to-move: OFF';
-  $('legendText').innerHTML = G.mouseWalk
-    ? '🖱️ Drag to look • Left-click the ground to <b>walk</b> there • click a math block or shop to use it'
-    : '🖱️ Drag to look • Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️';
-  toast(G.mouseWalk ? '🚶 Click-to-move ON — left-click the ground to walk there. No keyboard needed!' : '🔨 Build mode — left-click to place blocks.', 2800);
+  Sound.click();
+  // Turning click-to-move ON leaves build-click; turning OFF returns to place-blocks
+  if (!G.mouseWalk) { G.buildMode = false; }
+  G.mouseWalk = !G.mouseWalk; player.walkTo = null;
+  syncMouseWalkUI(false);
 };
 $('undoBtn').onclick = () => { Sound.click(); undoLast(); };
 $('bridgeBtn').onclick = () => { Sound.click(); fillBridge(); };
@@ -17884,7 +17946,9 @@ window.addEventListener('mouseup', e => {
     const r = canvas.getBoundingClientRect();
     const ndcX = ((e.clientX - r.left) / r.width) * 2 - 1;
     const ndcY = -((e.clientY - r.top) / r.height) * 2 + 1;
-    interact(ndcX, ndcY, drag.button === 2 ? 'break' : (G.mouseWalk ? 'move' : (G.removeMode ? 'break' : 'place')));
+    // Pip QA: in build/place mode, click always places (never click-to-move) so movement isn't "broken"
+    const _buildPlace = G.buildMode && !G.removeMode && !player.driving;
+    interact(ndcX, ndcY, drag.button === 2 ? 'break' : ((G.mouseWalk && !_buildPlace) ? 'move' : (G.removeMode ? 'break' : 'place')));
   }
 });
 addEventListener('contextmenu', e => e.preventDefault());
@@ -18197,6 +18261,7 @@ function refreshSavedList() {
     const row = document.createElement('div');
     row.className = 'saveRow';
     const load = document.createElement('button');
+    load.type = 'button';
     load.className = 'loadBtn';
     const w = WORLDS[s.world] || WORLDS.meadow;
     load.innerHTML =
@@ -18204,7 +18269,12 @@ function refreshSavedList() {
       '<span class="slotInfo"><span class="slotName">' + w.emoji + ' ' + (s.name || 'Player') + '</span>' +
       '<span class="slotMeta">' + w.name + ' • Grade ' + (s.grade || 2) +
       '<span class="slotChip calm">Calm</span></span></span>';
-    load.onclick = () => { Sound.click(); restoreGame(s); };
+    load.onclick = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (e && e.button && e.button !== 0) return;
+      Sound.click(); restoreGame(s);
+    };
+    load.onauxclick = (e) => { e.preventDefault(); e.stopPropagation(); };
     row.appendChild(load);
     if (deleteAllowedFor(s.grade)) {             // hidden for young grades by default; parents choose in the grown-up page
       const del = document.createElement('button');
@@ -18264,6 +18334,8 @@ $('startBtn').onclick = () => {
   resetWorld();
   resetGameState();
   G.gloomiesEnabled = false;           // always calm — Gloomies entry removed from setup
+  G.blocks = Math.max(G.blocks || 0, 8); // starter blocks — no Build-walls dead end
+  G.mouseWalk = true;
   loadProfileFor(nm);
   startGame();
   try { saveGame(); } catch (e) {}     // persist calm mode immediately
@@ -18518,6 +18590,13 @@ function showSetupScreen(id) {
   SETUP_SCREENS.forEach(s => { const el = $(s); if (el) el.hidden = (s !== id); });
   const card = $('setupCard'); if (card) card.scrollTop = 0;
   if ($('startScreen')) $('startScreen').scrollTop = 0;
+  // Pip QA: Step-1 Next must be on-screen without hunting on phones
+  if (id === 'screenSettings') {
+    requestAnimationFrame(() => {
+      const n = $('toHeroBtn');
+      if (n && n.scrollIntoView) n.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
 }
 $('newGameBtn').onclick = () => { Sound.click(); showSetupScreen('screenSettings'); };
 $('toHeroBtn').onclick = () => { Sound.click(); showSetupScreen('screenHero'); };
@@ -18539,6 +18618,19 @@ function startGame() {
   $('camBtn').textContent = camIcon();
   G.selfie = false; $('selfieBtn').classList.remove('on');
   setRemoveMode(false);                        // always start in 🧱 Build mode
+  if (G.mouseWalk == null) G.mouseWalk = true;
+  {
+    const wb = $('walkBtn');
+    if (wb) {
+      wb.classList.toggle('on', !!G.mouseWalk);
+      wb.textContent = G.mouseWalk ? '🚶 Click-to-move: ON' : '🚶 Click-to-move: OFF';
+    }
+    const lt = $('legendText');
+    if (lt) lt.innerHTML = G.mouseWalk
+      ? '🖱️ Drag to look • Left-click the ground to <b>walk</b> there • click a math block or shop to use it'
+      : '🖱️ Drag to look • Left-click <b>Build</b> 🧱 &nbsp;•&nbsp; Right-click <b>Remove</b> ⛏️';
+  }
+  if ((G.blocks || 0) < 1 && (G.solved || 0) === 0) G.blocks = 8;  // safety starter pack
   $('mouseLegend').style.display = isTouch ? 'none' : 'block';   // show the click shortcut on desktop
   $('useBtnDesk').style.display = isTouch ? 'none' : 'block';    // desktop ⭐ USE button (mouse-only players)
   if (isTouch) {                                                 // touch has its own 🧱 Place / ↩️ Undo in the bottom cluster —
@@ -18575,7 +18667,7 @@ function startGame() {
   if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
-    toast('🌈 No Gloomies! Build, shop, explore, and solve math for as long as you like.', 5200);
+    toast('🌈 Calm mode! You start with a few 🧱 blocks — walk to purple ❓ for more. Tap 🏠 Leave anytime to save & go home.', 5600);
   }
   refreshHUD();
 }
@@ -18867,17 +18959,22 @@ let _playerLotIx = -1;                   // which home lot the player is standin
 function showNpcChat(n) {
   chatNpc = n;
   const el = $('npcChat'); if (!el) return;
-  el.innerHTML = NPC_CHIPS.map(c => '<button data-c="' + c.id + '">' + c.label + '</button>').join('') +
+  el.innerHTML = NPC_CHIPS.map(c => '<button type="button" data-c="' + c.id + '">' + c.label + '</button>').join('') +
     // ⌨️ Fiona's ask: TYPE a word to a friend. Kid-safe by design — the friend only understands
     // a handful of magic words (matched locally, hand-written replies; nothing goes online).
     '<span style="display:inline-flex;gap:5px;align-items:center">' +
     '<input id="npcSayInput" maxlength="16" placeholder="type a word…" autocomplete="off" ' +
     'style="width:104px;border:2px solid #9db7d8;border-radius:10px;padding:5px 8px;font:inherit;font-size:13px">' +
-    '<button data-c="_send">💬</button></span>';
-  el.querySelectorAll('button').forEach(b => b.onclick = () => {
-    Sound.click();
-    if (b.dataset.c === '_send') { npcWordSend(); return; }
-    npcChipTap(b.dataset.c);
+    '<button type="button" data-c="_send">💬</button></span>';
+  el.querySelectorAll('button').forEach(b => {
+    // Pip QA: chip taps must never open a blank Chrome tab / navigate away
+    b.onclick = (ev) => {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      Sound.click();
+      if (b.dataset.c === '_send') { npcWordSend(); return; }
+      npcChipTap(b.dataset.c);
+    };
+    b.onauxclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
   });
   const inp = el.querySelector('#npcSayInput');
   if (inp) {
@@ -19390,6 +19487,9 @@ function loop(now) {
         ? (isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • 🚪 USE to get out' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • 🚪 USE (or E) to get out' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • 🚪 USE (or E) to get out'))
         : (isTouch ? '🚪 Tap the 🚪 EXIT button to get out of the car' : '🚪 Press 🚪 EXIT (or E) to get out of the car');
       hint.style.display = 'block';
+    } else if (!isTouch && G.buildMode && !G.removeMode && !player.driving && (G.blocks || 0) > 0) {
+      hint.textContent = '🧱 Click places a block • WASD / arrows to move' + (G.mouseWalk ? ' (click-to-move paused while building)' : '');
+      hint.style.display = 'block';
     } else if (ns.dist < 2.6) {
       const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
       hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ ⭐ USE (or E) to ' + verb + ' and pick a reward!');
@@ -19502,9 +19602,19 @@ function loop(now) {
         sh.textContent = '🧱 Add a 🚪 door!';
         sh.style.color = '#b5832a';
         G.safe = true;                 // walls alone still keep Gloomies out
+      } else if ((G.blocks || 0) < 1) {
+        sh.textContent = '❓ Tap a purple ❓ for blocks!';
+        sh.style.color = '#b5832a';
+        G.safe = false;
       } else {
-        sh.textContent = '🏗️ Build walls!';
-        sh.style.color = '#c0392b';
+        // Pip QA: don't nag "Build walls!" when the kid has nothing to build with
+        if ((G.blocks || 0) < 1) {
+          sh.textContent = '🧱 Earn blocks at a ❓!';
+          sh.style.color = '#b5832a';
+        } else {
+          sh.textContent = '🏗️ Build walls!';
+          sh.style.color = '#c0392b';
+        }
         G.safe = false;
       }
     }
