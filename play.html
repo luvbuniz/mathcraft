@@ -18658,8 +18658,9 @@ function startGame() {
   $('ballRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
   $('hudTimer').style.display = G.gloomiesEnabled ? 'block' : 'none';
   $('timerBar').style.display = G.gloomiesEnabled ? 'block' : 'none';
-  $('hudShelter').style.display = G.gloomiesEnabled ? 'block' : 'none';
-  if (isTouch) $('hudMode').style.display = G.gloomiesEnabled ? 'block' : 'none';   // empty on mobile w/o a timer
+  $('hudShelter').style.display = 'block';  // Pip QA: soft objective always (Build walls / tap ❓)
+  // Keep #hudMode visible on touch too — shelter lives inside it (soft Build/❓ guidance)
+  if (isTouch) $('hudMode').style.display = 'block';
   if (isTouch) $('btnShoot').style.display = G.gloomiesEnabled && G.doomsday ? 'block' : 'none';
   spawnBerries();
   syncCars();                                   // park the active car out front if owned (else hide all)
@@ -19610,18 +19611,13 @@ function loop(now) {
         sh.style.color = '#b5832a';
         G.safe = true;                 // walls alone still keep Gloomies out
       } else if ((G.blocks || 0) < 1) {
+        // Pip QA: no blocks yet — send kids to purple ❓, never nag Build walls empty-handed
         sh.textContent = '❓ Tap a purple ❓ for blocks!';
         sh.style.color = '#b5832a';
         G.safe = false;
       } else {
-        // Pip QA: don't nag "Build walls!" when the kid has nothing to build with
-        if ((G.blocks || 0) < 1) {
-          sh.textContent = '🧱 Earn blocks at a ❓!';
-          sh.style.color = '#b5832a';
-        } else {
-          sh.textContent = '🏗️ Build walls!';
-          sh.style.color = '#c0392b';
-        }
+        sh.textContent = '🏗️ Build walls!';
+        sh.style.color = '#c0392b';
         G.safe = false;
       }
     }
