@@ -201,7 +201,8 @@
   #npcChat { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:32; display:none;
     flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,720px); pointer-events:none; }
   #npcChat button { font-family:inherit; font-weight:800; font-size:15px; color:#34495e; background:rgba(255,255,255,.96);
-    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto; }
+    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto;
+    -webkit-user-drag:none; user-select:none; }
   #npcChat button:active { transform:translateY(2px); box-shadow:none; }
   body.npcChatting #hintBar { display:none !important; }   /* the chips ARE the hint while chatting */
 
@@ -373,8 +374,10 @@
     background:linear-gradient(180deg,#6fcf63,#3fa24a); box-shadow:0 4px 0 #2f7d39; }
   #unlockBuyBtn:active { transform:translateY(2px); box-shadow:0 2px 0 #2f7d39; }
   #worldRow .choice.locked { position:relative; opacity:.92; }
-  #worldRow .choice.soon { opacity:.9; }
+  #worldRow .choice.soon { opacity:.78; cursor:default; filter:grayscale(.35); background:#f3f4f7; }
   #worldRow .choice.soon small { color:#6a7da0; font-weight:800; }
+  #worldRow .choice.soon.selected { border-color:#d6deea; background:#f3f4f7; }
+  #worldRow .choice.soon.selected::after { display:none; }
   .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
@@ -1149,7 +1152,7 @@
         <div class="choiceGrid grades" id="worldRow">
           <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
           <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏘️ Reading Town</b><small>Reading &amp; grammar</small></button>
-          <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish</small></button>
+          <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish • 🔜 Coming soon</small></button>
           <button class="choice" data-world="west" data-desc="Build a frontier town"><b>🤠 Country Western</b><small>Build a frontier town</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
@@ -1194,7 +1197,7 @@
         <summary>How to play</summary>
         <div class="howtoBody">
           <span class="kbd">Arrows</span>/<span class="kbd">WASD</span> move <span class="kbd">Space</span> jump
-          <span class="kbd">E</span> use / sit <span class="kbd">D</span> build
+          <span class="kbd">E</span> use / sit <span class="kbd">D</span> drop / place
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
           <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
           <p><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
@@ -3863,7 +3866,7 @@ const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
 const worldComingSoon = id => !!(WORLDS[id] && WORLDS[id].comingSoon);
 function comingSoonNote(id) {
   const w = WORLDS[id] || {};
-  toast('🔜 ' + (w.emoji || '') + ' ' + (w.name || 'This world') + ' is coming soon! For now, keep building in 🌳 Math Meadow.', 3200);
+  toast('🔜 ' + (w.emoji || '') + ' ' + (w.name || 'This world') + ' is coming soon — not playable yet. Keep building in 🌳 Math Meadow!', 3600);
 }
 
 /* ===== Full-game unlock ($5 one-time) — Math Meadow is free; other worlds unlock together.
@@ -4024,7 +4027,7 @@ const SHOP_ITEMS = [
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
   { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A window BLOCK — drops into a wall gap at any height.' },
-  { id: 'roof',   icon: '🔺', name: 'Roof', price: 18, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! Each pack is 12 tiles (bigger houses use more).' },
+  { id: 'roof',   icon: '🔺', name: 'Roof', price: 8, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! Each pack is 12 tiles (bigger houses use more). Early-game friendly price!' },
   { id: 'stove',  icon: '🔥', name: 'Stove & Oven', price: 12, kind: 'many', desc: 'Burners on top + a real oven. Cook pots & pans on it; bake in the oven!' },
   { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
   { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'Soup pot — set it on the stove to make it steam!' },
@@ -4070,7 +4073,7 @@ const SHOP_ITEMS = [
   { id: 'parkbench',   icon: '🪑', name: 'Park Bench', price: 8, kind: 'many', desc: 'A wooden park bench to sit and watch the fun.' },
   { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
   // 🪜🛗 Get between the floors of your house the easy way — no more hopping up blocks!
-  { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 18, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
+  { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 6, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
   // ⏸️ shelved for now (felt hasty; placed/owned elevators still work — re-add to sell again):
   // { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
   // 🎆 July 4th — summer cookout & celebration
@@ -4474,9 +4477,11 @@ function doUnlock() {
 /* reflect lock state on the homepage world picker */
 function renderWorldLocks() {
   document.querySelectorAll('#worldRow button').forEach(b => {
-    const id = b.dataset.world, soon = worldComingSoon(id), locked = worldLocked(id);
+    const id = b.dataset.world, soon = worldComingSoon(id), locked = worldLocked(id), w = WORLDS[id];
     b.classList.toggle('locked', locked && !soon);
     b.classList.toggle('soon', soon);
+    if (soon) { b.setAttribute('aria-disabled', 'true'); b.title = (w && w.name ? w.name : 'This world') + ' is coming soon'; }
+    else { b.removeAttribute('aria-disabled'); b.removeAttribute('title'); }
     const small = b.querySelector('small');
     if (small) small.textContent = (b.dataset.desc || '') + (soon ? ' • 🔜 Coming soon' : locked ? ' • 🔒 ' + PAY.price : '');
   });
@@ -5063,7 +5068,7 @@ function resetWorld() {
   fireworkLaunchers.length = 0;
   fireworkSparks.forEach(s => scene.remove(s.mesh)); fireworkSparks.length = 0;
   cookProps.length = 0; ovenGlows.length = 0;     // stoves are removed above, taking their cookware with them
-  player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null; player.playing = null; movingHome = null;
+  player.pos.copy(typeof spawnForWorld === 'function' ? spawnForWorld(G.world) : SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null; player.playing = null; movingHome = null;
   if (bedProps) bedProps.visible = false;
   if (shieldBubble) shieldBubble.visible = false;
   player.yaw = 0; player.pitch = -0.15;
@@ -5086,7 +5091,16 @@ function resetGameState() {
   G.npcHomes = {};
   G.pendingLevelQuest = null;
 }
+let leaveArmedUntil = 0;
+function requestLeave() {
+  if (!G.running) { goHome(); return; }
+  const n = performance.now();
+  if (n < leaveArmedUntil) { leaveArmedUntil = 0; goHome(); return; }
+  leaveArmedUntil = n + 3200;
+  toast('🏠 Tap Leave again to save & go home. (Escape stays in the game.)', 3000);
+}
 function goHome() {
+  leaveArmedUntil = 0;
   if (G.running && !G.over) saveGame();
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
   if (typeof clearNpcs === 'function') clearNpcs();
@@ -5103,6 +5117,8 @@ function goHome() {
   syncGloomyMenu();
   if (typeof showSetupScreen === 'function') showSetupScreen('screenLanding');
   $('startScreen').style.display = 'flex';
+  // New Adventure should follow the setup cards, not leftover in-game world (Math Meadow ≠ Reading Town)
+  try { syncWorldPicker(selectedSetupWorld() || 'meadow'); } catch (e) {}
 }
 // 🆘 free a player trapped inside a house/wall: hop out of any car, then teleport to the nearest
 // open OUTDOOR clearing (a cell with a clear 3×3 around it, away from buildings & shop footprints).
@@ -12005,6 +12021,21 @@ const player = {
   stepTimer: 0, stepAlt: false, restingBed: null, sittingChair: null, driving: null
 };
 const SPAWN = new THREE.Vector3(0.5, 0, 0.5);
+function spawnForWorld(id) {
+  // Reading Town: stand on Main Street looking at High Street so the town actually loads in-frame
+  if (id === 'city') return new THREE.Vector3(0.5, 0, -5);
+  return SPAWN.clone ? SPAWN.clone() : new THREE.Vector3(SPAWN.x, SPAWN.y, SPAWN.z);
+}
+function underRoofAt(x, z) {
+  const hx = Math.floor(x), hz = Math.floor(z);
+  const y0 = Math.floor((player && player.pos && player.pos.y) || 0);
+  for (let y = y0 + 2; y <= 10; y++) if (blocks.has(key(hx, y, hz))) return true;
+  return false;
+}
+function playerInsideHouse() {
+  if (!player || !player.pos) return false;
+  return underRoofAt(player.pos.x, player.pos.z);
+}
 
 function nearestBed(maxDist) {
   maxDist = maxDist || 2.5;
@@ -12057,15 +12088,31 @@ function toggleBedRest() {
     toast('All rested! Press L near the bed to lie down again.');
     return;
   }
-  const bed = nearestBed();
-  if (!bed) {
-    toast('Walk close to your bed, then press L.');
+  const bed = nearestBed(3.4);
+  if (bed) {
+    player.restingBed = bed;
+    player.vel.set(0, 0, 0);
+    if (document.pointerLockElement) document.exitPointerLock();
+    toast('Cozy! Press L again when you are ready to get up.');
     return;
   }
-  player.restingBed = bed;
-  player.vel.set(0, 0, 0);
-  if (document.pointerLockElement) document.exitPointerLock();
-  toast('Cozy! Press L again when you are ready to get up.');
+  // Country Home / roofed room: L enters a real interior view (sleep if a bed is in the house)
+  const inside = underRoofAt(player.pos.x, player.pos.z) || (typeof homeLotAt === 'function' && homeLotAt(player.pos.x, player.pos.z) >= 0);
+  if (inside) {
+    const houseBed = nearestBed(8);
+    if (houseBed) {
+      player.restingBed = houseBed;
+      player.vel.set(0, 0, 0);
+      if (document.pointerLockElement) document.exitPointerLock();
+      toast('🛏️ Nighty-night! Press L again to get up.', 2800);
+      return;
+    }
+    G.firstPerson = true; G.birdsEye = false; G._autoInterior = true;
+    const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
+    toast('🏠 You\'re inside! Walk to a 🛏️ bed and press L to lie down. Press C to change view.', 4000);
+    return;
+  }
+  toast('Walk close to your bed (or into your house), then press L.');
 }
 
 /* 🎠 PLAYGROUND — the rideable pieces you build & play on. Walk up, tap ⭐ USE to hop on. */
@@ -13240,6 +13287,12 @@ function updatePlayer(dt) {
 
   // camera
   const headY = player.pos.y + 1.55;
+  const inside = underRoofAt(player.pos.x, player.pos.z);
+  // Leave auto-interior first-person when you walk outdoors (must run even while firstPerson)
+  if (G._autoInterior && G.firstPerson && !inside && !G.birdsEye) {
+    G.firstPerson = false; G._autoInterior = false;
+    const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
+  }
   if (G.firstPerson) {
     camera.position.set(player.pos.x, headY, player.pos.z);
   } else if (G.birdsEye) {
@@ -13266,10 +13319,19 @@ function updatePlayer(dt) {
       const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
       // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
       if (solidAt(fx, fy, fz) || (fy < 5 && inShopZone(fx, fz))) {
-        allowed = Math.max(1.7, d - 0.4); break;   // pull in tight in narrow gaps instead of sitting inside the wall
+        allowed = Math.max(inside ? 0.45 : 1.7, d - 0.4); break;
       }
     }
-    camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
+    if (inside && allowed < 2.6 && !G.birdsEye) {
+      // Real interior path — first-person — instead of a clipped "fake interior" camera
+      if (!G.firstPerson) {
+        G.firstPerson = true; G._autoInterior = true;
+        const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
+      }
+      camera.position.set(player.pos.x, headY, player.pos.z);
+    } else {
+      camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
+    }
   }
   const look = G.birdsEye
     ? new THREE.Vector3(                                              // 🦅 look down at the ground just ahead of the builder
@@ -14320,6 +14382,8 @@ function answerPicked(btn, opt) {
     // closeMath() quietly gives them the build blocks so a prize is never lost.
     pendingReward = reward;
     const balls = Math.max(2, Math.round(reward * 0.7));
+    if (answerUnlockTimer) { clearTimeout(answerUnlockTimer); answerUnlockTimer = null; }
+    $('mathPrompt').textContent = '🎉 Correct! Pick your prize:';
     $('mathFeedback').textContent = '🎉 Correct! +' + (G.lastStars || 0) + '⭐' + levelNote + ' Pick your reward:';
     const wrap = $('rewardChoice');
     wrap.innerHTML = '';
@@ -14527,7 +14591,12 @@ function sellFurniture(id) {
   toast('💰 Sold back ' + item.icon + ' ' + item.name + ' for +' + val + ' 🪙 · ' + G.coins + ' total. (you have ' + shopOwnedCount(id) + ' left)', 3600);
   refreshHUD(); renderShop();
 }
+const PET_BUY_CAP = 3;
+let _buyLockUntil = 0;
 function buyItem(id) {
+  const now = performance.now();
+  if (now < _buyLockUntil) return;
+  _buyLockUntil = now + 450;
   const item = SHOP_ITEMS.find(i => i.id === id);
   if (id === 'treasuremap') {                          // owning the map lets you (re)start the hunt any time
     if (!G.owned.treasuremap) {
@@ -14544,6 +14613,10 @@ function buyItem(id) {
     G.berries = 0;
     Sound.coin();
   } else if (item.kind === 'many') {
+    if (PET_KINDS[id] && (G.furniture[id] || 0) >= PET_BUY_CAP) {
+      toast('🐾 You already have ' + PET_BUY_CAP + ' ' + item.name + 's in your 🎒 — place one from the red bag before adopting more!', 3600);
+      if (Sound.wrong) Sound.wrong(); return;
+    }
     if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '. Keep earning!', 3200); if (Sound.wrong) Sound.wrong(); return; }
     G.coins -= item.price;
     Sound.coin();
@@ -14554,7 +14627,7 @@ function buyItem(id) {
     else if (id === 'garagedoor') { G.garageDoors++; extra = ' (you now have ' + G.garageDoors + ')'; }
     else if (id === 'roof') { G.furniture.roof += 12; extra = ' (+12 tiles → you have ' + G.furniture.roof + ')'; }
     else { G.furniture[id]++; extra = ' (you now have ' + G.furniture[id] + ')'; }
-    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 backpack' + extra + '. Press I to place it.', 4200);
+    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 red backpack' + extra + '. Press I to place it.', 4200);
   } else {
     if (G.owned[id]) { toast('✓ You already own ' + item.icon + ' ' + item.name + ' — no need to buy it again!', 2800); return; }
     if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '.', 3200); if (Sound.wrong) Sound.wrong(); return; }
@@ -14564,6 +14637,7 @@ function buyItem(id) {
     if (id === 'hat' || id === 'usahat') applyHeadwear();
     toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left.' + (id === 'ladder' ? ' Hold JUMP by a tree trunk to climb!' : ''), 4000);
   }
+  try { persistPack(); saveGame(); } catch (e) {}
   refreshHUD();
   renderShop();
 }
@@ -17095,13 +17169,38 @@ function tryUse() {
   else { toast('⭐ Walk up to a shop, car, or chair, then tap USE!', 1800); }
 }
 addEventListener('keydown', e => {
+  if (e.code === 'Escape' || e.key === 'Escape') {
+    e.preventDefault();
+    // Close chat / popups / menus. Never dump to the home screen unless they tap 🏠 Leave.
+    if (typeof chatNpc !== 'undefined' && chatNpc && typeof hideNpcChat === 'function') { hideNpcChat(); return; }
+    if ($('viewMenu') && $('viewMenu').style.display === 'flex') { $('viewMenu').style.display = 'none'; return; }
+    if ($('hudMenu') && $('hudMenu').style.display === 'flex') { $('hudMenu').style.display = 'none'; return; }
+    if (G.running) {
+      const open = typeof topOpenPopup === 'function' ? topOpenPopup() : null;
+      if (open) {
+        const x = open.querySelector('.closeX');
+        if (x) x.click(); else { open.style.display = 'none'; popupOpen = false; }
+        return;
+      }
+    }
+    return;
+  }
   if (e.code === 'KeyM' && G.running) { freeMouse(); return; }
   if (!G.running || popupOpen) return;
   keys[e.code] = true;
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (e.code === 'KeyP') pickupBlock();
-  if (e.code === 'KeyG') putDownBlock();                        // (used to be D — D throws the 🕺 Dance Party now)
-  if (e.code === 'KeyD' && !e.repeat) {                         // 🕺 tap-D detector: remember when D went down…
+  if (e.code === 'KeyG') putDownBlock();
+  if (e.code === 'KeyD' && !e.repeat) {
+    // Prompt says "press D to drop/place" — honor that. Do NOT strafe into a ❓ / open math. Dance only when not placing.
+    const placing = G.buildMode && !G.removeMode && G.selectedSlot && G.selectedSlot !== 'paint';
+    if (placing) {
+      e.preventDefault();
+      keys['KeyD'] = false;          // drop, don't walk sideways into a math station
+      putDownBlock();
+      _dDownAt = 0;
+      return;
+    }
     _dDownAt = performance.now();
     _dHadCompany = !!(keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']);
   }
@@ -17124,7 +17223,10 @@ addEventListener('keyup', e => {
   // 🕺 …and a quick TAP of D (alone, on foot) toggles the Dance Party. HOLDING D still
   // strafes right like always — the party only fires on a clean sub-quarter-second tap.
   if (e.code === 'KeyD' && _dDownAt && G.running && !popupOpen && !player.driving &&
-      performance.now() - _dDownAt < 300 && !_dHadCompany) setDanceParty(!danceParty);
+      performance.now() - _dDownAt < 300 && !_dHadCompany) {
+    const placing = G.buildMode && !G.removeMode && G.selectedSlot && G.selectedSlot !== 'paint';
+    if (!placing) setDanceParty(!danceParty);
+  }
   if (e.code === 'KeyD') _dDownAt = 0;
 });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -17311,6 +17413,7 @@ function openMoveLab() {
 function camIcon() { return G.firstPerson ? '👁️' : (G.birdsEye ? '🦅' : '🧍'); }
 function toggleCamera() {
   // three views, one button: 🧍 see your character → 👁️ their eyes → 🦅 bird's eye (top-down)
+  G._autoInterior = false;
   if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; }
   else if (G.firstPerson) { G.firstPerson = false; G.birdsEye = true; }
   else { G.birdsEye = false; }
@@ -17325,6 +17428,7 @@ function toggleCamera() {
   }
 }
 function setCameraMode(mode) {                 // the three views, by name (the menu uses this)
+  G._autoInterior = false;
   G.firstPerson = mode === 'fp';
   G.birdsEye = mode === 'bird';
   if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();
@@ -17496,6 +17600,29 @@ function renderInv() {
       row.appendChild(btn); vList.appendChild(row);
     });
     vRow.appendChild(vList); wrap.appendChild(vRow);
+  }
+  // 🐾 Pets you own (unplaced in the bag + friends already living in your house)
+  const bagPets = [['🐱', 'cat', 'Pet Cat'], ['🐶', 'dog', 'Pet Dog'], ['🐠', 'fish', 'Fish Bowl'], ['🦜', 'bird', 'Pet Bird']];
+  const living = (typeof pets !== 'undefined' ? pets : []).filter(p => p && p.kind && (p.kind === 'cat' || p.kind === 'dog' || p.kind === 'bird' || p.kind === 'fish'));
+  const hasBagPet = bagPets.some(([, slot]) => (G.furniture[slot] || 0) > 0);
+  if (hasBagPet || living.length) {
+    const pRow = document.createElement('div');
+    pRow.className = 'invItem'; pRow.style.flexDirection = 'column'; pRow.style.alignItems = 'stretch';
+    let phtml = '<div class="info" style="margin-bottom:6px"><b>🐾 Your pets</b><small>In the 🎒 red bag, ready to place — or already living with you!</small></div>';
+    phtml += '<div style="display:flex;flex-direction:column;gap:6px">';
+    bagPets.forEach(([ic, slot, name]) => {
+      const n = G.furniture[slot] || 0;
+      if (n < 1) return;
+      phtml += '<div style="display:flex;align-items:center;gap:8px;background:#f3f6fa;border-radius:10px;padding:6px 10px"><span style="font-size:20px">' + ic + '</span><b style="flex:1">' + name + ' ×' + n + '</b><span style="color:#2f7d27;font-weight:800;font-size:13px">🎒 in bag</span></div>';
+    });
+    living.forEach(p => {
+      const nm = (typeof petNiceName === 'function') ? petNiceName(p) : (p.kind || 'pet');
+      const ic = p.kind === 'dog' ? '🐶' : p.kind === 'bird' ? '🦜' : p.kind === 'fish' ? '🐠' : '🐱';
+      phtml += '<div style="display:flex;align-items:center;gap:8px;background:#f3f6fa;border-radius:10px;padding:6px 10px"><span style="font-size:20px">' + ic + '</span><b style="flex:1">' + nm + '</b><span style="color:#3b5d9e;font-weight:800;font-size:13px">🏠 at home</span></div>';
+    });
+    phtml += '</div>';
+    pRow.innerHTML = phtml;
+    wrap.appendChild(pRow);
   }
   // 🏘️ Furniture style — pick ANY town's finish (country / deluxe / Spanish) and mix pieces from every town
   const fRow = document.createElement('div');
@@ -17858,7 +17985,12 @@ setInterval(fitOpenPopup, 700);                             // catches content t
    and eject kids from the adventure. Block that for non-link controls. */
 addEventListener('auxclick', (e) => {
   if (e.button !== 1) return;
-  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud, #setupCard');
+  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud, #setupCard, #viewMenu, #hudMenu');
+  if (t && !e.target.closest('a[href]')) { e.preventDefault(); e.stopPropagation(); }
+}, true);
+addEventListener('click', (e) => {
+  if (!(e.ctrlKey || e.metaKey || e.shiftKey) && e.button === 0) return;
+  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud');
   if (t && !e.target.closest('a[href]')) { e.preventDefault(); e.stopPropagation(); }
 }, true);
 function armBackGuard() { try { history.pushState({ sg: 1 }, ''); } catch (e) {} }
@@ -17877,8 +18009,8 @@ addEventListener('popstate', () => {
 });
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
-$('homeBtn').onclick = () => { Sound.click(); goHome(); };
-$('leaveBtn').onclick = () => { Sound.click(); goHome(); };
+$('homeBtn').onclick = () => { Sound.click(); requestLeave(); };
+$('leaveBtn').onclick = () => { Sound.click(); requestLeave(); };
 $('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 function freeMouse() {
   toast(G.mouseWalk
@@ -17908,7 +18040,7 @@ function syncMouseWalkUI(quiet) {
   if (leg) {
     leg.innerHTML = G.mouseWalk
       ? '🖱️ Drag to look • Left-click the ground to <b>walk</b> there • click a math block or shop to use it'
-      : '🖱️ Drag to look • Left-click <b>places blocks</b> 🧱 • WASD/arrows to move • Right-click <b>Remove</b> ⛏️';
+      : '🧱 Click <b>places a block</b> • <b>WASD / arrows</b> to move • or tap 🚶 Click-to-move';
   }
   if (!quiet) {
     toast(G.mouseWalk
@@ -18123,13 +18255,27 @@ function updateGradeDescs(world) {
     if (small && map[b.dataset.grade]) small.textContent = map[b.dataset.grade];
   });
 }
+function selectedSetupWorld() {
+  const b = document.querySelector('#worldRow button.choice.selected');
+  const id = b && b.dataset.world;
+  if (!id || !WORLDS[id] || worldComingSoon(id)) return 'meadow';
+  if (worldLocked(id)) return 'meadow';
+  return id;
+}
+function syncWorldPicker(id) {
+  const pick = (!id || !WORLDS[id] || worldComingSoon(id)) ? 'meadow' : id;
+  const row = $('worldRow'); if (!row) { G.world = pick; return; }
+  row.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.world === pick));
+  G.world = pick;
+  if (typeof updateGradeDescs === 'function') updateGradeDescs(pick);
+}
 function buildMenu() {
   updateGradeDescs(G.world || 'meadow');                // start matching the pre-selected world
   // world buttons (coming-soon worlds tease; locked worlds open the unlock dialog instead of selecting)
   $('worldRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
-    updateGradeDescs(b.dataset.world);                 // preview this world's grade levels (reading / Spanish / math)
     if (worldComingSoon(b.dataset.world)) { comingSoonNote(b.dataset.world); return; }
+    updateGradeDescs(b.dataset.world);                 // preview this world's grade levels (reading / Spanish / math)
     if (worldLocked(b.dataset.world)) {
       if (trialAvailable()) startTrial();                          // first premium tap → start trial, then select it
       else { openUnlock(); return; }
@@ -18348,13 +18494,14 @@ $('startBtn').onclick = () => {
   Sound.click();
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
-  if (worldLocked(G.world)) G.world = 'meadow';   // safety: never start in a locked world
+  G.world = selectedSetupWorld();          // always honor the selected card (Math Meadow must not save as Reading Town)
+  if (worldLocked(G.world) || worldComingSoon(G.world)) G.world = 'meadow';
   clearSave(nm, G.world);              // Start Adventure = a brand-new build for this name + chosen world
   resetWorld();
   resetGameState();
   G.gloomiesEnabled = false;           // always calm — Gloomies entry removed from setup
   G.blocks = Math.max(G.blocks || 0, 16); // starter blocks — no Build-walls dead end
-  G.mouseWalk = false;                 // Pip QA: start in place-blocks mode (WASD to move)
+  G.mouseWalk = false;                 // Keep OFF: click places blocks. WASD / 🚶 toggle to walk (see spawn toast).
   loadProfileFor(nm);
   startGame();
   try { saveGame(); } catch (e) {}     // persist calm mode immediately
@@ -18617,7 +18764,7 @@ function showSetupScreen(id) {
     });
   }
 }
-$('newGameBtn').onclick = () => { Sound.click(); showSetupScreen('screenSettings'); };
+$('newGameBtn').onclick = () => { Sound.click(); syncWorldPicker(selectedSetupWorld() || 'meadow'); showSetupScreen('screenSettings'); };
 $('toHeroBtn').onclick = () => { Sound.click(); showSetupScreen('screenHero'); };
 document.querySelectorAll('#setupCard [data-go]').forEach(b => {
   b.addEventListener('click', () => { Sound.click(); showSetupScreen(b.dataset.go); });
@@ -18629,6 +18776,15 @@ function startGame() {
   $('hud').style.display = 'block';
   if (isTouch) $('touchUI').style.display = 'block';
   applyWorldTheme(G.world);                    // sky, fog & ground match the chosen world
+  // New visit / default spawn: Reading Town starts on High Street so the town is on-screen
+  try {
+    const atDefault = Math.hypot(player.pos.x - SPAWN.x, player.pos.z - SPAWN.z) < 0.35;
+    if (atDefault) {
+      const sp = spawnForWorld(G.world);
+      player.pos.set(sp.x, sp.y, sp.z);
+      player.yaw = 0;
+    }
+  } catch (e) {}
   usedLangQ.clear();
   setAvatar(G.avatarIndex);
   updateBadgeBtn(false);
@@ -18683,7 +18839,10 @@ function startGame() {
   if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
-    toast('🌈 Calm mode! You start with a few 🧱 blocks — walk to purple ❓ for more. Tap 🏠 Leave anytime to save & go home.', 5600);
+    toast('🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the joystick — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
+  }
+  if (G.world === 'city') {
+    setTimeout(() => toast('🏘️ High Street is right ahead — Library, Cinema, Post Office & Arcade are on the paved street!', 4200), 2800);
   }
   refreshHUD();
 }
@@ -18983,14 +19142,21 @@ function showNpcChat(n) {
     'style="width:104px;border:2px solid #9db7d8;border-radius:10px;padding:5px 8px;font:inherit;font-size:13px">' +
     '<button type="button" data-c="_send">💬</button></span>';
   el.querySelectorAll('button').forEach(b => {
-    // Pip QA: chip taps must never open a blank Chrome tab / navigate away
+    // Stay in-game: never let a chip spawn about:blank / a new tab (middle-click, ctrl-click, "open in new tab")
+    b.setAttribute('type', 'button');
+    b.setAttribute('draggable', 'false');
+    const stay = (ev) => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } };
     b.onclick = (ev) => {
-      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      stay(ev);
+      if (ev && ev.button && ev.button !== 0) return;
+      if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)) return;
       Sound.click();
       if (b.dataset.c === '_send') { npcWordSend(); return; }
       npcChipTap(b.dataset.c);
     };
-    b.onauxclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
+    b.onauxclick = stay;
+    b.onmousedown = (ev) => { if (ev && ev.button !== 0) stay(ev); };
+    b.addEventListener('contextmenu', stay);
   });
   const inp = el.querySelector('#npcSayInput');
   if (inp) {
@@ -19094,9 +19260,10 @@ function npcChipTap(id) {
   // schedule the reply on GAME time (setTimeout starves behind the render loop on slow machines)
   n.replyText = reply.replace('{name}', G.playerName || 'friend');
   n.replyAt = performance.now() + 650;
-  if (id === 'bye') {                    // wave goodbye, then actually wander off
+  if (id === 'bye') {                    // wave goodbye, then actually wander off — close chips so kids stay in-game
     n.byeUntil = performance.now() + 5200;
     n.byeWalkAt = performance.now() + 1500;
+    hideNpcChat();
   }
 }
 /* 🏠 HOUSE LIFE — a friend with a house uses the furniture in it: sits on the couch,
