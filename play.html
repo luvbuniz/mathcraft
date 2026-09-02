@@ -1140,36 +1140,8 @@
         </div>
       </div>
 
-      <!-- Gloomies hidden from primary setup so kids don't auto-pick scare mode.
-           Soft-hidden under a grown-up/advanced disclosure; new adventures default calm. -->
-      <details class="howto" id="gloomyAdvanced">
-        <summary>Grown-up option: Gloomies (timed scare mode)</summary>
-        <div class="howtoBody">
-          <p style="margin:0 0 8px;color:#7a6a35;font-weight:700;line-height:1.4">New adventures stay <b>calm (No Gloomies)</b> by default. Only turn this on if a grown-up wants a timed challenge.</p>
-          <span class="fieldLabel">Should Gloomies visit?</span>
-          <div class="choiceGrid two" id="gloomyRow">
-            <button class="choice" data-gloomies="on">
-              <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
-              <b>Gloomies On</b><small>Beat the timer or they appear!</small>
-            </button>
-            <button class="choice selected" data-gloomies="off">
-              <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14c0-3 2.4-5 5.5-5 0 3.3-2.4 5-5.5 5z"/><path d="M12 14c0-2.4-1.9-4.3-4.6-4.3C7 12.4 8.9 14 12 14z"/></svg>
-              <b>No Gloomies</b><small>Calm, open-ended building</small>
-            </button>
-          </div>
-          <div id="timeRow" class="subField" style="display:none">
-            <span class="fieldLabel small">Build time</span>
-            <div class="segment">
-              <button class="timeBtn" data-mins="5">5 min</button>
-              <button class="timeBtn" data-mins="10">10 min</button>
-              <button class="timeBtn selected" data-mins="15">15 min</button>
-              <button class="timeBtn" data-mins="20">20 min</button>
-              <button class="timeBtn" data-mins="25">25 min</button>
-              <button class="timeBtn" data-mins="30">30 min</button>
-            </div>
-          </div>
-        </div>
-      </details>
+      <!-- Gloomies UI removed from setup (Amy 2026-09-02): zero kid-facing entry.
+           Game logic for gloomiesEnabled remains but stays unreachable / force-off. -->
 
       <div class="stepNav">
         <button class="btn btn-secondary" data-go="screenLanding">
@@ -3806,7 +3778,7 @@ function updateGlbAvatar(d, moving, t) {
 /* ============================ GAME STATE ============================ */
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
-  gloomiesEnabled: false,   // calm by default — Gloomies only via grown-up/advanced
+  gloomiesEnabled: false,   // always calm — Gloomies setup entry removed (logic kept dead)
   blocks: 0, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, berries: 0, solved: 0, balls: 0,
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
@@ -4933,7 +4905,7 @@ function restoreGame(s) {
   G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = s.homes || [];
   G.npcHomes = s.npcHomes || {};               // 🏠 which friend lives in which of the kid's houses
-  G.gloomiesEnabled = s.gloomiesEnabled !== false;
+  G.gloomiesEnabled = false;  // force calm — ignore old scare-mode saves (entry removed)
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0; G.tickets = s.tickets || 0;
   G.prizeTickets = s.prizeTickets || 0; G.tokens = s.tokens || 0; G.raceFlags = s.raceFlags || 0;
   G.goal = s.goal || null; G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
@@ -18051,9 +18023,8 @@ if (isTouch) {
 
 /* ============================ START MENU ============================ */
 function syncGloomyMenu() {
-  $('gloomyRow').querySelectorAll('button').forEach(b => b.classList.toggle('selected',
-    (b.dataset.gloomies === 'on') === G.gloomiesEnabled));
-  $('timeRow').style.display = G.gloomiesEnabled ? 'block' : 'none';
+  // Gloomies setup UI removed — keep as no-op so leftover callers stay safe.
+  G.gloomiesEnabled = false;
 }
 // the "Choose your level" cards describe what each grade covers in the chosen world
 const GRADE_DESCS = {
@@ -18096,19 +18067,7 @@ function buildMenu() {
     G.mathMisses = 0;
     G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   });
-  $('gloomyRow').querySelectorAll('button').forEach(b => b.onclick = () => {
-    Sound.click();
-    $('gloomyRow').querySelectorAll('button').forEach(x => x.classList.remove('selected'));
-    b.classList.add('selected');
-    G.gloomiesEnabled = b.dataset.gloomies === 'on';
-    syncGloomyMenu();
-  });
-  $('timeRow').querySelectorAll('.timeBtn').forEach(b => b.onclick = () => {
-    Sound.click();
-    $('timeRow').querySelectorAll('.timeBtn').forEach(x => x.classList.remove('selected'));
-    b.classList.add('selected');
-    G.timerMax = parseInt(b.dataset.mins) * 60;
-  });
+  // Gloomies / timer setup controls removed from front UI — no handlers.
 
   // avatar cards with live 3D previews
   const grid = $('avatarGrid');
@@ -18235,7 +18194,6 @@ function refreshSavedList() {
   const noSaves = $('noSaves');
   if (noSaves) noSaves.style.display = saves.length ? 'none' : 'block';
   saves.forEach(s => {
-    const calm = s.gloomiesEnabled === false;
     const row = document.createElement('div');
     row.className = 'saveRow';
     const load = document.createElement('button');
@@ -18245,7 +18203,7 @@ function refreshSavedList() {
       '<span class="savePlay">' + SVG_PLAY + '</span>' +
       '<span class="slotInfo"><span class="slotName">' + w.emoji + ' ' + (s.name || 'Player') + '</span>' +
       '<span class="slotMeta">' + w.name + ' • Grade ' + (s.grade || 2) +
-      '<span class="slotChip' + (calm ? ' calm' : '') + '">' + (calm ? 'No Gloomies' : 'Gloomies') + '</span></span></span>';
+      '<span class="slotChip calm">Calm</span></span></span>';
     load.onclick = () => { Sound.click(); restoreGame(s); };
     row.appendChild(load);
     if (deleteAllowedFor(s.grade)) {             // hidden for young grades by default; parents choose in the grown-up page
@@ -18302,15 +18260,13 @@ $('startBtn').onclick = () => {
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
   if (worldLocked(G.world)) G.world = 'meadow';   // safety: never start in a locked world
-  // Preserve the (advanced) Gloomies choice across resetGameState — default is calm/false.
-  const wantGloomies = G.gloomiesEnabled === true;
   clearSave(nm, G.world);              // Start Adventure = a brand-new build for this name + chosen world
   resetWorld();
   resetGameState();
-  G.gloomiesEnabled = wantGloomies;    // calm unless a grown-up flipped advanced → Gloomies On
+  G.gloomiesEnabled = false;           // always calm — Gloomies entry removed from setup
   loadProfileFor(nm);
   startGame();
-  try { saveGame(); } catch (e) {}     // persist No Gloomies immediately so HUD/reload don't flip back
+  try { saveGame(); } catch (e) {}     // persist calm mode immediately
 };
 $('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 function shareGame() {
