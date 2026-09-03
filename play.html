@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>Stackadoo — Build with Math!</title>
 <!-- pip-minor-pack: blank-tabs, leave-btn, next-fold, starter-blocks, build-click-hint, sw-v254 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%239ed7a3%22%20stroke-width%3D%222%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
@@ -197,14 +197,22 @@
   .npcBubble.mine b { color:#2b6cb0; }
   .npcBubble.mine::after { border-top-color:#e8f4ff; }
   /* 💬 preset chat chips — tap a phrase to say it (no typing, no mischief).
-     The container ignores taps (only the chips catch them) so the move-joystick still works around them. */
-  #npcChat { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:32; display:none;
+     The container ignores taps (only chips + the type-a-word box catch them) so the
+     move-joystick still works around them. */
+  #npcChat { position:fixed; left:50%; bottom:calc(96px + var(--npc-kb, 0px)); transform:translateX(-50%); z-index:32; display:none;
     flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,820px); pointer-events:none; }
   #npcChat button { font-family:inherit; font-weight:800; font-size:15px; color:#34495e; background:rgba(255,255,255,.96);
     border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto;
     -webkit-user-drag:none; user-select:none; }
   #npcChat button:active { transform:translateY(2px); box-shadow:none; }
+  /* type-a-word sits on its OWN row under the chips so a tablet keyboard can open below it */
+  #npcChat .npcSayWrap { flex:1 0 100%; display:flex; justify-content:center; align-items:center; gap:6px;
+    pointer-events:auto; margin-top:2px; }
+  #npcChat #npcSayInput { pointer-events:auto; width:min(220px,70vw); min-height:44px; font:inherit; font-size:16px;
+    font-weight:700; color:#34495e; background:rgba(255,255,255,.98); border:2px solid #9db7d8; border-radius:12px;
+    padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.12); }
   body.npcChatting #hintBar { display:none !important; }   /* the chips ARE the hint while chatting */
+  body.npcTyping #hotbar { visibility:hidden; }            /* color tray steals taps while typing */
 
   /* ---------- Math popup ---------- */
   .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
@@ -980,10 +988,9 @@
     #hudMenu { gap:4px; padding:6px; }                       /* all the choices fit a short phone */
     #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
     /* chat chips hug the bottom-LEFT so they never crowd the button grid */
-    #npcChat { left:12px; right:auto; bottom:12px; transform:none; justify-content:flex-start;
+    #npcChat { left:12px; right:auto; bottom:calc(12px + var(--npc-kb, 0px)); transform:none; justify-content:flex-start;
       gap:6px; max-width:calc(100vw - 264px); }
     #npcChat button { font-size:13px; padding:7px 11px; }
-    #npcChat #npcSayInput, #npcChat button[data-c="_send"] { display:none; }
     #modeBtn, #undoBtn { display:none; }
     /* 🎮 the action buttons: one tidy corner grid (Dojo-style), every button the
        SAME size so nothing staircases — now just three (tap=place, hold=break) */
@@ -1003,10 +1010,9 @@
     #btnAction    { right:10px;  bottom:70px; }
     #btnUndoTouch { right:110px; bottom:12px; }
     #btnShoot     { right:110px; bottom:70px; }
-    #npcChat { left:10px; right:auto; bottom:10px; transform:none; justify-content:flex-start;
+    #npcChat { left:10px; right:auto; bottom:calc(10px + var(--npc-kb, 0px)); transform:none; justify-content:flex-start;
       gap:6px; max-width:calc(100vw - 220px); flex-wrap:wrap; }
     #npcChat button { font-size:13px; padding:7px 10px; }
-    #npcChat #npcSayInput, #npcChat button[data-c="_send"] { display:none; }
     #hotbar { left:10px; transform:none; bottom:72px; gap:5px; }   /* clear of the corner cluster */
   }
   /* Short screens (landscape phones AND landscape tablets): the start/setup screen
@@ -19220,9 +19226,10 @@ function showNpcChat(n) {
   el.innerHTML = NPC_CHIPS.map(c => '<button type="button" data-c="' + c.id + '">' + c.label + '</button>').join('') +
     // ⌨️ Fiona's ask: TYPE a word to a friend. Kid-safe by design — the friend only understands
     // a handful of magic words (matched locally, hand-written replies; nothing goes online).
-    '<span style="display:inline-flex;gap:5px;align-items:center">' +
-    '<input id="npcSayInput" maxlength="16" placeholder="type a word…" autocomplete="off" ' +
-    'style="width:104px;border:2px solid #9db7d8;border-radius:10px;padding:5px 8px;font:inherit;font-size:13px">' +
+    // Own row under the chips so a phone/tablet keyboard can open below the field.
+    '<span class="npcSayWrap">' +
+    '<input id="npcSayInput" type="text" maxlength="16" placeholder="type a word…" autocomplete="off" ' +
+    'autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="send">' +
     '<button type="button" data-c="_send">💬</button></span>';
   el.querySelectorAll('button').forEach(b => {
     // Stay in-game: never let a chip spawn about:blank / a new tab (middle-click, ctrl-click, "open in new tab")
@@ -19241,13 +19248,18 @@ function showNpcChat(n) {
     b.onmousedown = (ev) => { if (ev && ev.button !== 0) stay(ev); };
     b.addEventListener('contextmenu', stay);
   });
+  const wrap = el.querySelector('.npcSayWrap');
   const inp = el.querySelector('#npcSayInput');
+  const eat = (ev) => { if (ev) ev.stopPropagation(); };   // don't place a block / look / walk
+  if (wrap) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(ev => wrap.addEventListener(ev, eat));
   if (inp) {
     // the game must not steer while a kid types "hello" (W A S D live in there!)
     ['keydown', 'keyup', 'keypress'].forEach(ev => inp.addEventListener(ev, e => {
       e.stopPropagation();
-      if (e.key === 'Enter' && ev === 'keydown') npcWordSend();
+      if (e.key === 'Enter' && ev === 'keydown') { e.preventDefault(); npcWordSend(); inp.blur(); }
     }));
+    inp.addEventListener('focus', () => { document.body.classList.add('npcTyping'); npcKbSync(); });
+    inp.addEventListener('blur', () => { document.body.classList.remove('npcTyping'); npcKbSync(); });
   }
   el.style.display = 'flex';
   document.body.classList.add('npcChatting');       // the hint bar rests while you chat
@@ -19300,9 +19312,24 @@ function npcWordSend() {
 }
 function hideNpcChat() {
   chatNpc = null;
+  document.body.classList.remove('npcTyping');
+  npcKbSync();
   const el = $('npcChat'); if (el) el.style.display = 'none';
   document.body.classList.remove('npcChatting');
 }
+function npcKbSync() {
+  const typing = document.body.classList.contains('npcTyping');
+  const vv = window.visualViewport;
+  let kb = 0;
+  if (typing && vv) kb = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+  document.body.style.setProperty('--npc-kb', kb + 'px');
+}
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', npcKbSync);
+  visualViewport.addEventListener('scroll', npcKbSync);
+}
+addEventListener('resize', npcKbSync);
+
 function playerSay(text) {               // the kid's chosen words appear over THEIR head too
   const holder = $('npcBubbles'); if (!holder) return;
   if (!playerBubbleEl) { playerBubbleEl = document.createElement('div'); playerBubbleEl.className = 'npcBubble mine'; holder.appendChild(playerBubbleEl); }
