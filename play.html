@@ -199,7 +199,7 @@
   /* 💬 preset chat chips — tap a phrase to say it (no typing, no mischief).
      The container ignores taps (only the chips catch them) so the move-joystick still works around them. */
   #npcChat { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:32; display:none;
-    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,720px); pointer-events:none; }
+    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,820px); pointer-events:none; }
   #npcChat button { font-family:inherit; font-weight:800; font-size:15px; color:#34495e; background:rgba(255,255,255,.96);
     border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto;
     -webkit-user-drag:none; user-select:none; }
@@ -983,6 +983,7 @@
     #npcChat { left:12px; right:auto; bottom:12px; transform:none; justify-content:flex-start;
       gap:6px; max-width:calc(100vw - 264px); }
     #npcChat button { font-size:13px; padding:7px 11px; }
+    #npcChat #npcSayInput, #npcChat button[data-c="_send"] { display:none; }
     #modeBtn, #undoBtn { display:none; }
     /* 🎮 the action buttons: one tidy corner grid (Dojo-style), every button the
        SAME size so nothing staircases — now just three (tap=place, hold=break) */
@@ -1005,6 +1006,7 @@
     #npcChat { left:10px; right:auto; bottom:10px; transform:none; justify-content:flex-start;
       gap:6px; max-width:calc(100vw - 220px); flex-wrap:wrap; }
     #npcChat button { font-size:13px; padding:7px 10px; }
+    #npcChat #npcSayInput, #npcChat button[data-c="_send"] { display:none; }
     #hotbar { left:10px; transform:none; bottom:72px; gap:5px; }   /* clear of the corner cluster */
   }
   /* Short screens (landscape phones AND landscape tablets): the start/setup screen
@@ -18879,114 +18881,177 @@ $('againBtn').onclick = () => location.reload();
 
 /* ============================ 🧑‍🤝‍🧑 TOWN FRIENDS (NPCs) ============================
    Three or four heroes stroll near spawn like Dojo-style townsfolk. Walk up (or tap them)
-   and they chat in a speech bubble — mostly about the 🛝 playground, planting the seed so
-   kids build one... and so a later update can have the friends actually PLAY on it. */
+   and they chat in a speech bubble — playground invites plus friendly hellos. Chip chat
+   only (plus a tiny local magic-word box). No cloud, no free typing. */
 const NPC_CAST = [
   { id: 'spark', name: 'Spark', lines: [
-    'Hi {name}! Have you seen the 🛝 playground yet?',
+    'Hi {name}! How are you today?',
+    'I\'m Spark! Need a hand with a ❓ puzzle?',
+    'Have you seen the 🛝 playground yet?',
     'I want to try the swings — will you come with me?',
     'Race you to the 🛝 playground!',
     'The curly slide looks SO twisty. Is it fast?',
   ], replies: {
     hi: 'Hi {name}! ✨ You sparkle extra bright today!',
+    how: ['I\'m sparkly-great! How are YOU, {name}?', 'A little floaty, a little giggly. You? ✨', 'Better now that you\'re here, {name}!'],
+    name: ['I\'m Spark! And you\'re {name} — I remembered! ✨', 'Spark\'s the name. Sparkles are the game! 🪄'],
     playground: 'Swings first, then the twisty slide! Meet you there 🛝',
-    fun: ['I can fly... but the swings are still my favorite. Wheee! ✨', 'My wand only makes sparkles. Okay — MOSTLY sparkles. 🪄'],
+    fun: ['I can fly... but the swings are still my favorite. Wheee! ✨', 'My wand only makes sparkles. Okay — MOSTLY sparkles. 🪄', 'If I twirl fast enough, I make my own glitter storm.', 'Favorite snack: sun-warm berries. Want to plant some?'],
+    help: ['Walk up to a glowing ❓ — that\'s math practice. I cheer, I don\'t give the answer! ✨', 'Stuck? Tap the 🤔 hint. It teaches the steps — still YOUR win, {name}!', 'I can\'t do the puzzle for you. Trying is the magic.'],
+    helpRead: ['📚 Those ❓ stations are reading puzzles. Walk up and try one — I\'ll cheer!', 'I won\'t spoil the sentence. Try it, then use 🤔 if you get stuck!'],
+    helpLang: ['🏖️ ❓ stations here are Spanish words. Walk up and pick the matching one!', 'I won\'t say the answer — trying is how it sticks, {name}!'],
     live: '🏠 I LOVE it! A sparkly home sweet home — thank you, {name}! ✨',
     bye: 'Bye {name}! Come find me later! ✨',
   } },
   { id: 'panda', name: 'Momma Panda', lines: [
-    'Hello {name}! Is the ⚖️ see-saw fun? I\'ve never tried one!',
+    'Hello {name}! How are you, dear?',
+    'I\'m Momma Panda. Need a little help with a ❓?',
+    'Is the ⚖️ see-saw fun? I\'ve never tried one!',
     'Could you build a see-saw at the 🛝 playground for us?',
     'A picnic by the playground sounds lovely. 🧺',
     'Which is better — the swings or the slide?',
   ], replies: {
     hi: 'Hello, dear {name}! 🐼 Have you had a snack today?',
+    how: ['I\'m cozy and calm. How are you feeling, {name}?', 'Very well, thank you! Did you rest today?', 'Happy as a picnic. And you, little builder?'],
+    name: ['I\'m Momma Panda. You can call me Momma, {name}. 🐼', 'Momma Panda — hugs included, no extra charge. 🤗'],
     playground: 'I\'ll bring the picnic basket for after the see-saw! 🧺',
-    fun: ['Bamboo crunches louder than carrots. True fact! 🎍', 'I give the BEST hugs. It\'s a panda thing. 🤗'],
+    fun: ['Bamboo crunches louder than carrots. True fact! 🎍', 'I give the BEST hugs. It\'s a panda thing. 🤗', 'Slow is okay. Slow still gets you there.', 'Nap rule: five more minutes. Then five more.'],
+    help: ['The glowing ❓ is math practice. Walk over — I\'ll wait right here. 🐼', 'Hints teach the method, not the answer. That\'s the kind way.', 'You can do hard things, {name}. One step at a time.'],
+    helpRead: ['Those ❓ spots are reading. Take your time — no rush.', 'Sound it out. I\'ll cheer the try, not just the win. 🐼'],
+    helpLang: ['Spanish words live at the ❓. Peek, try, smile — that\'s the whole lesson.'],
     live: '🏠 A home for me? {name}, you are the kindest builder! 🐼💚',
     bye: 'Take care, little builder! 🐼',
   } },
   { id: 'bunny', name: 'Bounce', lines: [
+    'Hi {name}! How\'s your hop today?',
+    'I\'m Bounce! Want help finding a ❓?',
     'Boing! I bet I can hop higher than the swings!',
     'Meet me at the 🛝 playground later?',
     'Is there a 🏖️ sandbox? I dig SUPER fast!',
     'Tag — you\'re it, {name}! First one to the playground wins! 🛝',
   ], replies: {
     hi: 'Boing! Hi {name}! Watch how high I can hop!',
+    how: ['BOUNCY! How are YOU, {name}?', 'I have too much hop and not enough pockets.', 'Great! I found a clover. Want to see later?'],
+    name: ['Bounce! Because standing still is a rumor. 🐰', 'I\'m Bounce — the hoppy one. You\'re {name}!'],
     playground: 'Sandbox! Sandbox! I call the 🏖️ sandbox!',
-    fun: ['I once hopped over a WHOLE fence. It was a tiny fence. Don\'t ask. 🐰', 'Carrots are just orange candy. That\'s my whole speech. 🥕'],
+    fun: ['I once hopped over a WHOLE fence. It was a tiny fence. Don\'t ask. 🐰', 'Carrots are just orange candy. That\'s my whole speech. 🥕', 'Thump-thump is how bunnies say yes.', 'I hide snacks and forget. That\'s a feature.'],
+    help: ['Race you to a glowing ❓! Math first, then more hopping.', 'I won\'t shout the answer. Hop, try, hop again!', 'Hint button is 🤔 — like a carrot for your brain.'],
+    helpRead: ['Reading ❓ time! I\'ll bounce in place so I don\'t spoil it.'],
+    helpLang: ['Spanish ❓! I only know "hola" and "carrot." You can do more.'],
     live: '🏠 MY house?! This is the best day EVER! 🥕',
     bye: 'Catch me if you can! Byeee! 💨',
   } },
   { id: 'trex', name: 'Rexy', lines: [
+    'Hi {name}! I\'m Rexy. Friendly roar only. 🦖',
+    'How are you? Need help with a ❓?',
     'ROAR! ...too scary? I\'m friendly, promise. 🦖',
     'My little arms can\'t reach the monkey bars. 😅',
     'Will you go down the 🛝 slide with me later?',
     'You earn 🪙 answering ❓ questions? You\'re so smart, {name}!',
   ], replies: {
     hi: 'RAWR! That means "hi" in dinosaur, {name}! 🦖',
+    how: ['Stomp-stomp happy! How are you, {name}?', 'My arms are small but my mood is BIG.', 'Good! I practiced a quiet roar. Want to hear it later?'],
+    name: ['Rexy! Not scary — just tall. 🦖', 'I\'m Rexy. You\'re {name}. Team? Team.'],
     playground: 'I\'m the FASTEST down the slide. My tail is a racing stripe! 🛝',
-    fun: ['My arms are small but my heart is HUGE. 🦖💚', 'I tried the monkey bars once. Once. 😅'],
+    fun: ['My arms are small but my heart is HUGE. 🦖💚', 'I tried the monkey bars once. Once. 😅', 'Tiny arms, huge high-fives. Physics is rude.', 'I roar at math sometimes. Then I try anyway.'],
+    help: ['Walk to a ❓ — that\'s how we get 🪙. I\'ll stomp-cheer, not spoil it.', 'Stuck? 🤔 hint. Even dinos use hints.', 'Hard puzzles feel like tall trees. Climb one branch.'],
+    helpRead: ['Reading ❓ ahead! I\'ll use my quiet roar for "you got this."'],
+    helpLang: ['Spanish ❓! I roar in every language. You pick the word.'],
     live: '🏠 A rex-sized home! Thank you, {name}! 🦖💚',
     bye: 'Stomp stomp! See ya, {name}!',
   } },
   { id: 'queenfox', name: 'Foxy', lines: [
-    'Psst, {name}! I know ALL the shortcuts to the 🛝 playground!',
+    'Hello {name}! I\'m Foxy — how are you?',
+    'Psst — need help finding a ❓ station?',
+    'I know ALL the shortcuts to the 🛝 playground!',
     'My tail is fluffier than any pillow. Royal fox fact! 🦊',
     'Race you! Foxes get a head start — new rule I just made up.',
     'Something smells like adventure, {name}. Follow me!',
   ], replies: {
     hi: 'Well hello, {name}! *swish swish* That\'s my happy tail! 🦊',
+    how: ['Sly and sunny. How about you, {name}?', 'My tail says we\'re both doing great.', 'Royal mood: curious. Your move!'],
+    name: ['Foxy. Some say Queen. I allow both. 👑🦊', 'I\'m Foxy — and I already know you\'re {name}.'],
     playground: 'Foxes LOVE tunnels — meet you under the slide! 🛝',
-    fun: ['I\'m secretly royalty. The crown gave it away, didn\'t it? 👑', 'My tail has a mind of its own. We\'ve agreed to disagree. 🦊'],
+    fun: ['I\'m secretly royalty. The crown gave it away, didn\'t it? 👑', 'My tail has a mind of its own. We\'ve agreed to disagree. 🦊', 'I collect shortcuts. Want one to a ❓?', 'Fluffy tails do not help math. Trying does.'],
+    help: ['I know a shortcut to a glowing ❓. I won\'t whisper the answer, though. 🦊', 'Clever isn\'t cheating. Hints are 🤔 — still your puzzle.', 'Math is a fox-hunt. Sniff, try, find it.'],
+    helpRead: ['Reading ❓! I\'ll keep the spoilers in my tail.'],
+    helpLang: ['Spanish ❓ — a new shortcut language. You lead.'],
     live: '🏠 A royal fox den! You\'re my favorite, {name}! 🦊💚',
     bye: 'Swish swish! Bye, {name}!',
   } },
   { id: 'robot', name: 'Bolt', lines: [
-    'BEEP! Hello {name}! My favorite number is... ALL of them. 🤖',
+    'BEEP! Hello {name}! How are your systems?',
+    'I\'m Bolt. I can point you to a ❓ station!',
+    'My favorite number is... ALL of them. 🤖',
     'Computing: the 🛝 slide is 100% fun. Verified!',
     'Can robots use swings? Requesting a push!',
     'Your math answers charge my batteries, {name}! ⚡',
   ], replies: {
     hi: 'BOOP! Greetings, {name}! Systems: happy! 🤖',
+    how: ['Status: charged and cheerful. Query: how are YOU, {name}?', 'All lights green. One light wants a high five.', 'Battery 98%. Friendship 100%.'],
+    name: ['Bolt. Model: friend. Serial number: secret. 🤖', 'I am Bolt. You are {name}. Pairing complete!'],
     playground: 'Calculating shortest path to the swings... follow me! 🛝',
-    fun: ['I dance in ro-bot style. It\'s the only style I have. 🤖', 'My batteries run on high fives. Recharge me any time! ⚡'],
+    fun: ['I dance in ro-bot style. It\'s the only style I have. 🤖', 'My batteries run on high fives. Recharge me any time! ⚡', 'Beep means yes. Boop means also yes.', 'I counted to a million once. It was mostly for fun.'],
+    help: ['Navigate to a glowing ❓. I will not output the answer. That would skip the learning loop.', 'Hint = 🤔. Answer = you. I am just the cheer subroutine.', 'Math charges me. Your try charges you, {name}.'],
+    helpRead: ['Reading ❓ detected. I will idle nearby. No spoilers in my logs.'],
+    helpLang: ['Spanish ❓ module online. I still will not leak the word.'],
     live: '🏠 HOME.EXE installed! Thank you, {name}! 🤖💚',
     bye: 'Powering down... just kidding! Bye, {name}! BEEP!',
   } },
   { id: 'dragon', name: 'Ember', lines: [
-    'Don\'t worry {name} — I only breathe WARM air. Mostly. 🐉',
+    'Hi {name}! I\'m Ember. Warm hellos only. 🐉',
+    'How are you? Want help finding a ❓?',
+    'Don\'t worry — I only breathe WARM air. Mostly. 🐉',
     'My wings are too little to fly. The swings count, right?',
     'I could toast marshmallows for the whole 🛝 playground!',
     'Stomp with me, {name}! It makes the flowers giggle. 🌸',
   ], replies: {
     hi: 'Rrrrawr-hello, {name}! You look fireproof to me! 🐉',
+    how: ['Toasty and friendly. How are you, {name}?', 'A little smoky. A lot happy.', 'Better when friends visit the den!'],
+    name: ['Ember! I glow when I\'m proud of you. 🐉', 'I\'m Ember. You\'re {name}. No singeing, promise.'],
     playground: 'Slide first! My scales make me EXTRA slippery! 🛝',
-    fun: ['My sneezes are 10% sparks. Bless me carefully. 🔥', 'Dragons hoard treasure. I hoard nice friends like you. 💚'],
+    fun: ['My sneezes are 10% sparks. Bless me carefully. 🔥', 'Dragons hoard treasure. I hoard nice friends like you. 💚', 'Marshmallows are my love language.', 'When a puzzle is hard, I breathe SLOW, not hot.'],
+    help: ['A ❓ is a little treasure hunt. I won\'t burn the map — you solve it.', 'Stuck? Cool the fire, tap 🤔, try again.', 'Brave is trying, {name}. Not already knowing.'],
+    helpRead: ['Reading ❓! I\'ll keep my sparks small so you can think.'],
+    helpLang: ['Spanish ❓ — new words, same courage.'],
     live: '🏠 A dragon den! I promise not to singe the curtains, {name}! 🐉',
     bye: 'Flap flap! Farewell, {name}!',
   } },
   { id: 'princess', name: 'Princess Pea', lines: [
-    'Greetings, {name}! Which way to the royal 🛝 playground?',
+    'Greetings, {name}! How fares the kingdom today?',
+    'I am Princess Pea. Need help with a ❓ quest?',
+    'Which way to the royal 🛝 playground?',
     'A princess NEVER skips the swings. Royal decree!',
     'Your buildings are castle-worthy, {name}! 🏰',
     'Shall we have a royal race to the slide?',
   ], replies: {
     hi: 'Why hello, {name}! You may skip the bowing. 👑',
+    how: ['Quite well, thank you! And you, {name}?', 'Royal mood: delighted. Yours?', 'My crown is on straight. That means a good day.'],
+    name: ['Princess Pea, at your service. 👑', 'Pea for short. Princess for long. You\'re {name}!'],
     playground: 'The swings are my throne today! To the playground! 🛝',
-    fun: ['My crown stays on even down the slide. Royal secret: it\'s SPARKLE glue. 👑', 'Royal fact: princesses have the LOUDEST wheee. 🎀'],
+    fun: ['My crown stays on even down the slide. Royal secret: it\'s SPARKLE glue. 👑', 'Royal fact: princesses have the LOUDEST wheee. 🎀', 'Peas are vegetables AND names. I\'m both.', 'A knight is just a kid who tried the hard ❓.'],
+    help: ['A ❓ is a royal quest. I will not gift the answer — that would spoil the ball.', 'Hints are allowed. Cheating is not. 🤔 is the court wizard.', 'You\'re hereby brave enough to try, {name}.'],
+    helpRead: ['Reading ❓: a story quest. I shall wait by the marquee.'],
+    helpLang: ['Spanish ❓! A new royal language. You may lead.'],
     live: '🏠 My own palace! You\'re hereby knighted, {name}! 👑💚',
     bye: 'Farewell, {name}! The kingdom awaits!',
   } },
   { id: 'unicorn', name: 'Twirl', lines: [
-    'Hi {name}! I dance everywhere I go — it\'s faster than walking! 💃',
+    'Hi {name}! I\'m Twirl — how are you?',
+    'Need a sparkly nudge toward a ❓?',
+    'I dance everywhere I go — it\'s faster than walking! 💃',
     'Do you think the 🛝 slide works with four... I mean two legs?',
     'My horn glows when I\'m happy. It\'s VERY glowy today! 🦄',
     'Twirl with me, {name}! Spinning makes everything sparklier!',
   ], replies: {
     hi: 'Hi hi hi {name}! *twirls* That\'s how unicorns wave! 🦄',
+    how: ['Glowy and spinny! How are YOU, {name}?', 'My horn is on high-happy. Yours?', 'I\'d be even better if we danced after a ❓!'],
+    name: ['Twirl! Because walking in a straight line is optional. 🦄', 'I\'m Twirl. You\'re {name}. Sparkle team!'],
     playground: 'I\'m going to dance ALL the way down the slide! 🛝✨',
-    fun: ['My mane does its own dance. I just follow it. 💫', 'Rainbows are just the sky dancing. True story! 🌈'],
+    fun: ['My mane does its own dance. I just follow it. 💫', 'Rainbows are just the sky dancing. True story! 🌈', 'I once spun so much I made a tiny breeze.', 'Hard puzzles still sparkle when you try.'],
+    help: ['Glow toward a ❓! I\'ll twirl nearby. No answer-spoilers — that dims the horn.', '🤔 is a hint, not a giveaway. Still your sparkle, {name}.', 'Math is a dance: step, check, step.'],
+    helpRead: ['Reading ❓! I\'ll keep my twirls quiet so you can read.'],
+    helpLang: ['Spanish ❓ — new words to dance with!'],
     live: '🏠 A sparkle-home of my very own! Thank you, {name}! 🦄💖',
     bye: 'Twirl-bye, {name}! ✨',
   } },
@@ -19120,14 +19185,32 @@ function npcSpeak(n, now) {              // their own chatter — cycles the pla
   npcSay(n, text);
 }
 /* 💬 PRESET CHAT — Leo wanted to talk to the friends. No keyboard (typed chat = mischief +
-   nothing the friends could understand anyway): big word-chips with hand-written replies. */
+   nothing the friends could understand anyway): big word-chips with hand-written replies.
+   Extra chips are social + "point me at a ❓" — later those help lines can grow a graphic. */
 const NPC_CHIPS = [
   { id: 'hi', label: '👋 Hi!' },
-  { id: 'playground', label: '🛝 Playground?' },
+  { id: 'how', label: '😊 How are you?' },
+  { id: 'name', label: '📛 What\'s your name?' },
   { id: 'fun', label: '😄 Tell me something!' },
+  { id: 'help', label: '❓ Need help?' },
+  { id: 'playground', label: '🛝 Playground?' },
   { id: 'live', label: '🏠 Live here!' },
   { id: 'bye', label: '👋 Bye!' },
 ];
+function npcCycleReply(n, arr, key) {
+  if (arr == null) return 'Hee hee! 😊';
+  if (!Array.isArray(arr)) return String(arr);
+  if (!arr.length) return 'Hee hee! 😊';
+  n[key] = ((n[key] == null ? -1 : n[key]) + 1) % arr.length;
+  return arr[n[key]];
+}
+function npcHelpBag(n) {
+  const R = (n && n.cast && n.cast.replies) || {};
+  const w = (typeof G !== 'undefined' && G.world) || '';
+  if (w === 'city' && R.helpRead) return R.helpRead;
+  if (w === 'beach' && R.helpLang) return R.helpLang;
+  return R.help || R.helpRead || ['Walk up to a glowing ❓ — I\'ll cheer, I won\'t give the answer!'];
+}
 let chatNpc = null;
 let playerBubbleEl = null, playerBubbleUntil = 0;
 let _playerLotIx = -1;                   // which home lot the player is standing in (doorstep greetings)
@@ -19191,12 +19274,16 @@ function npcWordSend() {
     const d = n.d;
     const act = d && d.mixer ? ((d.specials || []).find(a => /dance/i.test(a.getClip().name)) || d.celebrateAction) : null;
     if (act) playGlbMove(d, act);
-  } else if (/\b(joke|funny|laugh|silly)\b/.test(w)) {
-    const arr = R.fun || ['Hee hee! 😊'];
-    n.funIx = ((n.funIx == null ? -1 : n.funIx) + 1) % arr.length;
-    reply = arr[n.funIx];
+  } else if (/\b(joke|funny|laugh|silly|something)\b/.test(w)) {
+    reply = npcCycleReply(n, R.fun, 'funIx');
   } else if (/\b(hi|hello|hey|hiya|hola)\b/.test(w)) {
-    reply = R.hi || '👋 Hello, {name}! So happy to see you!';
+    reply = npcCycleReply(n, R.hi, 'hiIx');
+  } else if (/\b(how)\b/.test(w)) {
+    reply = npcCycleReply(n, R.how, 'howIx');
+  } else if (/\b(name|who)\b/.test(w)) {
+    reply = npcCycleReply(n, R.name, 'nameIx');
+  } else if (/\b(help|math|english|reading|spanish|homework|spell)\b/.test(w)) {
+    reply = npcCycleReply(n, npcHelpBag(n), 'helpIx');
   } else if (/\b(sit|rest|relax)\b/.test(w)) {
     reply = (n.housed && npcPickHouseAction(n)) ? '🪑 Phew — good idea!' : '🌳 I\'ll rest at the park in a bit!';
   } else if (/\b(bye|goodbye|adios)\b/.test(w)) {
@@ -19205,7 +19292,7 @@ function npcWordSend() {
   } else if (/\b(house|home|live)\b/.test(w)) {
     reply = '🏠 Tap "Live here!" while you\'re standing in a house — and I\'ll move in!';
   } else {
-    reply = '🤔 Hmm! I know the words HI, DANCE, JOKE, SIT, OUT and BYE!';
+    reply = '🤔 Hmm! I know HI, HOW, NAME, HELP, DANCE, JOKE, SIT, OUT and BYE!';
   }
   n.coolAt = now + 9000;
   n.replyText = reply.replace('{name}', G.playerName || 'friend');
@@ -19239,9 +19326,13 @@ function npcChipTap(id) {
   const R = n.cast.replies || {};
   let reply;
   if (id === 'fun') {
-    const arr = R.fun || ['Hee hee! 😊'];
-    n.funIx = ((n.funIx == null ? -1 : n.funIx) + 1) % arr.length;
-    reply = arr[n.funIx];
+    reply = npcCycleReply(n, R.fun, 'funIx');
+  } else if (id === 'how') {
+    reply = npcCycleReply(n, R.how, 'howIx');
+  } else if (id === 'name') {
+    reply = npcCycleReply(n, R.name, 'nameIx');
+  } else if (id === 'help') {
+    reply = npcCycleReply(n, npcHelpBag(n), 'helpIx');
   } else if (id === 'live') {
     // 🏠 "Live here!" — the friend moves into wherever the kid is standing (Fiona's houses!)
     const hx = Math.round(player.pos.x * 10) / 10, hz = Math.round(player.pos.z * 10) / 10;
