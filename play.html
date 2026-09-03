@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>Stackadoo — Build with Math!</title>
 <!-- pip-minor-pack: blank-tabs, leave-btn, next-fold, starter-blocks, build-click-hint, sw-v254 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23EAF8E3%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%239ed7a3%22%20stroke-width%3D%222%22%2F%3E%3Cg%20transform%3D%22translate(32%2033)%20scale(0.86)%20translate(-30.5%20-32)%22%3E%3Cpolygon%20points%3D%2221%2C11%2034%2C18%2034%2C32%2021%2C25%22%20fill%3D%22%23D9762E%22%2F%3E%3Cpolygon%20points%3D%2247%2C11%2034%2C18%2034%2C32%2047%2C25%22%20fill%3D%22%23F59A4E%22%2F%3E%3Cpolygon%20points%3D%2234%2C4%2047%2C11%2034%2C18%2021%2C11%22%20fill%3D%22%23FFC089%22%2F%3E%3Cpolygon%20points%3D%2214%2C25%2027%2C32%2027%2C46%2014%2C39%22%20fill%3D%22%23E0A21E%22%2F%3E%3Cpolygon%20points%3D%2240%2C25%2027%2C32%2027%2C46%2040%2C39%22%20fill%3D%22%23F5C842%22%2F%3E%3Cpolygon%20points%3D%2227%2C18%2040%2C25%2027%2C32%2014%2C25%22%20fill%3D%22%23FFE08A%22%2F%3E%3Cpolygon%20points%3D%2220%2C39%2033%2C46%2033%2C60%2020%2C53%22%20fill%3D%22%232E8B4A%22%2F%3E%3Cpolygon%20points%3D%2246%2C39%2033%2C46%2033%2C60%2046%2C53%22%20fill%3D%22%2355BC70%22%2F%3E%3Cpolygon%20points%3D%2233%2C32%2046%2C39%2033%2C46%2020%2C39%22%20fill%3D%22%2386D79A%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
@@ -197,13 +197,22 @@
   .npcBubble.mine b { color:#2b6cb0; }
   .npcBubble.mine::after { border-top-color:#e8f4ff; }
   /* 💬 preset chat chips — tap a phrase to say it (no typing, no mischief).
-     The container ignores taps (only the chips catch them) so the move-joystick still works around them. */
-  #npcChat { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:32; display:none;
-    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,720px); pointer-events:none; }
+     The container ignores taps (only chips + the type-a-word box catch them) so the
+     move-joystick still works around them. */
+  #npcChat { position:fixed; left:50%; bottom:calc(96px + var(--npc-kb, 0px)); transform:translateX(-50%); z-index:32; display:none;
+    flex-wrap:wrap; justify-content:center; gap:8px; max-width:min(94vw,820px); pointer-events:none; }
   #npcChat button { font-family:inherit; font-weight:800; font-size:15px; color:#34495e; background:rgba(255,255,255,.96);
-    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto; }
+    border:2px solid #dce6f2; border-radius:999px; padding:9px 15px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.18); pointer-events:auto;
+    -webkit-user-drag:none; user-select:none; }
   #npcChat button:active { transform:translateY(2px); box-shadow:none; }
+  /* type-a-word sits on its OWN row under the chips so a tablet keyboard can open below it */
+  #npcChat .npcSayWrap { flex:1 0 100%; display:flex; justify-content:center; align-items:center; gap:6px;
+    pointer-events:auto; margin-top:2px; }
+  #npcChat #npcSayInput { pointer-events:auto; width:min(220px,70vw); min-height:44px; font:inherit; font-size:16px;
+    font-weight:700; color:#34495e; background:rgba(255,255,255,.98); border:2px solid #9db7d8; border-radius:12px;
+    padding:8px 12px; box-shadow:0 3px 0 rgba(0,0,0,.12); }
   body.npcChatting #hintBar { display:none !important; }   /* the chips ARE the hint while chatting */
+  body.npcTyping #hotbar { visibility:hidden; }            /* color tray steals taps while typing */
 
   /* ---------- Math popup ---------- */
   .popup { position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
@@ -373,8 +382,10 @@
     background:linear-gradient(180deg,#6fcf63,#3fa24a); box-shadow:0 4px 0 #2f7d39; }
   #unlockBuyBtn:active { transform:translateY(2px); box-shadow:0 2px 0 #2f7d39; }
   #worldRow .choice.locked { position:relative; opacity:.92; }
-  #worldRow .choice.soon { opacity:.9; }
+  #worldRow .choice.soon { opacity:.78; cursor:default; filter:grayscale(.35); background:#f3f4f7; }
   #worldRow .choice.soon small { color:#6a7da0; font-weight:800; }
+  #worldRow .choice.soon.selected { border-color:#d6deea; background:#f3f4f7; }
+  #worldRow .choice.soon.selected::after { display:none; }
   .closeX:active { transform:translateY(1px); box-shadow:0 1px 0 #e3a99c; }
 
   /* ---------- Shop ---------- */
@@ -977,7 +988,7 @@
     #hudMenu { gap:4px; padding:6px; }                       /* all the choices fit a short phone */
     #hudMenu .viewOpt { padding:5px 10px; font-size:14px; }
     /* chat chips hug the bottom-LEFT so they never crowd the button grid */
-    #npcChat { left:12px; right:auto; bottom:12px; transform:none; justify-content:flex-start;
+    #npcChat { left:12px; right:auto; bottom:calc(12px + var(--npc-kb, 0px)); transform:none; justify-content:flex-start;
       gap:6px; max-width:calc(100vw - 264px); }
     #npcChat button { font-size:13px; padding:7px 11px; }
     #modeBtn, #undoBtn { display:none; }
@@ -999,7 +1010,7 @@
     #btnAction    { right:10px;  bottom:70px; }
     #btnUndoTouch { right:110px; bottom:12px; }
     #btnShoot     { right:110px; bottom:70px; }
-    #npcChat { left:10px; right:auto; bottom:10px; transform:none; justify-content:flex-start;
+    #npcChat { left:10px; right:auto; bottom:calc(10px + var(--npc-kb, 0px)); transform:none; justify-content:flex-start;
       gap:6px; max-width:calc(100vw - 220px); flex-wrap:wrap; }
     #npcChat button { font-size:13px; padding:7px 10px; }
     #hotbar { left:10px; transform:none; bottom:72px; gap:5px; }   /* clear of the corner cluster */
@@ -1149,7 +1160,7 @@
         <div class="choiceGrid grades" id="worldRow">
           <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
           <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏘️ Reading Town</b><small>Reading &amp; grammar</small></button>
-          <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish</small></button>
+          <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish • 🔜 Coming soon</small></button>
           <button class="choice" data-world="west" data-desc="Build a frontier town"><b>🤠 Country Western</b><small>Build a frontier town</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
@@ -1194,7 +1205,7 @@
         <summary>How to play</summary>
         <div class="howtoBody">
           <span class="kbd">Arrows</span>/<span class="kbd">WASD</span> move <span class="kbd">Space</span> jump
-          <span class="kbd">E</span> use / sit <span class="kbd">D</span> build
+          <span class="kbd">E</span> use / sit <span class="kbd">D</span> drop / place
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
           <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
           <p><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
@@ -3863,7 +3874,7 @@ const curWorld = () => WORLDS[G.world] || WORLDS.meadow;
 const worldComingSoon = id => !!(WORLDS[id] && WORLDS[id].comingSoon);
 function comingSoonNote(id) {
   const w = WORLDS[id] || {};
-  toast('🔜 ' + (w.emoji || '') + ' ' + (w.name || 'This world') + ' is coming soon! For now, keep building in 🌳 Math Meadow.', 3200);
+  toast('🔜 ' + (w.emoji || '') + ' ' + (w.name || 'This world') + ' is coming soon — not playable yet. Keep building in 🌳 Math Meadow!', 3600);
 }
 
 /* ===== Full-game unlock ($5 one-time) — Math Meadow is free; other worlds unlock together.
@@ -4024,7 +4035,7 @@ const SHOP_ITEMS = [
   { id: 'fence',  icon: '🚧', name: 'Fence', price: 3,         kind: 'many',  desc: 'Build a little yard or pen.' },
   { id: 'flower', icon: '🌷', name: 'Flower', price: 2,        kind: 'many',  desc: 'A cheerful flower to decorate with.' },
   { id: 'window', icon: '🪟', name: 'House Window', price: 6, kind: 'many', desc: 'A window BLOCK — drops into a wall gap at any height.' },
-  { id: 'roof',   icon: '🔺', name: 'Roof', price: 18, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! Each pack is 12 tiles (bigger houses use more).' },
+  { id: 'roof',   icon: '🔺', name: 'Roof', price: 8, kind: 'many', desc: 'Tap the top of a finished house and ONE roof covers the whole thing — peaked or flat! Each pack is 12 tiles (bigger houses use more). Early-game friendly price!' },
   { id: 'stove',  icon: '🔥', name: 'Stove & Oven', price: 12, kind: 'many', desc: 'Burners on top + a real oven. Cook pots & pans on it; bake in the oven!' },
   { id: 'sink',   icon: '🚰', name: 'Kitchen Sink', price: 10, kind: 'many',  desc: 'A sink with a faucet for the kitchen.' },
   { id: 'pot', icon: '🍲', name: 'Cooking Pot', price: 6, kind: 'many', desc: 'Soup pot — set it on the stove to make it steam!' },
@@ -4070,7 +4081,7 @@ const SHOP_ITEMS = [
   { id: 'parkbench',   icon: '🪑', name: 'Park Bench', price: 8, kind: 'many', desc: 'A wooden park bench to sit and watch the fun.' },
   { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
   // 🪜🛗 Get between the floors of your house the easy way — no more hopping up blocks!
-  { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 18, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
+  { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 6, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
   // ⏸️ shelved for now (felt hasty; placed/owned elevators still work — re-add to sell again):
   // { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
   // 🎆 July 4th — summer cookout & celebration
@@ -4474,9 +4485,11 @@ function doUnlock() {
 /* reflect lock state on the homepage world picker */
 function renderWorldLocks() {
   document.querySelectorAll('#worldRow button').forEach(b => {
-    const id = b.dataset.world, soon = worldComingSoon(id), locked = worldLocked(id);
+    const id = b.dataset.world, soon = worldComingSoon(id), locked = worldLocked(id), w = WORLDS[id];
     b.classList.toggle('locked', locked && !soon);
     b.classList.toggle('soon', soon);
+    if (soon) { b.setAttribute('aria-disabled', 'true'); b.title = (w && w.name ? w.name : 'This world') + ' is coming soon'; }
+    else { b.removeAttribute('aria-disabled'); b.removeAttribute('title'); }
     const small = b.querySelector('small');
     if (small) small.textContent = (b.dataset.desc || '') + (soon ? ' • 🔜 Coming soon' : locked ? ' • 🔒 ' + PAY.price : '');
   });
@@ -5063,7 +5076,7 @@ function resetWorld() {
   fireworkLaunchers.length = 0;
   fireworkSparks.forEach(s => scene.remove(s.mesh)); fireworkSparks.length = 0;
   cookProps.length = 0; ovenGlows.length = 0;     // stoves are removed above, taking their cookware with them
-  player.pos.copy(SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null; player.playing = null; movingHome = null;
+  player.pos.copy(typeof spawnForWorld === 'function' ? spawnForWorld(G.world) : SPAWN); player.vel.set(0, 0, 0); player.restingBed = null; player.sittingChair = null; player.playing = null; movingHome = null;
   if (bedProps) bedProps.visible = false;
   if (shieldBubble) shieldBubble.visible = false;
   player.yaw = 0; player.pitch = -0.15;
@@ -5086,7 +5099,16 @@ function resetGameState() {
   G.npcHomes = {};
   G.pendingLevelQuest = null;
 }
+let leaveArmedUntil = 0;
+function requestLeave() {
+  if (!G.running) { goHome(); return; }
+  const n = performance.now();
+  if (n < leaveArmedUntil) { leaveArmedUntil = 0; goHome(); return; }
+  leaveArmedUntil = n + 3200;
+  toast('🏠 Tap Leave again to save & go home. (Escape stays in the game.)', 3000);
+}
 function goHome() {
+  leaveArmedUntil = 0;
   if (G.running && !G.over) saveGame();
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
   if (typeof clearNpcs === 'function') clearNpcs();
@@ -5103,6 +5125,8 @@ function goHome() {
   syncGloomyMenu();
   if (typeof showSetupScreen === 'function') showSetupScreen('screenLanding');
   $('startScreen').style.display = 'flex';
+  // New Adventure should follow the setup cards, not leftover in-game world (Math Meadow ≠ Reading Town)
+  try { syncWorldPicker(selectedSetupWorld() || 'meadow'); } catch (e) {}
 }
 // 🆘 free a player trapped inside a house/wall: hop out of any car, then teleport to the nearest
 // open OUTDOOR clearing (a cell with a clear 3×3 around it, away from buildings & shop footprints).
@@ -12005,6 +12029,21 @@ const player = {
   stepTimer: 0, stepAlt: false, restingBed: null, sittingChair: null, driving: null
 };
 const SPAWN = new THREE.Vector3(0.5, 0, 0.5);
+function spawnForWorld(id) {
+  // Reading Town: stand on Main Street looking at High Street so the town actually loads in-frame
+  if (id === 'city') return new THREE.Vector3(0.5, 0, -5);
+  return SPAWN.clone ? SPAWN.clone() : new THREE.Vector3(SPAWN.x, SPAWN.y, SPAWN.z);
+}
+function underRoofAt(x, z) {
+  const hx = Math.floor(x), hz = Math.floor(z);
+  const y0 = Math.floor((player && player.pos && player.pos.y) || 0);
+  for (let y = y0 + 2; y <= 10; y++) if (blocks.has(key(hx, y, hz))) return true;
+  return false;
+}
+function playerInsideHouse() {
+  if (!player || !player.pos) return false;
+  return underRoofAt(player.pos.x, player.pos.z);
+}
 
 function nearestBed(maxDist) {
   maxDist = maxDist || 2.5;
@@ -12057,15 +12096,31 @@ function toggleBedRest() {
     toast('All rested! Press L near the bed to lie down again.');
     return;
   }
-  const bed = nearestBed();
-  if (!bed) {
-    toast('Walk close to your bed, then press L.');
+  const bed = nearestBed(3.4);
+  if (bed) {
+    player.restingBed = bed;
+    player.vel.set(0, 0, 0);
+    if (document.pointerLockElement) document.exitPointerLock();
+    toast('Cozy! Press L again when you are ready to get up.');
     return;
   }
-  player.restingBed = bed;
-  player.vel.set(0, 0, 0);
-  if (document.pointerLockElement) document.exitPointerLock();
-  toast('Cozy! Press L again when you are ready to get up.');
+  // Country Home / roofed room: L enters a real interior view (sleep if a bed is in the house)
+  const inside = underRoofAt(player.pos.x, player.pos.z) || (typeof homeLotAt === 'function' && homeLotAt(player.pos.x, player.pos.z) >= 0);
+  if (inside) {
+    const houseBed = nearestBed(8);
+    if (houseBed) {
+      player.restingBed = houseBed;
+      player.vel.set(0, 0, 0);
+      if (document.pointerLockElement) document.exitPointerLock();
+      toast('🛏️ Nighty-night! Press L again to get up.', 2800);
+      return;
+    }
+    G.firstPerson = true; G.birdsEye = false; G._autoInterior = true;
+    const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
+    toast('🏠 You\'re inside! Walk to a 🛏️ bed and press L to lie down. Press C to change view.', 4000);
+    return;
+  }
+  toast('Walk close to your bed (or into your house), then press L.');
 }
 
 /* 🎠 PLAYGROUND — the rideable pieces you build & play on. Walk up, tap ⭐ USE to hop on. */
@@ -13240,6 +13295,12 @@ function updatePlayer(dt) {
 
   // camera
   const headY = player.pos.y + 1.55;
+  const inside = underRoofAt(player.pos.x, player.pos.z);
+  // Leave auto-interior first-person when you walk outdoors (must run even while firstPerson)
+  if (G._autoInterior && G.firstPerson && !inside && !G.birdsEye) {
+    G.firstPerson = false; G._autoInterior = false;
+    const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
+  }
   if (G.firstPerson) {
     camera.position.set(player.pos.x, headY, player.pos.z);
   } else if (G.birdsEye) {
@@ -13266,10 +13327,19 @@ function updatePlayer(dt) {
       const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
       // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
       if (solidAt(fx, fy, fz) || (fy < 5 && inShopZone(fx, fz))) {
-        allowed = Math.max(1.7, d - 0.4); break;   // pull in tight in narrow gaps instead of sitting inside the wall
+        allowed = Math.max(inside ? 0.45 : 1.7, d - 0.4); break;
       }
     }
-    camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
+    if (inside && allowed < 2.6 && !G.birdsEye) {
+      // Real interior path — first-person — instead of a clipped "fake interior" camera
+      if (!G.firstPerson) {
+        G.firstPerson = true; G._autoInterior = true;
+        const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
+      }
+      camera.position.set(player.pos.x, headY, player.pos.z);
+    } else {
+      camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
+    }
   }
   const look = G.birdsEye
     ? new THREE.Vector3(                                              // 🦅 look down at the ground just ahead of the builder
@@ -14320,6 +14390,8 @@ function answerPicked(btn, opt) {
     // closeMath() quietly gives them the build blocks so a prize is never lost.
     pendingReward = reward;
     const balls = Math.max(2, Math.round(reward * 0.7));
+    if (answerUnlockTimer) { clearTimeout(answerUnlockTimer); answerUnlockTimer = null; }
+    $('mathPrompt').textContent = '🎉 Correct! Pick your prize:';
     $('mathFeedback').textContent = '🎉 Correct! +' + (G.lastStars || 0) + '⭐' + levelNote + ' Pick your reward:';
     const wrap = $('rewardChoice');
     wrap.innerHTML = '';
@@ -14527,7 +14599,12 @@ function sellFurniture(id) {
   toast('💰 Sold back ' + item.icon + ' ' + item.name + ' for +' + val + ' 🪙 · ' + G.coins + ' total. (you have ' + shopOwnedCount(id) + ' left)', 3600);
   refreshHUD(); renderShop();
 }
+const PET_BUY_CAP = 3;
+let _buyLockUntil = 0;
 function buyItem(id) {
+  const now = performance.now();
+  if (now < _buyLockUntil) return;
+  _buyLockUntil = now + 450;
   const item = SHOP_ITEMS.find(i => i.id === id);
   if (id === 'treasuremap') {                          // owning the map lets you (re)start the hunt any time
     if (!G.owned.treasuremap) {
@@ -14544,6 +14621,10 @@ function buyItem(id) {
     G.berries = 0;
     Sound.coin();
   } else if (item.kind === 'many') {
+    if (PET_KINDS[id] && (G.furniture[id] || 0) >= PET_BUY_CAP) {
+      toast('🐾 You already have ' + PET_BUY_CAP + ' ' + item.name + 's in your 🎒 — place one from the red bag before adopting more!', 3600);
+      if (Sound.wrong) Sound.wrong(); return;
+    }
     if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '. Keep earning!', 3200); if (Sound.wrong) Sound.wrong(); return; }
     G.coins -= item.price;
     Sound.coin();
@@ -14554,7 +14635,7 @@ function buyItem(id) {
     else if (id === 'garagedoor') { G.garageDoors++; extra = ' (you now have ' + G.garageDoors + ')'; }
     else if (id === 'roof') { G.furniture.roof += 12; extra = ' (+12 tiles → you have ' + G.furniture.roof + ')'; }
     else { G.furniture[id]++; extra = ' (you now have ' + G.furniture[id] + ')'; }
-    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 backpack' + extra + '. Press I to place it.', 4200);
+    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 red backpack' + extra + '. Press I to place it.', 4200);
   } else {
     if (G.owned[id]) { toast('✓ You already own ' + item.icon + ' ' + item.name + ' — no need to buy it again!', 2800); return; }
     if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '.', 3200); if (Sound.wrong) Sound.wrong(); return; }
@@ -14564,6 +14645,7 @@ function buyItem(id) {
     if (id === 'hat' || id === 'usahat') applyHeadwear();
     toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left.' + (id === 'ladder' ? ' Hold JUMP by a tree trunk to climb!' : ''), 4000);
   }
+  try { persistPack(); saveGame(); } catch (e) {}
   refreshHUD();
   renderShop();
 }
@@ -17095,13 +17177,38 @@ function tryUse() {
   else { toast('⭐ Walk up to a shop, car, or chair, then tap USE!', 1800); }
 }
 addEventListener('keydown', e => {
+  if (e.code === 'Escape' || e.key === 'Escape') {
+    e.preventDefault();
+    // Close chat / popups / menus. Never dump to the home screen unless they tap 🏠 Leave.
+    if (typeof chatNpc !== 'undefined' && chatNpc && typeof hideNpcChat === 'function') { hideNpcChat(); return; }
+    if ($('viewMenu') && $('viewMenu').style.display === 'flex') { $('viewMenu').style.display = 'none'; return; }
+    if ($('hudMenu') && $('hudMenu').style.display === 'flex') { $('hudMenu').style.display = 'none'; return; }
+    if (G.running) {
+      const open = typeof topOpenPopup === 'function' ? topOpenPopup() : null;
+      if (open) {
+        const x = open.querySelector('.closeX');
+        if (x) x.click(); else { open.style.display = 'none'; popupOpen = false; }
+        return;
+      }
+    }
+    return;
+  }
   if (e.code === 'KeyM' && G.running) { freeMouse(); return; }
   if (!G.running || popupOpen) return;
   keys[e.code] = true;
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (e.code === 'KeyP') pickupBlock();
-  if (e.code === 'KeyG') putDownBlock();                        // (used to be D — D throws the 🕺 Dance Party now)
-  if (e.code === 'KeyD' && !e.repeat) {                         // 🕺 tap-D detector: remember when D went down…
+  if (e.code === 'KeyG') putDownBlock();
+  if (e.code === 'KeyD' && !e.repeat) {
+    // Prompt says "press D to drop/place" — honor that. Do NOT strafe into a ❓ / open math. Dance only when not placing.
+    const placing = G.buildMode && !G.removeMode && G.selectedSlot && G.selectedSlot !== 'paint';
+    if (placing) {
+      e.preventDefault();
+      keys['KeyD'] = false;          // drop, don't walk sideways into a math station
+      putDownBlock();
+      _dDownAt = 0;
+      return;
+    }
     _dDownAt = performance.now();
     _dHadCompany = !!(keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']);
   }
@@ -17124,7 +17231,10 @@ addEventListener('keyup', e => {
   // 🕺 …and a quick TAP of D (alone, on foot) toggles the Dance Party. HOLDING D still
   // strafes right like always — the party only fires on a clean sub-quarter-second tap.
   if (e.code === 'KeyD' && _dDownAt && G.running && !popupOpen && !player.driving &&
-      performance.now() - _dDownAt < 300 && !_dHadCompany) setDanceParty(!danceParty);
+      performance.now() - _dDownAt < 300 && !_dHadCompany) {
+    const placing = G.buildMode && !G.removeMode && G.selectedSlot && G.selectedSlot !== 'paint';
+    if (!placing) setDanceParty(!danceParty);
+  }
   if (e.code === 'KeyD') _dDownAt = 0;
 });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -17311,6 +17421,7 @@ function openMoveLab() {
 function camIcon() { return G.firstPerson ? '👁️' : (G.birdsEye ? '🦅' : '🧍'); }
 function toggleCamera() {
   // three views, one button: 🧍 see your character → 👁️ their eyes → 🦅 bird's eye (top-down)
+  G._autoInterior = false;
   if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; }
   else if (G.firstPerson) { G.firstPerson = false; G.birdsEye = true; }
   else { G.birdsEye = false; }
@@ -17325,6 +17436,7 @@ function toggleCamera() {
   }
 }
 function setCameraMode(mode) {                 // the three views, by name (the menu uses this)
+  G._autoInterior = false;
   G.firstPerson = mode === 'fp';
   G.birdsEye = mode === 'bird';
   if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();
@@ -17496,6 +17608,29 @@ function renderInv() {
       row.appendChild(btn); vList.appendChild(row);
     });
     vRow.appendChild(vList); wrap.appendChild(vRow);
+  }
+  // 🐾 Pets you own (unplaced in the bag + friends already living in your house)
+  const bagPets = [['🐱', 'cat', 'Pet Cat'], ['🐶', 'dog', 'Pet Dog'], ['🐠', 'fish', 'Fish Bowl'], ['🦜', 'bird', 'Pet Bird']];
+  const living = (typeof pets !== 'undefined' ? pets : []).filter(p => p && p.kind && (p.kind === 'cat' || p.kind === 'dog' || p.kind === 'bird' || p.kind === 'fish'));
+  const hasBagPet = bagPets.some(([, slot]) => (G.furniture[slot] || 0) > 0);
+  if (hasBagPet || living.length) {
+    const pRow = document.createElement('div');
+    pRow.className = 'invItem'; pRow.style.flexDirection = 'column'; pRow.style.alignItems = 'stretch';
+    let phtml = '<div class="info" style="margin-bottom:6px"><b>🐾 Your pets</b><small>In the 🎒 red bag, ready to place — or already living with you!</small></div>';
+    phtml += '<div style="display:flex;flex-direction:column;gap:6px">';
+    bagPets.forEach(([ic, slot, name]) => {
+      const n = G.furniture[slot] || 0;
+      if (n < 1) return;
+      phtml += '<div style="display:flex;align-items:center;gap:8px;background:#f3f6fa;border-radius:10px;padding:6px 10px"><span style="font-size:20px">' + ic + '</span><b style="flex:1">' + name + ' ×' + n + '</b><span style="color:#2f7d27;font-weight:800;font-size:13px">🎒 in bag</span></div>';
+    });
+    living.forEach(p => {
+      const nm = (typeof petNiceName === 'function') ? petNiceName(p) : (p.kind || 'pet');
+      const ic = p.kind === 'dog' ? '🐶' : p.kind === 'bird' ? '🦜' : p.kind === 'fish' ? '🐠' : '🐱';
+      phtml += '<div style="display:flex;align-items:center;gap:8px;background:#f3f6fa;border-radius:10px;padding:6px 10px"><span style="font-size:20px">' + ic + '</span><b style="flex:1">' + nm + '</b><span style="color:#3b5d9e;font-weight:800;font-size:13px">🏠 at home</span></div>';
+    });
+    phtml += '</div>';
+    pRow.innerHTML = phtml;
+    wrap.appendChild(pRow);
   }
   // 🏘️ Furniture style — pick ANY town's finish (country / deluxe / Spanish) and mix pieces from every town
   const fRow = document.createElement('div');
@@ -17858,7 +17993,12 @@ setInterval(fitOpenPopup, 700);                             // catches content t
    and eject kids from the adventure. Block that for non-link controls. */
 addEventListener('auxclick', (e) => {
   if (e.button !== 1) return;
-  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud, #setupCard');
+  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud, #setupCard, #viewMenu, #hudMenu');
+  if (t && !e.target.closest('a[href]')) { e.preventDefault(); e.stopPropagation(); }
+}, true);
+addEventListener('click', (e) => {
+  if (!(e.ctrlKey || e.metaKey || e.shiftKey) && e.button === 0) return;
+  const t = e.target && e.target.closest && e.target.closest('button, .loadBtn, #npcChat, #hud');
   if (t && !e.target.closest('a[href]')) { e.preventDefault(); e.stopPropagation(); }
 }, true);
 function armBackGuard() { try { history.pushState({ sg: 1 }, ''); } catch (e) {} }
@@ -17877,8 +18017,8 @@ addEventListener('popstate', () => {
 });
 $('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
 $('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
-$('homeBtn').onclick = () => { Sound.click(); goHome(); };
-$('leaveBtn').onclick = () => { Sound.click(); goHome(); };
+$('homeBtn').onclick = () => { Sound.click(); requestLeave(); };
+$('leaveBtn').onclick = () => { Sound.click(); requestLeave(); };
 $('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 function freeMouse() {
   toast(G.mouseWalk
@@ -17908,7 +18048,7 @@ function syncMouseWalkUI(quiet) {
   if (leg) {
     leg.innerHTML = G.mouseWalk
       ? '🖱️ Drag to look • Left-click the ground to <b>walk</b> there • click a math block or shop to use it'
-      : '🖱️ Drag to look • Left-click <b>places blocks</b> 🧱 • WASD/arrows to move • Right-click <b>Remove</b> ⛏️';
+      : '🧱 Click <b>places a block</b> • <b>WASD / arrows</b> to move • or tap 🚶 Click-to-move';
   }
   if (!quiet) {
     toast(G.mouseWalk
@@ -18123,13 +18263,27 @@ function updateGradeDescs(world) {
     if (small && map[b.dataset.grade]) small.textContent = map[b.dataset.grade];
   });
 }
+function selectedSetupWorld() {
+  const b = document.querySelector('#worldRow button.choice.selected');
+  const id = b && b.dataset.world;
+  if (!id || !WORLDS[id] || worldComingSoon(id)) return 'meadow';
+  if (worldLocked(id)) return 'meadow';
+  return id;
+}
+function syncWorldPicker(id) {
+  const pick = (!id || !WORLDS[id] || worldComingSoon(id)) ? 'meadow' : id;
+  const row = $('worldRow'); if (!row) { G.world = pick; return; }
+  row.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.world === pick));
+  G.world = pick;
+  if (typeof updateGradeDescs === 'function') updateGradeDescs(pick);
+}
 function buildMenu() {
   updateGradeDescs(G.world || 'meadow');                // start matching the pre-selected world
   // world buttons (coming-soon worlds tease; locked worlds open the unlock dialog instead of selecting)
   $('worldRow').querySelectorAll('button').forEach(b => b.onclick = () => {
     Sound.click();
-    updateGradeDescs(b.dataset.world);                 // preview this world's grade levels (reading / Spanish / math)
     if (worldComingSoon(b.dataset.world)) { comingSoonNote(b.dataset.world); return; }
+    updateGradeDescs(b.dataset.world);                 // preview this world's grade levels (reading / Spanish / math)
     if (worldLocked(b.dataset.world)) {
       if (trialAvailable()) startTrial();                          // first premium tap → start trial, then select it
       else { openUnlock(); return; }
@@ -18348,13 +18502,14 @@ $('startBtn').onclick = () => {
   Sound.click();
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
-  if (worldLocked(G.world)) G.world = 'meadow';   // safety: never start in a locked world
+  G.world = selectedSetupWorld();          // always honor the selected card (Math Meadow must not save as Reading Town)
+  if (worldLocked(G.world) || worldComingSoon(G.world)) G.world = 'meadow';
   clearSave(nm, G.world);              // Start Adventure = a brand-new build for this name + chosen world
   resetWorld();
   resetGameState();
   G.gloomiesEnabled = false;           // always calm — Gloomies entry removed from setup
   G.blocks = Math.max(G.blocks || 0, 16); // starter blocks — no Build-walls dead end
-  G.mouseWalk = false;                 // Pip QA: start in place-blocks mode (WASD to move)
+  G.mouseWalk = false;                 // Keep OFF: click places blocks. WASD / 🚶 toggle to walk (see spawn toast).
   loadProfileFor(nm);
   startGame();
   try { saveGame(); } catch (e) {}     // persist calm mode immediately
@@ -18617,7 +18772,7 @@ function showSetupScreen(id) {
     });
   }
 }
-$('newGameBtn').onclick = () => { Sound.click(); showSetupScreen('screenSettings'); };
+$('newGameBtn').onclick = () => { Sound.click(); syncWorldPicker(selectedSetupWorld() || 'meadow'); showSetupScreen('screenSettings'); };
 $('toHeroBtn').onclick = () => { Sound.click(); showSetupScreen('screenHero'); };
 document.querySelectorAll('#setupCard [data-go]').forEach(b => {
   b.addEventListener('click', () => { Sound.click(); showSetupScreen(b.dataset.go); });
@@ -18629,6 +18784,15 @@ function startGame() {
   $('hud').style.display = 'block';
   if (isTouch) $('touchUI').style.display = 'block';
   applyWorldTheme(G.world);                    // sky, fog & ground match the chosen world
+  // New visit / default spawn: Reading Town starts on High Street so the town is on-screen
+  try {
+    const atDefault = Math.hypot(player.pos.x - SPAWN.x, player.pos.z - SPAWN.z) < 0.35;
+    if (atDefault) {
+      const sp = spawnForWorld(G.world);
+      player.pos.set(sp.x, sp.y, sp.z);
+      player.yaw = 0;
+    }
+  } catch (e) {}
   usedLangQ.clear();
   setAvatar(G.avatarIndex);
   updateBadgeBtn(false);
@@ -18683,7 +18847,10 @@ function startGame() {
   if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
-    toast('🌈 Calm mode! You start with a few 🧱 blocks — walk to purple ❓ for more. Tap 🏠 Leave anytime to save & go home.', 5600);
+    toast('🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the joystick — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
+  }
+  if (G.world === 'city') {
+    setTimeout(() => toast('🏘️ High Street is right ahead — Library, Cinema, Post Office & Arcade are on the paved street!', 4200), 2800);
   }
   refreshHUD();
 }
@@ -18720,114 +18887,177 @@ $('againBtn').onclick = () => location.reload();
 
 /* ============================ 🧑‍🤝‍🧑 TOWN FRIENDS (NPCs) ============================
    Three or four heroes stroll near spawn like Dojo-style townsfolk. Walk up (or tap them)
-   and they chat in a speech bubble — mostly about the 🛝 playground, planting the seed so
-   kids build one... and so a later update can have the friends actually PLAY on it. */
+   and they chat in a speech bubble — playground invites plus friendly hellos. Chip chat
+   only (plus a tiny local magic-word box). No cloud, no free typing. */
 const NPC_CAST = [
   { id: 'spark', name: 'Spark', lines: [
-    'Hi {name}! Have you seen the 🛝 playground yet?',
+    'Hi {name}! How are you today?',
+    'I\'m Spark! Need a hand with a ❓ puzzle?',
+    'Have you seen the 🛝 playground yet?',
     'I want to try the swings — will you come with me?',
     'Race you to the 🛝 playground!',
     'The curly slide looks SO twisty. Is it fast?',
   ], replies: {
     hi: 'Hi {name}! ✨ You sparkle extra bright today!',
+    how: ['I\'m sparkly-great! How are YOU, {name}?', 'A little floaty, a little giggly. You? ✨', 'Better now that you\'re here, {name}!'],
+    name: ['I\'m Spark! And you\'re {name} — I remembered! ✨', 'Spark\'s the name. Sparkles are the game! 🪄'],
     playground: 'Swings first, then the twisty slide! Meet you there 🛝',
-    fun: ['I can fly... but the swings are still my favorite. Wheee! ✨', 'My wand only makes sparkles. Okay — MOSTLY sparkles. 🪄'],
+    fun: ['I can fly... but the swings are still my favorite. Wheee! ✨', 'My wand only makes sparkles. Okay — MOSTLY sparkles. 🪄', 'If I twirl fast enough, I make my own glitter storm.', 'Favorite snack: sun-warm berries. Want to plant some?'],
+    help: ['Walk up to a glowing ❓ — that\'s math practice. I cheer, I don\'t give the answer! ✨', 'Stuck? Tap the 🤔 hint. It teaches the steps — still YOUR win, {name}!', 'I can\'t do the puzzle for you. Trying is the magic.'],
+    helpRead: ['📚 Those ❓ stations are reading puzzles. Walk up and try one — I\'ll cheer!', 'I won\'t spoil the sentence. Try it, then use 🤔 if you get stuck!'],
+    helpLang: ['🏖️ ❓ stations here are Spanish words. Walk up and pick the matching one!', 'I won\'t say the answer — trying is how it sticks, {name}!'],
     live: '🏠 I LOVE it! A sparkly home sweet home — thank you, {name}! ✨',
     bye: 'Bye {name}! Come find me later! ✨',
   } },
   { id: 'panda', name: 'Momma Panda', lines: [
-    'Hello {name}! Is the ⚖️ see-saw fun? I\'ve never tried one!',
+    'Hello {name}! How are you, dear?',
+    'I\'m Momma Panda. Need a little help with a ❓?',
+    'Is the ⚖️ see-saw fun? I\'ve never tried one!',
     'Could you build a see-saw at the 🛝 playground for us?',
     'A picnic by the playground sounds lovely. 🧺',
     'Which is better — the swings or the slide?',
   ], replies: {
     hi: 'Hello, dear {name}! 🐼 Have you had a snack today?',
+    how: ['I\'m cozy and calm. How are you feeling, {name}?', 'Very well, thank you! Did you rest today?', 'Happy as a picnic. And you, little builder?'],
+    name: ['I\'m Momma Panda. You can call me Momma, {name}. 🐼', 'Momma Panda — hugs included, no extra charge. 🤗'],
     playground: 'I\'ll bring the picnic basket for after the see-saw! 🧺',
-    fun: ['Bamboo crunches louder than carrots. True fact! 🎍', 'I give the BEST hugs. It\'s a panda thing. 🤗'],
+    fun: ['Bamboo crunches louder than carrots. True fact! 🎍', 'I give the BEST hugs. It\'s a panda thing. 🤗', 'Slow is okay. Slow still gets you there.', 'Nap rule: five more minutes. Then five more.'],
+    help: ['The glowing ❓ is math practice. Walk over — I\'ll wait right here. 🐼', 'Hints teach the method, not the answer. That\'s the kind way.', 'You can do hard things, {name}. One step at a time.'],
+    helpRead: ['Those ❓ spots are reading. Take your time — no rush.', 'Sound it out. I\'ll cheer the try, not just the win. 🐼'],
+    helpLang: ['Spanish words live at the ❓. Peek, try, smile — that\'s the whole lesson.'],
     live: '🏠 A home for me? {name}, you are the kindest builder! 🐼💚',
     bye: 'Take care, little builder! 🐼',
   } },
   { id: 'bunny', name: 'Bounce', lines: [
+    'Hi {name}! How\'s your hop today?',
+    'I\'m Bounce! Want help finding a ❓?',
     'Boing! I bet I can hop higher than the swings!',
     'Meet me at the 🛝 playground later?',
     'Is there a 🏖️ sandbox? I dig SUPER fast!',
     'Tag — you\'re it, {name}! First one to the playground wins! 🛝',
   ], replies: {
     hi: 'Boing! Hi {name}! Watch how high I can hop!',
+    how: ['BOUNCY! How are YOU, {name}?', 'I have too much hop and not enough pockets.', 'Great! I found a clover. Want to see later?'],
+    name: ['Bounce! Because standing still is a rumor. 🐰', 'I\'m Bounce — the hoppy one. You\'re {name}!'],
     playground: 'Sandbox! Sandbox! I call the 🏖️ sandbox!',
-    fun: ['I once hopped over a WHOLE fence. It was a tiny fence. Don\'t ask. 🐰', 'Carrots are just orange candy. That\'s my whole speech. 🥕'],
+    fun: ['I once hopped over a WHOLE fence. It was a tiny fence. Don\'t ask. 🐰', 'Carrots are just orange candy. That\'s my whole speech. 🥕', 'Thump-thump is how bunnies say yes.', 'I hide snacks and forget. That\'s a feature.'],
+    help: ['Race you to a glowing ❓! Math first, then more hopping.', 'I won\'t shout the answer. Hop, try, hop again!', 'Hint button is 🤔 — like a carrot for your brain.'],
+    helpRead: ['Reading ❓ time! I\'ll bounce in place so I don\'t spoil it.'],
+    helpLang: ['Spanish ❓! I only know "hola" and "carrot." You can do more.'],
     live: '🏠 MY house?! This is the best day EVER! 🥕',
     bye: 'Catch me if you can! Byeee! 💨',
   } },
   { id: 'trex', name: 'Rexy', lines: [
+    'Hi {name}! I\'m Rexy. Friendly roar only. 🦖',
+    'How are you? Need help with a ❓?',
     'ROAR! ...too scary? I\'m friendly, promise. 🦖',
     'My little arms can\'t reach the monkey bars. 😅',
     'Will you go down the 🛝 slide with me later?',
     'You earn 🪙 answering ❓ questions? You\'re so smart, {name}!',
   ], replies: {
     hi: 'RAWR! That means "hi" in dinosaur, {name}! 🦖',
+    how: ['Stomp-stomp happy! How are you, {name}?', 'My arms are small but my mood is BIG.', 'Good! I practiced a quiet roar. Want to hear it later?'],
+    name: ['Rexy! Not scary — just tall. 🦖', 'I\'m Rexy. You\'re {name}. Team? Team.'],
     playground: 'I\'m the FASTEST down the slide. My tail is a racing stripe! 🛝',
-    fun: ['My arms are small but my heart is HUGE. 🦖💚', 'I tried the monkey bars once. Once. 😅'],
+    fun: ['My arms are small but my heart is HUGE. 🦖💚', 'I tried the monkey bars once. Once. 😅', 'Tiny arms, huge high-fives. Physics is rude.', 'I roar at math sometimes. Then I try anyway.'],
+    help: ['Walk to a ❓ — that\'s how we get 🪙. I\'ll stomp-cheer, not spoil it.', 'Stuck? 🤔 hint. Even dinos use hints.', 'Hard puzzles feel like tall trees. Climb one branch.'],
+    helpRead: ['Reading ❓ ahead! I\'ll use my quiet roar for "you got this."'],
+    helpLang: ['Spanish ❓! I roar in every language. You pick the word.'],
     live: '🏠 A rex-sized home! Thank you, {name}! 🦖💚',
     bye: 'Stomp stomp! See ya, {name}!',
   } },
   { id: 'queenfox', name: 'Foxy', lines: [
-    'Psst, {name}! I know ALL the shortcuts to the 🛝 playground!',
+    'Hello {name}! I\'m Foxy — how are you?',
+    'Psst — need help finding a ❓ station?',
+    'I know ALL the shortcuts to the 🛝 playground!',
     'My tail is fluffier than any pillow. Royal fox fact! 🦊',
     'Race you! Foxes get a head start — new rule I just made up.',
     'Something smells like adventure, {name}. Follow me!',
   ], replies: {
     hi: 'Well hello, {name}! *swish swish* That\'s my happy tail! 🦊',
+    how: ['Sly and sunny. How about you, {name}?', 'My tail says we\'re both doing great.', 'Royal mood: curious. Your move!'],
+    name: ['Foxy. Some say Queen. I allow both. 👑🦊', 'I\'m Foxy — and I already know you\'re {name}.'],
     playground: 'Foxes LOVE tunnels — meet you under the slide! 🛝',
-    fun: ['I\'m secretly royalty. The crown gave it away, didn\'t it? 👑', 'My tail has a mind of its own. We\'ve agreed to disagree. 🦊'],
+    fun: ['I\'m secretly royalty. The crown gave it away, didn\'t it? 👑', 'My tail has a mind of its own. We\'ve agreed to disagree. 🦊', 'I collect shortcuts. Want one to a ❓?', 'Fluffy tails do not help math. Trying does.'],
+    help: ['I know a shortcut to a glowing ❓. I won\'t whisper the answer, though. 🦊', 'Clever isn\'t cheating. Hints are 🤔 — still your puzzle.', 'Math is a fox-hunt. Sniff, try, find it.'],
+    helpRead: ['Reading ❓! I\'ll keep the spoilers in my tail.'],
+    helpLang: ['Spanish ❓ — a new shortcut language. You lead.'],
     live: '🏠 A royal fox den! You\'re my favorite, {name}! 🦊💚',
     bye: 'Swish swish! Bye, {name}!',
   } },
   { id: 'robot', name: 'Bolt', lines: [
-    'BEEP! Hello {name}! My favorite number is... ALL of them. 🤖',
+    'BEEP! Hello {name}! How are your systems?',
+    'I\'m Bolt. I can point you to a ❓ station!',
+    'My favorite number is... ALL of them. 🤖',
     'Computing: the 🛝 slide is 100% fun. Verified!',
     'Can robots use swings? Requesting a push!',
     'Your math answers charge my batteries, {name}! ⚡',
   ], replies: {
     hi: 'BOOP! Greetings, {name}! Systems: happy! 🤖',
+    how: ['Status: charged and cheerful. Query: how are YOU, {name}?', 'All lights green. One light wants a high five.', 'Battery 98%. Friendship 100%.'],
+    name: ['Bolt. Model: friend. Serial number: secret. 🤖', 'I am Bolt. You are {name}. Pairing complete!'],
     playground: 'Calculating shortest path to the swings... follow me! 🛝',
-    fun: ['I dance in ro-bot style. It\'s the only style I have. 🤖', 'My batteries run on high fives. Recharge me any time! ⚡'],
+    fun: ['I dance in ro-bot style. It\'s the only style I have. 🤖', 'My batteries run on high fives. Recharge me any time! ⚡', 'Beep means yes. Boop means also yes.', 'I counted to a million once. It was mostly for fun.'],
+    help: ['Navigate to a glowing ❓. I will not output the answer. That would skip the learning loop.', 'Hint = 🤔. Answer = you. I am just the cheer subroutine.', 'Math charges me. Your try charges you, {name}.'],
+    helpRead: ['Reading ❓ detected. I will idle nearby. No spoilers in my logs.'],
+    helpLang: ['Spanish ❓ module online. I still will not leak the word.'],
     live: '🏠 HOME.EXE installed! Thank you, {name}! 🤖💚',
     bye: 'Powering down... just kidding! Bye, {name}! BEEP!',
   } },
   { id: 'dragon', name: 'Ember', lines: [
-    'Don\'t worry {name} — I only breathe WARM air. Mostly. 🐉',
+    'Hi {name}! I\'m Ember. Warm hellos only. 🐉',
+    'How are you? Want help finding a ❓?',
+    'Don\'t worry — I only breathe WARM air. Mostly. 🐉',
     'My wings are too little to fly. The swings count, right?',
     'I could toast marshmallows for the whole 🛝 playground!',
     'Stomp with me, {name}! It makes the flowers giggle. 🌸',
   ], replies: {
     hi: 'Rrrrawr-hello, {name}! You look fireproof to me! 🐉',
+    how: ['Toasty and friendly. How are you, {name}?', 'A little smoky. A lot happy.', 'Better when friends visit the den!'],
+    name: ['Ember! I glow when I\'m proud of you. 🐉', 'I\'m Ember. You\'re {name}. No singeing, promise.'],
     playground: 'Slide first! My scales make me EXTRA slippery! 🛝',
-    fun: ['My sneezes are 10% sparks. Bless me carefully. 🔥', 'Dragons hoard treasure. I hoard nice friends like you. 💚'],
+    fun: ['My sneezes are 10% sparks. Bless me carefully. 🔥', 'Dragons hoard treasure. I hoard nice friends like you. 💚', 'Marshmallows are my love language.', 'When a puzzle is hard, I breathe SLOW, not hot.'],
+    help: ['A ❓ is a little treasure hunt. I won\'t burn the map — you solve it.', 'Stuck? Cool the fire, tap 🤔, try again.', 'Brave is trying, {name}. Not already knowing.'],
+    helpRead: ['Reading ❓! I\'ll keep my sparks small so you can think.'],
+    helpLang: ['Spanish ❓ — new words, same courage.'],
     live: '🏠 A dragon den! I promise not to singe the curtains, {name}! 🐉',
     bye: 'Flap flap! Farewell, {name}!',
   } },
   { id: 'princess', name: 'Princess Pea', lines: [
-    'Greetings, {name}! Which way to the royal 🛝 playground?',
+    'Greetings, {name}! How fares the kingdom today?',
+    'I am Princess Pea. Need help with a ❓ quest?',
+    'Which way to the royal 🛝 playground?',
     'A princess NEVER skips the swings. Royal decree!',
     'Your buildings are castle-worthy, {name}! 🏰',
     'Shall we have a royal race to the slide?',
   ], replies: {
     hi: 'Why hello, {name}! You may skip the bowing. 👑',
+    how: ['Quite well, thank you! And you, {name}?', 'Royal mood: delighted. Yours?', 'My crown is on straight. That means a good day.'],
+    name: ['Princess Pea, at your service. 👑', 'Pea for short. Princess for long. You\'re {name}!'],
     playground: 'The swings are my throne today! To the playground! 🛝',
-    fun: ['My crown stays on even down the slide. Royal secret: it\'s SPARKLE glue. 👑', 'Royal fact: princesses have the LOUDEST wheee. 🎀'],
+    fun: ['My crown stays on even down the slide. Royal secret: it\'s SPARKLE glue. 👑', 'Royal fact: princesses have the LOUDEST wheee. 🎀', 'Peas are vegetables AND names. I\'m both.', 'A knight is just a kid who tried the hard ❓.'],
+    help: ['A ❓ is a royal quest. I will not gift the answer — that would spoil the ball.', 'Hints are allowed. Cheating is not. 🤔 is the court wizard.', 'You\'re hereby brave enough to try, {name}.'],
+    helpRead: ['Reading ❓: a story quest. I shall wait by the marquee.'],
+    helpLang: ['Spanish ❓! A new royal language. You may lead.'],
     live: '🏠 My own palace! You\'re hereby knighted, {name}! 👑💚',
     bye: 'Farewell, {name}! The kingdom awaits!',
   } },
   { id: 'unicorn', name: 'Twirl', lines: [
-    'Hi {name}! I dance everywhere I go — it\'s faster than walking! 💃',
+    'Hi {name}! I\'m Twirl — how are you?',
+    'Need a sparkly nudge toward a ❓?',
+    'I dance everywhere I go — it\'s faster than walking! 💃',
     'Do you think the 🛝 slide works with four... I mean two legs?',
     'My horn glows when I\'m happy. It\'s VERY glowy today! 🦄',
     'Twirl with me, {name}! Spinning makes everything sparklier!',
   ], replies: {
     hi: 'Hi hi hi {name}! *twirls* That\'s how unicorns wave! 🦄',
+    how: ['Glowy and spinny! How are YOU, {name}?', 'My horn is on high-happy. Yours?', 'I\'d be even better if we danced after a ❓!'],
+    name: ['Twirl! Because walking in a straight line is optional. 🦄', 'I\'m Twirl. You\'re {name}. Sparkle team!'],
     playground: 'I\'m going to dance ALL the way down the slide! 🛝✨',
-    fun: ['My mane does its own dance. I just follow it. 💫', 'Rainbows are just the sky dancing. True story! 🌈'],
+    fun: ['My mane does its own dance. I just follow it. 💫', 'Rainbows are just the sky dancing. True story! 🌈', 'I once spun so much I made a tiny breeze.', 'Hard puzzles still sparkle when you try.'],
+    help: ['Glow toward a ❓! I\'ll twirl nearby. No answer-spoilers — that dims the horn.', '🤔 is a hint, not a giveaway. Still your sparkle, {name}.', 'Math is a dance: step, check, step.'],
+    helpRead: ['Reading ❓! I\'ll keep my twirls quiet so you can read.'],
+    helpLang: ['Spanish ❓ — new words to dance with!'],
     live: '🏠 A sparkle-home of my very own! Thank you, {name}! 🦄💖',
     bye: 'Twirl-bye, {name}! ✨',
   } },
@@ -18961,14 +19191,32 @@ function npcSpeak(n, now) {              // their own chatter — cycles the pla
   npcSay(n, text);
 }
 /* 💬 PRESET CHAT — Leo wanted to talk to the friends. No keyboard (typed chat = mischief +
-   nothing the friends could understand anyway): big word-chips with hand-written replies. */
+   nothing the friends could understand anyway): big word-chips with hand-written replies.
+   Extra chips are social + "point me at a ❓" — later those help lines can grow a graphic. */
 const NPC_CHIPS = [
   { id: 'hi', label: '👋 Hi!' },
-  { id: 'playground', label: '🛝 Playground?' },
+  { id: 'how', label: '😊 How are you?' },
+  { id: 'name', label: '📛 What\'s your name?' },
   { id: 'fun', label: '😄 Tell me something!' },
+  { id: 'help', label: '❓ Need help?' },
+  { id: 'playground', label: '🛝 Playground?' },
   { id: 'live', label: '🏠 Live here!' },
   { id: 'bye', label: '👋 Bye!' },
 ];
+function npcCycleReply(n, arr, key) {
+  if (arr == null) return 'Hee hee! 😊';
+  if (!Array.isArray(arr)) return String(arr);
+  if (!arr.length) return 'Hee hee! 😊';
+  n[key] = ((n[key] == null ? -1 : n[key]) + 1) % arr.length;
+  return arr[n[key]];
+}
+function npcHelpBag(n) {
+  const R = (n && n.cast && n.cast.replies) || {};
+  const w = (typeof G !== 'undefined' && G.world) || '';
+  if (w === 'city' && R.helpRead) return R.helpRead;
+  if (w === 'beach' && R.helpLang) return R.helpLang;
+  return R.help || R.helpRead || ['Walk up to a glowing ❓ — I\'ll cheer, I won\'t give the answer!'];
+}
 let chatNpc = null;
 let playerBubbleEl = null, playerBubbleUntil = 0;
 let _playerLotIx = -1;                   // which home lot the player is standing in (doorstep greetings)
@@ -18978,27 +19226,40 @@ function showNpcChat(n) {
   el.innerHTML = NPC_CHIPS.map(c => '<button type="button" data-c="' + c.id + '">' + c.label + '</button>').join('') +
     // ⌨️ Fiona's ask: TYPE a word to a friend. Kid-safe by design — the friend only understands
     // a handful of magic words (matched locally, hand-written replies; nothing goes online).
-    '<span style="display:inline-flex;gap:5px;align-items:center">' +
-    '<input id="npcSayInput" maxlength="16" placeholder="type a word…" autocomplete="off" ' +
-    'style="width:104px;border:2px solid #9db7d8;border-radius:10px;padding:5px 8px;font:inherit;font-size:13px">' +
+    // Own row under the chips so a phone/tablet keyboard can open below the field.
+    '<span class="npcSayWrap">' +
+    '<input id="npcSayInput" type="text" maxlength="16" placeholder="type a word…" autocomplete="off" ' +
+    'autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="send">' +
     '<button type="button" data-c="_send">💬</button></span>';
   el.querySelectorAll('button').forEach(b => {
-    // Pip QA: chip taps must never open a blank Chrome tab / navigate away
+    // Stay in-game: never let a chip spawn about:blank / a new tab (middle-click, ctrl-click, "open in new tab")
+    b.setAttribute('type', 'button');
+    b.setAttribute('draggable', 'false');
+    const stay = (ev) => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } };
     b.onclick = (ev) => {
-      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      stay(ev);
+      if (ev && ev.button && ev.button !== 0) return;
+      if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)) return;
       Sound.click();
       if (b.dataset.c === '_send') { npcWordSend(); return; }
       npcChipTap(b.dataset.c);
     };
-    b.onauxclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
+    b.onauxclick = stay;
+    b.onmousedown = (ev) => { if (ev && ev.button !== 0) stay(ev); };
+    b.addEventListener('contextmenu', stay);
   });
+  const wrap = el.querySelector('.npcSayWrap');
   const inp = el.querySelector('#npcSayInput');
+  const eat = (ev) => { if (ev) ev.stopPropagation(); };   // don't place a block / look / walk
+  if (wrap) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(ev => wrap.addEventListener(ev, eat));
   if (inp) {
     // the game must not steer while a kid types "hello" (W A S D live in there!)
     ['keydown', 'keyup', 'keypress'].forEach(ev => inp.addEventListener(ev, e => {
       e.stopPropagation();
-      if (e.key === 'Enter' && ev === 'keydown') npcWordSend();
+      if (e.key === 'Enter' && ev === 'keydown') { e.preventDefault(); npcWordSend(); inp.blur(); }
     }));
+    inp.addEventListener('focus', () => { document.body.classList.add('npcTyping'); npcKbSync(); });
+    inp.addEventListener('blur', () => { document.body.classList.remove('npcTyping'); npcKbSync(); });
   }
   el.style.display = 'flex';
   document.body.classList.add('npcChatting');       // the hint bar rests while you chat
@@ -19025,12 +19286,16 @@ function npcWordSend() {
     const d = n.d;
     const act = d && d.mixer ? ((d.specials || []).find(a => /dance/i.test(a.getClip().name)) || d.celebrateAction) : null;
     if (act) playGlbMove(d, act);
-  } else if (/\b(joke|funny|laugh|silly)\b/.test(w)) {
-    const arr = R.fun || ['Hee hee! 😊'];
-    n.funIx = ((n.funIx == null ? -1 : n.funIx) + 1) % arr.length;
-    reply = arr[n.funIx];
+  } else if (/\b(joke|funny|laugh|silly|something)\b/.test(w)) {
+    reply = npcCycleReply(n, R.fun, 'funIx');
   } else if (/\b(hi|hello|hey|hiya|hola)\b/.test(w)) {
-    reply = R.hi || '👋 Hello, {name}! So happy to see you!';
+    reply = npcCycleReply(n, R.hi, 'hiIx');
+  } else if (/\b(how)\b/.test(w)) {
+    reply = npcCycleReply(n, R.how, 'howIx');
+  } else if (/\b(name|who)\b/.test(w)) {
+    reply = npcCycleReply(n, R.name, 'nameIx');
+  } else if (/\b(help|math|english|reading|spanish|homework|spell)\b/.test(w)) {
+    reply = npcCycleReply(n, npcHelpBag(n), 'helpIx');
   } else if (/\b(sit|rest|relax)\b/.test(w)) {
     reply = (n.housed && npcPickHouseAction(n)) ? '🪑 Phew — good idea!' : '🌳 I\'ll rest at the park in a bit!';
   } else if (/\b(bye|goodbye|adios)\b/.test(w)) {
@@ -19039,7 +19304,7 @@ function npcWordSend() {
   } else if (/\b(house|home|live)\b/.test(w)) {
     reply = '🏠 Tap "Live here!" while you\'re standing in a house — and I\'ll move in!';
   } else {
-    reply = '🤔 Hmm! I know the words HI, DANCE, JOKE, SIT, OUT and BYE!';
+    reply = '🤔 Hmm! I know HI, HOW, NAME, HELP, DANCE, JOKE, SIT, OUT and BYE!';
   }
   n.coolAt = now + 9000;
   n.replyText = reply.replace('{name}', G.playerName || 'friend');
@@ -19047,9 +19312,24 @@ function npcWordSend() {
 }
 function hideNpcChat() {
   chatNpc = null;
+  document.body.classList.remove('npcTyping');
+  npcKbSync();
   const el = $('npcChat'); if (el) el.style.display = 'none';
   document.body.classList.remove('npcChatting');
 }
+function npcKbSync() {
+  const typing = document.body.classList.contains('npcTyping');
+  const vv = window.visualViewport;
+  let kb = 0;
+  if (typing && vv) kb = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+  document.body.style.setProperty('--npc-kb', kb + 'px');
+}
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', npcKbSync);
+  visualViewport.addEventListener('scroll', npcKbSync);
+}
+addEventListener('resize', npcKbSync);
+
 function playerSay(text) {               // the kid's chosen words appear over THEIR head too
   const holder = $('npcBubbles'); if (!holder) return;
   if (!playerBubbleEl) { playerBubbleEl = document.createElement('div'); playerBubbleEl.className = 'npcBubble mine'; holder.appendChild(playerBubbleEl); }
@@ -19073,9 +19353,13 @@ function npcChipTap(id) {
   const R = n.cast.replies || {};
   let reply;
   if (id === 'fun') {
-    const arr = R.fun || ['Hee hee! 😊'];
-    n.funIx = ((n.funIx == null ? -1 : n.funIx) + 1) % arr.length;
-    reply = arr[n.funIx];
+    reply = npcCycleReply(n, R.fun, 'funIx');
+  } else if (id === 'how') {
+    reply = npcCycleReply(n, R.how, 'howIx');
+  } else if (id === 'name') {
+    reply = npcCycleReply(n, R.name, 'nameIx');
+  } else if (id === 'help') {
+    reply = npcCycleReply(n, npcHelpBag(n), 'helpIx');
   } else if (id === 'live') {
     // 🏠 "Live here!" — the friend moves into wherever the kid is standing (Fiona's houses!)
     const hx = Math.round(player.pos.x * 10) / 10, hz = Math.round(player.pos.z * 10) / 10;
@@ -19094,9 +19378,10 @@ function npcChipTap(id) {
   // schedule the reply on GAME time (setTimeout starves behind the render loop on slow machines)
   n.replyText = reply.replace('{name}', G.playerName || 'friend');
   n.replyAt = performance.now() + 650;
-  if (id === 'bye') {                    // wave goodbye, then actually wander off
+  if (id === 'bye') {                    // wave goodbye, then actually wander off — close chips so kids stay in-game
     n.byeUntil = performance.now() + 5200;
     n.byeWalkAt = performance.now() + 1500;
+    hideNpcChat();
   }
 }
 /* 🏠 HOUSE LIFE — a friend with a house uses the furniture in it: sits on the couch,
