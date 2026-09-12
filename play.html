@@ -63,6 +63,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root { color-scheme: light; }   /* keep the bright kid palette — opt out of browser auto-dark-mode */
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -12738,11 +12739,15 @@ function buildWestDecor(g) {
     if (westLoop.pts.some(p => Math.hypot(p.x - t.x, p.z - t.z) < 2.2)) { g.remove(t.grp); decoTrees.splice(i, 1); }
   }
 }
-buildMeadowDecor(worldDecor.meadow);
-buildCityDecor(worldDecor.city);
-buildBeachDecor(worldDecor.beach);
-buildWestDecor(worldDecor.west);
-for (const id in worldDecor) { worldDecor[id].visible = (id === G.world); scene.add(worldDecor[id]); }
+try {
+  buildMeadowDecor(worldDecor.meadow);
+  buildCityDecor(worldDecor.city);
+  buildBeachDecor(worldDecor.beach);
+  buildWestDecor(worldDecor.west);
+  for (const id in worldDecor) { worldDecor[id].visible = (id === G.world); scene.add(worldDecor[id]); }
+} catch (e) {
+  console.error('World scenery failed (game still playable):', e);
+}
 
 /* ---- clouds & flowers ---- */
 const clouds = [];
@@ -19372,7 +19377,9 @@ function cloudReady() { return !!(fbAuth && fbDb); }
     if (typeof firebase === 'undefined' || !firebase.initializeApp) return;   // SDK didn't load → stay local-only
     firebase.initializeApp(FIREBASE_CONFIG);
     fbAuth = firebase.auth(); fbDb = firebase.firestore();
-    fbAuth.getRedirectResult().catch(() => {});                                // finish any pending mobile redirect sign-in
+    fbAuth.getRedirectResult().then(r => {
+      if (r && r.user) { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }
+    }).catch(e => { console.warn('Google redirect', e); setTimeout(() => { try { authMsg(friendlyAuthErr(e), true); } catch (_) {} }, 400); });
     fbAuth.onAuthStateChanged(u => { fbUser = u; renderAuthUI(); if (u) cloudSyncDown().catch(() => {}); });
   } catch (e) { console.warn('Cloud sign-in unavailable:', e && e.message); }
 })();
@@ -19427,19 +19434,82 @@ function friendlyAuthErr(e) {
   if (c.indexOf('wrong-password') >= 0 || c.indexOf('invalid-credential') >= 0) return 'Wrong email or password.';
   if (c.indexOf('weak-password') >= 0) return 'Pick a password with at least 6 characters.';
   if (c.indexOf('invalid-email') >= 0) return 'That doesn\'t look like an email address.';
-  if (c.indexOf('popup') >= 0 || c.indexOf('cancel') >= 0) return 'Sign-in was cancelled.';
+  if (c.indexOf('account-exists-with-different-credential') >= 0)
+    return 'This Google email already has a password account. Sign in with email & password below (same Gmail) to restore your worlds.';
+  if (c.indexOf('unauthorized-domain') >= 0)
+    return 'Open stackadoo.com (not a preview link) and try Google again.';
+  if (c.indexOf('operation-not-allowed') >= 0) return 'Google sign-in is turned off. Try email & password.';
+  if (c.indexOf('popup-closed') >= 0 || c.indexOf('cancelled') >= 0 || c.indexOf('canceled') >= 0)
+    return 'Google window closed before finishing. Tap Continue with Google again — pick the same Gmail you used before.';
+  if (c.indexOf('popup-blocked') >= 0) return 'Your browser blocked the Google window. Allow popups for stackadoo.com, or use email & password.';
   if (c.indexOf('web-storage-unsupported') >= 0 || c.indexOf('operation-not-supported') >= 0)
     return 'Your browser is blocking sign-in storage (often Brave Shields or “Block all cookies”). Allow cookies for stackadoo.com, then try again.';
   if (c.indexOf('network') >= 0) return 'Network problem — check your connection.';
-  return 'Hmm, that didn\'t work. Please try again.';
+  if (c.indexOf('too-many-requests') >= 0) return 'Too many tries. Wait a minute, then try again.';
+  const msg = (e && e.message) || '';
+  if (/origin/i.test(msg)) return 'Google blocked this page. Open https://stackadoo.com/play.html and try again.';
+  return 'Hmm, that didn\'t work. Try email & password with the same Gmail, or another browser.';
+}
+const GOOGLE_WEB_CLIENT_ID = '587953023716-dhg7m2id8vc597jkdcr8o15clfbo0oi9.apps.googleusercontent.com';
+function authGoogleFail(e) {
+  const email = (e && (e.email || (e.customData && e.customData.email))) || '';
+  if (((e && e.code) || '').indexOf('account-exists-with-different-credential') >= 0 && email && fbAuth && fbAuth.fetchSignInMethodsForEmail) {
+    fbAuth.fetchSignInMethodsForEmail(email).then(methods => {
+      if ((methods || []).indexOf('password') >= 0)
+        authMsg('This Google email already has a password account. Sign in with email & password below (same Gmail) to get your worlds back.', true);
+      else authMsg(friendlyAuthErr(e), true);
+    }).catch(() => authMsg(friendlyAuthErr(e), true));
+    return;
+  }
+  authMsg(friendlyAuthErr(e), true);
+}
+function popupGoogle() {
+  const p = new firebase.auth.GoogleAuthProvider();
+  p.addScope('email');
+  p.setCustomParameters({ prompt: 'select_account' });
+  const standalone = (typeof IS_ANDROID_APP !== 'undefined' && IS_ANDROID_APP) ||
+    (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+    !!navigator.standalone;
+  if (standalone) {
+    authMsg('Taking you to Google…');
+    fbAuth.signInWithRedirect(p).catch(authGoogleFail);
+    return;
+  }
+  fbAuth.signInWithPopup(p).then(() => { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }).catch(e => {
+    const c = (e && e.code) || '';
+    if (c.indexOf('popup-blocked') >= 0) {
+      authMsg('Popup blocked — opening Google on this page…');
+      fbAuth.signInWithRedirect(p).catch(authGoogleFail);
+      return;
+    }
+    authGoogleFail(e);
+  });
 }
 function authGoogle() {
-  if (!cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
-  const p = new firebase.auth.GoogleAuthProvider();
-  fbAuth.signInWithPopup(p).then(() => { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }).catch(e => {
-    if (((e && e.code) || '').indexOf('popup') >= 0) { try { fbAuth.signInWithRedirect(p); return; } catch (_) {} }   // mobile fallback
-    authMsg(friendlyAuthErr(e), true);
-  });
+  if (!cloudReady()) { authMsg('Sign-in needs an internet connection. Check Wi-Fi, then try again.', true); return; }
+  authMsg('Opening Google…');
+  if (window.google && google.accounts && google.accounts.id) {
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_WEB_CLIENT_ID,
+        callback: resp => {
+          if (resp && resp.credential) {
+            const cred = firebase.auth.GoogleAuthProvider.credential(resp.credential);
+            fbAuth.signInWithCredential(cred).then(() => { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }).catch(authGoogleFail);
+          } else popupGoogle();
+        },
+        auto_select: false, cancel_on_tap_outside: true, itp_support: true, use_fedcm_for_prompt: true
+      });
+      let used = false;
+      google.accounts.id.prompt(n => {
+        if (!n) return;
+        const missed = (n.isNotDisplayed && n.isNotDisplayed()) || (n.isSkippedMoment && n.isSkippedMoment()) || (n.isDismissedMoment && n.isDismissedMoment());
+        if (missed && !used) { used = true; popupGoogle(); }
+      });
+      return;
+    } catch (e) { /* fall through to popup */ }
+  }
+  popupGoogle();
 }
 function authEmail(create) {
   if (!cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
@@ -20747,5 +20817,6 @@ const Analytics = (function () {
 Analytics.send('visit');                                   // someone opened the site
 setInterval(function () { if (!document.hidden) Analytics.send('beat'); }, 60000);  // still here = active
 </script>
+<script src="google-signin.js"></script>
 </body>
 </html>
