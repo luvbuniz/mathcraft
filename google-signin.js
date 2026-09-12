@@ -1,14 +1,12 @@
 /* Stackadoo — Google sign-in overlay.
-   Loaded last so we can replace the popup-only Google flow (which breaks in the
-   Play app, Safari, and any browser that swallows the Firebase popup). */
+   Loaded last so a crash in the 3D world script cannot kill Sign in. */
 (function () {
   var CLIENT_ID = '587953023716-dhg7m2id8vc597jkdcr8o15clfbo0oi9.apps.googleusercontent.com';
-
   function $(id) { return document.getElementById(id); }
-
-  function gisReady() {
-    return window.google && google.accounts && google.accounts.id;
-  }
+  function auth() { return window.fbAuth || (typeof fbAuth !== 'undefined' ? fbAuth : null); }
+  function db() { return window.fbDb || (typeof fbDb !== 'undefined' ? fbDb : null); }
+  function gisReady() { return window.google && google.accounts && google.accounts.id; }
+  function ready() { return !!(auth() && db()); }
 
   window.friendlyAuthErr = function (e) {
     var c = (e && e.code) || '';
@@ -35,8 +33,9 @@
 
   function fail(e) {
     var email = (e && (e.email || (e.customData && e.customData.email))) || '';
-    if (((e && e.code) || '').indexOf('account-exists-with-different-credential') >= 0 && email && window.fbAuth && fbAuth.fetchSignInMethodsForEmail) {
-      fbAuth.fetchSignInMethodsForEmail(email).then(function (methods) {
+    var a = auth();
+    if (((e && e.code) || '').indexOf('account-exists-with-different-credential') >= 0 && email && a && a.fetchSignInMethodsForEmail) {
+      a.fetchSignInMethodsForEmail(email).then(function (methods) {
         if ((methods || []).indexOf('password') >= 0)
           authMsg('This Google email already has a password account. Sign in with email & password below (same Gmail) to get your worlds back.', true);
         else authMsg(friendlyAuthErr(e), true);
@@ -46,16 +45,36 @@
     authMsg(friendlyAuthErr(e), true);
   }
 
+  function ensureFirebase() {
+    if (auth() && db()) return true;
+    if (typeof firebase === 'undefined' || !firebase.initializeApp) return false;
+    try {
+      if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG || {
+        apiKey: 'AIzaSyBNOgrfPBOKg2-J0N82g9sdJn6IHtcYJMU',
+        authDomain: 'stackadoo.firebaseapp.com',
+        projectId: 'stackadoo',
+        storageBucket: 'stackadoo.firebasestorage.app',
+        messagingSenderId: '587953023716',
+        appId: '1:587953023716:web:376cd1fc01e8ea8dcb9af1'
+      });
+      window.fbAuth = firebase.auth();
+      window.fbDb = firebase.firestore();
+      window.fbAuth.onAuthStateChanged(function (u) { window.fbUser = u; if (typeof renderAuthUI === 'function') renderAuthUI(); });
+      return true;
+    } catch (e) { console.warn('ensureFirebase', e); return false; }
+  }
+
   function finishIdToken(idToken) {
+    var a = auth();
     var cred = firebase.auth.GoogleAuthProvider.credential(idToken);
-    return fbAuth.signInWithCredential(cred).then(function () {
+    return a.signInWithCredential(cred).then(function () {
       authMsg('Signed in! Syncing your worlds…');
       if (typeof authAutoClose === 'function') authAutoClose();
     }).catch(fail);
   }
 
   function popupFlow() {
-    if (typeof cloudReady === 'function' && !cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
+    if (!ensureFirebase() || !ready()) { authMsg('Sign-in needs an internet connection. If you are online, allow cookies for stackadoo.com (Edge: lock icon → cookies).', true); return; }
     var p = new firebase.auth.GoogleAuthProvider();
     p.addScope('email');
     p.setCustomParameters({ prompt: 'select_account' });
@@ -64,17 +83,17 @@
       !!navigator.standalone;
     if (standalone) {
       authMsg('Taking you to Google…');
-      fbAuth.signInWithRedirect(p).catch(fail);
+      auth().signInWithRedirect(p).catch(fail);
       return;
     }
-    fbAuth.signInWithPopup(p).then(function () {
+    auth().signInWithPopup(p).then(function () {
       authMsg('Signed in! Syncing your worlds…');
       if (typeof authAutoClose === 'function') authAutoClose();
     }).catch(function (e) {
       var c = (e && e.code) || '';
       if (c.indexOf('popup-blocked') >= 0) {
         authMsg('Popup blocked — trying a full-page Google sign-in…');
-        fbAuth.signInWithRedirect(p).catch(fail);
+        auth().signInWithRedirect(p).catch(fail);
         return;
       }
       fail(e);
@@ -82,7 +101,8 @@
   }
 
   window.authGoogle = function () {
-    if (typeof cloudReady === 'function' && !cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
+    ensureFirebase();
+    if (!ready()) { authMsg('Sign-in needs an internet connection. If you are online, allow cookies for stackadoo.com (Edge: lock icon → cookies).', true); return; }
     authMsg('Opening Google…');
     if (gisReady()) {
       try {
@@ -109,55 +129,28 @@
     popupFlow();
   };
 
-  function paintBtn() {
-    var btn = $('authGoogleBtn');
-    var wrap = $('authGoogleWrap');
-    if (!wrap && btn && btn.parentNode) {
-      wrap = document.createElement('div');
-      wrap.id = 'authGoogleWrap';
-      wrap.style.cssText = 'display:flex;justify-content:center;min-height:44px;margin-bottom:4px';
-      btn.parentNode.insertBefore(wrap, btn);
-      wrap.appendChild(btn);
+  function showAuth() {
+    if (typeof window.openAuth === 'function') {
+      try { window.openAuth(); return; } catch (e) {}
     }
-    if (!wrap || (typeof fbUser !== 'undefined' && fbUser) || !gisReady()) return;
-    try {
-      wrap.innerHTML = '';
-      google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: function (resp) { if (resp && resp.credential) finishIdToken(resp.credential); },
-        auto_select: false,
-        itp_support: true
-      });
-      google.accounts.id.renderButton(wrap, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', width: 280, shape: 'pill' });
-    } catch (e) {
-      wrap.innerHTML = '<button id="authGoogleBtn" class="libBtn" style="background:#fff;border:2px solid #dadce0;color:#3c4043;font-weight:bold">Continue with Google</button>';
-      var b = $('authGoogleBtn'); if (b) b.onclick = function () { authGoogle(); };
-    }
+    if (typeof window.bootOpenAuth === 'function') { window.bootOpenAuth(); return; }
+    var p = $('authPopup'); if (p) p.style.display = 'flex';
   }
 
-  var _open = window.openAuth;
-  window.openAuth = function () {
-    if (typeof _open === 'function') _open();
-    paintBtn();
-  };
-
   document.addEventListener('click', function (e) {
-    var t = e.target;
-    if (!t) return;
+    var t = e.target; if (!t) return;
     if (t.id === 'authGoogleBtn' || (t.closest && t.closest('#authGoogleBtn'))) {
       e.preventDefault();
       authGoogle();
+      return;
+    }
+    if (t.id === 'authEntryHome' || t.id === 'authEntryGrown' || t.id === 'authEntryUnlock' ||
+        (t.closest && (t.closest('#authEntryHome') || t.closest('#authEntryGrown') || t.closest('#authEntryUnlock')))) {
+      showAuth();
     }
   }, true);
 
-  var n = 0;
-  var timer = setInterval(function () {
-    n++;
-    if (gisReady()) { clearInterval(timer); var p = $('authPopup'); if (p && p.style.display === 'flex') paintBtn(); }
-    else if (n > 40) clearInterval(timer);
-  }, 150);
-
-  if (window.fbAuth && fbAuth.getRedirectResult) {
-    fbAuth.getRedirectResult().then(function () {}).catch(fail);
-  }
+  ensureFirebase();
+  var a = auth();
+  if (a && a.getRedirectResult) a.getRedirectResult().then(function () {}).catch(fail);
 })();
