@@ -1807,6 +1807,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 266 — if this still says nothing after a tap, press Ctrl+Shift+R (hard refresh).</div>
   </div>
 </div>
 
@@ -20763,7 +20764,9 @@ addEventListener('resize', () => {
 // Offline install: register the service worker so the game works without Wi-Fi once loaded.
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js?v=266').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+  });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
    the game still plays, worlds even save within this tab; they just can't persist. */
