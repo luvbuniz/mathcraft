@@ -1123,7 +1123,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v270 — after Google, this card closes by itself</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v271 — Sign out is on this card</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 270 — after Google, this card closes and worlds appear under Continue.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 271 — Sign out works; worlds are not erased by sign-in.</div>
   </div>
 </div>
 <script>
@@ -1903,19 +1903,22 @@
             local[k] = localStorage.getItem(k);
         }
       } catch (e) {}
+      var localN = Object.keys(local).filter(function (k) { return k.indexOf('stackadooSave:') === 0; }).length;
       var merged = {};
       Object.keys(map).forEach(function (k) { merged[k] = map[k]; });
       Object.keys(local).forEach(function (k) { merged[k] = local[k]; });
-      db.collection('users').doc(u.uid).set({
-        blob: JSON.stringify(merged),
-        unlocked: !!(cloud.unlocked || local.stackadooUnlocked),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).catch(function () {});
+      if (n + localN > 0) {
+        db.collection('users').doc(u.uid).set({
+          blob: JSON.stringify(merged),
+          unlocked: !!(cloud.unlocked || local.stackadooUnlocked),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(function () {});
+      }
       if (m) {
         m.style.color = '#2f8a52';
-        m.textContent = n
-          ? ('Synced ' + n + ' world(s). One moment…')
-          : 'Signed in. No worlds in the cloud yet — on the device that has Sullivan Amy, sign in with this same Gmail so they can upload.';
+        m.textContent = (n || localN)
+          ? ('Synced ' + (n || localN) + ' world(s). One moment…')
+          : 'Signed in. This browser has no worlds yet. Open Edge or the tablet that still shows Sullivan Amy and sign in with this same Gmail — that uploads them.';
       }
       closeSoon(changed && n > 0);
     }).catch(function () {
@@ -1996,6 +1999,23 @@
       if (m) { m.style.color = '#c0392b'; m.textContent = (err && err.message) || 'Google sign-in failed.'; }
     });
   }
+  function bootSignOut() {
+    var a = window.fbAuth;
+    function done() {
+      window.fbUser = null;
+      window._bootSynced = false;
+      try { if (typeof fbUser !== 'undefined') fbUser = null; } catch (e) {}
+      paint();
+      var home = el('authEntryHome');
+      if (home) home.textContent = '☁️ Sign in — keep your worlds & unlock on any device';
+      var m = el('authMsg');
+      if (m) { m.style.color = '#2f8a52'; m.textContent = 'Signed out. Worlds saved on this device stay here.'; }
+      var popup = el('authPopup'); if (popup) popup.style.display = 'flex';
+    }
+    if (a && a.signOut) a.signOut().then(done).catch(done);
+    else done();
+  }
+  window.bootSignOut = bootSignOut;
   window.goGoogle = goGoogle;
   window.bootOpenAuth = bootOpenAuth;
   window.__stackadooBootFirebase = initFb;
@@ -2008,6 +2028,8 @@
   });
   var x = el('authClose');
   if (x) x.addEventListener('click', function () { var p = el('authPopup'); if (p) p.style.display = 'none'; });
+  var so = el('authOutBtn');
+  if (so) so.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); bootSignOut(); });
   ['authGoogleBtn', 'authGoogleHome'].forEach(function (id) {
     var b = el(id); if (!b) return;
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); goGoogle(); });
@@ -19616,12 +19638,16 @@ async function cloudSyncDown() {
   let snap; try { snap = await db.collection('users').doc(user.uid).get(); } catch (e) { return; }
   const cloud = (snap && snap.exists) ? (snap.data() || {}) : {};
   let cloudMap = {}; try { cloudMap = cloud.blob ? JSON.parse(cloud.blob) : {}; } catch (e) {}
-  const merged = mergeSaveMaps(gatherSaveData(), cloudMap);
+  const localMap = gatherSaveData();
+  const saveCount = m => Object.keys(m || {}).filter(k => k.indexOf('stackadooSave:') === 0).length;
+  const localN = saveCount(localMap), cloudN = saveCount(cloudMap);
+  if (localN === 0 && cloudN === 0) return;            // don't write an empty blob over the account
+  const merged = mergeSaveMaps(localMap, cloudMap);
   const unlocked = !!cloud.unlocked || isUnlocked();
   let changed = false;
   for (const k in merged) { if (LS.getItem(k) !== merged[k]) { try { LS.setItem(k, merged[k]); changed = true; } catch (e) {} } }
   if (unlocked && !isUnlocked()) { try { LS.setItem(UNLOCK_KEY, '1'); changed = true; } catch (e) {} }
-  await cloudWrite(merged, unlocked);
+  if (saveCount(merged) > 0) await cloudWrite(merged, unlocked);
   if (changed) {
     if (G.running && !G.over) {              // 🛟 mid-game: NEVER reload — that yanked kids out of their game back to the menu
       if (typeof refreshSavedList === 'function') { try { refreshSavedList(); } catch (e) {} }
@@ -19634,7 +19660,8 @@ async function cloudSyncDown() {
 }
 // debounced push — called by the game's save hooks
 function cloudSyncUp() {
-  if (!cloudReady() || !fbUser) return;
+  const user = (typeof fbUser !== 'undefined' && fbUser) || window.fbUser;
+  if (!user) return;
   clearTimeout(_cloudUpTimer);
   _cloudUpTimer = setTimeout(() => cloudWrite(gatherSaveData(), isUnlocked()), 3000);
 }
@@ -19734,7 +19761,19 @@ function authEmail(create) {
   const fn = create ? 'createUserWithEmailAndPassword' : 'signInWithEmailAndPassword';
   fbAuth[fn](email, pw).then(() => { authMsg(create ? 'Account created! Syncing…' : 'Signed in! Syncing…'); authAutoClose(); }).catch(e => authMsg(friendlyAuthErr(e), true));
 }
-function authSignOut() { if (cloudReady()) fbAuth.signOut().then(() => authMsg('Signed out — this device still has its local saves.')); }
+function authSignOut() {
+  const a = (typeof fbAuth !== 'undefined' && fbAuth) || window.fbAuth;
+  const done = () => {
+    try { fbUser = null; } catch (e) {}
+    window.fbUser = null;
+    window._bootSynced = false;
+    authMsg('Signed out — this device still has its local saves.');
+    renderAuthUI();
+    if (typeof window.bootOpenAuth === 'function') { /* keep popup open so they see signed-out UI */ }
+  };
+  if (a && a.signOut) a.signOut().then(done).catch(done);
+  else done();
+}
 function authMsg(t, bad) { const el = $('authMsg'); if (el) { el.textContent = t; el.style.color = bad ? '#c0392b' : '#2f8a52'; } }
 function openAuth() { if (typeof document.exitPointerLock === 'function') document.exitPointerLock(); $('authPopup').style.display = 'flex'; authMsg(''); renderAuthUI(); }
 function closeAuth() { $('authPopup').style.display = 'none'; }
@@ -20989,7 +21028,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=270').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=271').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
