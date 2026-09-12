@@ -1790,8 +1790,8 @@
     <div style="font-size:40px">☁️</div>
     <h2 style="color:#2E5E8C; margin:2px 0 4px; font-size:clamp(20px,4vw,26px)">Sign in to sync</h2>
     <p style="color:#6c84a6; font-size:13px; margin:0 0 10px; line-height:1.4">A grown-up sign-in. Your <b>purchase &amp; every kid's worlds follow you to any device</b>. Kids stay nicknames — no child data is collected.</p>
-    <div id="authUnavailable" style="display:none; color:#b5832a; font-size:14px; line-height:1.4">Sign-in needs an internet connection. The game still saves on this device — try again when you're online.</div>
-    <div id="authSignedOut" style="display:none">
+    <div id="authUnavailable" style="display:none; color:#b5832a; font-size:14px; line-height:1.4"></div>
+    <div id="authSignedOut" style="display:block">
       <button id="authGoogleBtn" class="libBtn" style="background:#fff;border:2px solid #dadce0;color:#3c4043;font-weight:bold">Continue with Google</button>
       <div style="color:#aab; font-size:12px; margin:10px 0 6px">— or with email &amp; password —</div>
       <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email" style="width:90%;padding:10px;border:2px solid #cdd8ec;border-radius:10px;margin:3px 0;font-family:inherit;font-size:15px">
@@ -1807,34 +1807,97 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 267 — tap this Sign in button, then Continue with Google.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 268 — Continue with Google should be on this card.</div>
   </div>
 </div>
 <script>
-/* Tiny boot: the home Sign in button must work even if the 3D world script crashes. */
+/* Boot Firebase + Sign in here, before the 3D world script (which can crash and skip auth). */
 (function () {
+  var CFG = {
+    apiKey: 'AIzaSyBNOgrfPBOKg2-J0N82g9sdJn6IHtcYJMU',
+    authDomain: 'stackadoo.firebaseapp.com',
+    projectId: 'stackadoo',
+    storageBucket: 'stackadoo.firebasestorage.app',
+    messagingSenderId: '587953023716',
+    appId: '1:587953023716:web:376cd1fc01e8ea8dcb9af1'
+  };
+  window.FIREBASE_CONFIG = window.FIREBASE_CONFIG || CFG;
   function el(id) { return document.getElementById(id); }
-  function bootOpenAuth() {
-    var p = el('authPopup'); if (!p) return;
-    p.style.display = 'flex';
-    if (typeof window.openAuth === 'function') {
-      try { window.openAuth(); return; } catch (e) {}
-    }
+  function initFb() {
+    try {
+      if (typeof firebase === 'undefined' || !firebase.auth) return false;
+      if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(CFG);
+      window.fbAuth = firebase.auth();
+      window.fbDb = firebase.firestore();
+      window.fbAuth.onAuthStateChanged(function (u) {
+        window.fbUser = u;
+        paint();
+        if (u && typeof cloudSyncDown === 'function') cloudSyncDown().catch(function () {});
+      });
+      return true;
+    } catch (e) { console.warn('boot firebase', e); return false; }
+  }
+  function paint() {
     var ready = !!(window.fbAuth && window.fbDb);
     var un = el('authUnavailable'), out = el('authSignedOut'), signed = el('authSignedIn');
-    if (un) un.style.display = ready ? 'none' : 'block';
-    if (out) out.style.display = (ready && !window.fbUser) ? 'block' : 'none';
-    if (signed) signed.style.display = (ready && window.fbUser) ? 'block' : 'none';
+    if (window.fbUser) {
+      if (un) un.style.display = 'none';
+      if (out) out.style.display = 'none';
+      if (signed) signed.style.display = 'block';
+      var w = el('authWho'); if (w) w.textContent = window.fbUser.email || 'your account';
+      return;
+    }
+    if (out) out.style.display = 'block';
+    if (signed) signed.style.display = 'none';
+    if (un) {
+      un.style.display = ready ? 'none' : 'block';
+      un.textContent = ready ? '' : (typeof firebase === 'undefined'
+        ? 'Google is blocked on this page. In Edge/Brave click the lock → cookies/trackers → allow stackadoo.com and google.com. Or open this in Chrome.'
+        : 'Connecting to Google…');
+    }
+  }
+  function bootOpenAuth() {
+    initFb();
+    var p = el('authPopup'); if (p) p.style.display = 'flex';
+    paint();
     var msg = el('authMsg');
-    if (msg && !ready) { msg.style.color = '#c0392b'; msg.textContent = 'Sign-in is still starting… wait 2 seconds and tap Continue with Google again.'; }
+    if (msg && !(window.fbAuth && window.fbDb)) {
+      msg.style.color = '#c0392b';
+      msg.textContent = (typeof firebase === 'undefined')
+        ? 'This browser is blocking Google. Try Chrome, or allow cookies for stackadoo.com.'
+        : 'Connecting… tap Continue with Google in a moment.';
+    } else if (msg) msg.textContent = '';
+    if (typeof window.openAuth === 'function') {
+      try { window.openAuth(); } catch (e) {}
+    }
+    paint(); // openAuth's renderAuthUI used to hide the Google button — put it back
   }
   window.bootOpenAuth = bootOpenAuth;
+  window.__stackadooBootFirebase = initFb;
+  initFb();
+  setTimeout(initFb, 400);
+  setTimeout(initFb, 1200);
   ['authEntryHome', 'authEntryGrown', 'authEntryUnlock'].forEach(function (id) {
     var b = el(id); if (!b) return;
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); bootOpenAuth(); });
   });
   var x = el('authClose');
   if (x) x.addEventListener('click', function () { var p = el('authPopup'); if (p) p.style.display = 'none'; });
+  var g = el('authGoogleBtn');
+  if (g) g.addEventListener('click', function (e) {
+    e.preventDefault();
+    initFb();
+    if (typeof authGoogle === 'function') authGoogle();
+    else if (window.fbAuth && typeof firebase !== 'undefined') {
+      var p = new firebase.auth.GoogleAuthProvider();
+      p.setCustomParameters({ prompt: 'select_account' });
+      window.fbAuth.signInWithPopup(p).catch(function (err) {
+        var m = el('authMsg'); if (m) { m.style.color = '#c0392b'; m.textContent = (err && err.message) || 'Google sign-in failed.'; }
+      });
+    } else {
+      var m = el('authMsg'); if (m) { m.style.color = '#c0392b'; m.textContent = 'Google is blocked. Open stackadoo.com in Chrome.'; }
+    }
+  });
 })();
 </script>
 
@@ -19260,7 +19323,7 @@ refreshSavedList();
 }
 syncGloomyMenu();   // set the default Gloomies selection + timer visibility
 
-$('startBtn').onclick = () => {
+if ($('startBtn')) $('startBtn').onclick = () => {
   Sound.click();
   const nm = ($('nameInput').value || '').trim().slice(0, 14) || 'Player';
   G.playerName = nm;
@@ -19399,7 +19462,7 @@ const FIREBASE_CONFIG = {
   appId: "1:587953023716:web:376cd1fc01e8ea8dcb9af1"
 };
 let fbAuth = null, fbDb = null, fbUser = null, _cloudUpTimer = null;
-function cloudReady() { return !!(fbAuth && fbDb); }
+function cloudReady() { return !!(fbAuth && fbDb) || !!(window.fbAuth && window.fbDb); }
 (function initFirebase() {
   try {
     if (typeof firebase === 'undefined' || !firebase.initializeApp) return;   // SDK didn't load → stay local-only
@@ -19563,11 +19626,20 @@ function authAutoClose() {
 function renderAuthUI() {
   const signed = $('authSignedIn'), out = $('authSignedOut'), un = $('authUnavailable');
   if (!signed || !out || !un) return;
-  if (!cloudReady()) { un.style.display = 'block'; signed.style.display = 'none'; out.style.display = 'none'; }
-  else if (fbUser) { un.style.display = 'none'; signed.style.display = 'block'; out.style.display = 'none'; const w = $('authWho'); if (w) w.textContent = fbUser.email || 'your account'; }
-  else { un.style.display = 'none'; signed.style.display = 'none'; out.style.display = 'block'; }
-  const g = $('authEntryGrown'); if (g) g.textContent = fbUser ? '☁️ Account — synced ✓' : '☁️ Sign in to sync & restore';
-  const h = $('authEntryHome'); if (h) h.textContent = fbUser ? '☁️ Signed in ✓ — worlds sync on every device' : '☁️ Sign in — keep your worlds & unlock on any device';
+  const user = fbUser || window.fbUser;
+  if (user) {
+    un.style.display = 'none'; signed.style.display = 'block'; out.style.display = 'none';
+    const w = $('authWho'); if (w) w.textContent = user.email || 'your account';
+  } else {
+    signed.style.display = 'none';
+    out.style.display = 'block';   // always show Google + email — never hide behind "needs internet"
+    un.style.display = cloudReady() ? 'none' : 'block';
+    if (!cloudReady()) un.textContent = (typeof firebase === 'undefined')
+      ? 'Google is blocked on this page. Allow cookies for stackadoo.com, or open this in Chrome.'
+      : 'Connecting to Google… you can still tap Continue with Google.';
+  }
+  const g = $('authEntryGrown'); if (g) g.textContent = user ? '☁️ Account — synced ✓' : '☁️ Sign in to sync & restore';
+  const h = $('authEntryHome'); if (h) h.textContent = user ? '☁️ Signed in ✓ — worlds sync on every device' : '☁️ Sign in — keep your worlds & unlock on any device';
 }
 $('authClose').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); closeAuth(); };
 $('authGoogleBtn').onclick = () => authGoogle();
@@ -20793,7 +20865,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=267').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=268').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
