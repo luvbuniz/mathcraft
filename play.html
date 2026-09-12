@@ -3853,7 +3853,7 @@ function updateGlbAvatar(d, moving, t) {
 const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: false,   // always calm — Gloomies setup entry removed (logic kept dead)
-  blocks: 16, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, berries: 0, solved: 0, balls: 0,  /* Pip QA: starter blocks so Build walls isn't empty-handed */
+  blocks: 16, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, nitroCharges: 0, berries: 0, solved: 0, balls: 0,  /* Pip QA: starter blocks so Build walls isn't empty-handed */
   furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
@@ -4920,7 +4920,7 @@ function saveGame() {
   try {
     LS.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
-      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, prizeTickets: G.prizeTickets, tokens: G.tokens, raceFlags: G.raceFlags, berries: G.berries, solved: G.solved, goal: G.goal,
+      blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, prizeTickets: G.prizeTickets, tokens: G.tokens, raceFlags: G.raceFlags, nitroCharges: G.nitroCharges, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
       shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel, gradePin: G.gradePin || 0,
@@ -4983,7 +4983,7 @@ function restoreGame(s) {
   G.npcHomes = s.npcHomes || {};               // 🏠 which friend lives in which of the kid's houses
   G.gloomiesEnabled = false;  // force calm — ignore old scare-mode saves (entry removed)
   G.blocks = s.blocks || 0; G.powerBlocks = s.powerBlocks || 0; G.doors = s.doors || 0; G.coins = s.coins || 0; G.tickets = s.tickets || 0;
-  G.prizeTickets = s.prizeTickets || 0; G.tokens = s.tokens || 0; G.raceFlags = s.raceFlags || 0;
+  G.prizeTickets = s.prizeTickets || 0; G.tokens = s.tokens || 0; G.raceFlags = s.raceFlags || 0; G.nitroCharges = s.nitroCharges || 0;
   G.goal = s.goal || null; G.goalReached = G.goal ? (G.coins >= G.goal.price) : false;
   G.berries = s.berries || 0; G.solved = s.solved || 0;
   Object.assign(G.furniture, s.furniture || {});
@@ -5111,7 +5111,7 @@ function resetWorld() {
   player.yaw = 0; player.pitch = -0.15;
 }
 function resetGameState() {
-  G.blocks = 16; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.tokens = 0; G.raceFlags = 0; G.berries = 0; G.solved = 0; G.balls = 0;  // Pip QA starter blocks (restoreGame overwrites from save)
+  G.blocks = 16; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.tokens = 0; G.raceFlags = 0; G.nitroCharges = 0; G.berries = 0; G.solved = 0; G.balls = 0;  // Pip QA starter blocks (restoreGame overwrites from save)
   G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
@@ -7411,14 +7411,24 @@ function submitFeed(val) {
    the pizzeria: gentle seed, 4-streak climbs, hints in the beginning, a 🎓 picture lesson the
    first time each level appears. Right answers pay coins + 🏁 Race Flags — the flags will buy
    RACE ENTRIES when racer sign-ups open (Phase 2: the kid races an NPC on this very track). */
-const FAIR_POS = { x: 22, z: -17 };                  // fairground centre (east meadow, clear of plaza/park/ring)
-const FAIR_TRACK = { rx: 5.7, rz: 4.1 };             // kart path radii (the drawn track is a bit wider)
-const JUDGE_POS = { x: FAIR_POS.x, z: FAIR_POS.z + 6.4 };
+const FAIR_POS = { x: 26, z: -20 };                  // east meadow — bigger oval, clear of the feed store
+const FAIR_TRACK = { rx: 10.4, rz: 7.2 };            // real-feeling speedway
+const JUDGE_POS = { x: FAIR_POS.x, z: FAIR_POS.z + FAIR_TRACK.rz + 2.15 };
+const GAS_POS = { x: 14.6, z: -13.2 };               // ⛽ pit between town and the oval
+const RACE_TICKET_COINS = 8, RACE_TICKET_FLAGS = 2, NITRO_COST = 10;
 function judgeDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - JUDGE_POS.x, player.pos.z - JUDGE_POS.z) : 999; }
+function gasDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - GAS_POS.x, player.pos.z - GAS_POS.z) : 999; }
 const FAIR_RACERS = [
   { nm: 'Foxy',  emoji: '🦊', col: 0xE07B2A },
   { nm: 'Robo',  emoji: '🤖', col: 0x9AA4B2 },
   { nm: 'Panda', emoji: '🐼', col: 0x5a5a5a },
+];
+const RACE_RIVALS = [
+  { id: 'leo',   nm: 'Leo',   emoji: '👦', col: 0xF6C744 },
+  { id: 'spark', nm: 'Spark', emoji: '✨', col: 0xC9A0E8 },
+  { id: 'fiona', nm: 'Fiona', emoji: '👧', col: 0xE8A0C0 },
+  { id: 'foxy',  nm: 'Foxy',  emoji: '🦊', col: 0xE07B2A },
+  { id: 'robo',  nm: 'Robo',  emoji: '🤖', col: 0x9AA4B2 },
 ];
 function fairLevel() {
   G.skillLevel = G.skillLevel || {};
@@ -7502,7 +7512,7 @@ const FAIR_LESSONS = {
   4: { title: 'Adding lap times', blurb: 'Lap 1 + Lap 2 = total. <b>1:48 + 1:25</b>: add seconds (48+25=73) — 73s rolls into <b>1:13</b> → total <b>3:13</b>.',
        demo: () => timeBarSVG([{ emoji: '1️⃣', t: 108, win: true }, { emoji: '2️⃣', t: 85 }]) },
   5: { title: 'Three racers!', blurb: 'Find the FASTEST (smallest) and the SLOWEST (biggest) — then subtract for the gap.',
-       demo: () => timeBarSVG([{ emoji: '🦊', t: 95, win: true }, { emoji: '🤖', t: 140 }, { emoji: '🐼', t: 170 }]) }
+       demo: () => timeBarSVG([{ emoji: '🦊', t: 95, win: true }, { emoji: '🤖', t: 140 }, { emoji: '👦', t: 170 }]) }
 };
 let fairState = null;        // the popup flow
 let fairRace = null;         // the live kart show on the oval
@@ -7540,7 +7550,7 @@ function renderFairIntro() {
 function startFairShow() {                            // 🏎️ close the popup, run the karts, then judge
   if (!fairState) return;
   $('fairPopup').style.display = 'none'; popupOpen = false;
-  const rs = fairState.card.racers.slice(0, fairKarts.length);
+  const rs = fairState.card.racers.slice(0, Math.min(fairKarts.length, 3));
   const maxT = Math.max(...rs.map(r => r.t));
   fairRace = {
     t0: performance.now(), done: false,
@@ -7633,33 +7643,325 @@ function renderFairDone() {
   $('fairBody').innerHTML = '🏆 <b>Race refereed!</b> The crowd cheers the judge!<br>' +
     '<span style="font-size:0.85em;color:#8a6d3b">Races judged: ' + profile.racesRefereed + ' • 🏁 flags: ' + (G.raceFlags || 0) + '</span>' +
     (now > was ? '<br>🎉 <b>JUDGE LEVEL UP!</b> Level ' + now + ': ' + FAIR_LESSONS[now].title + '!' : '') +
-    '<br><span style="font-size:0.8em;color:#a0763a">🏎️ Racer sign-ups open soon — save your flags to enter the race yourself!</span>';
+    '<br><span style="font-size:0.8em;color:#a0763a">🏎️ Spend 🏁 flags (or coins) at the booth to race Leo, Spark & Fiona!</span>';
   $('fairMsg').textContent = '';
   const pad = $('fairPad'); pad.innerHTML = '';
   const again = document.createElement('button'); again.className = 'bakeBtn'; again.style.background = '#3f9d34'; again.style.color = '#fff';
   again.textContent = now > was ? '⭐ Level ' + now + ' — judge the next race!' : '🏁 Judge another race!';
-  again.onclick = () => {
-    Sound.click();
-    fairState = { card: makeRaceCard(), qIx: -1 };
-    if (!(profile.fairTaught || {})[fairState.card.lvl]) renderFairLesson(fairState.card.lvl);
-    else renderFairIntro();
-  };
+  again.onclick = () => { Sound.click(); renderFairHub(); };
   const done = document.createElement('button'); done.className = 'bakeBtn'; done.textContent = 'Done';
   done.onclick = closeFairJudge;
   pad.appendChild(again); pad.appendChild(done);
 }
 function openFairJudge() {
   if (popupOpen || G.over || !G.running) return;
+  if (liveRace) return;
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   if (fairState && fairState.pending) { fairState.pending = false; fairState.qIx = 0; renderFairQ(); }
-  else {
-    fairState = { card: makeRaceCard(), qIx: -1 };
-    if (!(profile.fairTaught || {})[fairState.card.lvl]) renderFairLesson(fairState.card.lvl);
-    else renderFairIntro();
-  }
+  else renderFairHub();
   $('fairPopup').style.display = 'flex';
 }
 function closeFairJudge() { $('fairPopup').style.display = 'none'; popupOpen = false; if (fairState && !fairState.pending) fairState = null; }
+function renderFairHub() {
+  fairState = null;
+  $('fairTitle').innerHTML = '🏁 County Fair Speedway';
+  $('fairBody').innerHTML = '🏎️ Cars are lapping the oval — watch their <b>mph</b>!<br>' +
+    '<span style="font-size:0.85em;color:#8a6d3b">Judge a heat to earn 🏁 flags. Spend flags (or coins) to race Leo, Spark, Fiona… Nitro from the ⛽ pit makes you faster.</span>' +
+    '<div style="margin-top:8px;font-size:0.82em;color:#5a3c00">🪙 ' + (G.coins || 0) + ' &nbsp;•&nbsp; 🏁 ' + (G.raceFlags || 0) + ' flags &nbsp;•&nbsp; 💨 ' + (G.nitroCharges || 0) + ' nitro</div>';
+  $('fairMsg').textContent = '';
+  const pad = $('fairPad'); pad.innerHTML = '';
+  const b1 = document.createElement('button'); b1.className = 'bakeBtn'; b1.style.background = '#C0392B'; b1.style.color = '#fff';
+  b1.textContent = '👀 Watch & judge';
+  b1.onclick = () => { Sound.click(); startJudgeHeat(); };
+  const b2 = document.createElement('button'); b2.className = 'bakeBtn'; b2.style.background = '#E0A21C'; b2.style.color = '#5a3c00';
+  b2.textContent = '🏎️ Race!  (' + RACE_TICKET_FLAGS + '🏁 or ' + RACE_TICKET_COINS + '🪙)';
+  b2.onclick = () => { Sound.click(); renderRaceEntry(); };
+  const b3 = document.createElement('button'); b3.className = 'bakeBtn';
+  b3.textContent = '⛽ Pit stop';
+  b3.onclick = () => { Sound.click(); closeFairJudge(); openGas(); };
+  pad.appendChild(b1); pad.appendChild(b2); pad.appendChild(b3);
+}
+function startJudgeHeat() {
+  fairState = { card: makeRaceCard(), qIx: -1 };
+  if (!(profile.fairTaught || {})[fairState.card.lvl]) renderFairLesson(fairState.card.lvl);
+  else renderFairIntro();
+}
+function racePayLabel() {
+  if ((G.raceFlags || 0) >= RACE_TICKET_FLAGS) return RACE_TICKET_FLAGS + ' 🏁 flags';
+  return RACE_TICKET_COINS + ' 🪙 coins';
+}
+function canPayRace() { return (G.raceFlags || 0) >= RACE_TICKET_FLAGS || (G.coins || 0) >= RACE_TICKET_COINS; }
+function takeRaceTicket() {
+  if ((G.raceFlags || 0) >= RACE_TICKET_FLAGS) { G.raceFlags -= RACE_TICKET_FLAGS; refreshHUD(); return 'flags'; }
+  if ((G.coins || 0) >= RACE_TICKET_COINS) { G.coins -= RACE_TICKET_COINS; refreshHUD(); return 'coins'; }
+  return null;
+}
+function refundRaceTicket(kind) {
+  if (kind === 'flags') G.raceFlags = (G.raceFlags || 0) + RACE_TICKET_FLAGS;
+  else if (kind === 'coins') G.coins = (G.coins || 0) + RACE_TICKET_COINS;
+  refreshHUD();
+}
+function renderRaceEntry() {
+  $('fairTitle').innerHTML = '🏎️ Pick your rival';
+  if (!canPayRace()) {
+    $('fairBody').innerHTML = 'You need <b>' + RACE_TICKET_FLAGS + ' 🏁 flags</b> or <b>' + RACE_TICKET_COINS + ' 🪙</b> to enter.<br><span style="font-size:0.85em;color:#8a6d3b">Judge a heat to earn flags — or grab coins at the pizzeria / feed store.</span>';
+    const pad = $('fairPad'); pad.innerHTML = '';
+    const back = document.createElement('button'); back.className = 'bakeBtn'; back.textContent = '← Back';
+    back.onclick = () => { Sound.click(); renderFairHub(); };
+    pad.appendChild(back);
+    return;
+  }
+  $('fairBody').innerHTML = 'Entry is <b>' + racePayLabel() + '</b>. 3 laps around the oval — hold <b>W</b> / the stick to go faster, tap <b>💨 NITRO</b> if you bought some at the pit!<br>' +
+    '<span style="font-size:0.82em;color:#8a6d3b">💨 nitro ready: ' + (G.nitroCharges || 0) + '</span>';
+  $('fairMsg').textContent = '';
+  const pad = $('fairPad'); pad.innerHTML = '';
+  RACE_RIVALS.forEach(rv => {
+    const b = document.createElement('button'); b.className = 'bakeBtn';
+    b.style.background = '#' + ('000000' + rv.col.toString(16)).slice(-6);
+    b.style.color = '#fff';
+    b.textContent = rv.emoji + ' Race ' + rv.nm;
+    b.onclick = () => { Sound.click(); beginLiveRace(rv); };
+    pad.appendChild(b);
+  });
+  const back = document.createElement('button'); back.className = 'bakeBtn'; back.textContent = '← Back';
+  back.onclick = () => { Sound.click(); renderFairHub(); };
+  pad.appendChild(back);
+}
+let liveRace = null, playerKart = null, fairGroup = null, gasState = null;
+function fairWorldPos(ang, lane) {
+  return {
+    x: FAIR_POS.x + Math.cos(ang) * FAIR_TRACK.rx,
+    z: FAIR_POS.z + Math.sin(ang) * FAIR_TRACK.rz + (lane || 0)
+  };
+}
+function placeKart(k, ang) {
+  const px = Math.cos(ang) * FAIR_TRACK.rx, pz = Math.sin(ang) * FAIR_TRACK.rz + (k.userData.lane || 0);
+  const dang = -0.04, nx = Math.cos(ang + dang) * FAIR_TRACK.rx, nz = Math.sin(ang + dang) * FAIR_TRACK.rz + (k.userData.lane || 0);
+  k.position.set(px, 0, pz);
+  k.rotation.y = Math.atan2(nx - px, nz - pz);
+}
+function paintKart(k, col) {
+  k.traverse(ch => { if (ch.userData && ch.userData.body && ch.material) ch.material.color.setHex(col); });
+}
+function beginLiveRace(rival) {
+  const paid = takeRaceTicket();
+  if (!paid) { $('fairMsg').style.color = '#c0392b'; $('fairMsg').textContent = 'Not enough flags or coins yet.'; return; }
+  closeFairJudge();
+  const pack = shuffle(RACE_RIVALS.filter(r => r.id !== rival.id)).slice(0, 1);
+  pack.unshift(rival);
+  const field = pack.slice(0, 2);
+  liveRace = {
+    paid: paid, phase: 'count', t0: performance.now(), count: 3,
+    lapsNeed: 3, nitroT: 0,
+    player: { ang: 0, lap: 0, finished: false, place: 0 },
+    rivals: field.map((rv, i) => ({
+      rv: rv, kart: fairKarts[i], ang: -0.12 * (i + 1), lap: 0,
+      base: 0.86 + i * 0.08 + Math.random() * 0.06, finished: false, place: 0
+    })),
+    finishOrder: [], startedAt: 0
+  };
+  if (playerKart) {
+    playerKart.visible = true;
+    playerKart.userData.lane = 0.15;
+    paintKart(playerKart, 0x2E86C1);
+    placeKart(playerKart, 0);
+  }
+  liveRace.rivals.forEach((r, i) => {
+    if (!r.kart) return;
+    r.kart.visible = true;
+    r.kart.userData.lane = -0.45 - i * 0.35;
+    paintKart(r.kart, r.rv.col);
+    placeKart(r.kart, r.ang);
+  });
+  const p = fairWorldPos(0, 0.15);
+  player.pos.x = p.x; player.pos.z = p.z; player.pos.y = 0; player.vel.x = 0; player.vel.z = 0;
+  if (player.driving && typeof toggleDrive === 'function') try { toggleDrive(); } catch (e) {}
+  document.exitPointerLock && document.exitPointerLock();
+  const hud = $('raceHud'), line = $('raceHudLine'), nb = $('nitroBtn');
+  if (hud) hud.style.display = 'block';
+  if (line) line.textContent = '🏁 Get ready…';
+  if (nb) { nb.style.display = (G.nitroCharges || 0) > 0 ? 'inline-block' : 'none'; nb.textContent = '💨 NITRO ×' + (G.nitroCharges || 0); }
+  const live = $('raceLiveHud'); if (live) live.style.display = 'block';
+  toast('🏎️ 3 laps! Hold W / stick to speed up. 💨 Nitro if you have it. ⭐ USE to quit.', 4200);
+}
+function fireNitro() {
+  if (!liveRace || liveRace.phase !== 'go') return;
+  if (liveRace.nitroT > 0) return;
+  if ((G.nitroCharges || 0) < 1) { toast('⛽ Buy nitro at the pit stop first!', 2200); return; }
+  G.nitroCharges -= 1; liveRace.nitroT = 1.65;
+  const nb = $('nitroBtn'); if (nb) nb.textContent = '💨 NITRO ×' + (G.nitroCharges || 0);
+  if (Sound.correct) Sound.correct();
+  toast('💨 NITRO!', 900);
+}
+function abortLiveRace() {
+  if (!liveRace) return;
+  if (liveRace.phase === 'count' || (liveRace.player && liveRace.player.lap < 1)) refundRaceTicket(liveRace.paid);
+  endLiveRace(true);
+}
+function endLiveRace(aborted) {
+  const hud = $('raceHud'); if (hud) hud.style.display = 'none';
+  const live = $('raceLiveHud'); if (live) live.style.display = 'none';
+  const nb = $('nitroBtn'); if (nb) nb.style.display = 'none';
+  if (playerKart) playerKart.visible = false;
+  if (Sound.engineSet) Sound.engineSet(0);
+  const was = liveRace;
+  liveRace = null;
+  if (aborted) { toast('🏁 Race called off — ticket refunded if you hadn\'t finished a lap.', 3200); return; }
+  const place = was && was.player ? was.player.place : 3;
+  let coins = 4, flags = 0, title = 'Nice finish!';
+  if (place === 1) { coins = 22; flags = 2; title = '🏆 YOU WON!'; }
+  else if (place === 2) { coins = 12; flags = 1; title = '🥈 Second place!'; }
+  G.coins = (G.coins || 0) + coins;
+  if (flags) awardFlag(flags);
+  refreshHUD();
+  if (Sound.correct) Sound.correct();
+  toast(title + ' 🪙 +' + coins + (flags ? '  🏁 +' + flags : ''), 4200);
+  profile.racesDriven = (profile.racesDriven || 0) + 1; profileDirty = true; saveProfile();
+}
+function tickLiveRace(dt, now) {
+  if (!liveRace) return;
+  if (liveRace.phase === 'count') {
+    const elapsed = (now - liveRace.t0) / 1000;
+    const n = 3 - Math.floor(elapsed);
+    const line = $('raceHudLine');
+    if (n > 0) { if (line) line.textContent = '🏁 ' + n + '…'; }
+    else if (elapsed < 3.55) { if (line) line.textContent = '🏁 GO!'; }
+    else { liveRace.phase = 'go'; liveRace.startedAt = now; }
+    chaseRaceCam();
+    paintRaceHud();
+    return;
+  }
+  if (liveRace.phase === 'done') { chaseRaceCam(); return; }
+  let throttle = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) throttle = 1;
+  if (keys['KeyS'] || keys['ArrowDown']) throttle = -0.4;
+  const jmag = Math.hypot(touch.joyX || 0, touch.joyY || 0);
+  if (jmag > 0.18) throttle = Math.max(throttle, -(touch.joyY || 0));
+  throttle = Math.max(-0.4, Math.min(1, throttle));
+  if (liveRace.nitroT > 0) liveRace.nitroT -= dt;
+  const boost = liveRace.nitroT > 0 ? 0.9 : 0;
+  const pSpeed = 0.70 + 0.78 * Math.max(0, throttle) + boost;   // rad/s
+  liveRace.player.ang -= pSpeed * dt;
+  maybeLap(liveRace.player);
+  if (playerKart) placeKart(playerKart, liveRace.player.ang);
+  const wp = fairWorldPos(liveRace.player.ang, playerKart ? playerKart.userData.lane : 0.15);
+  player.pos.x = wp.x; player.pos.z = wp.z; player.pos.y = 0;
+  player.yaw = playerKart ? playerKart.rotation.y - Math.PI : 0;
+  liveRace.rivals.forEach(r => {
+    if (r.finished) return;
+    const wob = 1 + Math.sin(now / 700 + r.base * 9) * 0.04;
+    r.ang -= r.base * wob * dt;
+    maybeLap(r);
+    if (r.kart) placeKart(r.kart, r.ang);
+  });
+  if (Sound.engineSet) Sound.engineSet(Math.min(1, 0.35 + pSpeed / 2.2));
+  chaseRaceCam();
+  paintRaceHud();
+  if (liveRace.player.finished && liveRace.rivals.every(r => r.finished) && liveRace.phase === 'go') {
+    liveRace.phase = 'done';
+    setTimeout(() => { if (liveRace) endLiveRace(false); }, 1400);
+  }
+}
+function maybeLap(who) {
+  if (who.finished) return;
+  const laps = Math.floor(Math.abs(who.ang) / (Math.PI * 2));
+  if (laps > who.lap) who.lap = laps;
+  if (who.lap >= (liveRace.lapsNeed || 3) && !who.finished) {
+    who.finished = true;
+    liveRace.finishOrder.push(who);
+    who.place = liveRace.finishOrder.length;
+  }
+}
+function chaseRaceCam() {
+  const k = playerKart;
+  const wx = player.pos.x, wz = player.pos.z;
+  const yaw = player.yaw || 0;
+  const dist = 7.2;
+  camera.position.lerp(new THREE.Vector3(wx + Math.sin(yaw) * dist, 3.6, wz + Math.cos(yaw) * dist), 0.18);
+  camera.lookAt(wx, 0.55, wz);
+  if (k && k.userData && k.userData.wheels) k.userData.wheels.forEach(w => { w.rotation.x -= 0.4; });
+}
+function paintRaceHud() {
+  if (!liveRace) return;
+  const p = liveRace.player;
+  const others = liveRace.rivals.filter(r => !r.finished || r.place < (p.place || 99));
+  const place = p.finished ? p.place : (1 + liveRace.rivals.filter(r => {
+    const ra = Math.abs(r.ang), pa = Math.abs(p.ang);
+    return ra > pa;
+  }).length);
+  const lapShow = Math.min((liveRace.lapsNeed || 3), p.lap + 1);
+  const mph = Math.round(18 + Math.abs(p.ang && liveRace.phase === 'go' ? 42 : 0) * 0);
+  const extra = liveRace.nitroT > 0 ? 28 : (keys['KeyW'] || keys['ArrowUp'] || (touch.joyY || 0) < -0.2 ? 18 : 0);
+  const line = $('raceHudLine');
+  if (line && liveRace.phase === 'go')
+    line.textContent = 'Lap ' + lapShow + '/' + liveRace.lapsNeed + '  ·  P' + place + '  ·  ' + (28 + extra) + ' mph';
+  const live = $('raceLiveHud');
+  if (live) {
+    live.innerHTML = liveRace.rivals.map(r => {
+      const L = Math.min(liveRace.lapsNeed, r.lap + (r.finished ? 0 : 1));
+      return r.rv.emoji + ' ' + r.rv.nm + ' · L' + L + (r.finished ? ' ✓' : '');
+    }).join('<br>') + '<br>💨 nitro ' + (G.nitroCharges || 0);
+  }
+}
+function idleFairKarts(now) {
+  if (fairRace || liveRace || !fairKarts.length) return;
+  fairKarts.forEach((k, i) => {
+    if (!k || (playerKart && k === playerKart)) return;
+    const ang = -(now / 5200) - i * 0.85;
+    placeKart(k, ang);
+  });
+}
+function openGas() {
+  if (popupOpen || G.over || !G.running || liveRace) return;
+  popupOpen = true; document.exitPointerLock && document.exitPointerLock();
+  const lvl = Math.max(1, Math.min(5, (G.skillLevel && G.skillLevel.money) || G.grade || 2));
+  let q, a, hint, reward;
+  if (lvl <= 2) {
+    const gals = ri(2, 5), price = ri(2, 4); a = gals * price;
+    q = '⛽ Fill <b>' + gals + '</b> gallons. Each gallon is <b>$' + price + '</b>. How much do you pay?';
+    hint = gals + ' × $' + price + ' = ?'; reward = 'nitro';
+  } else if (lvl === 3) {
+    const gals = ri(3, 6), price = 3; a = gals * price;
+    q = '⛽ ' + gals + ' gallons at $' + price + ' each. Total?';
+    hint = gals + ' × 3'; reward = 'nitro';
+  } else {
+    const gals = ri(3, 5), price = ri(3, 5), total = gals * price, bill = total >= 20 ? 50 : 20;
+    a = bill - total;
+    q = '⛽ ' + gals + ' gallons × $' + price + ' = $' + total + '. You pay with <b>$' + bill + '</b>. How much <b>change</b>?';
+    hint = bill + ' − ' + total; reward = 'nitro2';
+  }
+  gasState = { a: a, hint: hint, reward: reward, first: true };
+  $('gasTitle').textContent = '⛽ Fairground Pit Stop';
+  $('gasBody').innerHTML = q + '<div style="margin-top:8px;font-size:0.82em;color:#5a6a80">Right answers fill your 💨 nitro. You have ' + (G.nitroCharges || 0) + '.</div>';
+  $('gasMsg').textContent = '';
+  const pad = $('gasPad'); pad.innerHTML = '';
+  changeChoices(a).forEach(ch => {
+    const b = document.createElement('button'); b.className = 'bakeBtn';
+    b.textContent = '$' + ch;
+    b.onclick = () => answerGas(ch);
+    pad.appendChild(b);
+  });
+  $('gasPopup').style.display = 'flex';
+}
+function closeGas() { $('gasPopup').style.display = 'none'; popupOpen = false; gasState = null; }
+function answerGas(ch) {
+  if (!gasState) return;
+  if (Number(ch) === gasState.a) {
+    if (Sound.correct) Sound.correct();
+    const n = gasState.reward === 'nitro2' ? 2 : 1;
+    G.nitroCharges = Math.min(5, (G.nitroCharges || 0) + n);
+    G.coins += 4; G.solved++; refreshHUD();
+    recordSolve({ skill: 'money', level: G.grade || 2 });
+    $('gasMsg').style.color = '#2f8a52';
+    $('gasMsg').innerHTML = '✓ Filled up! 💨 +' + n + ' nitro  •  🪙 +4';
+    setTimeout(() => { closeGas(); toast('💨 Nitro ×' + G.nitroCharges + ' — spend it on the oval!', 2800); }, 900);
+  } else {
+    if (Sound.wrong) Sound.wrong();
+    if (gasState.first) { recordWrong({ skill: 'money' }); gasState.first = false; }
+    $('gasMsg').style.color = '#c0392b';
+    $('gasMsg').innerHTML = '✗ Not quite. 👉 ' + gasState.hint;
+  }
+}
 // (the ✕ button is wired in the UI section below — $ isn't born yet this early in the script)
 
 /* ════════════ 🚂 STEAM TRAIN RIDE (Country Western) — spend a ride ticket, load the coal, take a ride ════════════ */
@@ -11911,29 +12213,46 @@ function updateFeedGoods(now) {
   if (inF) renderFeedListHud();
 }
 
+function buildFairKart(lane, col) {
+  const g = new THREE.Group();
+  const bodyCol = col || 0xC0392B;
+  const body = box(g, 0.82, 0.26, 1.28, bodyCol, 0, 0.36, 0); body.userData.body = true;
+  box(g, 0.7, 0.14, 0.5, 0x1a1a1a, 0, 0.54, -0.12);                 // seat
+  box(g, 0.68, 0.2, 0.05, 0x88ccee, 0, 0.58, 0.42);                  // windshield
+  box(g, 0.16, 0.08, 0.1, 0xEAF6FF, -0.22, 0.4, 0.62); box(g, 0.16, 0.08, 0.1, 0xEAF6FF, 0.22, 0.4, 0.62);
+  box(g, 0.5, 0.08, 0.06, 0xD23A3A, 0, 0.4, -0.64);
+  const wheels = [];
+  const wm = new THREE.MeshLambertMaterial({ color: 0x222222 });
+  [[-0.46, 0.48], [0.46, 0.48], [-0.46, -0.48], [0.46, -0.48]].forEach(([x, z]) => {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.14, 10), wm);
+    w.rotation.z = Math.PI / 2; w.position.set(x, 0.2, z); g.add(w); wheels.push(w);
+  });
+  g.userData.lane = lane || 0; g.userData.wheels = wheels;
+  g.scale.setScalar(0.92);
+  return g;
+}
 function buildCountyFair(g) {
   const F = new THREE.Group(), WOOD = 0x8a5a34, TRIM = 0xF4ECD8;
-  // the dirt oval (a squashed ring) + infield grass patch
-  const track = new THREE.Mesh(new THREE.RingGeometry(4.6, 7.0, 56), new THREE.MeshLambertMaterial({ color: 0xB98A5A }));
-  track.rotation.x = -Math.PI / 2; track.scale.set(1, FAIR_TRACK.rz / FAIR_TRACK.rx * 1.18, 1);
+  const rx = FAIR_TRACK.rx, rz = FAIR_TRACK.rz;
+  const track = new THREE.Mesh(new THREE.RingGeometry(rx - 1.7, rx + 1.75, 64), new THREE.MeshLambertMaterial({ color: 0xB98A5A }));
+  track.rotation.x = -Math.PI / 2; track.scale.set(1, rz / rx, 1);
   track.position.y = 0.03; F.add(track);
-  const infield = new THREE.Mesh(new THREE.CircleGeometry(4.5, 40), new THREE.MeshLambertMaterial({ color: 0x79C957 }));
-  infield.rotation.x = -Math.PI / 2; infield.scale.set(1, FAIR_TRACK.rz / FAIR_TRACK.rx * 1.18, 1);
+  const infield = new THREE.Mesh(new THREE.CircleGeometry(rx - 1.75, 48), new THREE.MeshLambertMaterial({ color: 0x79C957 }));
+  infield.rotation.x = -Math.PI / 2; infield.scale.set(1, rz / rx, 1);
   infield.position.y = 0.035; F.add(infield);
-  box(F, 1.9, 0.03, 0.34, 0xF4F4F4, FAIR_TRACK.rx, 0.05, 0);                          // start/finish line
-  // checkered banner over the start line
+  box(F, 1.9, 0.03, 0.34, 0xF4F4F4, rx, 0.05, 0);                          // start/finish line
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d');
   for (let ix = 0; ix < 8; ix++) for (let iz = 0; iz < 2; iz++) { c.fillStyle = (ix + iz) % 2 ? '#232323' : '#F4F4F4'; c.fillRect(ix * 32, iz * 32, 32, 32); }
-  box(F, 0.14, 2.3, 0.14, WOOD, FAIR_TRACK.rx - 1.55, 1.15, 0); box(F, 0.14, 2.3, 0.14, WOOD, FAIR_TRACK.rx + 1.55, 1.15, 0);
+  box(F, 0.14, 2.3, 0.14, WOOD, rx - 1.55, 1.15, 0); box(F, 0.14, 2.3, 0.14, WOOD, rx + 1.55, 1.15, 0);
   const ban = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.55, 0.06), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) }));
-  ban.position.set(FAIR_TRACK.rx, 2.15, 0); ban.rotation.y = Math.PI / 2; F.add(ban);
-  // bleachers (north side) + pennant flags around the oval
-  for (let i = 0; i < 3; i++) box(F, 6.4, 0.42, 0.8, i % 2 ? 0xC9A86A : 0xB5904F, 0, 0.21 + i * 0.42, -5.6 - i * 0.85);
+  ban.position.set(rx, 2.15, 0); ban.rotation.y = Math.PI / 2; F.add(ban);
+  const bz = -rz - 1.7;
+  for (let i = 0; i < 3; i++) box(F, 8.4, 0.42, 0.8, i % 2 ? 0xC9A86A : 0xB5904F, 0, 0.21 + i * 0.42, bz - i * 0.85);
   const cols = [0xC0392B, 0x2e86c1, 0xF2C037, 0x57A53C];
-  [[-7.4, -3], [-7.4, 3], [7.6, -3.4], [0, 5.8]].forEach(([px, pz], i) => {
+  const flagPts = [[-rx - 1.6, -3], [-rx - 1.6, 3], [rx + 1.8, -3.4], [0, rz + 1.5], [rx * 0.6, -rz - 0.4], [-rx * 0.6, rz + 0.6]];
+  flagPts.forEach(([px, pz], i) => {
     box(F, 0.1, 2.2, 0.1, 0xBFC4CA, px, 1.1, pz); box(F, 0.62, 0.34, 0.05, cols[i % 4], px + 0.3, 1.95, pz);
   });
-  // 🏁 the judge stand (south side, facing the track) — striped roof, sign, step
   const J = new THREE.Group();
   box(J, 1.9, 1.15, 1.1, WOOD, 0, 0.58, 0); box(J, 2.1, 0.12, 1.3, TRIM, 0, 1.2, 0);
   box(J, 0.12, 1.05, 0.12, WOOD, -0.9, 1.75, -0.45); box(J, 0.12, 1.05, 0.12, WOOD, 0.9, 1.75, -0.45);
@@ -11942,25 +12261,31 @@ function buildCountyFair(g) {
   for (let i = 0; i < 8; i++) { rc.fillStyle = i % 2 ? '#C0392B' : '#F4ECD8'; rc.fillRect(i * 16, 0, 16, 32); }
   const roof = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.1, 1.5), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(rv) }));
   roof.position.y = 2.34; J.add(roof);
-  signOn(J, '🏁 RACE JUDGE', 'Referee & win Race Flags!', 0x8a3a2a, 1.8, 0.6, 0, 0.62, 0.56);
-  box(J, 0.9, 0.18, 0.5, 0xA87848, 0, 0.09, 0.8);                                    // step up
+  signOn(J, '🏁 RACE JUDGE', 'Referee & race!', 0x8a3a2a, 1.8, 0.6, 0, 0.62, 0.56);
+  box(J, 0.9, 0.18, 0.5, 0xA87848, 0, 0.09, 0.8);
   J.position.set(JUDGE_POS.x - FAIR_POS.x, 0, JUDGE_POS.z - FAIR_POS.z); J.rotation.y = Math.PI; F.add(J);
-  // the entrance banner (west side, toward town)
-  box(F, 0.16, 2.9, 0.16, WOOD, -8.6, 1.45, -1.9); box(F, 0.16, 2.9, 0.16, WOOD, -8.6, 1.45, 1.9);
+  const gateX = -rx - 2.6;
+  box(F, 0.16, 2.9, 0.16, WOOD, gateX, 1.45, -1.9); box(F, 0.16, 2.9, 0.16, WOOD, gateX, 1.45, 1.9);
   const ev = document.createElement('canvas'); ev.width = 384; ev.height = 96; const ec = ev.getContext('2d');
   ec.fillStyle = '#C0392B'; ec.fillRect(0, 0, 384, 96); ec.strokeStyle = '#F2C037'; ec.lineWidth = 6; ec.strokeRect(5, 5, 374, 86);
   ec.fillStyle = '#FBF4DF'; ec.font = 'bold 30px Georgia, serif'; ec.textAlign = 'center'; ec.textBaseline = 'middle';
-  ec.fillText('🎡 COUNTY FAIR 🏁', 192, 34); ec.font = 'italic bold 20px Georgia, serif'; ec.fillStyle = '#FFE9A8'; ec.fillText('Races every day • Judges wanted!', 192, 68);
+  ec.fillText('🎡 COUNTY FAIR 🏁', 192, 34); ec.font = 'italic bold 20px Georgia, serif'; ec.fillStyle = '#FFE9A8'; ec.fillText('Race · Judge · Pit stop!', 192, 68);
   const esign = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.05, 0.1), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(ev) }));
-  esign.position.set(-8.6, 2.55, 0); esign.rotation.y = Math.PI / 2; F.add(esign);
-  // two karts parked on the start line, ready to show off
-  fairKarts = [buildFairKart(-0.55), buildFairKart(0.55)];
-  fairKarts.forEach((k, i) => {
-    k.position.set(FAIR_TRACK.rx, 0, k.userData.lane);
-    k.rotation.y = Math.PI;                          // facing the racing direction (−z at the start line)
-    F.add(k);
-  });
+  esign.position.set(gateX, 2.55, 0); esign.rotation.y = Math.PI / 2; F.add(esign);
+  // ⛽ pit / gas (local offset from fair centre)
+  const gx = GAS_POS.x - FAIR_POS.x, gz = GAS_POS.z - FAIR_POS.z;
+  box(F, 2.15, 1.45, 1.55, 0xE8EEF4, gx, 0.72, gz);
+  box(F, 2.4, 0.12, 2.6, 0xC0392B, gx, 2.15, gz);
+  box(F, 0.22, 1.05, 0.22, 0xC0392B, gx - 0.65, 0.52, gz + 1.15);
+  box(F, 0.22, 1.05, 0.22, 0xC0392B, gx + 0.65, 0.52, gz + 1.15);
+  box(F, 0.36, 0.16, 0.28, 0xF2C037, gx - 0.65, 1.12, gz + 1.15);
+  box(F, 0.36, 0.16, 0.28, 0xF2C037, gx + 0.65, 1.12, gz + 1.15);
+  signOn(F, '⛽ PIT STOP', 'Gas · Nitro · Math!', 0x1a5a8a, 2.05, 0.55, gx, 1.62, gz + 0.82);
+  fairKarts = [buildFairKart(-0.45, 0xE07B2A), buildFairKart(0.45, 0x9AA4B2), buildFairKart(-0.85, 0xC9A0E8)];
+  fairKarts.forEach((k, i) => { placeKart(k, -i * 0.5); F.add(k); });
+  playerKart = buildFairKart(0.15, 0x2E86C1); playerKart.visible = false; F.add(playerKart);
   F.position.set(FAIR_POS.x, 0, FAIR_POS.z);
+  fairGroup = F;
   g.add(F);
 }
 function buildMeadowDecor(g) {
@@ -13901,7 +14226,7 @@ function inShopZone(cx, cz) {
   const px = cx + 0.5, pz = cz + 0.5;
   const near = (p, r) => p && Math.hypot(px - p.x, pz - p.z) < r;
   if (near(SHOP_POS, 2.6) || near(BARN_POS, 2.9) || near(MOTORS_POS, 3.1)) return true;   // shared shops, every world
-  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8) || near(PIZZA_POS, 2.6) || near(FEED_POS, 5.4) || near(FAIR_POS, 9.4))) return true;   // 🏁 the whole fairground stays clear
+  if (G.world === 'meadow' && (near(BAKERY_POS, 2.5) || near(COUNTRY_REALTY_POS, 2.8) || near(PIZZA_POS, 2.6) || near(FEED_POS, 5.4) || near(FAIR_POS, 15.2) || near(GAS_POS, 3.4))) return true;   // 🏁 the whole fairground stays clear
   if (G.world === 'city' && (near(LIBRARY_POS, 3.6) || near(POST_POS, 2.7) || near(REALTY_POS, 2.6) || near(CINEMA_POS, 3.4) || near(ARCADE_POS, 3.0))) return true;
   if (G.world === 'beach' && (near(MART_POS, 2.6) || near(BOAT_SHOP_POS, 2.5) || near(SCHOOL_POS, 2.8))) return true;
   if (G.world === 'west') {                                  // 🤠 keep the frontier main street (north strip) + realty clear
@@ -17560,6 +17885,7 @@ const keys = {};
 // Shared by the E key AND the on-screen ⭐ USE button (so mouse-only players aren't stuck).
 function tryUse() {
   if (!G.running || popupOpen) return;
+  if (liveRace) { Sound.click(); abortLiveRace(); return; }
   if (movingHome != null) { Sound.click(); cancelMoveHome(); return; }   // 🚚 cancel a house move
   if (fetchGame) { Sound.click(); throwForward(); return; }         // 🎾 while playing fetch, USE throws the ball
   if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
@@ -17576,7 +17902,8 @@ function tryUse() {
   else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
   else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
   else if (tryFeedUse()) { }                                      // 🌾 walk-in feed store — pick shelves, then cashier
-  else if (judgeDist() < 3.8) { Sound.click(); openFairJudge(); }  // 🏁 County Fair judge stand — time math (Math Meadow)
+  else if (gasDist() < 3.6) { Sound.click(); openGas(); }         // ⛽ pit / nitro math
+  else if (judgeDist() < 4.4) { Sound.click(); openFairJudge(); }  // 🏁 County Fair judge stand — time math (Math Meadow)
   else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
   else if (buggyDist() < 3.4) { Sound.click(); rentBuggy(); }     // 🐴 rent the horse & buggy (Country Western)
   else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
@@ -17636,6 +17963,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyX') { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode); toast(G.removeMode ? '⛏️ Remove mode — click a block to delete it.' : '🧱 Build mode — click to place.', 2000); }
   if (e.code === 'KeyZ') { Sound.click(); undoLast(); }
   if (e.code === 'KeyE') { tryUse(); }
+  if ((e.code === 'Space' || e.code === 'KeyN') && liveRace) { e.preventDefault(); fireNitro(); }
   if (e.code === 'KeyL') { Sound.click(); toggleBedRest(); }
   if (e.code === 'KeyC') toggleCamera();
   if (e.code === 'Digit1') selectSlot('block');
@@ -18356,6 +18684,8 @@ $('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
 $('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
 $('feedClose').onclick = () => { Sound.click(); closeFeed(); };
 $('fairClose').onclick = () => { Sound.click(); closeFairJudge(); };
+$('gasClose').onclick = () => { Sound.click(); closeGas(); };
+$('nitroBtn').onclick = () => { Sound.click(); fireNitro(); };
 $('trainClose').onclick = () => { Sound.click(); closeTrainRide(); };
 $('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
 $('postClose').onclick = () => { Sound.click(); closePost(); };
@@ -18601,38 +18931,14 @@ if (isTouch) {
     }
   }, { passive: false });
 
-  $('btnJump').addEventListener('touchstart', e => { touch.jump = true; e.preventDefault(); }, { passive: false });
+  $('btnJump').addEventListener('touchstart', e => {
+    touch.jump = true; e.preventDefault();
+    if (liveRace) fireNitro();
+  }, { passive: false });
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
-    if (roadExitDist() < 3) { Sound.click(); travelRoad(); }         // 🛣️ take the road to the next town
-    else if (player.ridingBuggy) { Sound.click(); endBuggyRide(); }       // 🐴 hop off the buggy
-    else if (player.driving) { Sound.click(); toggleDrive(); }            // hop off the truck
-    else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
-    else if (player.sittingChair) { Sound.click(); toggleSit(); }
-    else if (nearestStation().dist < 2.8) { Sound.click(); openMath(); }
-    else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
-    else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
-    else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
-    else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
-    else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
-  else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
-    else if (tryFeedUse()) { }                                      // 🌾 walk-in feed store — pick shelves, then cashier
-    else if (judgeDist() < 3.8) { Sound.click(); openFairJudge(); }  // 🏁 County Fair judge stand — time math (Math Meadow)
-    else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
-    else if (buggyDist() < 3.4) { Sound.click(); rentBuggy(); }     // 🐴 rent the horse & buggy (Country Western)
-    else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
-    else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
-    else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
-    else if (arcadeDist() < 4.0) { Sound.click(); openArcade(); }   // 🕹️ word-game arcade (Reading Town)
-    else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
-    else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
-    else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
-    else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
-    else if (portalDist() < 2.8) { Sound.click(); openTravel(); }
-    else if (nearestChair()) { Sound.click(); toggleSit(); }
-    else if (nearestBed()) { Sound.click(); toggleBedRest(); }
-    else pickupBlock();
+    tryUse();
   }, { passive: false });
   $('btnUndoTouch').addEventListener('touchstart', e => { e.preventDefault(); Sound.click(); undoLast(); }, { passive: false });
   $('btnShoot').addEventListener('touchstart', e => { e.preventDefault(); shootBall(); }, { passive: false });
@@ -20094,6 +20400,7 @@ function loop(now) {
   if (!G.running) { renderer.render(scene, camera); return; }
   if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
+  if (liveRace) { tickLiveRace(dt, now); renderer.render(scene, camera); return; }   // 🏎️ fairground race takes the camera
   if (shadowWatch) {                                   // sustained sub-~22fps → shadows off (one-time)
     if (dt > 0.045) slowFrames++; else slowFrames = Math.max(0, slowFrames - 2);
     if (slowFrames > 150) dropShadowsForSpeed();
@@ -20136,7 +20443,7 @@ function loop(now) {
     pu.star.position.y = 2.4 + Math.sin(now / 350) * 0.08;
   }
 
-  if (G.world === 'meadow') { updateFairRace(performance.now()); if (typeof updateFeedGoods === 'function') updateFeedGoods(now); }
+  if (G.world === 'meadow') { updateFairRace(performance.now()); idleFairKarts(now); if (typeof updateFeedGoods === 'function') updateFeedGoods(now); }
   // clouds drift
   clouds.forEach((c, i) => {
     c.position.x += dt * (0.4 + i * 0.1);
@@ -20243,8 +20550,11 @@ function loop(now) {
       else if (insideFeedStore(player.pos.x, player.pos.z)) hint.textContent = '📋 Grab the chalkboard order off the shelves, then go to the cashier.';
       else hint.textContent = isTouch ? '🌾 Walk in the door — shop the shelves, then count change!' : '🌾 Walk in the door — shop the shelves, then count change!';
       hint.style.display = 'block';
-    } else if (judgeDist() < 3.8) {
-      hint.textContent = isTouch ? '🏁 Tap ⭐ USE — judge the County Fair races!' : '🏁 ⭐ USE (or E) — judge the County Fair races!';
+    } else if (G.world === 'meadow' && gasDist() < 3.6) {
+      hint.textContent = isTouch ? '⛽ Tap ⭐ USE — fill up at the pit (nitro math)!' : '⛽ ⭐ USE (or E) — fill up at the pit (nitro math)!';
+      hint.style.display = 'block';
+    } else if (judgeDist() < 4.4) {
+      hint.textContent = isTouch ? '🏁 Tap ⭐ USE — County Fair: judge, race, or pit stop!' : '🏁 ⭐ USE (or E) — County Fair: judge, race, or pit stop!';
       hint.style.display = 'block';
     } else if (trainDist() < 4.4) {
       hint.textContent = (G.tickets > 0 ? '🚂 Tap ⭐ USE — ride the steam train! (🎟️ ' + G.tickets + ')' : '🚂 Earn a 🎟️ ride ticket (answer ❓ STEM) then USE to ride!');
