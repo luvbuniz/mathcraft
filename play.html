@@ -1123,7 +1123,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v275 — Dancer should appear under Continue</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v276 — tap Dancer to jump into Math Meadow</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 275 — Continue reads players from this device even if the 3D menu is stuck.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 276 — Continue rows start the game even if the 3D menu glitched.</div>
   </div>
 </div>
 <script>
@@ -2097,18 +2097,60 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'loadBtn';
-      var safe = String(s.name).replace(/[&<>"]/g, function (c) { return ({ '&': '&', '<': '<', '>': '>', '"': '"' })[c]; });
+      btn.setAttribute('data-name', s.name);
+      btn.setAttribute('data-world', s.world || 'meadow');
+      btn.setAttribute('data-grade', String(s.grade || 2));
+      var safe = String(s.name).replace(/[&<>"]/g, function (c) {
+        return c === '&' ? '&' : c === '<' ? '<' : c === '>' ? '>' : '"';
+      });
       btn.innerHTML = '<span class="slotInfo"><span class="slotName">🌱 ' + safe + '</span><span class="slotMeta">Math Meadow • Grade ' + (s.grade || 2) + '</span></span>';
-      btn.onclick = function () {
-        if (typeof restoreGame === 'function') restoreGame(s);
-        else { var ni = el('nameInput'); if (ni) ni.value = s.name; }
-      };
       var row = document.createElement('div');
       row.className = 'saveRow';
       row.appendChild(btn);
       list.appendChild(row);
     });
   }
+  function bootPlay(name, world, grade) {
+    name = String(name || 'Player').replace(/^\s+|\s+$/g, '');
+    world = world || 'meadow';
+    grade = parseInt(grade, 10) || 2;
+    try {
+      if (typeof G !== 'undefined') {
+        G.playerName = name;
+        G.world = world;
+        G.grade = grade;
+        G.blocks = Math.max(G.blocks || 0, 16);
+      }
+    } catch (e) {}
+    try { if (typeof loadProfileFor === 'function') loadProfileFor(name); } catch (e) {}
+    var ss = el('startScreen'); if (ss) ss.style.display = 'none';
+    var hud = el('hud'); if (hud) hud.style.display = 'block';
+    try {
+      if (typeof restoreGame === 'function') {
+        restoreGame({ name: name, world: world, grade: grade, blocks: 16, fromProfile: true });
+        return;
+      }
+    } catch (e) { console.error('boot restoreGame', e); }
+    try { if (typeof startGame === 'function') { startGame(); return; } } catch (e) { console.error('boot startGame', e); }
+    var tag = el('authBuildTag');
+    if (tag) tag.textContent = 'Could not open ' + name + ' — wait a second and tap again, or use New Adventure.';
+  }
+  window.bootPlay = bootPlay;
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var btn = t.closest('#savedList .loadBtn');
+    if (!btn) return;
+    e.preventDefault();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    else e.stopPropagation();
+    var name = btn.getAttribute('data-name');
+    if (!name) {
+      var sn = btn.querySelector('.slotName');
+      name = ((sn && sn.textContent) || '').replace(/^[^\w]+/, '').replace(/^\s+|\s+$/g, '');
+    }
+    bootPlay(name || 'Player', btn.getAttribute('data-world') || 'meadow', btn.getAttribute('data-grade') || '2');
+  }, true);
   window.paintSaves = paintSaves;
   setTimeout(paintSaves, 0);
   setTimeout(paintSaves, 200);
@@ -5429,10 +5471,10 @@ function restoreGame(s) {
   (s.foods || []).forEach(([x, z, onTable, kind, y, variant, petName, hunger, bond, petMode, cageKey, cageSlot]) => spawnFoodAt(x, z, !!onTable, kind, y, variant, { petName: petName, hunger: hunger, bond: bond, petMode: petMode, cageKey: cageKey, cageSlot: cageSlot }));
   if (s.pos) player.pos.set(s.pos[0], Math.max(0, s.pos[1]), s.pos[2]);
   if (typeof repositionPark === 'function') repositionPark();   // 🏞️ move the park clear of this player's homes/pools
-  startGame();
-  restoreQuest();
-  toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500);
-  applyGradeOverride();          // 🎚️ ?grade=N in the URL resets THIS player to Grade N (keeps coins, houses, pets)
+  try { startGame(); } catch (e) { console.error('restore startGame', e); try { $('startScreen').style.display = 'none'; G.running = true; } catch (e2) {} }
+  try { restoreQuest(); } catch (e) {}
+  try { toast('💾 Welcome back, ' + G.playerName + '! Your world is just how you left it.', 3500); } catch (e) {}
+  try { applyGradeOverride(); } catch (e) {}
 }
 /* 🎚️ Parent helper: open the game with ?grade=2 (1–5) to reset the loaded player to that grade —
    it pins the difficulty so questions stay at that grade, while keeping coins, houses, pets & everything else.
@@ -19564,10 +19606,17 @@ function refreshSavedList() {
       '<span class="slotInfo"><span class="slotName">' + w.emoji + ' ' + (s.name || 'Player') + '</span>' +
       '<span class="slotMeta">' + w.name + ' • Grade ' + (s.grade || 2) +
       '<span class="slotChip calm">Calm</span></span></span>';
+    load.setAttribute('data-name', s.name || 'Player');
+    load.setAttribute('data-world', s.world || 'meadow');
+    load.setAttribute('data-grade', String(s.grade || 2));
     load.onclick = (e) => {
       if (e) { e.preventDefault(); e.stopPropagation(); }
       if (e && e.button && e.button !== 0) return;
-      Sound.click(); restoreGame(s);
+      try { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); } catch (err) {}
+      try { restoreGame(s); } catch (err) {
+        console.error('restoreGame', err);
+        try { G.playerName = s.name; G.world = s.world || 'meadow'; G.grade = s.grade || 2; startGame(); } catch (e2) { console.error(e2); }
+      }
     };
     load.onauxclick = (e) => { e.preventDefault(); e.stopPropagation(); };
     row.appendChild(load);
@@ -20006,10 +20055,11 @@ document.querySelectorAll('#setupCard [data-go]').forEach(b => {
 });
 
 function startGame() {
-  Analytics.play();                            // they didn't just look — they're playing
-  $('startScreen').style.display = 'none';
-  $('hud').style.display = 'block';
-  if (isTouch) $('touchUI').style.display = 'block';
+  try { if (typeof Analytics !== 'undefined' && Analytics && typeof Analytics.play === 'function') Analytics.play(); } catch (e) {}
+  try { const ss = $('startScreen'); if (ss) ss.style.display = 'none'; } catch (e) {}
+  try { const h = $('hud'); if (h) h.style.display = 'block'; } catch (e) {}
+  try {
+  if (isTouch) { const tu = $('touchUI'); if (tu) tu.style.display = 'block'; }
   applyWorldTheme(G.world);                    // sky, fog & ground match the chosen world
   // New visit / default spawn: Reading Town starts on High Street so the town is on-screen
   try {
@@ -20084,6 +20134,10 @@ function startGame() {
     setTimeout(() => toast('🏘️ High Street is right ahead — Library, Cinema, Post Office & Arcade are on the paved street!', 4200), 2800);
   }
   refreshHUD();
+  } catch (e) {
+    console.error('startGame', e);
+    try { G.running = true; } catch (e2) {}
+  }
 }
 
 /* ============================ END SCREENS ============================ */
@@ -21191,7 +21245,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=275').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=276').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
