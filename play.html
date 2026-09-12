@@ -57,6 +57,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="interior-art.js?v=280"></script>
 <script src="lib/GLTFLoader.js"></script><!-- 🎨 real 3D character models (avatars/<id>.glb), optional & offline-cached -->
 <!-- ☁️ Firebase (optional accounts + cloud save). Compat builds expose a global `firebase`.
      Auth + Firestore only — NO analytics, to keep the "no data collection" promise. -->
@@ -1144,7 +1145,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v279 — meet King Lion and explore the Feed Store</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v280 — shop at Stack Feed and make yourself at home</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1853,7 +1854,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 279 — King Lion's guide and a brighter Feed Store.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 280 — a stocked Feed Store, furnished cottage, and walk-up stairs.</div>
   </div>
 </div>
 <script>
@@ -4322,7 +4323,7 @@ const G = {
   grade: 2, mode: 'adventure', avatarIndex: 0, playerName: 'Player One',
   gloomiesEnabled: false,   // always calm — Gloomies setup entry removed (logic kept dead)
   blocks: 16, powerBlocks: 0, doors: 0, garageDoors: 0, coins: 0, tickets: 0, prizeTickets: 0, tokens: 0, raceFlags: 0, nitroCharges: 0, berries: 0, solved: 0, balls: 0,  /* Pip QA: starter blocks so Build walls isn't empty-handed */
-  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
+  furniture: { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, toilet: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, stairs: 0, walkstairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 },
   running: false, over: false,
   timerMax: 15 * 60,
   timer: 15 * 60, doomsday: false, safe: false, enclosed: false, hasDoorOnShelter: false, shelterRewarded: false,
@@ -4540,6 +4541,7 @@ const SHOP_ITEMS = [
   { id: 'bacon', icon: '🥓', name: 'Bacon', price: 4, kind: 'many', desc: 'Sizzle some bacon on a stove burner — yum!' },
   { id: 'pie', icon: '🥧', name: 'Pie', price: 5, kind: 'many', desc: 'Pop it in the oven and watch it bake with a warm glow.' },
   { id: 'groceries', icon: '🛒', name: 'Grocery Basket', price: 7, kind: 'many', desc: 'Milk, bread, carrots, and fruit for the kitchen.' },
+  { id: 'toilet',icon:'🚽',name:'Toilet',price:8,kind:'many',desc:'A porcelain toilet for your bathroom.' },
   { id: 'bathtub',icon: '🛁', name: 'Bathtub', price: 14,      kind: 'many',  desc: 'A cozy bathtub for the bathroom.' },
   { id: 'shower', icon: '🚿', name: 'Shower', price: 12,       kind: 'many',  desc: 'A shower for the bathroom.' },
   { id: 'garden', icon: '🌱', name: 'Garden Planter', price: 6, kind: 'many', desc: 'A planter box with sprouts for the backyard.' },
@@ -4578,6 +4580,7 @@ const SHOP_ITEMS = [
   { id: 'parkbench',   icon: '🪑', name: 'Park Bench', price: 8, kind: 'many', desc: 'A wooden park bench to sit and watch the fun.' },
   { id: 'fountain',    icon: '⛲', name: 'Park Fountain', price: 22, kind: 'many', desc: 'A bubbling stone fountain — a lovely park centerpiece.' },
   // 🪜🛗 Get between the floors of your house the easy way — no more hopping up blocks!
+  {id:'walkstairs',icon:'🪜',name:'Walk-up Stair Flight',price:8,kind:'many',desc:'Walk up small steps without jumping. Needs five clear floor tiles and an opening overhead. Reaches a deck four blocks above.'},
   { id: 'stairs',   icon: '🪜', name: 'Staircase', price: 6, kind: 'many', desc: 'A neat flight of stairs. Place it on the ground floor, walk up and tap ⭐ USE to go up a floor — tap USE up top to come back down. Build a floor up above first!' },
   // ⏸️ shelved for now (felt hasty; placed/owned elevators still work — re-add to sell again):
   // { id: 'elevator', icon: '🛗', name: 'Elevator', price: 40, kind: 'many', desc: '⭐ Premium! A glass lift with floor buttons. Tap ⭐ USE, pick a floor, and ride straight up or down — perfect for tall towers and condos.' },
@@ -4605,7 +4608,7 @@ const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['k
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
   // 🏚️ Stack Barn — Building dept (blocks, doors, garage doors, windows, roof — all the build materials)
-  blocks: 'build', powerBlocks: 'build', door: 'build', garagedoor: 'build', window: 'build', roof: 'build', stairs: 'build', elevator: 'build',
+  blocks: 'build', powerBlocks: 'build', door: 'build', garagedoor: 'build', window: 'build', roof: 'build', stairs: 'build', walkstairs: 'build', elevator: 'build',
   // 🛒 Stack Mart — the general store
   ladder: 'gear', shoes: 'gear', boots: 'gear', hat: 'gear',   // treasuremap removed: gemstone quests are paused for now
   groceries: 'food', food: 'food', bacon: 'food', pie: 'food', pot: 'food', pan: 'food',
@@ -4617,7 +4620,7 @@ const ITEM_CAT = {
   carpet: 'floor', woodfloor: 'floor', tilefloor: 'floor', measuretape: 'floor',
   dtable: 'kitchen', plates: 'kitchen', stove: 'kitchen', sink: 'kitchen',
   bed: 'bedroom', dresser: 'bedroom',
-  bathtub: 'bath', shower: 'bath',
+  bathtub: 'bath', toilet: 'bath', shower: 'bath',
   table: 'outdoor', umbrella: 'outdoor', lounger: 'outdoor', bbq: 'outdoor', fence: 'outdoor', flower: 'outdoor', garden: 'outdoor', bush: 'outdoor', pool: 'outdoor', poolfam: 'outdoor', poolslide: 'outdoor', poolmega: 'outdoor',
   // 🎠 Stack Barn — Build-Your-Own Playground
   swingset: 'play', seesaw: 'play', slide: 'play', springer: 'play', roundabout: 'play', sandbox: 'play', climber: 'play',
@@ -5512,12 +5515,12 @@ function restoreGame(s) {
     else if (type === 'pool') buildPool(detail || 'pool', x, z, true);   // whole pool item
     else if (type === 'water') placePoolWater(x, z);                     // legacy loose water (old saves)
     else if (type === 'stove') {
-      placeFurnitureAt('stove', x, z, null, extra);
-      const st = blocks.get(key(x, 0, z));
+      placeFurnitureAt('stove', x, z, null, extra, y);
+      const st = blocks.get(key(x, y, z));
       if (st && Array.isArray(detail)) detail.forEach(k => attachCookware(st, k));
     }
     else if (FLOOR_TYPES.includes(type)) addFloorTile(x, z, type, (detail || 0) % 1000, s.world || G.world);   // 🪵 migrate old floor-as-block saves into the new flooring layer (strip the town-finish multiplier)
-    else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail, extra);
+    else if (FURNITURE_TYPES.includes(type)) placeFurnitureAt(type, x, z, detail, extra, y);
     else {
       const col = detail || 0xC9B79A;
       const isPlain = col === 0xC9B79A;
@@ -5606,7 +5609,7 @@ function resetWorld() {
 }
 function resetGameState() {
   G.blocks = 16; G.powerBlocks = 0; G.doors = 0; G.garageDoors = 0; G.coins = 0; G.tickets = 0; G.prizeTickets = 0; G.tokens = 0; G.raceFlags = 0; G.nitroCharges = 0; G.berries = 0; G.solved = 0; G.balls = 0;  // Pip QA starter blocks (restoreGame overwrites from save)
-  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0, stairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 };
+  G.furniture = { chair: 0, table: 0, dtable: 0, plates: 0, bed: 0, couch: 0, cat: 0, dog: 0, fish: 0, coffeetable: 0, dresser: 0, tv: 0, bookshelf: 0, plant: 0, rug: 0, lamp: 0, fence: 0, flower: 0, window: 0, roof: 0, stove: 0, sink: 0, pot: 0, pan: 0, bacon: 0, pie: 0, groceries: 0, bathtub: 0, toilet: 0, shower: 0, garden: 0, bush: 0, pool: 0, poolfam: 0, poolslide: 0, poolmega: 0, food: 0, petbed: 0, foodbowl: 0, waterbowl: 0, litterbox: 0, cattree: 0, scratchpost: 0, petfood: 0, bird: 0, birdcage: 0, aviary: 0, birdfood: 0, carpet: 0, woodfloor: 0, tilefloor: 0, umbrella: 0, lounger: 0, flag: 0, bunting: 0, bbq: 0, hotdog: 0, sausage: 0, ribs: 0, corn: 0, sparkler: 0, fireworks: 0, gem: 0, swingset: 0, seesaw: 0, slide: 0, springer: 0, roundabout: 0, sandbox: 0, climber: 0, sandtoys: 0, sandmolds: 0, rccrane: 0, rcdump: 0, agilityramp: 0, dogtunnel: 0, jumphoop: 0, weavepoles: 0, hydrant: 0, parkbench: 0, fountain: 0, stairs: 0, walkstairs: 0, elevator: 0, trophycup: 0, plushie: 0, neonsign: 0, arcadecab: 0 };
   G.over = false; G.doomsday = false; G.doomTime = 0; G.safe = false; G.enclosed = false; G.hasDoorOnShelter = false; G.shelterRewarded = false; G.roofHintShown = false;
   G.timer = G.timerMax; G.warned60 = false; G.warned10 = false; G.snackUntil = 0; G.treats = [];
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
@@ -5692,7 +5695,8 @@ function isSealedIn() {
     for (const d of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = c[0] + d[0], nz = c[1] + d[1], k = nx + ',' + nz;
       if (seen.has(k) || Math.abs(nx) >= WORLD_R || Math.abs(nz) >= WORLD_R) continue;
-      if (solidAt(nx, 0, nz)) continue;
+      const entry=blocks.get(key(nx,0,nz));
+      if (solidAt(nx, 0, nz) && !(entry && (entry.type==='door'||entry.type==='garage'))) continue;
       seen.add(k); q.push([nx, nz]);
     }
   }
@@ -5889,6 +5893,7 @@ function solidAt(x, y, z) {
   if (!b) return false;
   if (b.type === 'door' && b.state && b.state.swing > 1.0) return false;   // an open door lets you through
   if (b.type === 'garage' && b.state && b.state.lift > 0.9) return false;  // a rolled-up garage door lets the car through
+  if (b.type === 'walkstairs') return false; // tread height is resolved by collideAxis
   if (b.type === 'autoroof') return false;       // the big house roof never blocks movement/building
   if (b.type === 'water') return false;          // pool water — you can wade/swim in it
   if (b.type === 'carpet' || b.type === 'woodfloor' || b.type === 'tilefloor') return false;   // 🪵 flooring — you walk right over it
@@ -5912,7 +5917,7 @@ const PAINTS = [
 ];
 const paintCache = {};
 function blockMat(color) {
-  if (!paintCache[color]) paintCache[color] = new THREE.MeshLambertMaterial({ color });
+  if (!paintCache[color]) {const interior=[0xE7C0C8,0xe3dbcb,0xe9ddce,shade(0xE7C0C8,.78)].includes(color);paintCache[color] = new THREE.MeshLambertMaterial({color,emissive:interior?color:0,emissiveIntensity:interior?.25:0});}
   return paintCache[color];
 }
 
@@ -6059,6 +6064,7 @@ function captureCell(x, y, z) {
   else if (t === 'door') { s.rot = b.rot || 0; s.style = b.style || 'plain'; }
   else if (t === 'stove') { s.cooking = (b.mesh.userData.cooking || []).map(c => c.kind); s.rotY = b.rotY || 0; }
   else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) { s.variant = b.variant; s.rotY = b.rotY || 0; }
+  if(t==='walkstairs'){const a=b.mesh.userData.stairAnchor;s.x=a.x;s.y=a.y;s.z=a.z;}
   return s;
 }
 function recreateFromSnap(s) {
@@ -6071,8 +6077,8 @@ function recreateFromSnap(s) {
   else if (t === 'roof') addRoof(s.x, s.y, s.z, s.rot, s.style);
   else if (t === 'water') placePoolWater(s.x, s.z);
   else if (t === 'power') { const mesh = new THREE.Mesh(blockGeo, powerMat); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'power', true, mesh); }
-  else if (t === 'stove') { placeFurnitureAt('stove', s.x, s.z, null, s.rotY); const st = blocks.get(key(s.x, 0, s.z)); if (st && s.cooking) s.cooking.forEach(k => attachCookware(st, k)); }
-  else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) placeFurnitureAt(t, s.x, s.z, s.variant, s.rotY);
+  else if (t === 'stove') { placeFurnitureAt('stove', s.x, s.z, null, s.rotY, s.y); const st = blocks.get(key(s.x, s.y, s.z)); if (st && s.cooking) s.cooking.forEach(k => attachCookware(st, k)); }
+  else if (typeof FURNITURE_TYPES !== 'undefined' && FURNITURE_TYPES.includes(t)) placeFurnitureAt(t, s.x, s.z, s.variant, s.rotY, s.y);
   else if (t === 'placed') { const col = s.color, isPlain = col === 0xC9B79A; const mesh = new THREE.Mesh(blockGeo, isPlain ? ((s.x + s.y + s.z) % 2 ? placedMat : placedMatEdge) : blockMat(col)); mesh.position.set(s.x + 0.5, s.y + 0.5, s.z + 0.5); addBlockMesh(s.x, s.y, s.z, null, 'placed', true, mesh); blocks.get(key(s.x, s.y, s.z)).color = col; }
   else return false;
   return true;
@@ -7685,6 +7691,7 @@ function feedSolidAt(x, y, z) {
   if (y === 0) {
     if (x === 3 && z >= -18 && z <= -16) return true;     // west shelves
     if (x === 9 && z >= -18 && z <= -16) return true;     // east shelves
+    if (x >= 6 && x <= 8 && z === -18) return true; // pantry shelving
     if (x >= 8 && x <= 9 && z === -13) return true;       // cashier counter
   }
   return false;
@@ -7783,12 +7790,12 @@ function renderFeedListHud() {
   const show = insideFeedStore(player.pos.x,player.pos.z) && feed && feed.shopping && !popupOpen;
   if (!show) { el.style.display = 'none'; return; }
   const o = feed.order;
-  let html = o.cust + ' <b>' + o.nm + '</b> wants:<br>';
+  let html = '<span style="font-size:11px;letter-spacing:1px;color:#597553">STACK FEED · '+(feedBasketReady()?'2 · CHECKOUT':'1 · FILL YOUR BASKET')+'</span><br>'+o.cust + ' <b>' + o.nm + '</b> wants:<br>';
   o.items.forEach(it => {
     const got = basketFeedCount(it.name) > 0;
     html += (got ? '✅' : '☐') + ' ' + it.emoji + ' ' + it.name + ' · <b>' + it.price + '</b> 🪙<br>';
   });
-  html += feedBasketReady() ? '<span style="color:#2f8a52">🧺 Take it to the cashier!</span>' : '<span style="color:#8a6d3b">Walk to a shelf · tap Pick up</span>';
+  html += feedBasketReady() ? '<span style="color:#2f8a52">🧺 Take it to the bunny cashier!</span>' : '<span style="color:#8a6d3b">Walk to a shelf · tap Pick up</span>';
   if(el.innerHTML !== html) el.innerHTML = html;
   el.style.display = 'block';
 }
@@ -8638,6 +8645,7 @@ const ARCADE_POS = { x: -20.5, z: -15 };      // 🕹️ next door to the Cinema
 function arcadeDist() { return G.world === 'city' ? Math.hypot(player.pos.x - ARCADE_POS.x, player.pos.z - ARCADE_POS.z) : 999; }
 /* 🏡 Stack Realty — buy a move-in-ready house (great for a kid who'd rather drive than build one) */
 const HOME_MODELS = [
+  {id:'cottage',name:'🏡 Furnished Family Cottage',price:340,stories:2,hw:9,hd:10,wallH:7,garage:false,pool:false,color:0xE7C0C8,roofStyle:'pointed',finished:true,desc:'Kitchen • bathroom • upstairs bedroom • walk-up stairs • ready to decorate'},
   { id: 'ranch',   name: '🏡 Cozy Ranch',       price: 195, stories: 1, garage: true, pool: false, color: 0xEAD9B0, roofStyle: 'pointed', desc: '1 story • garage • front & back yard',
     westName: '🤠 Homesteader\'s Cabin', westColor: 0xC7A06A, westDesc: '1-story frontier cabin • covered porch • barn • front & back yard' },
   { id: 'modern',  name: '🏢 Modern Flat',      price: 300, stories: 2, garage: true, pool: false, color: 0xDDE3EA, roofStyle: 'flat',    desc: '2 stories • sleek flat roof • garage • yards',
@@ -8660,7 +8668,7 @@ function homeName(m) { return (G.world === 'west' && m.westName) ? m.westName : 
 function homeDesc(m) { return (G.world === 'west' && m.westDesc) ? m.westDesc : (G.world === 'city' && m.cityDesc) ? m.cityDesc : m.desc; }
 function homeLayout(ox, oz, m) {
   const stories = m.stories || 1, twoStory = stories > 1;
-  const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = sH * stories;
+  const hw = m.hw || (twoStory ? 6 : 5), hd = m.hd || 5, sH = 3, wallH = m.wallH || sH * stories;
   const garW = m.garage ? (m.garW || 4) : 0, garD = 5, garH = 2;   // 2-wide interior lane + room to pull in/out (a 1-wide garage trapped the car)
   const poolD = m.pool ? (m.poolD || 3) : 0;
   const backD = m.pool ? (poolD + 2) : 3, frontD = m.frontD || (m.columns ? 3 : 2), margin = 1;
@@ -8827,6 +8835,54 @@ function clearLotColumns(ox, oz, W, D) {
     for (let z = oz - 1; z <= oz + D; z++)
       for (let y = 0; y < 40; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
 }
+/* A five-tile staircase, with small visible treads and a smooth walking surface. */
+function placeWalkStairs(x,y,z,rot) {
+  const turns=Math.round((rot||0)/(Math.PI/2)), angle=turns*Math.PI/2;
+  const dx=Math.round(-Math.sin(angle)),dz=Math.round(-Math.cos(angle));
+  const cells=Array.from({length:5},(_,i)=>[x+dx*i,y,z+dz*i]);
+  if(cells.some(([x,y,z])=>blocks.has(key(x,y,z))||(typeof WORLD_R!=='undefined'&&(Math.abs(x)>=WORLD_R||Math.abs(z)>=WORLD_R))))return false;
+  for(let i=0;i<cells.length;i++)for(let cy=y;cy<y+Math.ceil((i+1)*.8+1.65);cy++)if(blocks.has(key(cells[i][0],cy,cells[i][2])))return false;
+  const mesh=new THREE.Group(),m=window.StackInteriorArt?StackInteriorArt.wood():mat(0xa1784e);
+  for(let i=0;i<15;i++){
+    const h=(i+1)*4/15;
+    const tread=box(mesh,.92,h,1/3+.012,0x997449,0,h/2,.5-(i+.5)/3);tread.material=m;
+  }
+  for(const side of[-.46,.46]){
+    const rail=box(mesh,.045,.045,Math.hypot(5,4),0x665139,side,2.72,-2);rail.rotation.x=Math.atan2(4,5);
+    for(let i=0;i<6;i++)box(mesh,.045,.72,.045,0x665139,side,i*.8+.36,.5-i);
+  }
+  if(window.StackInteriorArt)StackInteriorArt.merge(mesh);
+  mesh.position.set(x+.5,y,z+.5);mesh.rotation.y=angle;mesh.userData.stairAnchor={x,y,z,dx,dz};scene.add(mesh);
+  cells.forEach(([cx,cy,cz])=>blocks.set(key(cx,cy,cz),{mesh,type:'walkstairs',removable:true,rotY:angle}));return true;
+}
+function walkStairSurface(px,pz) {
+  for(let y=0;y<=9;y++){
+    const b=blocks.get(key(Math.floor(px),y,Math.floor(pz)));
+    if(!b||b.type!=='walkstairs')continue;
+    const a=b.mesh.userData.stairAnchor,vx=px-(a.x+.5),vz=pz-(a.z+.5);
+    const along=vx*a.dx+vz*a.dz+.5,across=vx*a.dz-vz*a.dx;
+    if(Math.abs(across)>.49||along<0||along>5)continue;
+    return a.y+along*4/5;
+  }return null;
+}
+function finishCottage(L,cell) {
+  const x=L.hx0,z=L.hz0,top=L.sH+1;
+  for(let xx=x+1;xx<L.hx1;xx++)for(let zz=z+1;zz<L.hz1;zz++)addFloorTile(xx,zz,xx>=x+6&&zz<z+4?'tilefloor':'woodfloor',xx>=x+6&&zz<z+4?4:9001,G.world);
+  // Kitchen at the back, a separate ground-floor bathroom, living room in front.
+  for(let h=0;h<3;h++)for(let zz=z+1;zz<=z+3;zz++)cell(x+5,h,zz,0xe3dbcb);
+  for(let h=0;h<3;h++)for(let xx=x+5;xx<L.hx1;xx++)if(xx!==x+6)cell(xx,h,z+4,0xe3dbcb);
+  placeDoor(x+6,0,z+4,0);
+  const put=(kind,xx,zz,yy=0,rot=0)=>placeFurnitureAt(kind,xx,zz,0,rot,yy);
+  put('stove',x+2,z+1);put('sink',x+3,z+1);put('groceries',x+4,z+1);
+  put('dtable',x+3,z+4);put('chair',x+3,z+5,0,Math.PI);
+  put('bathtub',x+7,z+1);put('toilet',x+7,z+3);put('sink',x+6,z+1);
+  put('couch',x+6,z+7,0,Math.PI);put('coffeetable',x+6,z+6);put('plant',x+7,z+7);
+  // Keep a two-tile hall alongside the stairwell, clear all the way to the bed.
+  put('bed',x+5,z+2,top);put('dresser',x+7,z+2,top);put('bookshelf',x+7,z+5,top);
+  put('lamp',x+4,z+2,top);put('chair',x+6,z+5,top);put('plant',x+7,z+7,top);
+  for(let h=top;h<L.wallH;h++)for(let zz=z+1;zz<=z+4;zz++)if(zz!==z+3)cell(x+3,h,zz,0xe9ddce);
+}
+
 function buildHome(ox, oz, m) {
   const L = homeLayout(ox, oz, m);
   // 🤠 In Country Western, the pre-built homes are weathered-wood frontier houses (1800s–early 1900s):
@@ -8837,7 +8893,7 @@ function buildHome(ox, oz, m) {
   const roofStyle = western ? 'pointed' : (m.roofStyle || 'pointed');
   const cell = (x, y, z, color, type) => {
     if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R || blocks.has(key(x, y, z))) return;
-    const mesh = new THREE.Mesh(blockGeo, blockMat(color));
+    const mesh = new THREE.Mesh(blockGeo,blockMat(color));
     mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
     addBlockMesh(x, y, z, null, type || 'placed', true, mesh);
     blocks.get(key(x, y, z)).color = color;
@@ -8862,12 +8918,13 @@ function buildHome(ox, oz, m) {
   placeDoor(L.doorX, 0, L.frontZ, 0);
   // ---- second floor + staircase ----
   if (L.twoStory) {
-    const stairX = L.hx0 + 1, stairZ = L.hz1 - 1;
+    const stairX = L.hx0 + 1, stairZ = L.hz1 - (m.finished?2:1);
     for (let x = L.hx0 + 1; x < L.hx1; x++) for (let z = L.hz0 + 1; z < L.hz1; z++) {
-      if (x === stairX && z <= stairZ && z >= stairZ - L.sH) continue;           // stairwell opening over the WHOLE run + landing (headroom to climb)
+      if (x === stairX && z <= stairZ && z >= stairZ - (m.finished?4:L.sH)) continue;           // clear above all five treads; keep the next tile as the landing
       cell(x, L.sH, z, trim);                                                    // 2nd-floor deck
     }
-    for (let s = 0; s < L.sH; s++) cell(stairX, s, stairZ - s, woodC);           // stairs up to the deck
+    if(m.finished)placeWalkStairs(stairX,0,stairZ,0);
+    else for (let s = 0; s < L.sH; s++) cell(stairX, s, stairZ - s, woodC);           // stairs up to the deck
   }
   // ---- grand columned portico (mansions) ----
   if (m.columns && !western) {
@@ -8935,6 +8992,7 @@ function buildHome(ox, oz, m) {
     placePoolWater(fcx, fcz);                                                    // water in the basin
     cell(fcx, 1, fcz, 0xBFC4CA); cell(fcx, 2, fcz, 0xA8AEB4); cell(fcx, 3, fcz, 0xCBB9A0);   // central pedestal + cap
   }
+  if(m.finished)finishCottage(L,cell);
   // ---- starter furniture (the grandest homes move in fully furnished) ----
   if (m.furnished) {
     const cx0 = L.hx0 + 1, cz0 = L.hz0 + 1;   // interior corner (ground floor)
@@ -8970,7 +9028,7 @@ function homeRefund(h) {
 /* 🏠 A bought home is sold as ONE WHOLE thing at Stack Realty — you can't pick its bricks out one
    by one (that was a free-bricks exploit: harvest the walls AND still sell the house for full price).
    Furniture & pets inside stay removable; only the house structure is locked. */
-const HOME_STRUCT = { placed: 1, roof: 1, autoroof: 1, window: 1, door: 1 };
+const HOME_STRUCT = { walkstairs: 1, placed: 1, roof: 1, autoroof: 1, window: 1, door: 1 };
 function inHomeFootprint(x, z) {
   if (!G.homes) return false;
   for (const h of G.homes) if (x >= h.x0 && x <= h.x1 && z >= h.z0 && z <= h.z1) return true;
@@ -8991,6 +9049,7 @@ function sellHome(i) {
   for (let x = h.x0; x <= h.x1; x++) for (let z = h.z0; z <= h.z1; z++)
     for (let y = 0; y <= h.y1; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
   if (typeof clearHomeDecorsIn === 'function') clearHomeDecorsIn(h.x0, h.x1, h.z0, h.z1 + 6);   // floor + driveway
+  for(let x=h.x0;x<=h.x1;x++)for(let z=h.z0;z<=h.z1;z++)removeFloorTile(x,z);
   G.homes.splice(i, 1);
   G.coins += refund; Sound.coin(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
   toast('🏡 Sold ' + (h.name || 'your home') + ' back — you got all ' + refund + ' 🪙 returned! Pick the one you really want. 😊', 5200);
@@ -9000,6 +9059,7 @@ function demolishHome(i) {
   for (let x = h.x0; x <= h.x1; x++) for (let z = h.z0; z <= h.z1; z++)
     for (let y = 0; y <= h.y1; y++) if (blocks.has(key(x, y, z))) removeBlockAt(x, y, z);
   if (typeof clearHomeDecorsIn === 'function') clearHomeDecorsIn(h.x0, h.x1, h.z0, h.z1 + 6);   // floor + driveway
+  for(let x=h.x0;x<=h.x1;x++)for(let z=h.z0;z<=h.z1;z++)removeFloorTile(x,z);
   G.homes.splice(i, 1);
   refreshHUD();
   toast('🧹 Home demolished — the lot is clear again. (No coins back, so keep reading & doing math to afford the next one!)', 4600);
@@ -9048,6 +9108,8 @@ function tryMoveHome(i, cx, cz) {
   if (typeof homeDecors !== 'undefined') homeDecors.forEach(d => {       // slide the marble floor / driveway along too
     if (d.cx >= h.x0 && d.cx <= h.x1 && d.cz >= h.z0 && d.cz <= h.z1) { d.mesh.position.x += dx; d.mesh.position.z += dz; d.cx += dx; d.cz += dz; }
   });
+  const movedFloors=[];floorTiles.forEach((t,k)=>{const [x,z]=k.split(',').map(Number);if(x>=h.x0&&x<=h.x1&&z>=h.z0&&z<=h.z1)movedFloors.push({x,z,type:t.type,variant:t.variant,world:t.world});});
+  movedFloors.forEach(t=>removeFloorTile(t.x,t.z));movedFloors.forEach(t=>addFloorTile(t.x+dx,t.z+dz,t.type,t.variant,t.world));
   h.x0 += dx; h.x1 += dx; h.z0 += dz; h.z1 += dz;
   movingHome = null;
   player.pos.set((h.x0 + h.x1) / 2 + 0.5, 0, h.z1 + 2.5); player.vel.set(0, 0, 0);   // step just out front
@@ -12641,9 +12703,10 @@ function makeFeedSkuMesh(name) {
       sphere(0x579448,x-0.065,0.13,0.025,[0.035,0.15,0.08]);
     }
   } else if(name==='Carrots') {
+    crate();
     for(const x of [-0.13,0,0.13]) {
-      piece(new THREE.ConeGeometry(0.063,0.35,12),0xe78330,x,0.21,0,null,[Math.PI,0,0]);
-      for(const dx of [-0.035,0.03]) sphere(0x4d8744,x+dx,0.43,0,[0.035,0.095,0.02]);
+      piece(new THREE.ConeGeometry(0.063,0.35,12),0xe78330,x,0.18,0,null,[Math.PI/2,0,0]);
+      for(const dx of [-0.035,0.03]) sphere(0x4d8744,x+dx,0.21,-.17,[0.035,0.02,0.095]);
     }
   } else if(name==='Apples') {
     crate(); for(const [x,z] of [[-0.13,-0.08],[0.12,-0.07],[-0.11,0.1],[0.13,0.1]]) {
@@ -12729,15 +12792,15 @@ function renderNearbyFeedShelf() {
 }
 
 function buildFeedStore(g) {
-  const WOOD = 0xEFE4CC, WOOD2 = 0xB5904F, TRIM = 0xF4ECD8, ROOF = 0x4f6b4a, GREEN = 0x3f7d3a;
+  const WOOD = 0xC4B79E, WOOD2 = 0xB5904F, TRIM = 0xF4ECD8, ROOF = 0x4f6b4a, GREEN = 0x3f7d3a;
   const S = new THREE.Group();
   const W = FEED_WALL, cx = FEED_POS.x, cz = FEED_POS.z;
-  const roomLight = new THREE.PointLight(0xfff6e7, 0.38, 11, 1); roomLight.position.set(cx,2.4,cz); S.add(roomLight);
+  const roomLight = new THREE.PointLight(0xffedd0, 0.32, 11, 1); roomLight.position.set(cx,2.4,cz); S.add(roomLight);
   const x0 = W.x0 + 0.5, x1 = W.x1 + 0.5, z0 = W.z0 + 0.5, z1 = W.z1 + 0.5;
   const bw = (W.x1 - W.x0) + 1, bd = (W.z1 - W.z0) + 1, h = 2.7;
   // 🪵 interior floor
   const shopFloor=box(S, bw - 0.2, 0.06, bd - 0.2, 0xC4A574, cx, 0.09, cz);shopFloor.material=feedSurface('floor');
-  const shelfWood=feedSurface('wood');
+  const shelfWood=window.StackInteriorArt?StackInteriorArt.wood():feedSurface('wood');
   // walls (south wall split around the door)
   box(S, 0.22, h, bd, WOOD, x0, h / 2, cz);                 // west
   box(S, 0.22, h, bd, WOOD, x1, h / 2, cz);                 // east
@@ -12775,28 +12838,16 @@ function buildFeedStore(g) {
     box(S, 0.12, 1.25, 0.12, 0x6b4a2c, sx, 0.7, sz + 1.15);
   };
   shelf(3.5, -17); shelf(9.5, -17);
-  // cashier counter (cells 8-9, z=-13)
-  box(S, 1.8, 0.9, 0.7, 0x8a5a34, 8.5, 0.45, -12.5);
-  box(S, 1.7, 0.08, 0.7, 0xC4A574, 8.5, 0.92, -12.5);
-  box(S, 0.34, 0.28, 0.28, 0x2c2c2c, 8.95, 1.1, -12.45);   // register
-  // farmer at the counter
-  box(S, 0.34, 0.55, 0.24, 0x3f7d3a, 8.15, 1.2, -12.7);
-  box(S, 0.28, 0.28, 0.28, 0xFFD9B3, 8.15, 1.62, -12.7);
-  box(S, 0.32, 0.12, 0.32, 0x6b4a2c, 8.15, 1.78, -12.7);
+  // The detailed counter uses the same collision footprint as the earlier store.
+  if(window.StackInteriorArt)S.add(StackInteriorArt.store());
   // chalkboard (order)
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 160;
   const ctx = cv.getContext('2d');
   const tex = new THREE.CanvasTexture(cv);
   const board = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.06), new THREE.MeshBasicMaterial({ map: tex }));
-  board.position.set(4.4, 1.55, z0 + 0.18); S.add(board);
+  board.position.set(4.15, 1.9, z0 + 0.18); S.add(board);
   feedBoard = { cv: cv, ctx: ctx, tex: tex };
   paintFeedBoard();
-  // hanging lanterns
-  [[4.5, -15], [8.2, -15]].forEach(([lx, lz]) => {
-    box(S, 0.06, 0.5, 0.06, 0x5e3f24, lx, 2.35, lz);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshLambertMaterial({ color: 0xFFE08A, emissive: 0xC9A227 }));
-    lamp.position.set(lx, 2.05, lz); S.add(lamp);
-  });
   // silo still marks the shop from the road
   const silo = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 4.6, 16), mat(0xC4C9CF)); silo.position.set(x0 - 1.15, 2.3, z0 - 0.4); S.add(silo);
   const dome = new THREE.Mesh(new THREE.SphereGeometry(0.72, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x8a8f98)); dome.position.set(x0 - 1.15, 4.6, z0 - 0.4); S.add(dome);
@@ -12832,19 +12883,30 @@ function buildFeedStore(g) {
     for(const yy of [1.59,2.39])box(S,.06,.07,1.8,0xf2eddb,face,yy,-17);
     for(const zz of [-17.86,-17,-16.14])box(S,.06,.77,.05,0xf2eddb,face,1.99,zz);
   }
-  signOn(S,'FARM PANTRY','Fresh food & everyday supplies',0x3c765e,2.8,.5,6.5,2.1,z0+.17);
-  signOn(S,'CHECKOUT','Bring your basket here',0x3c765e,1.65,.38,8.5,.58,-12.91);
+
+
   // Clone cached materials before lifting their shaded sides; never recolor other buildings.
   const lifted=new Map();S.traverse(m=>{if(!m.isMesh||Array.isArray(m.material)||!m.material.isMeshLambertMaterial||m.material.map)return;
     const key=m.material.uuid;if(!lifted.has(key)){const fresh=m.material.clone();fresh.color.multiplyScalar(.68);fresh.emissive.copy(fresh.color);fresh.emissiveIntensity=Math.max(fresh.emissiveIntensity,.12);lifted.set(key,fresh);}m.material=lifted.get(key);
   });
   S.position.set(0, 0, 0);
   g.add(S);
+  const cashierGeneration=++feedCashierGeneration;
+  const placeCashier=d=>{d.group.position.set(8.15,.45,-11.88);d.group.rotation.y=Math.PI;d.group.scale.multiplyScalar(.82);S.add(d.group);return d;};
+  feedCashier=placeCashier(AVATARS.find(a=>a.id==='bunny').build());
+  feedCashierLoad=()=>parseAvatarModel('bunny').then(d=>{
+    if(!d||!S.parent||cashierGeneration!==feedCashierGeneration)return;
+    if(feedCashier)S.remove(feedCashier.group);feedCashier=placeCashier(d);
+    if(d.idleAction)d.idleAction.reset().play();
+  }).catch(()=>{});
 }
+let feedCashier=null,feedCashierTime=0,feedCashierGeneration=0,feedCashierLoad=null;
 function updateFeedGoods(now) {
   if (G.world !== 'meadow') { const el = $('feedListHud'); if (el) el.style.display = 'none'; return; }
   if (!feedGoods.length) return;
   const inF = insideFeedStore(player.pos.x, player.pos.z);
+  if(inF&&feedCashierLoad){const load=feedCashierLoad;feedCashierLoad=null;load();}
+  if(inF&&feedCashier&&feedCashier.mixer)feedCashier.mixer.update(Math.min(.05,Math.max(0,(now-feedCashierTime)/1000)));feedCashierTime=now;
   document.body.classList.toggle('feedInside',inF);
   if (inF && !_wasInFeed) {
     if (!feed || !feed.shopping || !feed.order) beginFeedShopping(true);
@@ -13432,6 +13494,8 @@ function spawnForWorld(id) {
 }
 function underRoofAt(x, z) {
   if (typeof insideFeedStore === 'function' && insideFeedStore(x, z)) return true;   // 🌾 walk-in shop
+  // A prefab roof is saved as one mesh at its corner, so column checks miss upstairs rooms.
+  for(const h of G.homes||[]){const model=HOME_MODELS.find(m=>m.id===h.id);if(!model)continue;const L=homeLayout(h.x0,h.z0,model);if(x>L.hx0&&x<L.hx1+1&&z>L.hz0&&z<L.hz1+1&&player.pos.y<L.wallH)return true;}
   const hx = Math.floor(x), hz = Math.floor(z);
   const y0 = Math.floor((player && player.pos && player.pos.y) || 0);
   for (let y = y0 + 2; y <= 10; y++) if (blocks.has(key(hx, y, hz))) return true;
@@ -13447,7 +13511,7 @@ function nearestBed(maxDist) {
   let best = null, bestDist = maxDist;
   const seen = new Set();
   blocks.forEach(b => {
-    if (b.type !== 'bed' || seen.has(b.mesh)) return;
+    if (b.type !== 'bed' || Math.abs(player.pos.y-b.mesh.position.y)>.9 || seen.has(b.mesh)) return;
     seen.add(b.mesh);
     const dist = Math.hypot(player.pos.x - b.mesh.position.x, player.pos.z - b.mesh.position.z);
     if (dist < bestDist) { best = b; bestDist = dist; }
@@ -13460,7 +13524,7 @@ function nearestChair(maxDist) {
   let best = null, bestDist = maxDist;
   const seen = new Set();
   blocks.forEach(b => {
-    if (b.type !== 'chair' || seen.has(b.mesh)) return;
+    if (b.type !== 'chair' || Math.abs(player.pos.y-b.mesh.position.y)>.9 || seen.has(b.mesh)) return;
     seen.add(b.mesh);
     const dist = Math.hypot(player.pos.x - b.mesh.position.x, player.pos.z - b.mesh.position.z);
     if (dist < bestDist) { best = b; bestDist = dist; }
@@ -13471,7 +13535,7 @@ function toggleSit() {
   if (player.sittingChair) {
     const ch = player.sittingChair;
     player.sittingChair = null;
-    player.pos.set(ch.mesh.position.x, 0, ch.mesh.position.z + 1.1);   // stand up beside it
+    player.pos.set(ch.mesh.position.x, ch.mesh.position.y, ch.mesh.position.z + 1.1);   // stand up beside it
     player.vel.set(0, 0, 0);
     toast('🧍 Up you get!', 1100);
     return;
@@ -13488,7 +13552,7 @@ function toggleBedRest() {
   if (player.restingBed) {
     const bed = player.restingBed;
     player.restingBed = null;
-    player.pos.set(bed.mesh.position.x + 1.5, 0, bed.mesh.position.z);
+    player.pos.set(bed.mesh.position.x + 1.5, bed.mesh.position.y, bed.mesh.position.z);
     player.vel.set(0, 0, 0);
     toast('All rested! Press L near the bed to lie down again.');
     return;
@@ -13903,16 +13967,23 @@ function playerBlocked() {
   return false;
 }
 function collideAxis(axis, delta) {
+  const previousY=player.pos.y;
   player.pos[axis] += delta;
+  const stairY=!player.driving?walkStairSurface(player.pos.x,player.pos.z):null;
+  if(stairY!=null&&player.vel.y<=.2&&((axis==='y'&&delta<=0&&previousY>=stairY-.35&&player.pos.y<=stairY)||(axis!=='y'&&Math.abs(previousY-stairY)<.35))){player.pos.y=stairY;player.vel.y=0;player.onGround=true;}
   if (playerBlocked()) {
     // auto-step: when walking into a single-block ledge (a stair, a curb, your own block)
     // and you were on the ground, hop up onto it instead of stopping — easy stairs!
     if (axis !== 'y' && !player.driving && player._wasGrounded && player.vel.y <= 0.2) {
-      player.pos.y += 1.02;
-      if (!playerBlocked()) { player.onGround = true; player.vel.y = 0; return; }   // stepped up cleanly
-      player.pos.y -= 1.02;                                                          // no headroom → block normally
+      const stepBase=player.pos.y;
+      for(const rise of [.12,.26,.5,1.02]) {
+        player.pos.y=stepBase+rise;
+        if (!playerBlocked()) { player.onGround = true; player.vel.y = 0; return; }
+      }
+      player.pos.y=stepBase; // no headroom: keep the player outside the obstacle
     }
     player.pos[axis] -= delta;
+    player.pos.y=previousY;
     if (axis === 'y') {
       if (delta < 0) player.onGround = true;
       player.vel.y = 0;
@@ -14360,15 +14431,15 @@ function updatePlayer(dt) {
       if (bedProps) bedProps.visible = false;
     } else {
       player.vel.set(0, 0, 0);
-      player.pos.set(bed.mesh.position.x, 0.5, bed.mesh.position.z);
+      player.pos.set(bed.mesh.position.x, bed.mesh.position.y+0.5, bed.mesh.position.z);
       const av = player.avatar;
       // lie on the back ON TOP of the bed, fully visible, head on the pillow (the -Z end), face up
-      av.position.set(bed.mesh.position.x, 0.56, bed.mesh.position.z - 0.05);
+      av.position.set(bed.mesh.position.x, bed.mesh.position.y+0.56, bed.mesh.position.z - 0.05);
       av.rotation.set(-Math.PI / 2, 0, 0);
       av.visible = true;
       const props = ensureBedProps();          // blanket over the legs + sleepy Z's above the head
       props.visible = true;
-      props.position.set(bed.mesh.position.x, 0.58, bed.mesh.position.z);
+      props.position.set(bed.mesh.position.x, bed.mesh.position.y+0.58, bed.mesh.position.z);
       props.rotation.y = bed.mesh.rotation.y;
       const tt = performance.now() / 1000;
       props.userData.zs.forEach((sp, i) => {
@@ -14377,8 +14448,8 @@ function updatePlayer(dt) {
         sp.material.opacity = Math.max(0, 1 - ph);
         sp.scale.setScalar(0.26 + i * 0.05 + ph * 0.12);
       });
-      camera.position.lerp(new THREE.Vector3(bed.mesh.position.x + 3.2, 3.1, bed.mesh.position.z + 3.2), 0.25);
-      camera.lookAt(bed.mesh.position.x, 0.55, bed.mesh.position.z);
+      camera.position.lerp(new THREE.Vector3(bed.mesh.position.x + 3.2, bed.mesh.position.y+3.1, bed.mesh.position.z + 3.2), 0.25);
+      camera.lookAt(bed.mesh.position.x, bed.mesh.position.y+0.55, bed.mesh.position.z);
       return;
     }
   }
@@ -14389,17 +14460,17 @@ function updatePlayer(dt) {
     if (!stillPlaced) { player.sittingChair = null; }
     else {
       player.vel.set(0, 0, 0);
-      player.pos.set(ch.mesh.position.x, 0, ch.mesh.position.z);
+      player.pos.set(ch.mesh.position.x, ch.mesh.position.y, ch.mesh.position.z);
       const av = player.avatar;
-      av.position.set(ch.mesh.position.x, 0.46, ch.mesh.position.z + 0.06);   // perched on the seat
+      av.position.set(ch.mesh.position.x, ch.mesh.position.y+0.46, ch.mesh.position.z + 0.06);   // perched on the seat
       av.rotation.set(0, ch.mesh.rotation.y, 0);                              // face the way the chair faces
       av.visible = true;
       if (player.avatarData && player.avatarData.legs && !player.avatarData.quad) {
         player.avatarData.legs.forEach(l => { l.rotation.x = -1.3; });        // knees forward (bipeds)
         if (player.avatarData.arms) player.avatarData.arms.forEach(a => { a.rotation.x = -0.4; });
       }
-      camera.position.lerp(new THREE.Vector3(ch.mesh.position.x + 2.4, 2.3, ch.mesh.position.z + 2.4), 0.2);
-      camera.lookAt(ch.mesh.position.x, 0.7, ch.mesh.position.z);
+      camera.position.lerp(new THREE.Vector3(ch.mesh.position.x + 2.4, ch.mesh.position.y+2.3, ch.mesh.position.z + 2.4), 0.2);
+      camera.lookAt(ch.mesh.position.x, ch.mesh.position.y+0.7, ch.mesh.position.z);
       return;
     }
   }
@@ -14697,9 +14768,11 @@ function updatePlayer(dt) {
 
   // camera
   const headY = player.pos.y + 1.55;
-  const shopFov=insideFeedStore(player.pos.x,player.pos.z)&&innerHeight>innerWidth?90:70;
-  if(camera.fov!==shopFov){camera.fov=shopFov;camera.updateProjectionMatrix();}
   const inside = underRoofAt(player.pos.x, player.pos.z);
+  const shopFov=(insideFeedStore(player.pos.x,player.pos.z)||inside)&&innerHeight>innerWidth?90:70;
+  if(camera.fov!==shopFov){camera.fov=shopFov;camera.updateProjectionMatrix();}
+  const homeIndex=inside?homeLotAt(player.pos.x,player.pos.z):-1,homeHint=$('hudShelter');
+  if(homeHint){homeHint.style.display=homeIndex>=0?'block':'none';if(homeIndex>=0)homeHint.textContent=player.pos.y>=3.5?'🏡 Your home · Upstairs':'🏡 Your home · Ground floor';}
   // Leave auto-interior first-person when you walk outdoors (must run even while firstPerson)
   if (G._autoInterior && G.firstPerson && !inside && !G.birdsEye) {
     G.firstPerson = false; G._autoInterior = false;
@@ -14982,8 +15055,10 @@ function placeSelectedAt(x, z, blockY) {
   if (FLOOR_TYPES.includes(slot)) return layFloor(slot, x, z);   // 🪵 flooring fills the whole room as its own under-furniture layer
   if (FURNITURE_TYPES.includes(slot)) {
     if (G.furniture[slot] < 1) { toast('No ' + slot + ' in your 🎒 — buy one at 🏚️ Stack Barn!', 2200); return false; }
-    if (blocks.has(key(x, 0, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
-    if (cellOverlapsPlayer(x, 0, z)) { toast('🙂 Step back a little first!', 1400); return false; }
+    const fy=blockY==null?Math.round(player.pos.y):blockY;
+    if (fy<0||fy>9)return false;
+    if (blocks.has(key(x, fy, z))) { toast('🙂 Something\'s there already — turn a little!', 1600); return false; }
+    if (cellOverlapsPlayer(x, fy, z)) { toast('🙂 Step back a little first!', 1400); return false; }
     let fv = slot === 'couch' ? G.couchVariant : slot === 'chair' ? G.chairVariant : slot === 'bed' ? G.bedVariant : slot === 'dtable' ? G.dtableVariant : null;
     if (fv == null && FLOOR_COLORS[slot]) fv = G[slot + 'Variant'] || 0;   // 🪵 flooring uses the chosen floor colour
     if (fv == null) {                                  // random-color items pick their color now
@@ -14993,7 +15068,7 @@ function placeSelectedAt(x, z, blockY) {
       else fv = 0;
     }
     fv = (fv % FURN_FINISH_MUL) + (G.furnFinish || 0) * FURN_FINISH_MUL;   // stamp the chosen town finish
-    placeFurnitureAt(slot, x, z, fv, facePlayerRotation(x, z)); G.furniture[slot] -= 1; Sound.place(); refreshHUD();
+    if(!placeFurnitureAt(slot, x, z, fv, facePlayerRotation(x, z),fy)){toast('Stairs need five clear tiles and space above your head.',2400);return false;} G.furniture[slot] -= 1; Sound.place(); refreshHUD();
     toast('✅ Placed! Tap it to turn it 🔄', 1800); return true;
   }
   if (slot === 'food') {
@@ -16084,7 +16159,7 @@ function eatSnack(kind) {
   toast(msg, 2500);
 }
 /* ---- furniture: a chair or table on the grid cell in front of you ---- */
-const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'aviary', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain', 'stairs', 'elevator', 'trophycup', 'plushie', 'neonsign', 'arcadecab'];
+const FURNITURE_TYPES = ['chair', 'table', 'dtable', 'bed', 'couch', 'coffeetable', 'dresser', 'tv', 'bookshelf', 'plant', 'rug', 'lamp', 'fence', 'flower', 'stove', 'sink', 'pot', 'groceries', 'bathtub', 'toilet', 'shower', 'garden', 'bush', 'petbed', 'foodbowl', 'waterbowl', 'litterbox', 'cattree', 'scratchpost', 'birdcage', 'aviary', 'birdfood', 'carpet', 'woodfloor', 'tilefloor', 'umbrella', 'lounger', 'flag', 'bunting', 'bbq', 'hotdog', 'sausage', 'ribs', 'corn', 'sparkler', 'fireworks', 'gem', 'swingset', 'seesaw', 'slide', 'springer', 'roundabout', 'sandbox', 'climber', 'sandtoys', 'sandmolds', 'rccrane', 'rcdump', 'agilityramp', 'dogtunnel', 'jumphoop', 'weavepoles', 'hydrant', 'parkbench', 'fountain', 'stairs', 'walkstairs', 'elevator', 'trophycup', 'plushie', 'neonsign', 'arcadecab'];
 // 🪜🛗 how tall ONE floor is (in blocks). Stairs/elevator lift you between floors this far apart.
 const LIFT_FLOOR_H = 3, LIFT_MAX_Y = 9;
 /* a window is a wall block — it fills a cell at any height so it fits between blocks */
@@ -16302,6 +16377,8 @@ function buildFloorTileMesh(type, variant, world) {
   const c = pal[(variant || 0) % pal.length];
   if (type === 'carpet') {
     box(g, 0.99, 0.045, 0.99, c, 0, 0.022, 0); box(g, 0.86, 0.05, 0.86, shade(c, 1.12), 0, 0.028, 0);
+  } else if (type === 'woodfloor' && variant===9001 && window.StackInteriorArt) {
+    const planks=box(g,.995,.045,.995,0xb99878,0,.022,0);planks.material=StackInteriorArt.wood();
   } else if (type === 'woodfloor') {
     box(g, 0.99, 0.045, 0.99, c, 0, 0.022, 0);
     for (let i = 0; i < 4; i++) box(g, 0.99, 0.05, 0.02, shade(c, 0.76), 0, 0.03, -0.36 + i * 0.24);   // plank seams
@@ -17070,6 +17147,16 @@ function buildFurnitureMesh(type, variant) {
     [[-0.4, -0.24], [0.4, -0.24], [-0.4, 0.24], [0.4, 0.24]].forEach(([x, z]) =>
       box(g, 0.09, 0.12, 0.09, 0xDADDE2, x, 0.06, z));                // feet
     box(g, 0.06, 0.22, 0.06, 0xB0B4BA, 0.42, 0.5, 0);                // faucet
+  } else if (type === 'toilet') {
+    box(g,.36,.29,.42,0xf4f1e8,0,.145,.08);
+    const bowl=new THREE.Mesh(new THREE.SphereGeometry(.28,14,10),mat(0xfaf9f3));
+    bowl.scale.set(1,.55,1.2);bowl.position.set(0,.34,.06);g.add(bowl);
+    const seat=new THREE.Mesh(new THREE.TorusGeometry(.205,.04,6,18),mat(0xffffff));
+    seat.rotation.x=Math.PI/2;seat.scale.y=1.2;seat.position.set(0,.43,.07);g.add(seat);
+    box(g,.43,.49,.18,0xfaf9f3,0,.50,-.25);
+    box(g,.46,.055,.21,0xffffff,0,.765,-.25);
+    box(g,.07,.035,.025,0xb8c3c6,.14,.66,-.145);
+    g.userData.customFinish=true;
   } else if (type === 'shower') {
     box(g, 0.72, 0.08, 0.72, 0xD8E8F0, 0, 0.04, 0);                   // tray
     box(g, 0.06, 0.55, 0.7, 0xBFE3F5, 0.34, 0.5, 0);                  // glass panel
@@ -17125,16 +17212,18 @@ function buildFurnitureMesh(type, variant) {
   if (!g.userData.customFinish) applyFurnFinish(g, finish);   // pieces with a bespoke town design (e.g. stoves) skip the generic retint
   return g;
 }
-function placeFurnitureAt(type, x, z, variant, rotY) {
-  if (blocks.has(key(x, 0, z))) return false;
+function placeFurnitureAt(type, x, z, variant, rotY, floorY=0) {
+  floorY=Number.isFinite(floorY)?Math.max(0,Math.round(floorY)):0;
+  if(type==='walkstairs')return placeWalkStairs(x,floorY,z,rotY);
+  if (blocks.has(key(x, floorY, z))) return false;
   if (type === 'flower' && variant == null) variant = Math.floor(Math.random() * FLOWER_COLORS.length);
   if (type === 'rug' && variant == null) variant = Math.floor(Math.random() * RUG_COLORS.length);   // a fresh rug color each time
   if (type === 'petbed' && variant == null) variant = Math.floor(Math.random() * PETBED_COLORS.length);
   const mesh = buildFurnitureMesh(type, variant);
-  mesh.position.set(x + 0.5, 0, z + 0.5);
+  mesh.position.set(x + 0.5, floorY, z + 0.5);
   mesh.rotation.y = rotY || 0;
   scene.add(mesh);
-  blocks.set(key(x, 0, z), { mesh, type, removable: true, variant, rotY: rotY || 0 });
+  blocks.set(key(x, floorY, z), { mesh, type, removable: true, variant, rotY: rotY || 0 });
   if (type === 'stove' && mesh.userData.ovenGlow) ovenGlows.push(mesh.userData.ovenGlow);
   if (type === 'sparkler' && mesh.userData.sparks) sparkleProps.push(mesh);
   if (type === 'fireworks') fireworkLaunchers.push({ mesh, t: 1.5 + Math.random() * 2 });
@@ -18941,7 +19030,7 @@ $w('selfieAngleBtn').onclick = () => {
   i = (i + 1) % seq.length;
   G.selfieAngle = seq[i].a; $('selfieAngleBtn').textContent = seq[i].l;
 };
-const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', aviary: '🏯 Grand Aviary', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain', stairs: '🪜 Staircase', elevator: '🛗 Elevator' };
+const SLOT_TAGS = { block: '🧱 Build Block', paint: '🎨 Wall Paint', power: '⚡ Power Block', door: '🚪 Door', chair: '🪑 Chair', table: '🍽️ Table', dtable: '🍽️ Dining Table', plates: '🍴 Place Setting', bed: '🛏️ Bed', couch: '🛋️ Couch', cat: '🐱 Cat', dog: '🐶 Dog', fish: '🐠 Fish', coffeetable: '🪵 Coffee Table', dresser: '🗄️ Dresser', tv: '📺 TV', bookshelf: '📚 Bookshelf', plant: '🪴 Plant', rug: '🟫 Rug', lamp: '💡 Lamp', fence: '🚧 Fence', flower: '🌷 Flower', window: '🪟 Window', roof: '🔺 Roof Tile', stove: '🔥 Stove & Oven', sink: '🚰 Sink', pot: '🍲 Pot', pan: '🍳 Frying Pan', bacon: '🥓 Bacon', pie: '🥧 Pie', groceries: '🛒 Groceries', bathtub: '🛁 Bathtub', toilet: '🚽 Toilet', shower: '🚿 Shower', garden: '🌱 Garden', bush: '🌳 Bush', pool: '🏊 Splash Pool', poolfam: '🏊 Family Pool', poolslide: '🛝 Splash & Slide Pool', poolmega: '🌊 Mega Pool', food: '🍎 Apple', petbed: '🛏️ Pet Bed', foodbowl: '🥣 Food Bowl', waterbowl: '💧 Water Bowl', litterbox: '🧺 Litter Box', cattree: '🐈 Cat Tree', scratchpost: '🐾 Scratching Post', bird: '🦜 Bird', birdcage: '🪺 Bird Cage', aviary: '🏯 Grand Aviary', birdfood: '🌰 Bird Feeder', carpet: '🟥 Carpet Floor', woodfloor: '🟫 Wood Floor', tilefloor: '🔲 Tile Floor', umbrella: '⛱️ Patio Umbrella', lounger: '🏖️ Sun Lounger', petfood: '🥫 Pet Food', flag: '🇺🇸 USA Flag', bunting: '🎏 Bunting', bbq: '🍖 BBQ Grill', hotdog: '🌭 Hot Dog', sausage: '🥩 Sausages', ribs: '🍖 BBQ Ribs', corn: '🌽 Corn', sparkler: '🎇 Sparkler', fireworks: '🎆 Fireworks', gem: '💎 Pom-pom Trophy', swingset: '🤸 Swing Set', seesaw: '⚖️ See-Saw', slide: '🛝 Curly Slide', springer: '🐴 Spring Rider', roundabout: '🎠 Merry-Go-Round', sandbox: '🏖️ Sandbox', climber: '🧗 Climbing Frame', sandtoys: '🪣 Bucket & Spade', sandmolds: '🏰 Sand Molds', rccrane: '🏗️ RC Crane', rcdump: '🚚 RC Dump Truck', agilityramp: '📐 Agility Ramp', dogtunnel: '🕳️ Crawl Tunnel', jumphoop: '⭕ Jump Hoop', weavepoles: '〰️ Weave Poles', hydrant: '🚒 Fire Hydrant', parkbench: '🪑 Park Bench', fountain: '⛲ Park Fountain', stairs: '🪜 Staircase', walkstairs: '🪜 Walk-up Stair Flight', elevator: '🛗 Elevator' };
 let placingTagTimer = null;
 function selectSlot(slot, quiet) {
   G.selectedSlot = slot;
@@ -19130,6 +19219,7 @@ function renderInv() {
     ['🥓', 'Bacon', G.furniture.bacon, 'bacon'],
     ['🥧', 'Pies', G.furniture.pie, 'pie'],
     ['🛒', 'Grocery Baskets', G.furniture.groceries, 'groceries'],
+    ['🚽', 'Toilets', G.furniture.toilet || 0, 'toilet'],
     ['🛁', 'Bathtubs', G.furniture.bathtub, 'bathtub'],
     ['🚿', 'Showers', G.furniture.shower, 'shower'],
     ['🌱', 'Garden Planters', G.furniture.garden, 'garden'],
@@ -19157,6 +19247,7 @@ function renderInv() {
     ['⛲', 'Park Fountains', G.furniture.fountain, 'fountain'],
     ['🧗', 'Climbing Frames', G.furniture.climber, 'climber'],
     ['🪜', 'Staircases', G.furniture.stairs, 'stairs'],
+    ['🪜', 'Walk-up Stair Flights', G.furniture.walkstairs, 'walkstairs'],
     ['🛗', 'Elevators', G.furniture.elevator, 'elevator'],
     ['🍎', 'Apples', G.furniture.food, 'food']
   ];
@@ -21530,7 +21621,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=279').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=280').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
