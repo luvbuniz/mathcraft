@@ -10675,7 +10675,7 @@ const Narrator = {
     catch (e) { return speakWord(word); }
   },
   async introLine(i) {
-    try { await this.playFile('audio/intro/kinglion-' + i + '.mp3'); return true; }
+    try { await this.playFile('audio/intro/kinglion-' + i + '.mp3?v=279'); return true; }
     catch (e) { if (leoIntro) toast('The voice could not play. You can still read the speech bubble.', 2200); return false; }
   }
 };
