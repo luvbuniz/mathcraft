@@ -1278,6 +1278,13 @@
     <div id="hudShelter">🏗️ Not enclosed yet</div>
   </div>
   <div id="questHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(181,131,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(12px,2.2vw,15px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;"></div>
+  <!-- 🏁 County Fair Speedway — live race HUD (lap/place/speed + the nitro button) -->
+  <div id="raceHud" style="display:none; position:absolute; top:108px; left:50%; transform:translateX(-50%); background:rgba(138,58,42,.94); color:#fff; font-weight:bold; padding:8px 14px; border-radius:12px; font-size:clamp(13px,2.4vw,17px); max-width:92vw; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.2); z-index:24; pointer-events:none;">
+    <div id="raceHudLine">🏁 Get ready…</div>
+    <button id="nitroBtn" title="Spend a nitro for a burst of speed (Space / N)" style="display:none; pointer-events:auto; margin-top:6px; font-weight:bold; font-size:clamp(13px,2.2vw,16px); padding:7px 15px; border-radius:12px; color:#5a3c00; background:#F5C451; border:none; box-shadow:0 3px 0 rgba(0,0,0,.2); cursor:pointer;">💨 NITRO ×0</button>
+  </div>
+  <!-- the rival board that ticks over while the race runs -->
+  <div id="raceLiveHud" style="display:none; position:absolute; top:108px; right:10px; background:rgba(255,255,255,.9); color:#5a3c00; font-weight:bold; padding:8px 12px; border-radius:12px; font-size:clamp(11px,2vw,14px); line-height:1.5; text-align:left; box-shadow:0 3px 0 rgba(0,0,0,.15); z-index:24; pointer-events:none;"></div>
   <button id="leaveBtn" type="button" title="Save & go home">🏠 Leave</button>
   <button id="menuBtn" title="Menu">☰</button>
   <button id="soundBtn" title="Sound on/off">🔊</button>
@@ -1595,6 +1602,17 @@
     <div id="fairBody" style="font-size:clamp(15px,2.8vw,19px); color:#34495e; font-weight:bold; background:#FDF2E2; border:3px solid #E8B98A; border-radius:14px; padding:11px 13px; margin-bottom:8px; line-height:1.45"></div>
     <div id="fairPad" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center"></div>
     <div id="fairMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ================= ⛽ FAIRGROUND PIT STOP (buy nitro — money math) POPUP ================= -->
+<div class="popup" id="gasPopup">
+  <div class="popupCard" style="text-align:center; width:min(460px,95vw)">
+    <div style="display:flex; justify-content:flex-end"><button class="closeX" id="gasClose" title="Close" aria-label="Close">✕</button></div>
+    <h2 id="gasTitle" style="color:#5a6a80; margin:2px 0 4px; font-size:clamp(20px,4vw,28px)">⛽ Fairground Pit Stop</h2>
+    <div id="gasBody" style="font-size:clamp(15px,2.8vw,19px); color:#34495e; font-weight:bold; background:#EEF3F8; border:3px solid #B8C9DC; border-radius:14px; padding:11px 13px; margin-bottom:8px; line-height:1.45"></div>
+    <div id="gasPad" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center"></div>
+    <div id="gasMsg" style="min-height:18px; font-weight:700; margin-top:8px"></div>
   </div>
 </div>
 
@@ -2101,7 +2119,7 @@
       btn.setAttribute('data-world', s.world || 'meadow');
       btn.setAttribute('data-grade', String(s.grade || 2));
       var safe = String(s.name).replace(/[&<>"]/g, function (c) {
-        return c === '&' ? '&' : c === '<' ? '<' : c === '>' ? '>' : '"';
+        return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&quot;';
       });
       btn.innerHTML = '<span class="slotInfo"><span class="slotName">🌱 ' + safe + '</span><span class="slotMeta">Math Meadow • Grade ' + (s.grade || 2) + '</span></span>';
       var row = document.createElement('div');
@@ -2109,6 +2127,20 @@
       row.appendChild(btn);
       list.appendChild(row);
     });
+  }
+  // find the child's real save record: 'stackadooSave:<name>' for the meadow,
+  // 'stackadooSave:<name>::<world>' everywhere else (see saveKey() in the game script).
+  function bootFindSave(name, world) {
+    var keys = ['stackadooSave:' + name + '::' + world, 'stackadooSave:' + name];
+    for (var i = 0; i < keys.length; i++) {
+      try {
+        var raw = localStorage.getItem(keys[i]);
+        if (!raw) continue;
+        var s = JSON.parse(raw);
+        if (s && typeof s === 'object') { if (!s.name) s.name = name; return s; }
+      } catch (e) {}
+    }
+    return null;
   }
   function bootPlay(name, world, grade) {
     name = String(name || 'Player').replace(/^\s+|\s+$/g, '');
@@ -2127,7 +2159,10 @@
     var hud = el('hud'); if (hud) hud.style.display = 'block';
     try {
       if (typeof restoreGame === 'function') {
-        restoreGame({ name: name, world: world, grade: grade, blocks: 16, fromProfile: true });
+        // Load the REAL saved game. Handing restoreGame() a bare {name,world,grade} row
+        // resets coins/blocks/homes to nothing and the next auto-save writes that blank
+        // state over the child's world — which is how saved games "disappeared".
+        restoreGame(bootFindSave(name, world) || { name: name, world: world, grade: grade, blocks: 16, fromProfile: true });
         return;
       }
     } catch (e) { console.error('boot restoreGame', e); }
@@ -2141,6 +2176,10 @@
     if (!t || !t.closest) return;
     var btn = t.closest('#savedList .loadBtn');
     if (!btn) return;
+    // The game script wires each row's own onclick with the full save object. When that
+    // is present let it handle the click — this capture-phase fallback exists only for
+    // rows painted before/without the game script.
+    if (typeof btn.onclick === 'function') return;
     e.preventDefault();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     else e.stopPropagation();
@@ -5406,7 +5445,7 @@ function restoreGame(s) {
   resetGameState();
   G.playerName = s.name || 'Player';
   G.world = WORLDS[s.world] ? s.world : 'meadow';
-  G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex;
+  G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex || 0;
   G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = s.homes || [];
   G.npcHomes = s.npcHomes || {};               // 🏠 which friend lives in which of the kid's houses
@@ -13603,6 +13642,11 @@ function endFetch() {
 
 function setAvatar(index) {
   if (player.avatar) scene.remove(player.avatar);
+  // Old saves (and profile-only rows) can carry no avatarIndex at all. AVATARS[undefined]
+  // is undefined, and this function only has a `finally`, so the TypeError escaped into
+  // startGame's catch and skipped everything after it — HUD, NPCs, G.running. Fall back.
+  if (!AVATARS[index] || typeof AVATARS[index].build !== 'function') index = 0;
+  G.avatarIndex = index;
   ROUND_AV = true;                         // build a soft, rounded character (avatars only — the world stays voxel)
   try {
     const data = AVATARS[index].build();
@@ -19608,6 +19652,8 @@ $('delConfirm').onclick = () => {
 };
 const SVG_PLAY = '<svg class="ic ic-fill" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>';
 const SVG_TRASH = '<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
+// kids type their own names — keep "Amy<3" from breaking the row it is painted into
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function refreshSavedList() {
   const list = $('savedList');
   list.innerHTML = '';
@@ -19623,7 +19669,7 @@ function refreshSavedList() {
     const w = WORLDS[s.world] || WORLDS.meadow;
     load.innerHTML =
       '<span class="savePlay">' + SVG_PLAY + '</span>' +
-      '<span class="slotInfo"><span class="slotName">' + w.emoji + ' ' + (s.name || 'Player') + '</span>' +
+      '<span class="slotInfo"><span class="slotName">' + w.emoji + ' ' + esc(s.name || 'Player') + '</span>' +
       '<span class="slotMeta">' + w.name + ' • Grade ' + (s.grade || 2) +
       '<span class="slotChip calm">Calm</span></span></span>';
     load.setAttribute('data-name', s.name || 'Player');
@@ -19853,11 +19899,21 @@ async function cloudWrite(map, unlocked) {
   const user = fbUser || window.fbUser;
   const db = fbDb || window.fbDb;
   if (!user || !db) return;
+  const data = map || gatherSaveData();
+  // 🛟 Never let a world-less device overwrite the account. cloudSyncUp() fires on every
+  // save hook, so on a fresh browser/phone the 3s debounced push can land BEFORE the first
+  // cloudSyncDown() finishes — writing "{}" over every world the family owns.
+  const saveCount = Object.keys(data || {}).filter(k => k.indexOf(SAVE_PREFIX) === 0).length;
+  if (!saveCount) return;
   try {
-    await db.collection('users').doc(user.uid).set({
-      blob: JSON.stringify(map || gatherSaveData()), unlocked: !!unlocked,
+    const payload = {
+      blob: JSON.stringify(data),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    };
+    // the paid unlock only ever turns ON: a device that hasn't synced yet reads as locked,
+    // and writing that back would revoke Founding Family on every other device.
+    if (unlocked) payload.unlocked = true;
+    await db.collection('users').doc(user.uid).set(payload, { merge: true });
   } catch (e) { console.warn('cloud write failed', e && e.message); }
 }
 // pull cloud → merge into local (newest wins) → push merged back → reload if local changed
