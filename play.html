@@ -1117,9 +1117,13 @@
         </div>
       </div>
 
-      <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 12px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
-        ☁️ Sign in — keep your worlds &amp; unlock on any device
+      <button id="authGoogleHome" class="btn btn-block" type="button" style="margin:0 0 8px; background:#fff; color:#3c4043; font-weight:800; border:2px solid #dadce0">
+        Continue with Google
       </button>
+      <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
+        Sign in with email
+      </button>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v269 — on a phone, Google opens a new page (that is normal)</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1807,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 268 — Continue with Google should be on this card.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 269 — phones use a full-page Google sign-in.</div>
   </div>
 </div>
 <script>
@@ -1823,30 +1827,50 @@
   };
   window.FIREBASE_CONFIG = window.FIREBASE_CONFIG || CFG;
   function el(id) { return document.getElementById(id); }
+  function isPhoneAuth() {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '') ||
+      (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+      !!navigator.standalone;
+  }
   function initFb() {
     try {
       if (typeof firebase === 'undefined' || !firebase.auth) return false;
       if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(CFG);
       window.fbAuth = firebase.auth();
       window.fbDb = firebase.firestore();
-      window.fbAuth.onAuthStateChanged(function (u) {
-        window.fbUser = u;
-        paint();
-        if (u && typeof cloudSyncDown === 'function') cloudSyncDown().catch(function () {});
-      });
+      if (!window._bootAuthWatch) {
+        window._bootAuthWatch = true;
+        window.fbAuth.onAuthStateChanged(function (u) {
+          window.fbUser = u;
+          paint();
+          if (u && typeof cloudSyncDown === 'function') cloudSyncDown().catch(function () {});
+        });
+        window.fbAuth.getRedirectResult().then(function (r) {
+          if (r && r.user) {
+            window.fbUser = r.user;
+            paint();
+            var m = el('authMsg'); if (m) { m.style.color = '#2f8a52'; m.textContent = 'Signed in! Syncing your worlds…'; }
+          }
+        }).catch(function (e) {
+          var m = el('authMsg'); if (m) { m.style.color = '#c0392b'; m.textContent = (e && e.message) || 'Google sign-in failed.'; }
+        });
+      }
       return true;
     } catch (e) { console.warn('boot firebase', e); return false; }
   }
   function paint() {
     var ready = !!(window.fbAuth && window.fbDb);
     var un = el('authUnavailable'), out = el('authSignedOut'), signed = el('authSignedIn');
+    var homeG = el('authGoogleHome');
     if (window.fbUser) {
       if (un) un.style.display = 'none';
       if (out) out.style.display = 'none';
       if (signed) signed.style.display = 'block';
+      if (homeG) homeG.style.display = 'none';
       var w = el('authWho'); if (w) w.textContent = window.fbUser.email || 'your account';
       return;
     }
+    if (homeG) homeG.style.display = 'block';
     if (out) out.style.display = 'block';
     if (signed) signed.style.display = 'none';
     if (un) {
@@ -1872,6 +1896,41 @@
     }
     paint(); // openAuth's renderAuthUI used to hide the Google button — put it back
   }
+  function goGoogle() {
+    initFb();
+    var m = el('authMsg');
+    if (!window.fbAuth || typeof firebase === 'undefined') {
+      if (m) { m.style.color = '#c0392b'; m.textContent = 'Google is blocked. Open stackadoo.com in Chrome, or allow cookies for this site.'; }
+      bootOpenAuth();
+      return;
+    }
+    var p = new firebase.auth.GoogleAuthProvider();
+    p.addScope('email');
+    p.setCustomParameters({ prompt: 'select_account' });
+    if (m) { m.style.color = '#2E5E8C'; m.textContent = 'Taking you to Google…'; }
+    var popup = el('authPopup'); if (popup) popup.style.display = 'flex';
+    if (isPhoneAuth()) {
+      window.fbAuth.signInWithRedirect(p).catch(function (err) {
+        if (m) { m.style.color = '#c0392b'; m.textContent = (err && err.message) || 'Could not open Google.'; }
+      });
+      return;
+    }
+    window.fbAuth.signInWithPopup(p).then(function () {
+      if (m) { m.style.color = '#2f8a52'; m.textContent = 'Signed in! Syncing your worlds…'; }
+      paint();
+    }).catch(function (err) {
+      var c = (err && err.code) || '';
+      if (c.indexOf('popup-blocked') >= 0 || c.indexOf('popup-closed') >= 0) {
+        if (m) { m.style.color = '#2E5E8C'; m.textContent = 'Opening Google on this page…'; }
+        window.fbAuth.signInWithRedirect(p).catch(function (e2) {
+          if (m) { m.style.color = '#c0392b'; m.textContent = (e2 && e2.message) || 'Google sign-in failed.'; }
+        });
+        return;
+      }
+      if (m) { m.style.color = '#c0392b'; m.textContent = (err && err.message) || 'Google sign-in failed.'; }
+    });
+  }
+  window.goGoogle = goGoogle;
   window.bootOpenAuth = bootOpenAuth;
   window.__stackadooBootFirebase = initFb;
   initFb();
@@ -1883,20 +1942,9 @@
   });
   var x = el('authClose');
   if (x) x.addEventListener('click', function () { var p = el('authPopup'); if (p) p.style.display = 'none'; });
-  var g = el('authGoogleBtn');
-  if (g) g.addEventListener('click', function (e) {
-    e.preventDefault();
-    initFb();
-    if (typeof authGoogle === 'function') authGoogle();
-    else if (window.fbAuth && typeof firebase !== 'undefined') {
-      var p = new firebase.auth.GoogleAuthProvider();
-      p.setCustomParameters({ prompt: 'select_account' });
-      window.fbAuth.signInWithPopup(p).catch(function (err) {
-        var m = el('authMsg'); if (m) { m.style.color = '#c0392b'; m.textContent = (err && err.message) || 'Google sign-in failed.'; }
-      });
-    } else {
-      var m = el('authMsg'); if (m) { m.style.color = '#c0392b'; m.textContent = 'Google is blocked. Open stackadoo.com in Chrome.'; }
-    }
+  ['authGoogleBtn', 'authGoogleHome'].forEach(function (id) {
+    var b = el(id); if (!b) return;
+    b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); goGoogle(); });
   });
 })();
 </script>
@@ -19556,30 +19604,36 @@ function authGoogleFail(e) {
   authMsg(friendlyAuthErr(e), true);
 }
 function popupGoogle() {
+  const a = fbAuth || window.fbAuth;
+  if (!a) { authMsg('Sign-in needs Google — try Chrome, or allow cookies for stackadoo.com.', true); return; }
   const p = new firebase.auth.GoogleAuthProvider();
   p.addScope('email');
   p.setCustomParameters({ prompt: 'select_account' });
-  const standalone = (typeof IS_ANDROID_APP !== 'undefined' && IS_ANDROID_APP) ||
+  const phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '') ||
+    (typeof IS_ANDROID_APP !== 'undefined' && IS_ANDROID_APP) ||
     (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
     !!navigator.standalone;
-  if (standalone) {
+  if (phone) {
     authMsg('Taking you to Google…');
-    fbAuth.signInWithRedirect(p).catch(authGoogleFail);
+    a.signInWithRedirect(p).catch(authGoogleFail);
     return;
   }
-  fbAuth.signInWithPopup(p).then(() => { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }).catch(e => {
+  a.signInWithPopup(p).then(() => { authMsg('Signed in! Syncing your worlds…'); authAutoClose(); }).catch(e => {
     const c = (e && e.code) || '';
-    if (c.indexOf('popup-blocked') >= 0) {
-      authMsg('Popup blocked — opening Google on this page…');
-      fbAuth.signInWithRedirect(p).catch(authGoogleFail);
+    if (c.indexOf('popup') >= 0) {
+      authMsg('Opening Google on this page…');
+      a.signInWithRedirect(p).catch(authGoogleFail);
       return;
     }
     authGoogleFail(e);
   });
 }
 function authGoogle() {
+  if (typeof window.__stackadooBootFirebase === 'function') window.__stackadooBootFirebase();
   if (!cloudReady()) { authMsg('Sign-in needs an internet connection. Check Wi-Fi, then try again.', true); return; }
   authMsg('Opening Google…');
+  const phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+  if (phone) { popupGoogle(); return; }
   if (window.google && google.accounts && google.accounts.id) {
     try {
       google.accounts.id.initialize({
@@ -20865,7 +20919,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=268').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=269').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
