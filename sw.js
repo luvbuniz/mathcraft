@@ -3,12 +3,12 @@
    picks up the latest version while online, and the WHOLE game still works with no Wi-Fi —
    including the CDN libraries (Three.js, fonts, Firebase), which we now cache too. After one
    online load the game runs offline. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v262';
+const CACHE = 'stackadoo-v263';
 
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
 const PRECACHE = [
-  'play.html', 'manifest.json',
+  'play.html', 'manifest.json', 'google-signin.js',
   'lib/GLTFLoader.js',                       // 🎨 avatar model loader (avatars/*.glb cache on first use)
   'arcade/voiddrift.html',                   // 🚀 the arcade cabinet (self-contained, plays offline)
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
@@ -36,10 +36,52 @@ function isAuthUrl(url) {
   return /accounts\.google\.com|googleapis\.com|gstatic\.com\/identity|identitytoolkit|securetoken\.googleapis|firebaseapp\.com|firebaseio\.com|firebasestorage\.googleapis|gsi\/client|recaptcha|gstatic\.com\/recaptcha|google\.com\/recaptcha/.test(url);
 }
 
+function isPlayHtml(req) {
+  try {
+    const u = new URL(req.url);
+    return u.pathname === '/' || u.pathname === '/play.html' || u.pathname.endsWith('/play.html');
+  } catch (e) { return false; }
+}
+
+function patchPlayHtml(text) {
+  if (!text || text.indexOf('google-signin.js') >= 0) return text;
+  text = text.replace(
+    'firebase-firestore-compat.js"></script>',
+    'firebase-firestore-compat.js"></script>\n<script src="https://accounts.google.com/gsi/client" async defer></script>'
+  );
+  if (text.indexOf('</body>') >= 0) text = text.replace('</body>', '<script src="google-signin.js"></script>\n</body>');
+  else text += '\n<script src="google-signin.js"></script>\n';
+  return text;
+}
+
+function htmlResponse(text, extra) {
+  const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' };
+  return new Response(text, { headers: extra || headers });
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   if (isAuthUrl(req.url)) return;          // let the browser talk to Google / Firebase directly
+
+  if (isPlayHtml(req) && (req.mode === 'navigate' || (req.destination === 'document') || req.url.indexOf('play.html') >= 0)) {
+    e.respondWith(
+      fetch(req).then(resp => resp.text().then(t => {
+        const patched = patchPlayHtml(t);
+        const out = htmlResponse(patched);
+        caches.open(CACHE).then(c => c.put(req, out.clone())).catch(() => {});
+        return out;
+      })).catch(() => caches.match(req).then(c => {
+        if (!c) return caches.match('play.html').then(async p => {
+          if (!p) return Response.error();
+          return htmlResponse(patchPlayHtml(await p.text()));
+        });
+        return c.text().then(t => htmlResponse(patchPlayHtml(t)));
+      }))
+    );
+    return;
+  }
+
   e.respondWith(
     fetch(req).then(resp => {
       if (resp && resp.ok && resp.type !== 'opaque') {
