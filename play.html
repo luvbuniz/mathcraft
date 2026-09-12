@@ -1123,7 +1123,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v276 — tap Dancer to jump into Math Meadow</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v277 — meadow should be green, not black</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 276 — Continue rows start the game even if the 3D menu glitched.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 277 — keep drawing the sky even if scenery glitches.</div>
   </div>
 </div>
 <script>
@@ -5667,6 +5667,24 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 renderer.domElement.style.position = 'fixed';
 renderer.domElement.style.inset = '0';
+renderer.domElement.style.zIndex = '0';
+try { camera.position.set(8, 9, 14); camera.lookAt(0.5, 0.4, 0.5); renderer.render(scene, camera); } catch (e) {}
+(function bootFrames() {
+  let n = 0;
+  function tick() {
+    n++;
+    try {
+      if (!window._sdLoop && typeof loop === 'function' && typeof lastT !== 'undefined') {
+        window._sdLoop = 1;
+        requestAnimationFrame(loop);
+        return;
+      }
+    } catch (e) {}
+    try { renderer.render(scene, camera); } catch (e) {}
+    if (n < 240) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 
 /* Sky-and-ground light: faces looking up take a touch of sky colour, faces looking down
    take a bounce off the grass — instead of one flat "everything equal" ambient. */
@@ -13179,6 +13197,7 @@ try {
 
 /* ---- clouds & flowers ---- */
 const clouds = [];
+try {
 for (let i = 0; i < 6; i++) {
   const c = new THREE.Group();
   for (let j = 0; j < 3; j++) box(c, 2 + Math.random() * 2, 0.8, 1.6, 0xFFFFFF, j * 1.6 - 1.6, Math.random() * 0.3, 0);
@@ -13195,6 +13214,7 @@ for (let i = 0; i < 22; i++) {
   f.position.set(fx + 0.5, 0, fz + 0.5);
   worldDecor.meadow.add(f);                 // wildflowers only in Math Meadow
 }
+} catch (e) { console.warn('clouds/flowers', e); }
 
 /* ============================ PLAYER ============================ */
 const player = {
@@ -20058,6 +20078,18 @@ function startGame() {
   try { if (typeof Analytics !== 'undefined' && Analytics && typeof Analytics.play === 'function') Analytics.play(); } catch (e) {}
   try { const ss = $('startScreen'); if (ss) ss.style.display = 'none'; } catch (e) {}
   try { const h = $('hud'); if (h) h.style.display = 'block'; } catch (e) {}
+  try { G.blocks = Math.max(G.blocks || 0, 16); } catch (e) {}
+  try {
+    if (typeof player !== 'undefined' && player && player.pos) {
+      camera.position.set(player.pos.x, (player.pos.y || 0) + 1.65, player.pos.z);
+      camera.rotation.set(0, 0, 0);
+      camera.rotation.order = 'YXZ';
+    } else {
+      camera.position.set(8, 9, 14);
+      camera.lookAt(0.5, 0.4, 0.5);
+    }
+    renderer.render(scene, camera);
+  } catch (e) {}
   try {
   if (isTouch) { const tu = $('touchUI'); if (tu) tu.style.display = 'block'; }
   applyWorldTheme(G.world);                    // sky, fog & ground match the chosen world
@@ -20946,6 +20978,7 @@ function dropShadowsForSpeed() {
 }
 function loop(now) {
   requestAnimationFrame(loop);
+  try {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
@@ -21225,15 +21258,21 @@ function loop(now) {
   }
 
   renderer.render(scene, camera);
+  } catch (e) {
+    console.error('frame', e);
+    try { renderer.render(scene, camera); } catch (e2) {}
+  }
 }
 /* everything built at load casts & catches sunlight (skip the ground/skirt which only catch,
    the sky sun, and see-through things like windows & pool water — glass shadows look wrong) */
+try {
 scene.traverse(o => {
   if (!o.isMesh || o === ground || o === skirt || o === sunBall) return;
   if (o.material && o.material.transparent) return;
   o.castShadow = true; o.receiveShadow = true;
 });
-requestAnimationFrame(loop);
+} catch (e) { console.warn('shadow traverse', e); }
+if (!window._sdLoop) { window._sdLoop = 1; requestAnimationFrame(loop); }
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -21245,7 +21284,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=276').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=277').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
