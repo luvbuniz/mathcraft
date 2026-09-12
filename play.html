@@ -189,14 +189,35 @@
     background:rgba(251,243,222,.96); color:#5a3f18; font-weight:800; padding:8px 12px; border-radius:12px;
     font-size:clamp(13px,2.2vw,16px); box-shadow:0 3px 0 rgba(0,0,0,.18); max-width:min(58vw,280px); line-height:1.35;
     border:3px solid #E2C892; }
-  #leoIntro { align-items:flex-end; background:rgba(30,50,90,.28); }
-  #leoCard { width:min(540px,96vw); margin-bottom:max(12px, env(safe-area-inset-bottom));
-    display:flex; gap:12px; align-items:flex-start; text-align:left; padding:16px 16px 14px; }
-  #leoFace { width:88px; height:110px; object-fit:cover; object-position:top; border-radius:18px;
-    background:#fff6d8; box-shadow:0 3px 0 rgba(0,0,0,.12); flex-shrink:0; }
-  #leoBubble { background:#fff; border:3px solid #F5C842; border-radius:16px; padding:10px 14px;
-    font-size:clamp(16px,3.1vw,21px); font-weight:800; color:#34495e; line-height:1.35; margin-top:4px; }
-  #leoBubble b { color:#c47a12; }
+
+  /* A compact shopping HUD keeps portrait shelves visible. */
+  body.feedInside #hudTop { display:none!important; }
+  body.feedInside #feedListHud {top:12px;left:12px;max-width:calc(100vw - 136px);font-size:14px;background:#fff9eb;box-sizing:border-box;}
+  body.feedInside #feedShelfHud button {background:#f8fff2;border-color:#528753;box-shadow:0 3px 0 #315f36;}
+  @media(max-width:600px) and (min-height:501px) {
+    body.feedInside #feedShelfHud {bottom:190px;left:12px;right:12px;max-width:none;transform:none;}
+    body.feedInside #feedShelfHud button {flex:1;max-width:240px;font-size:15px;}
+    body.feedInside #feedListHud {font-size:13px;padding:8px;line-height:1.45;}
+  }
+  #leoIntro { align-items:flex-end; background:none; }
+  body.guideOpen #npcChat, body.guideOpen #npcBubbles, body.guideOpen #mouseLegend,
+  body.guideOpen #feedListHud, body.guideOpen #feedShelfHud,
+  body.feedInside #npcChat, body.feedInside #npcBubbles { display:none!important; }
+  body.feedInside #modeBtn, body.feedInside #undoBtn, body.feedInside #blockPaints,
+  body.feedInside #mouseLegend, body.feedInside #hudMode, body.feedInside #hintBar,
+  body.feedInside #placingTag { display:none!important; }
+  #leoCard { width:min(650px,96vw); margin-bottom:max(14px,env(safe-area-inset-bottom)); display:flex; gap:12px; align-items:flex-end; padding:0; background:transparent; box-shadow:none; border:0; }
+  #guideStage { width:160px; height:240px; flex:0 0 160px; position:relative; pointer-events:none; }
+  #guideLoading { position:absolute;bottom:10px;color:#34495e;background:#fff9ed;border-radius:12px;padding:7px;font-size:12px; }
+  #guideSpeech { flex:1; min-width:0; border-radius:22px; background:#fffdf5; padding:18px; box-shadow:0 5px 0 #b9c6a5; border:2px solid #e3dfc8; }
+  #guideHeading { font-size:15px;color:#7b6233;margin:7px 0; }
+  #leoBubble { font-size:clamp(17px,2.8vw,21px);font-weight:600;color:#34495e;line-height:1.4; }
+  #guideListen { background:#edf4e7;border:0;border-radius:12px;padding:10px;color:#34583c;font:inherit;cursor:pointer; }
+  #feedShelfHud { position:fixed;bottom:92px;left:50%;transform:translateX(-50%);z-index:27;display:flex;gap:8px;max-width:70vw;flex-wrap:wrap;justify-content:center; }
+  #feedShelfHud[hidden] { display:none; }
+  #feedShelfHud button { min-height:44px;padding:10px 14px;border:2px solid #cfb980;border-radius:14px;background:#fff8e4;color:#3b553d;font:700 15px sans-serif; }
+  @media(max-height:500px) { #guideStage { width:120px;flex-basis:120px;height:190px; } #guideSpeech {padding:12px;} #leoBubble{font-size:17px;} #leoCard{margin-bottom:8px;} }
+  @media(max-width:500px) { #guideStage { width:100px;flex-basis:100px;height:195px; } #leoCard{gap:3px;} #guideSpeech{padding:12px;} }
   /* 💬 town-friend speech bubbles — pinned over each NPC's head */
   #npcBubbles { position:fixed; inset:0; pointer-events:none; z-index:30; }
   .npcBubble { position:fixed; transform:translate(-50%,-100%) translateY(-10px); display:none;
@@ -1123,7 +1144,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v278 — saved games load intact; avatars no longer black-screen</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v279 — meet King Lion and explore the Feed Store</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1229,7 +1250,7 @@
           <p>🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. <b>Driving?</b> Just click the road ahead and your vehicle steers there. Drag to look around.</p>
           <p>🔨 <b>Build mode</b> (default): <b>left-click builds</b>, <b>right-click removes</b>, drag to look. Move with the arrow keys / WASD.</p>
           <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb). <b>Tap</b> the world to build a block, <b>hold your finger on a block</b> to break it (keep holding to dig!), and <b>flick up on your hero</b> to jump. ⭐ Use starts math & everything nearby.</p>
-          <p>Solve math to earn build blocks, Power Blocks, coins, or ammo — and a 🛡️ Shield from the Gloomies!</p>
+          <p>Solve math to earn bricks and coins for your next creation!</p>
           <p>✅ <b>Works best in Chrome</b> — on phones, tablets, <b>and desktop</b>. Other browsers (like Brave) can be janky or block features; if anything looks or feels off, switch to Chrome.</p>
         </div>
       </details>
@@ -1693,21 +1714,24 @@
   </div>
 </div>
 
-<!-- ================= LEO FIRST-RUN INTRO ================= -->
-<div class="popup" id="leoIntro">
-  <div class="popupCard" id="leoCard">
-    <img id="leoFace" src="audio/intro/leo.jpg" alt="Leo" width="88" height="110" onerror="this.style.display='none'">
-    <div style="flex:1; min-width:0">
-      <div style="font-weight:800; color:#c47a12; font-size:13px; letter-spacing:.02em">Leo 👦</div>
-      <div id="leoBubble">Hi! I'm Leo.</div>
-      <div style="display:flex; gap:8px; margin-top:12px; align-items:center; flex-wrap:wrap">
-        <button type="button" class="libBtn" id="leoSkip" style="font-size:15px; padding:10px 14px; background:#eee6d4; color:#6a5a3a; box-shadow:0 3px 0 #d4c8ac">Skip</button>
-        <span id="leoStep" style="margin-left:auto; color:#8a7a5a; font-weight:800; font-size:13px"></span>
-        <button type="button" class="libBtn" id="leoNext" style="font-size:16px; padding:10px 16px; background:#E0A21C; color:#5a3c00; box-shadow:0 3px 0 #b07d10">Next →</button>
+<!-- ================= TOWN GUIDE ================= -->
+<div class="popup" id="leoIntro" role="dialog" aria-modal="true" aria-label="King Lion's building guide">
+  <div id="leoCard">
+    <div id="guideStage" role="img" aria-label="Animated King Lion"><span id="guideLoading">King Lion is on his way…</span></div>
+    <div id="guideSpeech">
+      <div style="font-weight:800;color:#957128;font-size:13px">KING LION · YOUR TOWN GUIDE</div>
+      <h3 id="guideHeading">Welcome, builder</h3>
+      <div id="leoBubble" role="status" aria-live="polite"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap">
+        <button type="button" id="guideListen">🔊 Listen</button>
+        <button type="button" class="libBtn" id="leoSkip" style="background:#eee9db;color:#6a5a3a;padding:10px;font-size:14px">Skip</button>
+        <span id="leoStep" style="font-size:12px;margin-left:auto;color:#7f765d"></span>
+        <button type="button" class="libBtn" id="leoNext" style="background:#4e7546;color:white;padding:10px 15px;font-size:15px">Next →</button>
       </div>
     </div>
   </div>
 </div>
+<div id="feedShelfHud" hidden aria-label="Items on this shelf"></div>
 
 <!-- ================= GRAMMAR CINEMA POPUP ================= -->
 <div class="popup" id="cinemaPopup">
@@ -1829,7 +1853,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 278 — one missing button can no longer take down the game.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 279 — King Lion's guide and a brighter Feed Store.</div>
   </div>
 </div>
 <script>
@@ -5548,6 +5572,8 @@ addEventListener('blur', autoSave);                             // tabbing away 
 
 /* wipe everything the player built/spawned so a fresh or loaded game starts clean */
 function resetWorld() {
+  document.body.classList.remove('feedInside','guideOpen');
+  const shelfHud = $('feedShelfHud'); if(shelfHud) shelfHud.hidden = true;
   const toDelete = [], meshes = new Set();
   blocks.forEach((b, k) => { if (b.removable) { toDelete.push(k); meshes.add(b.mesh); } });
   toDelete.forEach(k => blocks.delete(k));
@@ -7722,13 +7748,15 @@ function feedBasketReady() {
   return feed.order.items.every(it => basketFeedCount(it.name) >= 1) && (feed.basket || []).length >= feed.order.items.length;
 }
 function nearestFeedSku(maxD) {
+  if (!insideFeedStore(player.pos.x,player.pos.z)) return null;
   maxD = maxD || 1.85;
   let best = null, bd = maxD;
-  for (const g of feedGoods) {
+  const candidates = feedGoods.slice().sort((a,b)=>Number(b.wanted)-Number(a.wanted));
+  for (const g of candidates) {
     if (!g.mesh || !g.mesh.visible || g.taken) continue;
     const wp = new THREE.Vector3(); g.mesh.getWorldPosition(wp);
     const d = Math.hypot(player.pos.x - wp.x, player.pos.z - wp.z);
-    if (d < bd) { bd = d; best = g; }
+    if (d < maxD && (!best || (g.wanted && !best.wanted) || (g.wanted === best.wanted && d < bd))) { bd = d; best = g; }
   }
   return best;
 }
@@ -7747,11 +7775,12 @@ function restockFeedGoods() {
     if (g.mesh) g.mesh.visible = true;
     g.wanted = listed[g.name] != null;
     g.price = listed[g.name] != null ? listed[g.name] : g.shelfPrice;
+    if(g.marker)g.marker.visible=g.wanted;paintFeedLabel(g);
   }
 }
 function renderFeedListHud() {
   const el = $('feedListHud'); if (!el) return;
-  const show = G.world === 'meadow' && feed && feed.shopping && !popupOpen;
+  const show = insideFeedStore(player.pos.x,player.pos.z) && feed && feed.shopping && !popupOpen;
   if (!show) { el.style.display = 'none'; return; }
   const o = feed.order;
   let html = o.cust + ' <b>' + o.nm + '</b> wants:<br>';
@@ -7759,8 +7788,8 @@ function renderFeedListHud() {
     const got = basketFeedCount(it.name) > 0;
     html += (got ? '✅' : '☐') + ' ' + it.emoji + ' ' + it.name + ' · <b>' + it.price + '</b> 🪙<br>';
   });
-  html += feedBasketReady() ? '<span style="color:#2f8a52">🧺 Take it to the cashier!</span>' : '<span style="color:#8a6d3b">Pick it off the shelves</span>';
-  el.innerHTML = html;
+  html += feedBasketReady() ? '<span style="color:#2f8a52">🧺 Take it to the cashier!</span>' : '<span style="color:#8a6d3b">Walk to a shelf · tap Pick up</span>';
+  if(el.innerHTML !== html) el.innerHTML = html;
   el.style.display = 'block';
 }
 function paintFeedBoard() {
@@ -7779,6 +7808,9 @@ function paintFeedBoard() {
   feedBoard.tex.needsUpdate = true;
 }
 function pickFeedItem(sku) {
+  if (!sku || sku.taken || !insideFeedStore(player.pos.x,player.pos.z)) return;
+  const position=new THREE.Vector3(); sku.mesh.getWorldPosition(position);
+  if(Math.hypot(player.pos.x-position.x,player.pos.z-position.z)>2.3){toast('Walk closer to that shelf first.',1800);return;}
   if (!feed || !feed.shopping || feed.locked) { beginFeedShopping(true); }
   if (!feed || feed.locked) return;
   const want = wantedFeedCount(sku.name);
@@ -7787,13 +7819,15 @@ function pickFeedItem(sku) {
   const it = feed.order.items.find(x => x.name === sku.name);
   feed.basket.push({ name: sku.name, emoji: sku.emoji, price: it ? it.price : sku.price });
   sku.taken = true; if (sku.mesh) sku.mesh.visible = false;
+  if(sku.marker)sku.marker.visible=false;paintFeedLabel(sku);
   if (Sound.place) Sound.place(); else Sound.click();
-  paintFeedBoard(); renderFeedListHud();
+  paintFeedBoard(); renderFeedListHud(); renderNearbyFeedShelf();
   if (feedBasketReady()) toast('🧺 All gathered — walk to the cashier!', 2800);
   else toast('🧺 ' + sku.emoji + ' ' + sku.name + ' in the basket!', 1500);
 }
 function tryFeedUse() {
   if (G.world !== 'meadow') return false;
+  if (feedBasketReady() && feedCounterDist() < 2.3 && insideFeedStore(player.pos.x,player.pos.z)) { openFeed(); return true; }
   const sku = nearestFeedSku(1.9);
   if (sku) { pickFeedItem(sku); return true; }
   if (feedCounterDist() < 2.3) {
@@ -7824,7 +7858,7 @@ function openFeed() {
 }
 function closeFeed() {
   $('feedPopup').style.display = 'none'; popupOpen = false;
-  if (insideFeedStore(player.pos.x, player.pos.z)) beginFeedShopping(true);
+  if (insideFeedStore(player.pos.x, player.pos.z)) { if (feed && !feed.locked && feed.order) { feed.shopping = true; renderFeedListHud(); } else beginFeedShopping(true); }
   else { feed = feed && feed.done ? { done: feed.done, shopping: false, basket: [], order: null } : null; renderFeedListHud(); }
 }
 function renderFeed() {
@@ -7835,7 +7869,7 @@ function renderFeed() {
   o.items.forEach(it => { html += '<div>' + it.emoji + ' ' + it.name + ' &middot;&middot;&middot; <b>' + it.price + '</b> 🪙</div>'; });
   html += '</div><div style="border-top:2px dashed #c9b27e; margin-top:5px; padding-top:5px">Pays with: <b style="color:#2f8a52">' + o.bill + '</b> 🪙 💵</div>';
   html += '<div style="margin-top:5px; font-weight:800; color:#7a5a1f">💰 Add them up, then how much change do you give back?</div>';
-  html += '<div style="margin-top:3px; font-size:0.82em; color:#8a6d3b">⚡ Every 3rd customer tips a <b>Power Block</b>!</div>';
+  html += '<div style="margin-top:3px; font-size:0.82em; color:#8a6d3b">Every 3 orders solved on your own earn <b>3 building bricks</b>!</div>';
   $('feedOrder').innerHTML = html;
   $('feedMsg').textContent = '';
   if (o.manual) renderFeedKeypad(); else renderFeedChoices();
@@ -7864,18 +7898,21 @@ function submitFeed(val) {
   if (!feed || feed.locked || !feed.order) return;
   const o = feed.order;
   if (val === o.change) {
-    feed.locked = true; feed.done++;
+    feed.locked = true;
+    const independent = !o.assisted;
+    if (independent) { feed.done++;
     profile.feedServed = (profile.feedServed || 0) + 1; profileDirty = true;      // 🌾 quest fuel
     Sound.correct(); G.solved++; recordSolve({ skill: 'money', level: o.lvl }); bumpSkill('money', true); bumpHud('solvedCount');
-    const reward = 8 + o.lvl * 3;               // cashier work pays BETTER than pizza — counting change is harder!
+    }
+    const reward = independent ? 8 + o.lvl * 3 : 0;               // cashier work pays BETTER than pizza — counting change is harder!
     G.coins += reward; refreshHUD(); bumpHud('coinCount'); if (Sound.chaching) Sound.chaching();   // 💵 ka-ching!
     $('feedMsg').style.color = '#2f8a52';
     let tip = '';
-    if (feed.done % 3 === 0) {                  // ⚡ every 3rd customer in a visit tips a Power Block
-      G.powerBlocks = (G.powerBlocks || 0) + 1; bumpHud('powerCount');
-      tip = ' &nbsp;⚡ <b>+1 Power Block tip!</b>';
+    if (independent && feed.done % 3 === 0) {                  // ⚡ every 3rd customer in a visit tips a Power Block
+      G.blocks += 3; bumpHud('blockCount'); refreshHUD();
+      tip = ' &nbsp;🧱 <b>+3 building bricks!</b>';
     }
-    $('feedMsg').innerHTML = '✓ ' + o.items.map(it => it.price).join(' + ') + ' = <b>' + o.total + '</b>, then ' + o.bill + ' − ' + o.total + ' = <b>' + o.change + '</b> 🪙. &nbsp;🪙 +' + reward + tip;
+    $('feedMsg').innerHTML = '✓ ' + o.items.map(it => it.price).join(' + ') + ' = <b>' + o.total + '</b>, then ' + o.bill + ' − ' + o.total + ' = <b>' + o.change + '</b> 🪙. &nbsp;🪙 +' + reward + tip + (independent ? '' : '<br>Practice complete! Try the next order on your own to earn coins.');
     const pad = $('feedPad'); pad.innerHTML = '';
     const next = document.createElement('button'); next.className = 'bakeBtn'; next.style.background = '#3f9d34'; next.style.color = '#fff'; next.textContent = '🧑‍🌾 Next customer';
     next.onclick = () => { closeFeed(); toast('📋 New order on the chalkboard — grab it off the shelves!', 2800); };
@@ -7883,7 +7920,7 @@ function submitFeed(val) {
     done.onclick = closeFeed;
     pad.appendChild(next); pad.appendChild(done);
   } else {
-    Sound.wrong(); if (typeof recordWrong === 'function') recordWrong({ skill: 'money' }); bumpSkill('money', false);
+    Sound.wrong(); if (!o.assisted) { if (typeof recordWrong === 'function') recordWrong({ skill: 'money' }); bumpSkill('money', false); } o.assisted = true;
     $('feedMsg').style.color = '#c0392b';
     $('feedMsg').innerHTML = '✗ Not quite — add the prices, then count UP from the total to <b>' + o.bill + '</b>. Try again!';
     if (o.manual) { feed.entry = ''; updateFeedEntry(); }
@@ -10582,6 +10619,7 @@ const Narrator = {
   speaking: false,
   stop() {
     this.speaking = false;
+    if (this.cancelPending) { this.cancelPending(); this.cancelPending = null; }
     try { if (this.audio) { this.audio.pause(); this.audio.removeAttribute('src'); this.audio.load(); this.audio = null; } } catch (e) {}
     try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {}
   },
@@ -10590,22 +10628,20 @@ const Narrator = {
     return new Promise((resolve, reject) => {
       self.stop();
       const a = new Audio(src);
-      a.preload = 'auto';
+      a.preload = 'none';
+      self.cancelPending = () => resolve(false);
       self.audio = a;
       self.speaking = true;
       a.addEventListener('ended', () => { self.speaking = false; if (self.audio === a) self.audio = null; resolve(true); });
-      a.addEventListener('error', () => { self.speaking = false; if (self.audio === a) self.audio = null; reject(new Error('missing')); });
+      a.addEventListener('error', () => { if (self.audio !== a) { resolve(false); return; } self.speaking = false; if (self.audio === a) self.audio = null; reject(new Error('missing')); });
       const p = a.play();
-      if (p && p.catch) p.catch(() => { self.speaking = false; if (self.audio === a) self.audio = null; reject(new Error('play')); });
+      if (p && p.catch) p.catch(() => { if (self.audio !== a) { resolve(false); return; } self.speaking = false; if (self.audio === a) self.audio = null; reject(new Error('play')); });
     });
   },
   async story(s) {
     const slug = storySlug(s);
     const g = storyGradeUsed(s);
     const want = ['audio/lib/' + slug + '-g' + g + '.mp3'];
-    if (s && typeof s.text !== 'string') {
-      [1, 3, 5].forEach(n => { if (n !== g) want.push('audio/lib/' + slug + '-g' + n + '.mp3'); });
-    }
     for (let i = 0; i < want.length; i++) {
       try { await this.playFile(want[i]); return true; } catch (e) {}
     }
@@ -10638,63 +10674,89 @@ const Narrator = {
     try { await this.playFile(this.spellWordSrc(word)); return true; }
     catch (e) { return speakWord(word); }
   },
-  async introLine(i, fallback) {
-    try { await this.playFile('audio/intro/leo-' + i + '.mp3'); return true; }
-    catch (e) { return speakWord(fallback, { rate: 1.02, pitch: 1.12 }); }
+  async introLine(i) {
+    try { await this.playFile('audio/intro/kinglion-' + i + '.mp3'); return true; }
+    catch (e) { if (leoIntro) toast('The voice could not play. You can still read the speech bubble.', 2200); return false; }
   }
 };
-/* 👦 Leo's first-run walkthrough — short bubbles + a boy voice (Kokoro Puck). */
+/* TOWN GUIDE: reuse one existing avatar and the game's renderer, only while open. */
 const LEO_INTRO = [
-  { say: "Hi! I'm Leo. Welcome to Stackadoo!",
-    bubble: n => (n && n !== 'Player' ? ('Hi <b>' + n + '</b>! ') : 'Hi! ') + "I'm Leo. Welcome to Stackadoo!" },
-  { say: "Move with the joystick, or the arrow keys. Tap jump to hop!",
-    bubble: () => "Move with the joystick, or the arrow keys. Tap <b>jump</b> to hop!" },
-  { say: "See those glowing purple question marks? Walk up and tap one. Solve a puzzle, and you get blocks and coins!",
-    bubble: () => "See those glowing <b>❓</b>? Walk up and tap one. Solve it — get 🧱 blocks and 🪙 coins!" },
-  { say: "Use your blocks to build a house, a playground, anything you like. Tap to place. Hold to break.",
-    bubble: () => "Use your 🧱 to build a house, a playground, anything you like. Tap to place. Hold to break." },
-  { say: "In Reading Town you can visit the Library, the Cinema, and the Post Office for stories and spelling.",
-    bubble: () => "In Reading Town: 📚 Library, 🎬 Cinema, and 🏤 Post Office — stories and a spelling bee!" },
-  { say: "Tap the menu if you ever want to hear this again. Have fun — I'll see you in town!",
-    bubble: () => "Tap <b>☰</b> if you ever want to hear this again. Have fun — I'll see you in town!" }
+  { say: "Hello, builder! I'm King Lion. Let's make something wonderful together.", text: "I'm King Lion. Let's make something wonderful together!", title: 'Welcome, builder' },
+  { say: 'See the purple question blocks? Walk up to one and press Use. Solve a puzzle to earn bricks and coins.', text: 'Walk to a purple ❓ block. Press USE, then solve a puzzle to earn bricks and coins.', title: 'Your first supplies' },
+  { say: 'Choose a clear patch of ground. Place a few bricks to start your home. You can undo a block if you change your mind.', text: 'Find a clear patch of ground. Place a few bricks to start your home. Undo lets you change your mind.', title: 'Build something yours' },
+  { say: 'Ready? Try one question block, then build your first wall. You can find me in the menu whenever you need a reminder.', text: 'Try one question block, then build your first wall. Find this guide again in the menu.', title: 'Your first little mission' }
 ];
-let leoIntro = null;
+let leoIntro = null, guideView = null, guideLoad = 0;
+function prepareGuideView() {
+  if (guideView) return;
+  const stage = new THREE.Scene();
+  stage.add(new THREE.HemisphereLight(0xffffff, 0xb3a486, 1.15));
+  const keyLight = new THREE.DirectionalLight(0xfff1d6, 0.8); keyLight.position.set(2, 3, 4); stage.add(keyLight);
+  const cam = new THREE.PerspectiveCamera(31, 1, 0.01, 30);
+  cam.position.set(0, 1.12, 3.9); cam.lookAt(0, 0.93, 0);
+  guideView = { scene: stage, camera: cam, model: null };
+  const load = ++guideLoad;
+  parseAvatarModel('kinglion').then(d => {
+    if (!d || load !== guideLoad || !guideView) return;
+    guideView.model = d; stage.add(d.group);
+    d.group.rotation.y = -0.1;
+    if (d.idleAction) d.idleAction.reset().play();
+    $('guideLoading').hidden = true;
+  }).catch(() => { $('guideLoading').textContent = 'Your guide is getting ready. You can still read along.'; });
+}
+function drawGuide(dt) {
+  if (!leoIntro || !guideView) return;
+  const el = $('guideStage'), rect = el.getBoundingClientRect(), main = renderer.domElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const v = guideView, d = v.model;
+  if (d && d.mixer) d.mixer.update(dt);
+  if (d) d.group.rotation.y = -0.1 + Math.sin(performance.now() / 2200) * 0.055;
+  v.camera.aspect = rect.width / rect.height; v.camera.updateProjectionMatrix();
+  const size = renderer.getSize(new THREE.Vector2()), sx = size.x / main.width, sy = size.y / main.height;
+  const oldViewport = renderer.getViewport(new THREE.Vector4()), oldScissor = renderer.getScissor(new THREE.Vector4());
+  const oldTest = renderer.getScissorTest(), oldAuto = renderer.autoClear;
+  try {
+    renderer.setViewport((rect.left-main.left)*sx, (main.bottom-rect.bottom)*sy, rect.width*sx, rect.height*sy);
+    renderer.setScissor((rect.left-main.left)*sx, (main.bottom-rect.bottom)*sy, rect.width*sx, rect.height*sy);
+    renderer.setScissorTest(true); renderer.autoClear = false; renderer.clearDepth(); renderer.render(v.scene, v.camera);
+  } finally {
+    renderer.setViewport(oldViewport); renderer.setScissor(oldScissor); renderer.setScissorTest(oldTest); renderer.autoClear = oldAuto;
+  }
+}
 function openLeoIntro(first) {
-  if (!G.running) return;
-  if (leoIntro) { renderLeoIntro(); return; }
+  if (!G.running || (popupOpen && !leoIntro)) return;
+  if (leoIntro) return;
   leoIntro = { i: 0, first: !!first };
-  popupOpen = true;
+  popupOpen = true; player.walkTo = null; Object.keys(keys).forEach(k => { keys[k] = false; });
   try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
-  const el = $('leoIntro'); if (el) el.style.display = 'flex';
-  renderLeoIntro();
+  document.body.classList.add('guideOpen'); $('leoIntro').style.display = 'flex';
+  prepareGuideView(); renderLeoIntro();
+  $('leoNext').focus();
 }
 function closeLeoIntro() {
-  try { Narrator.stop(); } catch (e) {}
-  const el = $('leoIntro'); if (el) el.style.display = 'none';
-  const wasOpen = !!leoIntro;
-  leoIntro = null;
+  Narrator.stop(); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
+  const wasOpen = !!leoIntro; leoIntro = null;
   if (wasOpen) popupOpen = false;
   if (wasOpen && profile && !profile.seenIntro) {
-    profile.seenIntro = true;
-    profileDirty = true;
-    try { saveProfile(); } catch (e) {}
+    profile.seenIntro = true; profileDirty = true; try { saveProfile(); } catch (e) {}
   }
+  if (wasOpen) $('menuBtn').focus();
 }
 function renderLeoIntro() {
   if (!leoIntro) return;
-  const steps = LEO_INTRO, i = leoIntro.i, step = steps[i];
-  const name = (G.playerName || '').trim();
-  $('leoBubble').innerHTML = step.bubble(name);
-  $('leoStep').textContent = (i + 1) + ' / ' + steps.length;
-  $('leoNext').textContent = (i + 1 >= steps.length) ? "Let's go! 🎉" : 'Next →';
-  try { Narrator.introLine(i, step.say); } catch (e) {}
+  Narrator.stop();
+  const i = leoIntro.i, step = LEO_INTRO[i];
+  $('guideHeading').textContent = step.title;
+  $('leoBubble').textContent = step.text;
+  $('leoStep').textContent = (i + 1) + ' of ' + LEO_INTRO.length;
+  $('leoNext').textContent = i + 1 === LEO_INTRO.length ? "Let's build!" : 'Next →';
+  $('guideListen').textContent = '🔊 Listen';
 }
 function leoIntroNext() {
   if (!leoIntro) return;
-  if (leoIntro.i + 1 >= LEO_INTRO.length) { closeLeoIntro(); return; }
-  leoIntro.i++;
-  renderLeoIntro();
+  if (++leoIntro.i >= LEO_INTRO.length) closeLeoIntro(); else renderLeoIntro();
 }
+
 function makeMisspellings(word) {
   const out = new Set(), w = word, vowels = 'aeiou';
   for (let i = 0; i < w.length; i++) if (!vowels.includes(w[i])) out.add(w.slice(0, i + 1) + w[i] + w.slice(i + 1));   // double a consonant
@@ -12555,47 +12617,127 @@ function buildPizzeria(g) {
   g.add(P);
 }
 // 🌾 Stack Feed & Supply — a rustic farm store: board-and-batten, false front, a grain silo, sacks & hay bales
+/* Readable shelf stock. Merge decorative pieces by color to limit draw calls. */
 function makeFeedSkuMesh(name) {
-  const G = new THREE.Group();
-  if (name === 'Corn') {
-    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.42, 8), mat(0xF2C037)); c.position.y = 0.22; G.add(c);
-    box(G, 0.04, 0.22, 0.04, 0x57A53C, 0.07, 0.34, 0); box(G, 0.04, 0.18, 0.04, 0x4f9a37, -0.06, 0.32, 0.02);
-  } else if (name === 'Hay Bale') {
-    box(G, 0.42, 0.28, 0.32, 0xE3C34A, 0, 0.16, 0); box(G, 0.44, 0.04, 0.34, 0xC2A02C, 0, 0.08, 0); box(G, 0.44, 0.04, 0.34, 0xC2A02C, 0, 0.24, 0);
-  } else if (name === 'Carrots') {
-    const car = (ox) => { const m = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.32, 8), mat(0xE07B2A)); m.position.set(ox, 0.16, 0); m.rotation.x = Math.PI; G.add(m); box(G, 0.04, 0.12, 0.04, 0x57A53C, ox, 0.36, 0); };
-    car(-0.1); car(0.08);
-  } else if (name === 'Chick Feed' || name === 'Dog Chow' || name === 'Seed' || name === 'Peanuts' || name === 'Bran') {
-    const col = name === 'Dog Chow' ? 0x8a5c33 : name === 'Peanuts' ? 0xD2B48C : name === 'Seed' ? 0xC9A86A : 0xCBB081;
-    box(G, 0.28, 0.36, 0.22, col, 0, 0.2, 0); box(G, 0.22, 0.08, 0.16, 0x9a7a4a, 0, 0.4, 0);
-  } else if (name === 'Apples') {
-    box(G, 0.36, 0.16, 0.28, 0x9a6b3a, 0, 0.1, 0);
-    [[-0.08, 0.18, -0.05], [0.08, 0.18, 0.04], [0, 0.22, 0.06]].forEach(([x, y, z]) => {
-      const a = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), mat(0xE53935)); a.position.set(x, y, z); G.add(a);
-    });
-  } else if (name === 'Oats') {
-    const bkt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.28, 10), mat(0x8a8f98)); bkt.position.y = 0.16; G.add(bkt);
-    box(G, 0.22, 0.06, 0.22, 0xE3C34A, 0, 0.3, 0);
-  } else if (name === 'Eggs') {
-    box(G, 0.32, 0.08, 0.22, 0xF4ECD8, 0, 0.08, 0);
-    [[-0.08, 0.14, -0.04], [0.08, 0.14, -0.04], [-0.08, 0.14, 0.05], [0.08, 0.14, 0.05]].forEach(([x, y, z]) => {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), mat(0xFFF6D8)); e.scale.set(1, 1.25, 1); e.position.set(x, y, z); G.add(e);
-    });
-  } else if (name === 'Cheese') {
-    const ch = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.16, 3), mat(0xF2C037)); ch.rotation.x = -Math.PI / 2; ch.position.y = 0.1; G.add(ch);
-  } else {
-    box(G, 0.28, 0.28, 0.22, 0xCBB081, 0, 0.16, 0);
+  const group = new THREE.Group(), materials = new Map();
+  function piece(geo, color, x, y, z, scale, rot) {
+    if (!materials.has(color)) materials.set(color, new THREE.MeshLambertMaterial({color,emissive:color,emissiveIntensity:0.25}));
+    const mesh = new THREE.Mesh(geo, materials.get(color)); mesh.position.set(x,y,z);
+    if (scale) mesh.scale.set(...scale); if (rot) mesh.rotation.set(...rot); group.add(mesh); return mesh;
   }
-  return G;
+  const sphere=(c,x,y,z,s)=>piece(new THREE.SphereGeometry(1,12,8),c,x,y,z,s);
+  const cube=(c,x,y,z,s)=>piece(new THREE.BoxGeometry(1,1,1),c,x,y,z,s);
+  function crate() {
+    cube(0x956039,0,0.05,0,[0.52,0.07,0.4]);
+    for (const y of [0.11,0.21]) for (const z of [-0.2,0.2]) cube(0xb78352,0,y,z,[0.55,0.07,0.035]);
+    for (const x of [-0.25,0.25]) cube(0xa57143,x,0.15,0,[0.035,0.23,0.42]);
+  }
+  if (name==='Corn') {
+    for (const x of [-0.1,0.1]) {
+      sphere(0xeeb933,x,0.25,0,[0.085,0.23,0.085]);
+      for (let row=0;row<8;row++) for(let col=0;col<8;col++) {
+        const a=col*Math.PI/4;sphere(row%2?0xf8d252:0xeec13b,x+Math.cos(a)*0.076,0.085+row*0.047,Math.sin(a)*0.076,[0.023,0.026,0.023]);
+      }
+      sphere(0x579448,x-0.065,0.13,0.025,[0.035,0.15,0.08]);
+    }
+  } else if(name==='Carrots') {
+    for(const x of [-0.13,0,0.13]) {
+      piece(new THREE.ConeGeometry(0.063,0.35,12),0xe78330,x,0.21,0,null,[Math.PI,0,0]);
+      for(const dx of [-0.035,0.03]) sphere(0x4d8744,x+dx,0.43,0,[0.035,0.095,0.02]);
+    }
+  } else if(name==='Apples') {
+    crate(); for(const [x,z] of [[-0.13,-0.08],[0.12,-0.07],[-0.11,0.1],[0.13,0.1]]) {
+      sphere(0xc94e37,x,0.25,z,[0.11,0.105,0.105]);cube(0x6f4f33,x,0.36,z,[0.018,0.07,0.018]);sphere(0x558941,x+0.025,0.37,z,[0.048,0.012,0.022]);
+    }
+  } else if(name==='Eggs') {
+    cube(0xb6a487,0,0.07,0,[0.47,0.12,0.34]);
+    for(const x of [-0.14,0,0.14])for(const z of [-0.075,0.075])sphere(0xf3e3c7,x,0.15,z,[0.061,0.084,0.061]);
+  } else if(name==='Hay Bale') {
+    cube(0xcba650,0,0.18,0,[0.53,0.34,0.38]);
+    for(let i=0;i<9;i++)cube(i%2?0xe0c16a:0xd8b75b,0,0.04+i*0.035,0.193,[0.51,0.013,0.009]);
+    for(const x of [-0.14,0.14])cube(0x75623f,x,0.18,0,[0.025,0.355,0.4]);
+  } else if(name==='Oats') {
+    piece(new THREE.CylinderGeometry(0.21,0.16,0.31,16),0x9aabb0,0,0.17,0);
+    piece(new THREE.CylinderGeometry(0.2,0.2,0.03,16),0xd5bc85,0,0.32,0);
+    piece(new THREE.TorusGeometry(0.2,0.012,5,16,Math.PI),0x68767d,0,0.37,0);
+  } else if(name==='Cheese') {
+    const shape=new THREE.Shape();shape.moveTo(-0.22,-0.16);shape.lineTo(0.22,-0.16);shape.lineTo(-0.22,0.2);shape.closePath();
+    piece(new THREE.ExtrudeGeometry(shape,{depth:0.18,bevelEnabled:true,bevelThickness:0.012,bevelSize:0.012,bevelSegments:1,steps:1}),0xeec75b,0,0.2,0,null,[Math.PI/2,0,0]);
+    for(const x of [-0.13,0.02])sphere(0xc39a37,x,0.205,0,[0.026,0.006,0.025]);
+  } else {
+    const color=name==='Dog Chow'?0xa8b77a:name==='Chick Feed'?0xe9cb81:name==='Seed'?0xa3bd97:0xc7a879;
+    sphere(color,0,0.24,0,[0.22,0.25,0.16]);cube(color,0,0.12,0,[0.37,0.18,0.26]);
+    cube(0x7a6548,0,0.46,0,[0.27,0.025,0.12]);cube(0xf7efdc,0,0.25,0.151,[0.24,0.18,0.012]);
+    const mark=name==='Chick Feed'?0xd29430:name==='Dog Chow'?0x668648:0x86663d;
+    sphere(mark,0,0.25,0.166,[0.045,0.05,0.006]);
+  }
+  group.updateMatrixWorld(true);
+  const buckets=new Map();
+  group.children.forEach(m=>{const g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();g.applyMatrix4(m.matrixWorld);const key=m.material.uuid;if(!buckets.has(key))buckets.set(key,{mat:m.material,parts:[]});buckets.get(key).parts.push(g);m.geometry.dispose();});
+  group.clear();
+  for(const {mat:material,parts} of buckets.values()) {
+    const geo=new THREE.BufferGeometry();
+    for(const attr of ['position','normal']) {
+      const count=parts.reduce((n,g)=>n+g.attributes[attr].array.length,0),values=new Float32Array(count);let offset=0;
+      for(const g of parts){values.set(g.attributes[attr].array,offset);offset+=g.attributes[attr].array.length;}
+      geo.setAttribute(attr,new THREE.BufferAttribute(values,3));
+    }
+    geo.computeBoundingSphere(); const mesh=new THREE.Mesh(geo,material);group.add(mesh);parts.forEach(g=>g.dispose());
+  }
+  return group;
 }
+function feedSurface(kind) {
+  const cv=document.createElement('canvas');cv.width=cv.height=256;const c=cv.getContext('2d');
+  c.fillStyle=kind==='floor'?'#d8c0a0':'#ba8959';c.fillRect(0,0,256,256);
+  for(let i=0;i<32;i++) {c.strokeStyle=i%3?'rgba(90,53,27,.09)':'rgba(255,246,213,.2)';c.lineWidth=1;c.beginPath();c.moveTo(0,i*8);c.bezierCurveTo(70,i*8+5,170,i*8-5,256,i*8+2);c.stroke();}
+  for(let y=0;y<256;y+=64){c.fillStyle='rgba(71,44,25,.25)';c.fillRect(0,y,256,2);c.fillRect(y%128?170:65,y,2,64);}
+  const tex=new THREE.CanvasTexture(cv);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(kind==='floor'?3:1,kind==='floor'?3:1);
+  // Baked timber tones stay readable when the outdoor sun spills through the doorway.
+  return new THREE.MeshBasicMaterial({map:tex,color:0xffffff});
+}
+function addFeedPackLabel(parent,name) {
+  const cv=document.createElement('canvas');cv.width=128;cv.height=128;const c=cv.getContext('2d');
+  c.fillStyle='#fff5d8';c.fillRect(0,0,128,128);c.fillStyle='#38715d';c.fillRect(0,0,128,27);c.fillStyle='#ffffff';c.font='bold 12px sans-serif';c.textAlign='center';c.fillText('STACK FEED',64,19);
+  c.fillStyle='#395442';c.font='bold 23px sans-serif';name.split(' ').forEach((w,i)=>c.fillText(w.toUpperCase(),64,60+i*27));
+  c.fillStyle='#b48343';c.fillRect(23,113,82,3);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(.27,.27),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));m.position.set(0,.255,.18);parent.add(m);
+}
+function addFeedLabel(parent, name, x, y, z) {
+  const cv=document.createElement('canvas');cv.width=256;cv.height=96;const ctx=cv.getContext('2d');
+  const tex=new THREE.CanvasTexture(cv),mesh=new THREE.Mesh(new THREE.PlaneGeometry(0.72,0.27),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+  mesh.position.set(x<6?x+0.39:x-0.39,y-0.13,z);mesh.rotation.y=x<6?Math.PI/2:-Math.PI/2;parent.add(mesh);
+  return {cv,ctx,tex};
+}
+function paintFeedLabel(sku) {
+  const label=sku.label;if(!label)return;const c=label.ctx;
+  c.fillStyle=sku.wanted&&!sku.taken?'#e4f7dc':'#fff7e7';c.fillRect(0,0,256,96);
+  c.fillStyle=sku.wanted?'#357252':'#9c7647';c.fillRect(0,0,256,5);
+  c.fillStyle='#293f33';c.textAlign='center';c.font='bold 27px sans-serif';c.fillText(sku.name,128,36);
+  c.font='bold 22px sans-serif';c.fillText(sku.taken?'IN YOUR BASKET':sku.price+' coins'+(sku.wanted?' · ON YOUR LIST':''),128,65);
+  c.font='15px sans-serif';if(!sku.taken)c.fillText('Walk closer · pick up',128,86);label.tex.needsUpdate=true;
+}
+function renderNearbyFeedShelf() {
+  const el=$('feedShelfHud');
+  if(!insideFeedStore(player.pos.x,player.pos.z)||popupOpen){el.hidden=true;return;}
+  const near=feedGoods.filter(g=>!g.taken && Math.abs(player.pos.z-g.mesh.position.z)<0.5 && Math.hypot(player.pos.x-g.mesh.position.x,player.pos.z-g.mesh.position.z)<2.15);
+  const signature=near.map(g=>g.name).join('|');
+  if(el.dataset.items!==signature+'|'+near.map(g=>g.wanted).join(',')){
+    el.dataset.items=signature+'|'+near.map(g=>g.wanted).join(',');el.replaceChildren();
+    near.forEach(g=>{const b=document.createElement('button');b.type='button';b.textContent=g.emoji+' Pick up '+g.name;b.onclick=()=>pickFeedItem(g);el.appendChild(b);});
+  }
+  el.hidden=!near.length;
+}
+
 function buildFeedStore(g) {
-  const WOOD = 0xC9A86A, WOOD2 = 0xB5904F, TRIM = 0xF4ECD8, ROOF = 0x4f6b4a, GREEN = 0x3f7d3a;
+  const WOOD = 0xEFE4CC, WOOD2 = 0xB5904F, TRIM = 0xF4ECD8, ROOF = 0x4f6b4a, GREEN = 0x3f7d3a;
   const S = new THREE.Group();
   const W = FEED_WALL, cx = FEED_POS.x, cz = FEED_POS.z;
+  const roomLight = new THREE.PointLight(0xfff6e7, 0.38, 11, 1); roomLight.position.set(cx,2.4,cz); S.add(roomLight);
   const x0 = W.x0 + 0.5, x1 = W.x1 + 0.5, z0 = W.z0 + 0.5, z1 = W.z1 + 0.5;
   const bw = (W.x1 - W.x0) + 1, bd = (W.z1 - W.z0) + 1, h = 2.7;
   // 🪵 interior floor
-  box(S, bw - 0.2, 0.06, bd - 0.2, 0xC4A574, cx, 0.04, cz);
+  const shopFloor=box(S, bw - 0.2, 0.06, bd - 0.2, 0xC4A574, cx, 0.09, cz);shopFloor.material=feedSurface('floor');
+  const shelfWood=feedSurface('wood');
   // walls (south wall split around the door)
   box(S, 0.22, h, bd, WOOD, x0, h / 2, cz);                 // west
   box(S, 0.22, h, bd, WOOD, x1, h / 2, cz);                 // east
@@ -12620,13 +12762,15 @@ function buildFeedStore(g) {
   // peaked roof
   box(S, bw + 0.3, 0.16, bd + 0.3, ROOF, cx, h + 0.12, cz);
   box(S, 0.2, 0.7, bd + 0.1, ROOF, cx, h + 0.5, cz);
+  box(S,bw-.3,.035,bd-.3,0xe8dfca,cx,h-.035,cz); // pale ceiling beneath the green exterior roof
+  for(const bz of [-18,-15])box(S,bw-.3,.10,.14,0x9c815b,cx,h-.10,bz);
   // windows on east/west
   paneWindow(S, x0 - 0.02, 1.35, cz, 0.08, 1.1, 1, 2, TRIM);
   paneWindow(S, x1 + 0.02, 1.35, cz, 0.08, 1.1, 1, 2, TRIM);
   // 🪵 shelves (match collision cells x=3 and x=9, z=-18..-16)
   const shelf = (sx, sz) => {
-    box(S, 0.7, 0.12, 2.6, 0x8a5a34, sx, 0.55, sz);
-    box(S, 0.7, 0.12, 2.6, 0x8a5a34, sx, 1.15, sz);
+    box(S, 0.7, 0.12, 2.6, 0x8a5a34, sx, 0.55, sz).material=shelfWood;
+    box(S, 0.7, 0.12, 2.6, 0x8a5a34, sx, 1.15, sz).material=shelfWood;
     box(S, 0.12, 1.25, 0.12, 0x6b4a2c, sx, 0.7, sz - 1.15);
     box(S, 0.12, 1.25, 0.12, 0x6b4a2c, sx, 0.7, sz + 1.15);
   };
@@ -12643,7 +12787,7 @@ function buildFeedStore(g) {
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 160;
   const ctx = cv.getContext('2d');
   const tex = new THREE.CanvasTexture(cv);
-  const board = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.06), new THREE.MeshLambertMaterial({ map: tex }));
+  const board = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.06), new THREE.MeshBasicMaterial({ map: tex }));
   board.position.set(4.4, 1.55, z0 + 0.18); S.add(board);
   feedBoard = { cv: cv, ctx: ctx, tex: tex };
   paintFeedBoard();
@@ -12671,9 +12815,28 @@ function buildFeedStore(g) {
   const emojiOf = {}; FEED_ITEMS.forEach(([e, n]) => { emojiOf[n] = e; });
   spots.forEach(([x, y, z, name, shelfPrice]) => {
     const m = makeFeedSkuMesh(name);
-    m.position.set(x, y, z);
+    m.position.set(x, y-0.07, z);m.rotation.y=x<6?Math.PI/2:-Math.PI/2;
+    if(['Chick Feed','Dog Chow','Seed','Peanuts','Bran'].includes(name))addFeedPackLabel(m,name);
     S.add(m);
-    feedGoods.push({ mesh: m, name: name, emoji: emojiOf[name] || '📦', shelfPrice: shelfPrice, price: shelfPrice, taken: false, wanted: false });
+    const label=addFeedLabel(S,name,x,y,z);
+    const marker=new THREE.Mesh(new THREE.RingGeometry(.23,.29,24),new THREE.MeshBasicMaterial({color:0x69aa61,transparent:true,opacity:.7,side:THREE.DoubleSide}));
+    marker.rotation.x=-Math.PI/2;marker.position.set(x,y-0.082,z);S.add(marker);
+    feedGoods.push({ mesh: m, label, marker, name: name, emoji: emojiOf[name] || '📦', shelfPrice: shelfPrice, price: shelfPrice, taken: false, wanted: false });
+  });
+  // Cream plaster, pale timber and a low green dado make the room read as a shop.
+  for(const wx of [x0+.13,x1-.13]) {
+    box(S,.025,.75,bd-.3,0x82a58a,wx,.43,cz);
+    box(S,.035,.06,bd-.3,0xf6efd9,wx,.84,cz);
+    const win=new THREE.Mesh(new THREE.PlaneGeometry(1.65,.72),new THREE.MeshBasicMaterial({color:0xc9eaf3,side:THREE.DoubleSide}));win.rotation.y=Math.PI/2;win.position.set(wx+(wx<cx?.025:-.025),1.99,-17);S.add(win);
+    const face=wx+(wx<cx?.055:-.055);
+    for(const yy of [1.59,2.39])box(S,.06,.07,1.8,0xf2eddb,face,yy,-17);
+    for(const zz of [-17.86,-17,-16.14])box(S,.06,.77,.05,0xf2eddb,face,1.99,zz);
+  }
+  signOn(S,'FARM PANTRY','Fresh food & everyday supplies',0x3c765e,2.8,.5,6.5,2.1,z0+.17);
+  signOn(S,'CHECKOUT','Bring your basket here',0x3c765e,1.65,.38,8.5,.58,-12.91);
+  // Clone cached materials before lifting their shaded sides; never recolor other buildings.
+  const lifted=new Map();S.traverse(m=>{if(!m.isMesh||Array.isArray(m.material)||!m.material.isMeshLambertMaterial||m.material.map)return;
+    const key=m.material.uuid;if(!lifted.has(key)){const fresh=m.material.clone();fresh.color.multiplyScalar(.68);fresh.emissive.copy(fresh.color);fresh.emissiveIntensity=Math.max(fresh.emissiveIntensity,.12);lifted.set(key,fresh);}m.material=lifted.get(key);
   });
   S.position.set(0, 0, 0);
   g.add(S);
@@ -12681,22 +12844,16 @@ function buildFeedStore(g) {
 function updateFeedGoods(now) {
   if (G.world !== 'meadow') { const el = $('feedListHud'); if (el) el.style.display = 'none'; return; }
   if (!feedGoods.length) return;
-  for (const g of feedGoods) {
-    if (!g.mesh || g.taken) continue;
-    if (g.baseY == null) g.baseY = g.mesh.position.y;
-    const on = g.wanted && !g.taken;
-    g.mesh.position.y = g.baseY + (on ? Math.sin(now / 200) * 0.05 : 0);
-    const s = on ? 1.06 + Math.sin(now / 200) * 0.04 : 1;
-    g.mesh.scale.setScalar(s);
-  }
   const inF = insideFeedStore(player.pos.x, player.pos.z);
+  document.body.classList.toggle('feedInside',inF);
   if (inF && !_wasInFeed) {
     if (!feed || !feed.shopping || !feed.order) beginFeedShopping(true);
-    toast('🌾 Welcome to Stack Feed! Grab the chalkboard order off the shelves.', 3200);
+    // The persistent order card explains the task without covering the shelves.
   }
   if (!inF && _wasInFeed) renderFeedListHud();
   _wasInFeed = inF;
   if (inF) renderFeedListHud();
+  renderNearbyFeedShelf();
 }
 
 function buildFairKart(lane, col) {
@@ -14540,6 +14697,8 @@ function updatePlayer(dt) {
 
   // camera
   const headY = player.pos.y + 1.55;
+  const shopFov=insideFeedStore(player.pos.x,player.pos.z)&&innerHeight>innerWidth?90:70;
+  if(camera.fov!==shopFov){camera.fov=shopFov;camera.updateProjectionMatrix();}
   const inside = underRoofAt(player.pos.x, player.pos.z);
   // Leave auto-interior first-person when you walk outdoors (must run even while firstPerson)
   if (G._autoInterior && G.firstPerson && !inside && !G.birdsEye) {
@@ -15190,7 +15349,7 @@ function bumpHud(id) {                    // a happy little pop when a counter g
 function refreshHUD() {
   if (G.running && $('modeLabel')) {
     try {
-      $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
+      $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
     } catch (e) {}
   }
 
@@ -18223,6 +18382,11 @@ function interact(ndcX, ndcY, action) {  // action: 'place' | 'break' | 'move'
   // no need to walk the avatar over or jump up to reach roof tiles & sky blocks.
   raycaster.far = action === 'break' ? 30 : (action === 'move' ? 200 : 18);
 
+  if (insideFeedStore(player.pos.x,player.pos.z)) {
+    const hit=raycaster.intersectObjects(feedGoods.filter(g=>!g.taken).map(g=>g.mesh),true)[0];
+    if(hit){let obj=hit.object;while(obj&&!feedGoods.some(g=>g.mesh===obj))obj=obj.parent;const sku=feedGoods.find(g=>g.mesh===obj);if(sku){pickFeedItem(sku);return;}}
+    if(action!=='move'){if(feedBasketReady()&&feedCounterDist()<2.3)openFeed();else toast('Tap an item on the shelf, or use a Pick up button.',1800);return;}
+  }
   // 0) loot blocks — tap or click to pick up
   const lMeshes = lootBlocks.filter(l => l.alive).map(l => l.mesh);
   if (lMeshes.length) {
@@ -19289,7 +19453,16 @@ function freeMouse() {
 $w('cursorBtn').onclick = () => { Sound.click(); try { openLeoIntro(false); } catch (e) { freeMouse(); } };
 $w('leoSkip').onclick = () => { Sound.click(); closeLeoIntro(); };
 $w('leoNext').onclick = () => { Sound.click(); leoIntroNext(); };
-$w('leoBubble').onclick = () => { if (leoIntro) { Sound.click(); renderLeoIntro(); } };
+$w('guideListen').onclick = async () => {
+  if (!leoIntro) return;
+  Sound.click();
+  if (Narrator.speaking) { Narrator.stop(); $('guideListen').textContent = '🔊 Listen'; return; }
+  $('guideListen').textContent = '◼ Stop voice';
+  await Narrator.introLine(leoIntro.i);
+  if (!Narrator.speaking) $('guideListen').textContent = '🔊 Listen';
+};
+$('leoIntro').addEventListener('keydown', e => { if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeLeoIntro();} });
+['pointerdown','mousedown','touchstart','click'].forEach(type => $('feedShelfHud').addEventListener(type,e=>e.stopPropagation()));
 // 🧱 Build / ⛏️ Remove toggle (desktop): so a plain left-click can remove blocks too
 function setRemoveMode(on) {
   G.removeMode = !!on;
@@ -20222,7 +20395,7 @@ function startGame() {
   updateRotateGate();                             // 🔄 clears any leftover rotate overlay (portrait plays now!)
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
-  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + (G.gloomiesEnabled ? '💜 Gloomies' : '🌈 No Gloomies') + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
+  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
   const showLeoIntro = !!G.wantIntro;
   G.wantIntro = false;
   if (showLeoIntro) {
@@ -21052,6 +21225,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
+  if (leoIntro) { renderer.render(scene, camera); drawGuide(dt); return; }
   if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
   if (liveRace) { tickLiveRace(dt, now); renderer.render(scene, camera); return; }   // 🏎️ fairground race takes the camera
@@ -21163,7 +21337,9 @@ function loop(now) {
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
     // 🚪 while driving, the on-screen USE button reads "EXIT" so kids always know how to get out
-    const _useLbl = player.driving ? '🚪 EXIT' : '⭐ USE';
+    const _feedHere=G.world==='meadow'&&insideFeedStore(player.pos.x,player.pos.z);
+    const _feedPick=_feedHere?nearestFeedSku(1.9):null;
+    const _useLbl = player.driving ? '🚪 EXIT' : _feedHere?(feedBasketReady()&&feedCounterDist()<2.3?'🧺 CHECKOUT':_feedPick?'🧺 PICK UP':'🧺 SHOP'):'⭐ USE';
     const _ba = $('btnAction'), _bd = $('useBtnDesk');
     if (_ba && _ba.textContent !== _useLbl) _ba.textContent = _useLbl;
     if (_bd && _bd.textContent !== _useLbl) _bd.textContent = _useLbl;
@@ -21354,7 +21530,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=278').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=279').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
