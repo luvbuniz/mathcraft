@@ -3,7 +3,7 @@
    picks up the latest version while online, and the WHOLE game still works with no Wi-Fi —
    including the CDN libraries (Three.js, fonts, Firebase), which we now cache too. After one
    online load the game runs offline. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v261';
+const CACHE = 'stackadoo-v262';
 
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
@@ -30,18 +30,27 @@ self.addEventListener('activate', e => e.waitUntil(
     .then(() => self.clients.claim())
 ));
 
+function isAuthUrl(url) {
+  // Never intercept Google / Firebase Auth / GIS / token APIs. Serving play.html (or a stale
+  // opaque cache) for these is what breaks "Continue with Google".
+  return /accounts\.google\.com|googleapis\.com|gstatic\.com\/identity|identitytoolkit|securetoken\.googleapis|firebaseapp\.com|firebaseio\.com|firebasestorage\.googleapis|gsi\/client|recaptcha|gstatic\.com\/recaptcha|google\.com\/recaptcha/.test(url);
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  // Network-first for EVERYTHING (same- and cross-origin) so the game + its CDN libraries all
-  // cache for offline use. When the network is down, serve the cached copy (or the app shell).
+  if (isAuthUrl(req.url)) return;          // let the browser talk to Google / Firebase directly
   e.respondWith(
     fetch(req).then(resp => {
-      if (resp && (resp.ok || resp.type === 'opaque')) {
+      if (resp && resp.ok && resp.type !== 'opaque') {
         const copy = resp.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
       }
       return resp;
-    }).catch(() => caches.match(req).then(c => c || caches.match('play.html')))
+    }).catch(() => caches.match(req).then(c => {
+      if (c) return c;
+      if (req.mode === 'navigate') return caches.match('play.html');
+      return Response.error();
+    }))
   );
 });
