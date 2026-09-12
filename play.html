@@ -1123,7 +1123,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v269 — on a phone, Google opens a new page (that is normal)</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v270 — after Google, this card closes by itself</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 269 — phones use a full-page Google sign-in.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 270 — after Google, this card closes and worlds appear under Continue.</div>
   </div>
 </div>
 <script>
@@ -1843,20 +1843,85 @@
         window.fbAuth.onAuthStateChanged(function (u) {
           window.fbUser = u;
           paint();
-          if (u && typeof cloudSyncDown === 'function') cloudSyncDown().catch(function () {});
+          if (u) bootFinish(u);
         });
         window.fbAuth.getRedirectResult().then(function (r) {
-          if (r && r.user) {
-            window.fbUser = r.user;
-            paint();
-            var m = el('authMsg'); if (m) { m.style.color = '#2f8a52'; m.textContent = 'Signed in! Syncing your worlds…'; }
-          }
+          if (r && r.user) bootFinish(r.user);
         }).catch(function (e) {
           var m = el('authMsg'); if (m) { m.style.color = '#c0392b'; m.textContent = (e && e.message) || 'Google sign-in failed.'; }
         });
       }
       return true;
     } catch (e) { console.warn('boot firebase', e); return false; }
+  }
+  function bootFinish(u) {
+    if (!u || window._bootSynced) return;
+    window._bootSynced = true;
+    window.fbUser = u;
+    paint();
+    var home = el('authEntryHome');
+    if (home) home.textContent = '☁️ Signed in ✓ — ' + (u.email || 'your account');
+    var m = el('authMsg');
+    if (m) { m.style.color = '#2f8a52'; m.textContent = 'Signed in! Syncing your worlds…'; }
+    function closeSoon(reload) {
+      setTimeout(function () {
+        var p = el('authPopup'); if (p) p.style.display = 'none';
+        if (reload) {
+          try { sessionStorage.setItem('stackadooJustSynced', '1'); } catch (e) {}
+          location.reload();
+        } else if (typeof refreshSavedList === 'function') {
+          try { refreshSavedList(); } catch (e) {}
+        }
+      }, 1200);
+    }
+    if (typeof cloudSyncDown === 'function') {
+      cloudSyncDown().then(function () { closeSoon(false); }).catch(function () { closeSoon(false); });
+      setTimeout(function () { var p = el('authPopup'); if (p) p.style.display = 'none'; }, 2500);
+      return;
+    }
+    var db = window.fbDb;
+    if (!db) { closeSoon(false); return; }
+    db.collection('users').doc(u.uid).get().then(function (snap) {
+      var cloud = (snap && snap.exists) ? (snap.data() || {}) : {};
+      var map = {};
+      try { map = cloud.blob ? JSON.parse(cloud.blob) : {}; } catch (e) {}
+      var n = 0, changed = false;
+      Object.keys(map).forEach(function (k) {
+        try {
+          if (localStorage.getItem(k) !== map[k]) { localStorage.setItem(k, map[k]); changed = true; }
+          if (k.indexOf('stackadooSave:') === 0) n++;
+        } catch (e) {}
+      });
+      if (cloud.unlocked) {
+        try { if (localStorage.getItem('stackadooUnlocked') !== '1') { localStorage.setItem('stackadooUnlocked', '1'); changed = true; } } catch (e) {}
+      }
+      var local = {};
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && (k.indexOf('stackadooSave:') === 0 || k.indexOf('stackadooProfile:') === 0 || k === 'stackadooUnlocked'))
+            local[k] = localStorage.getItem(k);
+        }
+      } catch (e) {}
+      var merged = {};
+      Object.keys(map).forEach(function (k) { merged[k] = map[k]; });
+      Object.keys(local).forEach(function (k) { merged[k] = local[k]; });
+      db.collection('users').doc(u.uid).set({
+        blob: JSON.stringify(merged),
+        unlocked: !!(cloud.unlocked || local.stackadooUnlocked),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(function () {});
+      if (m) {
+        m.style.color = '#2f8a52';
+        m.textContent = n
+          ? ('Synced ' + n + ' world(s). One moment…')
+          : 'Signed in. No worlds in the cloud yet — on the device that has Sullivan Amy, sign in with this same Gmail so they can upload.';
+      }
+      closeSoon(changed && n > 0);
+    }).catch(function () {
+      if (m) { m.style.color = '#c0392b'; m.textContent = 'Signed in. Sync hit a snag — tap X. You are signed in.'; }
+      closeSoon(false);
+    });
   }
   function paint() {
     var ready = !!(window.fbAuth && window.fbDb);
@@ -1918,6 +1983,7 @@
     window.fbAuth.signInWithPopup(p).then(function () {
       if (m) { m.style.color = '#2f8a52'; m.textContent = 'Signed in! Syncing your worlds…'; }
       paint();
+      if (window.fbAuth.currentUser) bootFinish(window.fbAuth.currentUser);
     }).catch(function (err) {
       var c = (err && err.code) || '';
       if (c.indexOf('popup-blocked') >= 0 || c.indexOf('popup-closed') >= 0) {
@@ -19532,9 +19598,11 @@ function mergeSaveMaps(a, b) {
   return out;
 }
 async function cloudWrite(map, unlocked) {
-  if (!cloudReady() || !fbUser) return;
+  const user = fbUser || window.fbUser;
+  const db = fbDb || window.fbDb;
+  if (!user || !db) return;
   try {
-    await fbDb.collection('users').doc(fbUser.uid).set({
+    await db.collection('users').doc(user.uid).set({
       blob: JSON.stringify(map || gatherSaveData()), unlocked: !!unlocked,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
@@ -19542,8 +19610,10 @@ async function cloudWrite(map, unlocked) {
 }
 // pull cloud → merge into local (newest wins) → push merged back → reload if local changed
 async function cloudSyncDown() {
-  if (!cloudReady() || !fbUser) return;
-  let snap; try { snap = await fbDb.collection('users').doc(fbUser.uid).get(); } catch (e) { return; }
+  const user = fbUser || window.fbUser;
+  const db = fbDb || window.fbDb;
+  if (!user || !db) return;
+  let snap; try { snap = await db.collection('users').doc(user.uid).get(); } catch (e) { return; }
   const cloud = (snap && snap.exists) ? (snap.data() || {}) : {};
   let cloudMap = {}; try { cloudMap = cloud.blob ? JSON.parse(cloud.blob) : {}; } catch (e) {}
   const merged = mergeSaveMaps(gatherSaveData(), cloudMap);
@@ -19674,7 +19744,7 @@ function authAutoClose() {
   // background — closing the popup doesn't interrupt it.
   setTimeout(() => {
     const p = $('authPopup');
-    if (p && p.style.display !== 'none' && fbUser) closeAuth();
+    if (p && p.style.display !== 'none' && (fbUser || window.fbUser)) closeAuth();
   }, 2000);
 }
 function renderAuthUI() {
@@ -20919,7 +20989,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=269').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=270').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
