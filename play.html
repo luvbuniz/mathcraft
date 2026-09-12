@@ -13224,14 +13224,17 @@ function buildWestDecor(g) {
     if (westLoop.pts.some(p => Math.hypot(p.x - t.x, p.z - t.z) < 2.2)) { g.remove(t.grp); decoTrees.splice(i, 1); }
   }
 }
+// Build each world's scenery on its own: one bad prop should cost that world's decor,
+// not the other three worlds as well (a single shared try used to drop all four).
+[['meadow', buildMeadowDecor], ['city', buildCityDecor], ['beach', buildBeachDecor], ['west', buildWestDecor]]
+  .forEach(([id, build]) => {
+    try { build(worldDecor[id]); }
+    catch (e) { console.error('Scenery for ' + id + ' failed (that world still plays):', e); }
+  });
 try {
-  buildMeadowDecor(worldDecor.meadow);
-  buildCityDecor(worldDecor.city);
-  buildBeachDecor(worldDecor.beach);
-  buildWestDecor(worldDecor.west);
   for (const id in worldDecor) { worldDecor[id].visible = (id === G.world); scene.add(worldDecor[id]); }
 } catch (e) {
-  console.error('World scenery failed (game still playable):', e);
+  console.error('Adding worlds to the scene failed:', e);
 }
 
 /* ---- clouds & flowers ---- */
@@ -15161,6 +15164,17 @@ function checkShelter() {
 
 /* ============================ UI HELPERS ============================ */
 const $ = id => document.getElementById(id);
+// $w = "$ for wiring". Top-level handler wiring used to be `$('id').onclick = ...`, so a
+// single element missing from the HTML threw at the top level and aborted every remaining
+// line of this script — HUD, controls, saved games, cloud sync, the lot. (It happened twice:
+// buildFairKart, then gasClose.) $w hands back a detached stand-in instead, so a missing
+// element costs exactly that one control and says so in the console.
+function $w(id) {
+  const el = $(id);
+  if (el) return el;
+  console.warn('[wire] no #' + id + ' in the page — that control is inert, everything else still runs');
+  return document.createElement('div');
+}
 let toastTimer = 0;
 function toast(msg, ms) {
   $('toast').textContent = msg;
@@ -15285,8 +15299,8 @@ function openGoalPicker() {
   $('goalPopup').style.display = 'flex';
 }
 function closeGoalPicker() { $('goalPopup').style.display = 'none'; popupOpen = false; }
-$('goalRow').onclick = () => { Sound.click(); openGoalPicker(); };
-$('goalClose').onclick = () => { Sound.click(); closeGoalPicker(); };
+$w('goalRow').onclick = () => { Sound.click(); openGoalPicker(); };
+$w('goalClose').onclick = () => { Sound.click(); closeGoalPicker(); };
 function fmtTime(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
   return m + ':' + (sec < 10 ? '0' : '') + sec;
@@ -15547,7 +15561,7 @@ function closeFixIt() {
   hideFixIt();
   renderMathQuestion();                                       // a fresh problem to try
 }
-$('fixClose').onclick = () => { if (fixLocked) return; Sound.click(); closeFixIt(); };
+$w('fixClose').onclick = () => { if (fixLocked) return; Sound.click(); closeFixIt(); };
 function openMath() {
   if (popupOpen || G.over || performance.now() < mathCooldownUntil) return;   // brief cooldown stops spam-reopening
   popupOpen = true;
@@ -15683,7 +15697,7 @@ function answerPicked(btn, opt) {
     showFixIt(easierNote, (picked != null && picked !== '') ? picked : label);
   }
 }
-$('hintBtn').onclick = () => { Sound.click(); showHint(); };
+$w('hintBtn').onclick = () => { Sound.click(); showHint(); };
 function closeMath() {
   if (fixLocked) return;            // the "let's fix it" lesson is still locked — can't leave yet
   hideFixIt();
@@ -15701,7 +15715,7 @@ function closeMath() {
   $('mathPopup').style.display = 'none';
   popupOpen = false; currentEq = null;
 }
-$('mathClose').onclick = () => { Sound.click(); closeMath(); };
+$w('mathClose').onclick = () => { Sound.click(); closeMath(); };
 
 /* ============================ SHOP POPUP ============================ */
 function openShop(store) {
@@ -17708,8 +17722,8 @@ function promptPetName(pet) {
   $('petNameCancel').onclick = () => renderPetMenu(pet);
 }
 function closePetMenu() { $('petPopup').style.display = 'none'; popupOpen = false; petMenuTarget = null; }
-$('petClose').onclick = () => { Sound.click(); closePetMenu(); };
-$('petPutAway').onclick = () => {
+$w('petClose').onclick = () => { Sound.click(); closePetMenu(); };
+$w('petPutAway').onclick = () => {
   const pet = petMenuTarget; closePetMenu();
   if (!pet) return;
   const i = placedFood.indexOf(pet.f); if (i >= 0) { scene.remove(pet.f.mesh); placedFood.splice(i, 1); }
@@ -17926,9 +17940,9 @@ function openQuestBoard() {
   $('questPopup').style.display = 'flex';
 }
 function closeQuestBoard() { $('questPopup').style.display = 'none'; popupOpen = false; }
-$('questClose').onclick = () => { Sound.click(); closeQuestBoard(); };
-$('questPopup').addEventListener('click', e => { if (e.target === $('questPopup')) closeQuestBoard(); });
-$('questBtn').onclick = () => { Sound.click(); openQuestBoard(); };
+$w('questClose').onclick = () => { Sound.click(); closeQuestBoard(); };
+$w('questPopup').addEventListener('click', e => { if (e.target === $('questPopup')) closeQuestBoard(); });
+$w('questBtn').onclick = () => { Sound.click(); openQuestBoard(); };
 
 /* ============================ 🪞 HERO MIRROR: swap heroes mid-game — a quest unlock! ============================
    Kids want to TRY the other avatars without abandoning their save. Finish any 3 quests and the
@@ -17974,8 +17988,8 @@ function openHeroMirror() {
   $('mirrorPopup').style.display = 'flex';
 }
 function closeHeroMirror() { $('mirrorPopup').style.display = 'none'; popupOpen = false; }
-$('mirrorClose').onclick = () => { Sound.click(); closeHeroMirror(); };
-$('mirrorPopup').addEventListener('click', e => { if (e.target === $('mirrorPopup')) closeHeroMirror(); });
+$w('mirrorClose').onclick = () => { Sound.click(); closeHeroMirror(); };
+$w('mirrorPopup').addEventListener('click', e => { if (e.target === $('mirrorPopup')) closeHeroMirror(); });
 function swapHero(i) {
   const av = AVATARS[i];
   if (!av || i === G.avatarIndex) return;
@@ -18167,8 +18181,8 @@ function spawnFoodAt(x, z, onTable, kind, surfY, variant, care) {
   return f;
 }
 function closeShop() { $('shopPopup').style.display = 'none'; popupOpen = false; }
-$('shopClose').onclick = () => { Sound.click(); closeShop(); };
-$('shopPopup').addEventListener('click', e => { if (e.target === $('shopPopup')) { Sound.click(); closeShop(); } });  // tap outside the card to close
+$w('shopClose').onclick = () => { Sound.click(); closeShop(); };
+$w('shopPopup').addEventListener('click', e => { if (e.target === $('shopPopup')) { Sound.click(); closeShop(); } });  // tap outside the card to close
 
 /* ============================ BUILD / INTERACT ============================ */
 const raycaster = new THREE.Raycaster();
@@ -18689,7 +18703,7 @@ function setCameraMode(mode) {                 // the three views, by name (the 
   $('camBtn').textContent = camIcon();
   toast(mode === 'fp' ? '👁️ Through my eyes!' : mode === 'bird' ? '🦅 Bird\'s eye — tap any block from above to build on it!' : '🧍 Behind me!', 1600);
 }
-$('camBtn').onclick = () => {
+$w('camBtn').onclick = () => {
   Sound.click();
   const m = $('viewMenu');
   if (m.style.display === 'flex') { m.style.display = 'none'; return; }
@@ -18738,13 +18752,13 @@ function openHudMenu() {
   m.style.maxHeight = Math.max(150, innerHeight - r.bottom - 14) + 'px';       // short phones: the list scrolls
   m.style.display = 'flex';
 }
-$('menuBtn').onclick = () => {
+$w('menuBtn').onclick = () => {
   Sound.click();
   const m = $('hudMenu');
   if (m.style.display === 'flex') { m.style.display = 'none'; return; }
   openHudMenu();
 };
-$('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
+$w('sirenBtn').onclick = () => { Sound.click(); toggleSiren(); };
 function toggleSelfie() {
   G.selfie = !G.selfie;
   if (G.selfie && G.firstPerson) { G.firstPerson = false; $('camBtn').textContent = '🧍'; }   // selfie needs to see the character
@@ -18754,9 +18768,9 @@ function toggleSelfie() {
   const ab = $('selfieAngleBtn'); if (ab) { ab.style.display = G.selfie ? 'block' : 'none'; ab.textContent = '📷 Front'; }
   toast(G.selfie ? '🤳 Selfie mode — strike a pose and wave! (📷 to turn for a side view)' : '🧍 Back to normal view', 1600);
 }
-$('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
+$w('selfieBtn').onclick = () => { Sound.click(); toggleSelfie(); };
 // 🤳 cycle the selfie camera: front → left profile → right profile
-$('selfieAngleBtn').onclick = () => {
+$w('selfieAngleBtn').onclick = () => {
   Sound.click();
   const seq = [{ a: 0, l: '📷 Front' }, { a: 1.45, l: '👈 Left side' }, { a: -1.45, l: '👉 Right side' }];
   let i = seq.findIndex(s => Math.abs((G.selfieAngle || 0) - s.a) < 0.01);
@@ -19168,32 +19182,32 @@ function renderInv() {
     wrap.appendChild(row);
   }
 }
-$('invClose').onclick = () => { Sound.click(); closeInv(); };
-$('invBtn').onclick = () => { Sound.click(); openInv(); };
-$('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
-$('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
-$('travelClose').onclick = () => { Sound.click(); closeTravel(); };
-$('sandClose').onclick = () => { Sound.click(); closeSandbox(); };
-$('liftClose').onclick = () => { Sound.click(); closeLift(); };
-$('measureClose').onclick = () => { Sound.click(); closeMeasure(); };
-$('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
-$('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
-$('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
-$('feedClose').onclick = () => { Sound.click(); closeFeed(); };
-$('fairClose').onclick = () => { Sound.click(); closeFairJudge(); };
-$('gasClose').onclick = () => { Sound.click(); closeGas(); };
-$('nitroBtn').onclick = () => { Sound.click(); fireNitro(); };
-$('trainClose').onclick = () => { Sound.click(); closeTrainRide(); };
-$('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
-$('postClose').onclick = () => { Sound.click(); closePost(); };
-$('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
-$('arcadeClose').onclick = () => { Sound.click(); closeArcade(); };
-$('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else if (school) closeSchool(); else closeMart(); };
-$('vocabBtn').onclick = () => { Sound.click(); openVocab(); };
-$('vocabClose').onclick = () => { Sound.click(); closeVocab(); };
-$('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
-$('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
-$('promoBtn').onclick = async () => {
+$w('invClose').onclick = () => { Sound.click(); closeInv(); };
+$w('invBtn').onclick = () => { Sound.click(); openInv(); };
+$w('badgeBtn').onclick = () => { Sound.click(); openBadges(); };
+$w('badgeClose').onclick = () => { Sound.click(); closeBadges(); };
+$w('travelClose').onclick = () => { Sound.click(); closeTravel(); };
+$w('sandClose').onclick = () => { Sound.click(); closeSandbox(); };
+$w('liftClose').onclick = () => { Sound.click(); closeLift(); };
+$w('measureClose').onclick = () => { Sound.click(); closeMeasure(); };
+$w('motorsClose').onclick = () => { Sound.click(); closeMotors(); };
+$w('bakeClose').onclick = () => { Sound.click(); closeBakery(); };
+$w('pizzaClose').onclick = () => { Sound.click(); closePizza(); };
+$w('feedClose').onclick = () => { Sound.click(); closeFeed(); };
+$w('fairClose').onclick = () => { Sound.click(); closeFairJudge(); };
+$w('gasClose').onclick = () => { Sound.click(); closeGas(); };
+$w('nitroBtn').onclick = () => { Sound.click(); fireNitro(); };
+$w('trainClose').onclick = () => { Sound.click(); closeTrainRide(); };
+$w('libraryClose').onclick = () => { Sound.click(); closeLibrary(); };
+$w('postClose').onclick = () => { Sound.click(); closePost(); };
+$w('cinemaClose').onclick = () => { Sound.click(); closeCinema(); };
+$w('arcadeClose').onclick = () => { Sound.click(); closeArcade(); };
+$w('martClose').onclick = () => { Sound.click(); if (vorder) closeVehicleOrder(); else if (school) closeSchool(); else closeMart(); };
+$w('vocabBtn').onclick = () => { Sound.click(); openVocab(); };
+$w('vocabClose').onclick = () => { Sound.click(); closeVocab(); };
+$w('unlockClose').onclick = () => { Sound.click(); closeUnlock(); };
+$w('unlockBuyBtn').onclick = () => { Sound.click(); beginPurchase(); };
+$w('promoBtn').onclick = async () => {
   Sound.click();
   const msg = $('promoMsg'), btn = $('promoBtn');
   msg.style.color = '#7a6a35'; msg.textContent = 'Checking…'; btn.disabled = true;
@@ -19209,7 +19223,7 @@ $('promoBtn').onclick = async () => {
       : 'That code didn\'t work. Check the spelling?';
   }
 };
-$('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('promoBtn').click(); });
+$w('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('promoBtn').click(); });
 
 /* 🔙 Back-button guard — on tablets/PWA the Android back button (and exiting a video's
    fullscreen) used to UNLOAD the page, dumping kids back at the start screen. e.g. Leo
@@ -19262,20 +19276,20 @@ addEventListener('popstate', () => {
   }
   armBackGuard();                               // nothing open — keep one guard so a stray back never reloads the game
 });
-$('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
-$('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
-$('homeBtn').onclick = () => { Sound.click(); requestLeave(); };
-$('leaveBtn').onclick = () => { Sound.click(); requestLeave(); };
-$('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
+$w('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
+$w('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
+$w('homeBtn').onclick = () => { Sound.click(); requestLeave(); };
+$w('leaveBtn').onclick = () => { Sound.click(); requestLeave(); };
+$w('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 function freeMouse() {
   toast(G.mouseWalk
     ? '🖱️ 🚶 Click-to-move ON — left-click the ground to walk there; click a math block/shop to use it. Drag to look. (Toggle it bottom-left.)'
     : '🖱️ Drag to look • left-click to build • right-click (or X) to remove. Want mouse movement? Tap 🚶 Click-to-move (bottom-left) — no keyboard needed!', 4200);
 }
-$('cursorBtn').onclick = () => { Sound.click(); try { openLeoIntro(false); } catch (e) { freeMouse(); } };
-$('leoSkip').onclick = () => { Sound.click(); closeLeoIntro(); };
-$('leoNext').onclick = () => { Sound.click(); leoIntroNext(); };
-$('leoBubble').onclick = () => { if (leoIntro) { Sound.click(); renderLeoIntro(); } };
+$w('cursorBtn').onclick = () => { Sound.click(); try { openLeoIntro(false); } catch (e) { freeMouse(); } };
+$w('leoSkip').onclick = () => { Sound.click(); closeLeoIntro(); };
+$w('leoNext').onclick = () => { Sound.click(); leoIntroNext(); };
+$w('leoBubble').onclick = () => { if (leoIntro) { Sound.click(); renderLeoIntro(); } };
 // 🧱 Build / ⛏️ Remove toggle (desktop): so a plain left-click can remove blocks too
 function setRemoveMode(on) {
   G.removeMode = !!on;
@@ -19283,11 +19297,11 @@ function setRemoveMode(on) {
   b.textContent = G.removeMode ? '⛏️ Remove' : '🧱 Build';
   b.classList.toggle('remove', G.removeMode);
 }
-$('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
+$w('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
   if (!G.removeMode) ensureBuildClickPlaces();
   toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click places a block. WASD/joystick to move.', 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
-$('useBtnDesk').onclick = () => { tryUse(); };
+$w('useBtnDesk').onclick = () => { tryUse(); };
 function syncMouseWalkUI(quiet) {
   const b = $('walkBtn');
   if (b) {
@@ -19313,23 +19327,23 @@ function ensureBuildClickPlaces() {
   syncMouseWalkUI(true);
   toast('🧱 Building — click places a block. Move with WASD or the joystick.', 3000);
 }
-$('walkBtn').onclick = () => {
+$w('walkBtn').onclick = () => {
   Sound.click();
   // Turning click-to-move ON leaves build-click; turning OFF returns to place-blocks
   if (!G.mouseWalk) { G.buildMode = false; }
   G.mouseWalk = !G.mouseWalk; player.walkTo = null;
   syncMouseWalkUI(false);
 };
-$('undoBtn').onclick = () => { Sound.click(); undoLast(); };
-$('bridgeBtn').onclick = () => { Sound.click(); fillBridge(); };
+$w('undoBtn').onclick = () => { Sound.click(); undoLast(); };
+$w('bridgeBtn').onclick = () => { Sound.click(); fillBridge(); };
 function refreshMuteIcons() {
   const ic = Sound.muted ? '🔇' : '🔊';
   const a = $('soundBtn'), b = $('startSoundBtn');
   if (a) a.textContent = ic; if (b) b.textContent = ic;
 }
 function toggleAudio() { const m = Sound.toggleMute(); refreshMuteIcons(); if (!m) Sound.click(); }
-$('soundBtn').onclick = toggleAudio;
-$('startSoundBtn').onclick = toggleAudio;
+$w('soundBtn').onclick = toggleAudio;
+$w('startSoundBtn').onclick = toggleAudio;
 refreshMuteIcons();                                   // reflect the remembered on/off choice on load
 
 /* mouse: drag to look, click to build — no pointer-lock, cursor always free (friendlier) */
@@ -19638,10 +19652,10 @@ function deletePlayer(name) {                          // wipe a player's saves 
   if (name === G.playerName) { profile = freshProfile(); profile.firstPlayed = Date.now(); }
 }
 function closeDel() { $('delPopup').style.display = 'none'; delTarget = null; }
-$('delInput').oninput = () => { $('delConfirm').disabled = $('delInput').value.trim() !== delCodeVal; };
-$('delInput').onkeydown = (e) => { if (e.key === 'Enter' && !$('delConfirm').disabled) $('delConfirm').onclick(); };
-$('delCancel').onclick = () => { Sound.click(); closeDel(); };
-$('delConfirm').onclick = () => {
+$w('delInput').oninput = () => { $('delConfirm').disabled = $('delInput').value.trim() !== delCodeVal; };
+$w('delInput').onkeydown = (e) => { if (e.key === 'Enter' && !$('delConfirm').disabled) $('delConfirm').onclick(); };
+$w('delCancel').onclick = () => { Sound.click(); closeDel(); };
+$w('delConfirm').onclick = () => {
   if (!delTarget || $('delInput').value.trim() !== delCodeVal) return;
   Sound.click();
   const t = delTarget;
@@ -19752,7 +19766,7 @@ if ($('startBtn')) $('startBtn').onclick = () => {
   startGame();
   try { saveGame(); } catch (e) {}     // persist calm mode immediately
 };
-$('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
+$w('grownupBtn').onclick = () => { Sound.click(); openGrownup(); };
 function shareGame() {
   const data = { title: 'Stackadoo', text: 'My kids beg to play this 😂 They build worlds, drive fire trucks & ride water slides — by doing math, reading, spelling & grammar. No ads, kid-safe, free to start:', url: 'https://stackadoo.com/' };
   if (navigator.share) { navigator.share(data).catch(() => {}); return; }
@@ -19760,9 +19774,9 @@ function shareGame() {
   if (navigator.clipboard) { navigator.clipboard.writeText(link).then(() => toast('🔗 Link copied! Paste it anywhere to share Stackadoo.', 3000), () => toast('Share: ' + link, 4000)); }
   else toast('Share this link: ' + link, 4000);
 }
-$('shareBtn').onclick = () => { Sound.click(); shareGame(); };
-$('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
-$('reportClose').onclick = () => { Sound.click(); closeReportCard(); };
+$w('shareBtn').onclick = () => { Sound.click(); shareGame(); };
+$w('grownupClose').onclick = () => { Sound.click(); closeGrownup(); };
+$w('reportClose').onclick = () => { Sound.click(); closeReportCard(); };
 
 /* ---- Export / Import all saves & progress (move builds between devices/addresses) ---- */
 function gatherSaveData() {
@@ -19857,9 +19871,9 @@ function importSaves(file) {
   };
   reader.readAsText(file);
 }
-$('exportSavesBtn').onclick = () => { Sound.click(); exportSaves(); };
-$('importSavesBtn').onclick = () => { Sound.click(); $('importSavesFile').click(); };
-$('importSavesFile').onchange = e => { const f = e.target.files && e.target.files[0]; if (f) importSaves(f); e.target.value = ''; };
+$w('exportSavesBtn').onclick = () => { Sound.click(); exportSaves(); };
+$w('importSavesBtn').onclick = () => { Sound.click(); $('importSavesFile').click(); };
+$w('importSavesFile').onchange = e => { const f = e.target.files && e.target.files[0]; if (f) importSaves(f); e.target.value = ''; };
 
 /* ============================ ☁️ ACCOUNTS & CLOUD SAVE (Firebase) ============================
    Optional. A PARENT signs in (Google or email/password) so their purchase + every kid's
@@ -20092,17 +20106,17 @@ function renderAuthUI() {
   const g = $('authEntryGrown'); if (g) g.textContent = user ? '☁️ Account — synced ✓' : '☁️ Sign in to sync & restore';
   const h = $('authEntryHome'); if (h) h.textContent = user ? '☁️ Signed in ✓ — worlds sync on every device' : '☁️ Sign in — keep your worlds & unlock on any device';
 }
-$('authClose').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); closeAuth(); };
-$('authGoogleBtn').onclick = () => authGoogle();
-$('authInBtn').onclick = () => authEmail(false);
-$('authUpBtn').onclick = () => authEmail(true);
-$('authOutBtn').onclick = () => authSignOut();
-$('authEntryGrown').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
-$('authEntryUnlock').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
-$('authEntryHome').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
+$w('authClose').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); closeAuth(); };
+$w('authGoogleBtn').onclick = () => authGoogle();
+$w('authInBtn').onclick = () => authEmail(false);
+$w('authUpBtn').onclick = () => authEmail(true);
+$w('authOutBtn').onclick = () => authSignOut();
+$w('authEntryGrown').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
+$w('authEntryUnlock').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
+$w('authEntryHome').onclick = () => { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); openAuth(); };
 try { if (SS.getItem('stackadooJustSynced')) { SS.removeItem('stackadooJustSynced'); setTimeout(() => { if (typeof toast === 'function') toast('☁️ Synced! Your worlds & unlock are up to date on this device.', 3600); }, 900); } } catch (e) {}
 
-$('resetPurchaseBtn').onclick = () => {
+$w('resetPurchaseBtn').onclick = () => {
   Sound.click();
   try { LS.removeItem(UNLOCK_KEY); } catch (e) {}
   $('purchaseStatus').textContent = 'Free (Math Meadow only)';
@@ -20124,8 +20138,8 @@ function showSetupScreen(id) {
     });
   }
 }
-$('newGameBtn').onclick = () => { Sound.click(); syncWorldPicker(selectedSetupWorld() || 'meadow'); showSetupScreen('screenSettings'); };
-$('toHeroBtn').onclick = () => { Sound.click(); showSetupScreen('screenHero'); };
+$w('newGameBtn').onclick = () => { Sound.click(); syncWorldPicker(selectedSetupWorld() || 'meadow'); showSetupScreen('screenSettings'); };
+$w('toHeroBtn').onclick = () => { Sound.click(); showSetupScreen('screenHero'); };
 document.querySelectorAll('#setupCard [data-go]').forEach(b => {
   b.addEventListener('click', () => { Sound.click(); showSetupScreen(b.dataset.go); });
 });
@@ -20256,7 +20270,7 @@ function doomsdayStart() {
   toast('💜 The GLOOMIES are coming! They start slow — hide behind walls + a 🚪 door, or press F (tap 🎯) to bonk them with softballs!', 6000);
   spawnGloomies(3);            // a few slow ones to start; more arrive over time
 }
-$('againBtn').onclick = () => location.reload();
+$w('againBtn').onclick = () => location.reload();
 
 /* ============================ 🧑‍🤝‍🧑 TOWN FRIENDS (NPCs) ============================
    Three or four heroes stroll near spawn like Dojo-style townsfolk. Walk up (or tap them)
