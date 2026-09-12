@@ -3,7 +3,7 @@
    picks up the latest version while online, and the WHOLE game still works with no Wi-Fi —
    including the CDN libraries (Three.js, fonts, Firebase), which we now cache too. After one
    online load the game runs offline. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v274';
+const CACHE = 'stackadoo-v275';
 
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
@@ -68,15 +68,10 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(req).then(resp => resp.text().then(t => {
         const patched = patchPlayHtml(t);
-        const out = htmlResponse(patched);
-        caches.open(CACHE).then(c => c.put(req, out.clone())).catch(() => {});
-        return out;
-      })).catch(() => caches.match(req).then(c => {
-        if (!c) return caches.match('play.html').then(async p => {
-          if (!p) return Response.error();
-          return htmlResponse(patchPlayHtml(await p.text()));
-        });
-        return c.text().then(t => htmlResponse(patchPlayHtml(t)));
+        return htmlResponse(patched);   // never cache play.html — stale copies hid Continue
+      })).catch(() => caches.match('play.html').then(async p => {
+        if (!p) return Response.error();
+        return htmlResponse(patchPlayHtml(await p.text()));
       }))
     );
     return;

@@ -1123,7 +1123,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v272 — email Sign in works on this card</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v275 — Dancer should appear under Continue</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 274 — Continue lists every player from Grown-Ups.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 275 — Continue reads players from this device even if the 3D menu is stuck.</div>
   </div>
 </div>
 <script>
@@ -2067,11 +2067,15 @@
   window.bootOpenAuth = bootOpenAuth;
   window.__stackadooBootFirebase = initFb;
   function paintSaves() {
-    if (typeof refreshSavedList === 'function') {
-      try { refreshSavedList(); return; } catch (e) {}
-    }
     var list = el('savedList'), no = el('noSaves');
     if (!list) return;
+    if (typeof refreshSavedList === 'function') {
+      try { refreshSavedList(); } catch (e) {}
+    }
+    if (list.children.length) {
+      if (no) no.style.display = 'none';
+      return;
+    }
     var names = {}, rows = [];
     try {
       for (var i = 0; i < localStorage.length; i++) {
@@ -2083,7 +2087,7 @@
         var name = o.name || o._name || (k.split(':')[1] || '').split('::')[0] || 'Player';
         if (!name || names[name.toLowerCase()]) continue;
         names[name.toLowerCase()] = 1;
-        rows.push({ name: name, world: o.world || 'meadow', grade: o.grade || 2, when: o.when || o.lastPlayed || 0 });
+        rows.push({ name: name, world: o.world || 'meadow', grade: o.grade || 2, when: o.when || o.lastPlayed || 0, blocks: 16, fromProfile: true });
       }
     } catch (e) {}
     list.innerHTML = '';
@@ -2093,7 +2097,8 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'loadBtn';
-      btn.innerHTML = '<span class="slotInfo"><span class="slotName">🌱 ' + s.name + '</span><span class="slotMeta">Math Meadow • Grade ' + (s.grade || 2) + '</span></span>';
+      var safe = String(s.name).replace(/[&<>"]/g, function (c) { return ({ '&': '&', '<': '<', '>': '>', '"': '"' })[c]; });
+      btn.innerHTML = '<span class="slotInfo"><span class="slotName">🌱 ' + safe + '</span><span class="slotMeta">Math Meadow • Grade ' + (s.grade || 2) + '</span></span>';
       btn.onclick = function () {
         if (typeof restoreGame === 'function') restoreGame(s);
         else { var ni = el('nameInput'); if (ni) ni.value = s.name; }
@@ -2105,9 +2110,15 @@
     });
   }
   window.paintSaves = paintSaves;
+  setTimeout(paintSaves, 0);
   setTimeout(paintSaves, 200);
   setTimeout(paintSaves, 900);
-  setTimeout(paintSaves, 2000);
+  setTimeout(paintSaves, 2500);
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { try { r.update(); } catch (e) {} });
+    }).catch(function () {});
+  }
   initFb();
   setTimeout(initFb, 400);
   setTimeout(initFb, 1200);
@@ -21180,7 +21191,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=274').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=275').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
