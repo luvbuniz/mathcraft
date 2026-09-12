@@ -1123,7 +1123,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v271 — Sign out is on this card</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v272 — email Sign in works on this card</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 271 — Sign out works; worlds are not erased by sign-in.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 272 — email Sign in is wired; MathCraft saves are kept.</div>
   </div>
 </div>
 <script>
@@ -1827,6 +1827,17 @@
   };
   window.FIREBASE_CONFIG = window.FIREBASE_CONFIG || CFG;
   function el(id) { return document.getElementById(id); }
+  try {
+    var _i, _k, _nk, _n = localStorage.length;
+    for (_i = 0; _i < _n; _i++) {
+      _k = localStorage.key(_i);
+      if (!_k) continue;
+      _nk = null;
+      if (_k.indexOf('mathcraftSave:') === 0) _nk = 'stackadooSave:' + _k.slice(14);
+      else if (_k.indexOf('mathcraftProfile:') === 0) _nk = 'stackadooProfile:' + _k.slice(17);
+      if (_nk && localStorage.getItem(_nk) == null) localStorage.setItem(_nk, localStorage.getItem(_k));
+    }
+  } catch (e) {}
   function isPhoneAuth() {
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '') ||
       (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
@@ -2015,6 +2026,41 @@
     if (a && a.signOut) a.signOut().then(done).catch(done);
     else done();
   }
+  function bootEmail(create) {
+    initFb();
+    var email = ((el('authEmail') && el('authEmail').value) || '').trim();
+    var pw = (el('authPass') && el('authPass').value) || '';
+    var m = el('authMsg');
+    if (!email || !pw) {
+      if (m) { m.style.color = '#c0392b'; m.textContent = 'Enter your email and a password.'; }
+      return;
+    }
+    var a = window.fbAuth;
+    if (!a) {
+      if (m) { m.style.color = '#c0392b'; m.textContent = 'Sign-in is still starting… wait a second and tap Sign in again.'; }
+      return;
+    }
+    if (m) { m.style.color = '#2E5E8C'; m.textContent = create ? 'Creating account…' : 'Signing in…'; }
+    var fn = create ? 'createUserWithEmailAndPassword' : 'signInWithEmailAndPassword';
+    a[fn](email, pw).then(function () {
+      if (m) { m.style.color = '#2f8a52'; m.textContent = create ? 'Account created! Syncing…' : 'Signed in! Syncing…'; }
+      if (a.currentUser) bootFinish(a.currentUser);
+    }).catch(function (e) {
+      var c = (e && e.code) || '';
+      var msg = (e && e.message) || 'That didn\'t work.';
+      if (c.indexOf('user-not-found') >= 0)
+        msg = 'No password account for that email. Use the same email you created on Stackadoo, or tap Create account.';
+      else if (c.indexOf('wrong-password') >= 0 || c.indexOf('invalid-credential') >= 0)
+        msg = 'Wrong email or password. Use the Stackadoo password for this email (not your Proton/Gmail login), or Continue with Google if that\'s how you signed in before.';
+      else if (c.indexOf('email-already-in-use') >= 0)
+        msg = 'That email already has an account — tap Sign in, not Create account.';
+      else if (c.indexOf('weak-password') >= 0)
+        msg = 'Password needs at least 6 characters.';
+      if (m) { m.style.color = '#c0392b'; m.textContent = msg; }
+    });
+  }
+  window.bootEmail = bootEmail;
+  window.bootFinish = bootFinish;
   window.bootSignOut = bootSignOut;
   window.goGoogle = goGoogle;
   window.bootOpenAuth = bootOpenAuth;
@@ -2030,6 +2076,10 @@
   if (x) x.addEventListener('click', function () { var p = el('authPopup'); if (p) p.style.display = 'none'; });
   var so = el('authOutBtn');
   if (so) so.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); bootSignOut(); });
+  var ein = el('authInBtn');
+  if (ein) ein.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); bootEmail(false); });
+  var eup = el('authUpBtn');
+  if (eup) eup.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); bootEmail(true); });
   ['authGoogleBtn', 'authGoogleHome'].forEach(function (id) {
     var b = el(id); if (!b) return;
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); goGoogle(); });
@@ -19755,11 +19805,13 @@ function authGoogle() {
   popupGoogle();
 }
 function authEmail(create) {
-  if (!cloudReady()) { authMsg('Sign-in needs an internet connection.', true); return; }
+  if (typeof window.__stackadooBootFirebase === 'function') window.__stackadooBootFirebase();
+  const a = (typeof fbAuth !== 'undefined' && fbAuth) || window.fbAuth;
+  if (!a) { authMsg('Sign-in needs an internet connection. Wait a second and tap Sign in again.', true); return; }
   const email = ($('authEmail').value || '').trim(), pw = $('authPass').value || '';
   if (!email || !pw) { authMsg('Enter your email and a password.', true); return; }
   const fn = create ? 'createUserWithEmailAndPassword' : 'signInWithEmailAndPassword';
-  fbAuth[fn](email, pw).then(() => { authMsg(create ? 'Account created! Syncing…' : 'Signed in! Syncing…'); authAutoClose(); }).catch(e => authMsg(friendlyAuthErr(e), true));
+  a[fn](email, pw).then(() => { authMsg(create ? 'Account created! Syncing…' : 'Signed in! Syncing…'); authAutoClose(); if (a.currentUser && typeof window.bootFinish !== 'function') {} }).catch(e => authMsg(friendlyAuthErr(e), true));
 }
 function authSignOut() {
   const a = (typeof fbAuth !== 'undefined' && fbAuth) || window.fbAuth;
@@ -21028,7 +21080,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=271').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=272').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
