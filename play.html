@@ -1811,7 +1811,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 272 — email Sign in is wired; MathCraft saves are kept.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 273 — For Grown-Ups and Tell a friend work even if the 3D menu glitches.</div>
   </div>
 </div>
 <script>
@@ -2083,6 +2083,37 @@
   ['authGoogleBtn', 'authGoogleHome'].forEach(function (id) {
     var b = el(id); if (!b) return;
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); goGoogle(); });
+  });
+  function homeClick(id, run) {
+    var b = el(id); if (!b) return;
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      try {
+        if (typeof Sound !== 'undefined' && Sound.click) Sound.click();
+        run();
+      } catch (err) { console.warn(id, err); }
+    });
+  }
+  homeClick('grownupBtn', function () {
+    if (typeof openGrownup === 'function') { openGrownup(); return; }
+    var p = el('grownupPopup'); if (p) p.style.display = 'flex';
+  });
+  homeClick('shareBtn', function () {
+    if (typeof shareGame === 'function') { shareGame(); return; }
+    var url = 'https://stackadoo.com/';
+    if (navigator.share) { navigator.share({ title: 'Stackadoo', text: 'Build worlds. Solve math.', url: url }).catch(function () {}); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function () {});
+    else window.prompt('Copy this link:', url);
+  });
+  homeClick('newGameBtn', function () {
+    if (typeof showSetupScreen === 'function') {
+      try { if (typeof syncWorldPicker === 'function') syncWorldPicker((typeof selectedSetupWorld === 'function' && selectedSetupWorld()) || 'meadow'); } catch (e) {}
+      showSetupScreen('screenSettings');
+    }
+  });
+  homeClick('grownupClose', function () {
+    if (typeof closeGrownup === 'function') closeGrownup();
+    else { var p = el('grownupPopup'); if (p) p.style.display = 'none'; }
   });
 })();
 </script>
@@ -19318,6 +19349,7 @@ function buildMenu() {
   // Gloomies / timer setup controls removed from front UI — no handlers.
 
   // avatar cards with live 3D previews
+  try {
   const grid = $('avatarGrid');
   const PV = 320;                                    // higher-res preview for crisp avatars
   const pvScene = new THREE.Scene();                 // transparent so we can paint our own backdrop
@@ -19381,8 +19413,9 @@ function buildMenu() {
     };
   });
   pvRenderer.dispose();
+  } catch (e) { console.warn('Avatar previews failed:', e); }
 }
-buildMenu();
+try { buildMenu(); } catch (e) { console.error('Menu setup failed (home buttons still work):', e); }
 
 /* Deleting a saved game asks for a typed code first, so a button-happy little one
    can't wipe out a build by accident (this really happened to Leo!). */
@@ -21080,7 +21113,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=272').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=273').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
