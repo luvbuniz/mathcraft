@@ -57,7 +57,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="interior-art.js?v=283"></script>
+<script src="interior-art.js?v=283-ready"></script>
 <script src="lib/GLTFLoader.js"></script><!-- 🎨 real 3D character models (avatars/<id>.glb), optional & offline-cached -->
 <!-- ☁️ Firebase (optional accounts + cloud save). Compat builds expose a global `firebase`.
      Auth + Firestore only — NO analytics, to keep the "no data collection" promise. -->
@@ -21611,7 +21611,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=283').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=283-final').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —

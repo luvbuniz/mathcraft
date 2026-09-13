@@ -8,7 +8,7 @@ const CACHE = 'stackadoo-v283';
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
 const PRECACHE = [
-  'play.html', 'manifest.json', 'google-signin.js', 'interior-art.js?v=283', 'textures/oak-store-v1.jpg?v=280',
+  'play.html', 'manifest.json', 'google-signin.js', 'interior-art.js?v=283-ready', 'textures/oak-store-v1.jpg?v=280',
   'lib/GLTFLoader.js',                       // 🎨 avatar model loader (avatars/*.glb cache on first use)
   'arcade/voiddrift.html',                   // 🚀 the arcade cabinet (self-contained, plays offline)
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
