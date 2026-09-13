@@ -4,3 +4,4 @@ admin.html
 *.md
 character-sheets/
 tools/
+.mcp.json
