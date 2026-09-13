@@ -1173,8 +1173,9 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v286 — six heroes and two town friends</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v287 — clear save-and-leave confirmation</div>
 
+      <p id="leaveSavedNotice" role="status" hidden style="color:#286444;font-weight:bold"></p>
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
         <div id="savedList"></div>
@@ -1882,7 +1883,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 286 — a smaller hero picker and two walking friends.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 287 — save once, then leave with confirmation.</div>
   </div>
 </div>
 <script>
@@ -2327,6 +2328,18 @@
 <!-- ================= TRAIN RIDE OVERLAY (cinematic; hides the HUD) ================= -->
 <div id="rideOverlay"><div id="rideCaption">🚂 All aboard the Silver Creek Express!</div></div>
 <div id="rotateOverlay"><div class="ph">📱</div><b>Turn your phone sideways!</b><span>Stackadoo plays in landscape — flip your phone and keep building. 🧱</span></div>
+
+<div id="leavePopup" class="popup" role="dialog" aria-modal="true" aria-labelledby="leaveTitle" aria-describedby="leaveMessage" style="z-index:1100;align-items:center">
+  <div class="popupCard" style="width:min(430px,94vw);text-align:center">
+    <h2 id="leaveTitle">Save your world before leaving?</h2>
+    <p id="leaveMessage">Your buildings, pets and progress will be saved on this device.</p>
+    <p id="leaveStatus" role="status" aria-live="polite" style="min-height:1.5em;color:#8c3023"></p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px">
+      <button id="leaveStayBtn" class="closeX" style="width:auto;height:auto;min-height:48px;padding:12px 18px;font:inherit;border-radius:14px">Keep playing</button>
+      <button id="leaveSaveBtn" class="btn btn-primary" style="min-height:48px;padding:12px 20px">💾 Save &amp; leave</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* 🛡️ STORAGE ARMOR — privacy modes (Brave "Block all cookies", strict shields, some private
@@ -4782,8 +4795,10 @@ function masteryStage(correct) {
 }
 function saveProfile() {
   profile.lastPlayed = Date.now();
-  try { LS.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) {}
-  try { cloudSyncUp(); } catch (e) {}                       // mirror to the cloud account if signed in
+  try { LS.setItem(profileKey(G.playerName), JSON.stringify(profile)); } catch (e) { return false; }
+  if (LS.blocked) return false;                            // an in-memory fallback is not a durable save
+  try { cloudSyncUp(); } catch (e) {}                       // cloud sync continues separately
+  return true;
 }
 
 const SKILL_LABELS = {
@@ -5408,7 +5423,7 @@ function syncPetState() {
 }
 let lastSaveAt = 0;
 function saveGame() {
-  if (!G.playerName) return;
+  if (!G.playerName) return false;
   try {
     LS.setItem(saveKey(G.playerName, G.world), JSON.stringify({
       name: G.playerName, world: G.world, grade: G.grade, mode: G.mode, avatarIndex: G.avatarIndex, gloomiesEnabled: G.gloomiesEnabled,
@@ -5426,9 +5441,11 @@ function saveGame() {
       pos: [player.pos.x, player.pos.y, player.pos.z],
       when: Date.now()
     }));
-  } catch (e) {}
-  persistPack();                                 // keep the global backpack in sync with what you're carrying
-  try { cloudSyncUp(); } catch (e) {}            // mirror to the cloud account if signed in
+  } catch (e) { return false; }
+  if (LS.blocked) return false;
+  if (persistPack() === false) return false;     // keep the shared backpack and learning profile durable too
+  try { cloudSyncUp(); } catch (e) {}            // background sync; local success does not claim cloud completion
+  return true;
 }
 function listSaves() {
   const out = [];
@@ -5646,18 +5663,54 @@ function resetGameState() {
   G.npcHomes = {};
   G.pendingLevelQuest = null;
 }
-let leaveArmedUntil = 0;
+let leaveBusy = false, leavePreviousPopupOpen = false, leaveReturnFocus = null;
 function requestLeave() {
-  if (!G.running) { goHome(); return; }
-  const n = performance.now();
-  if (n < leaveArmedUntil) { leaveArmedUntil = 0; goHome(); return; }
-  leaveArmedUntil = n + 3200;
-  toast('🏠 Tap Leave again to save & go home. (Escape stays in the game.)', 3000);
+  if (!G.running) return;
+  if ($('leavePopup').style.display === 'flex') return;
+  leavePreviousPopupOpen = popupOpen; leaveReturnFocus = document.activeElement;
+  popupOpen = true;
+  $('hudMenu').style.display = 'none'; $('viewMenu').style.display = 'none';
+  Object.keys(keys).forEach(k => { keys[k] = false; });
+  touch.joyX = 0; touch.joyY = 0; touch.jump = false; touch.moveYaw = null;
+  try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
+  $('leaveStatus').textContent = '';
+  $('leaveSaveBtn').disabled = false; $('leaveStayBtn').disabled = false;
+  $('leaveSaveBtn').textContent = '💾 Save & leave';
+  $('leavePopup').style.display = 'flex';
+  $('leaveStayBtn').focus();
+}
+function cancelLeave() {
+  if (leaveBusy) return;
+  $('leavePopup').style.display = 'none'; popupOpen = leavePreviousPopupOpen;
+  if (leaveReturnFocus && leaveReturnFocus.isConnected) leaveReturnFocus.focus();
+}
+function confirmLeave() {
+  if (leaveBusy || $('leavePopup').style.display !== 'flex') return;
+  leaveBusy = true;
+  $('leaveSaveBtn').disabled = true; $('leaveStayBtn').disabled = true;
+  $('leaveSaveBtn').textContent = 'Saving…'; $('leaveStatus').textContent = 'Saving your world…';
+  // Give slower devices a frame to paint feedback before serializing a large world.
+  requestAnimationFrame(() => setTimeout(() => {
+    let saved = false;
+    try { saved = saveGame() === true; } catch (e) { console.warn('Save before leaving failed', e); }
+    if (!saved) {
+      leaveBusy = false;
+      $('leaveSaveBtn').disabled = false; $('leaveStayBtn').disabled = false;
+      $('leaveSaveBtn').textContent = 'Try saving again';
+      $('leaveStatus').textContent = 'We couldn’t save on this device. Your game is still open. Try again or keep playing.';
+      $('leaveStayBtn').focus();
+      return;
+    }
+    goHome(); // the only route here has already saved successfully
+    const notice = $('leaveSavedNotice');
+    notice.textContent = '💾 ' + G.playerName + '’s world is saved on this device.'; notice.hidden = false;
+    $('newGameBtn').focus();
+    leaveBusy = false;
+  }, 0));
 }
 function goHome() {
-  leaveArmedUntil = 0;
+  $('leavePopup').style.display = 'none';
   try { closeLeoIntro(); } catch (e) { try { Narrator.stop(); } catch (e2) {} }
-  if (G.running && !G.over) saveGame();
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
   if (typeof clearNpcs === 'function') clearNpcs();
   G.running = false; popupOpen = false;
@@ -7027,9 +7080,9 @@ function packSnapshot() {
     garageDoors: G.garageDoors || 0, furniture: Object.assign({}, G.furniture) };
 }
 function persistPack() {                      // mirror the live backpack into the global pack (saved to disk)
-  if (!profile.packMigrated) return;         // syncPack hasn't unified the old per-world bags yet — don't clobber
+  if (!profile.packMigrated) return saveProfile(); // preserve progress without replacing an unmigrated backpack
   profile.pack = packSnapshot();
-  profileDirty = true; saveProfile();
+  profileDirty = true; return saveProfile();
 }
 function syncPack() {
   // one-time: combine every world's leftover backpack into a single global one (nothing is lost)
@@ -18716,6 +18769,7 @@ function tryUse() {
 addEventListener('keydown', e => {
   if (e.code === 'Escape' || e.key === 'Escape') {
     e.preventDefault();
+    if ($('leavePopup').style.display === 'flex') { cancelLeave(); return; }
     // Close chat / popups / menus. Never dump to the home screen unless they tap 🏠 Leave.
     if (typeof chatNpc !== 'undefined' && chatNpc && typeof hideNpcChat === 'function') { hideNpcChat(); return; }
     if ($('viewMenu') && $('viewMenu').style.display === 'flex') { $('viewMenu').style.display = 'none'; return; }
@@ -19513,6 +19567,7 @@ $w('promoInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('pr
    watched a Library movie, pressed back, and the whole game restarted. Now back simply
    CLOSES the open popup (reusing its own ✕ handler) and re-arms, so the game never reloads. */
 function topOpenPopup() {
+  if ($('leavePopup').style.display === 'flex') return $('leavePopup');
   const ps = document.querySelectorAll('.popup');
   for (let i = 0; i < ps.length; i++) { if (getComputedStyle(ps[i]).display !== 'none') return ps[i]; }
   return null;
@@ -19559,10 +19614,24 @@ addEventListener('popstate', () => {
   }
   armBackGuard();                               // nothing open — keep one guard so a stray back never reloads the game
 });
-$w('saveBtn').onclick = () => { Sound.click(); saveGame(); toast('💾 Saved, ' + G.playerName + '! You can close the game safely.', 2600); };
+$w('saveBtn').onclick = () => { Sound.click(); const saved = saveGame(); toast(saved ? '💾 Saved on this device, ' + G.playerName + '!' : 'We couldn’t save on this device. Keep the game open and try again.', 4000); };
 $w('realtyClose').onclick = () => { Sound.click(); closeRealty(); };
 $w('homeBtn').onclick = () => { Sound.click(); requestLeave(); };
 $w('leaveBtn').onclick = () => { Sound.click(); requestLeave(); };
+$('leaveStayBtn').onclick = cancelLeave;
+$('leaveSaveBtn').onclick = confirmLeave;
+$('leavePopup').addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Escape') { e.preventDefault(); cancelLeave(); return; }
+  if (e.key === 'Tab') {
+    const buttons = [...$('leavePopup').querySelectorAll('button:not(:disabled)')];
+    if (!buttons.length) { e.preventDefault(); return; }
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
 $w('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 function freeMouse() {
   toast(G.mouseWalk
@@ -20394,6 +20463,7 @@ document.querySelectorAll('#setupCard [data-go]').forEach(b => {
 });
 
 function startGame() {
+  $('leaveSavedNotice').hidden = true;
   try { if (typeof Analytics !== 'undefined' && Analytics && typeof Analytics.play === 'function') Analytics.play(); } catch (e) {}
   try { const ss = $('startScreen'); if (ss) ss.style.display = 'none'; } catch (e) {}
   try { const h = $('hud'); if (h) h.style.display = 'block'; } catch (e) {}
@@ -21637,7 +21707,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=286-ready').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=287-ready').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
