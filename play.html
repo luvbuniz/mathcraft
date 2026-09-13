@@ -1173,7 +1173,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v285 — lighter flocks, same birds</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v286 — six heroes and two town friends</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1882,7 +1882,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 285 — fewer drawing operations for pet birds.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 286 — a smaller hero picker and two walking friends.</div>
   </div>
 </div>
 <script>
@@ -3975,6 +3975,10 @@ const AVATARS = [
     }
   }
 ];
+
+// Keep the full indexed registry for old saves; offer a small core cast to new players.
+const CORE_HERO_IDS = new Set(['queenfox', 'kinglion', 'dragon', 'bunny', 'leo', 'fiona']);
+AVATARS.forEach(av => { av.hidden = !CORE_HERO_IDS.has(av.id); });
 
 /* ============================ 🎨 REAL 3D CHARACTER MODELS (GLB) ============================
    Drop a professionally-made model at avatars/<id>.glb (e.g. avatars/leo.glb from Meshy,
@@ -18183,7 +18187,7 @@ function renderHeroMirror() {
   let html = '<p style="color:#8a7a5a;margin:0 0 8px">Tap a hero to <b>become them</b> — your coins, blocks and progress all come along! ✨</p>' +
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow:auto;padding:2px">';
   AVATARS.forEach((av, i) => {
-    if (av.hidden) return;
+    if (av.hidden && i !== G.avatarIndex) return;
     const me = i === G.avatarIndex;
     const sp = av.name.lastIndexOf(' ');                       // names end with their emoji: "Pirate Cat 🐱🏴‍☠️"
     const emoji = sp > 0 ? av.name.slice(sp + 1) : av.name, label = sp > 0 ? av.name.slice(0, sp) : av.name;
@@ -20518,7 +20522,7 @@ function doomsdayStart() {
 $w('againBtn').onclick = () => location.reload();
 
 /* ============================ 🧑‍🤝‍🧑 TOWN FRIENDS (NPCs) ============================
-   Three or four heroes stroll near spawn like Dojo-style townsfolk. Walk up (or tap them)
+   Two heroes stroll near spawn as friendly townsfolk. Walk up (or tap them)
    and they chat in a speech bubble — playground invites plus friendly hellos. Chip chat
    only (plus a tiny local magic-word box). No cloud, no free typing. */
 const NPC_CAST = [
@@ -20696,12 +20700,23 @@ const NPC_CAST = [
 ];
 /* 🧑‍🤝‍🧑 four town friends per save — never the hero the kid is currently playing (no
    doppelgängers!). Order mixes the classics with the new studio cast: the default town
-   is Spark, Momma Panda, Bolt and Twirl, and excluded picks pull the next friend in. */
-const NPC_POOL_ORDER = ['spark', 'panda', 'robot', 'unicorn', 'bunny', 'trex', 'queenfox', 'princess', 'dragon'];
+   has two friends; saved residents are preferred and the player's own hero is excluded. */
+const NPC_POOL_ORDER = ['bunny', 'queenfox', 'dragon', 'spark', 'panda', 'robot', 'unicorn', 'trex', 'princess'];
+const MAX_ACTIVE_NPCS = 2; // two friends per visit, plus the player and on-demand shop/intro characters
 function npcPickCast() {
   const mine = (AVATARS[G.avatarIndex] || {}).id;
   const byId = {}; NPC_CAST.forEach(c => { byId[c.id] = c; });
-  return NPC_POOL_ORDER.map(id => byId[id]).filter(c => c && c.id !== mine).slice(0, 4);
+  const available = NPC_POOL_ORDER.map(id => byId[id]).filter(c => c && c.id !== mine);
+  // Keep saved residents eligible even if they are outside the smaller hero picker.
+  // Prefer the closest assigned homes; no home assignment or player data is removed.
+  const homes = G.npcHomes || {};
+  const homeDistance = c => {
+    const h = homes[c.id];
+    return h && Number.isFinite(h[0]) && Number.isFinite(h[1])
+      ? Math.hypot(h[0] - player.pos.x, h[1] - player.pos.z) : Infinity;
+  };
+  available.sort((a, b) => homeDistance(a) - homeDistance(b));
+  return available.slice(0, MAX_ACTIVE_NPCS);
 }
 const NPC_ACT_LINES = {                        // little thoughts while using the furniture in their house
   stove: ['🍲 Soup for everyone!', '🍪 Who wants cookies?', '👩‍🍳 Dinner is almost ready!'],
@@ -21622,7 +21637,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=285-ready').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=286-ready').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
