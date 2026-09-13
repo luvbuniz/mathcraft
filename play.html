@@ -2282,15 +2282,16 @@ function buildBiped(bodyColor, headColor, legColor, armColor) {
   legs.forEach(L => box(L, 0.24, 0.12, 0.32, shade(legColor, 0.72), 0, -0.5, 0.07));   // feet
   box(g, 0.5, 0.6, 0.28, bodyColor, 0, 0.85, 0);                                        // torso
   box(g, 0.5, 0.12, 0.3, shade(bodyColor, 0.9), 0, 0.56, 0);                            // hips/belt line
-  box(g, 0.66, 0.18, 0.3, shade(bodyColor, 0.94), 0, 1.12, 0);                          // shoulder line bridges torso → arms
+  box(g, 0.58, 0.15, 0.29, shade(bodyColor, 0.94), 0, 1.14, 0);                         // shoulder line sits ON the torso, only a little wider than it
+  box(g, 0.19, 0.16, 0.19, headColor, 0, 1.26, 0);                                      // neck — lifts the head clear of the shoulders
   const arms = [
-    limb(g, 0.15, 0.5, 0.15, armColor, -0.31, 1.08, 0),
-    limb(g, 0.15, 0.5, 0.15, armColor, 0.31, 1.08, 0)
+    limb(g, 0.15, 0.5, 0.15, armColor, -0.30, 1.15, 0),
+    limb(g, 0.15, 0.5, 0.15, armColor, 0.30, 1.15, 0)
   ];
   arms.forEach(A => { box(A, 0.17, 0.16, 0.17, headColor, 0, -0.5, 0);                  // hands
                       box(A, 0.2, 0.2, 0.2, armColor, 0, -0.04, 0); });                 // rounded shoulder fills the joint as the arm swings
   const head = new THREE.Group();
-  head.position.set(0, 1.4, 0);
+  head.position.set(0, 1.55, 0);   // rides on the neck — was 1.4, jammed into the shoulders
   box(head, 0.5, 0.5, 0.5, headColor, 0, 0, 0);
   g.add(head);
   return { group: g, legs, arms, head };
@@ -8390,23 +8391,37 @@ function updatePlayer(dt) {
     if (player._fl) {                                                  // a flourish is playing out
       const p = (t - player._flStart) / player._flDur, e = Math.sin(Math.min(1, p) * Math.PI);
       if (player._fl === 'spin') av.rotation.y += p * Math.PI * 2;     // a full twirl
-      else if (player._fl === 'hop') av.position.y += e * 0.28;        // a happy little hop
+      else if (player._fl === 'hop') { av.position.y += e * 0.28; d.legs.forEach(l => l.rotation.x = -e * 0.5); }   // a happy little hop, knees tucked
       else if (player._fl === 'look' && d.head) d.head.rotation.y = Math.sin(p * Math.PI * 2) * 0.5;   // glance left & right
       else if (player._fl === 'nod' && d.head) d.head.rotation.x = Math.sin(p * Math.PI * 2) * 0.28;   // bob the head
       else if (player._fl === 'wave' && d.arms && d.arms.length >= 2) { d.arms[1].rotation.x = -0.1; d.arms[1].rotation.z = 1.7 + Math.sin(t * 9) * 0.3; }
+      else if (player._fl === 'dance' && d.arms && d.arms.length >= 2) {
+        // 🕺 a real 4-beat step. Every limb moves by ROTATING at its joint and the
+        // body dips when the feet plant — that's what stops it reading as rubbery.
+        const b = t * 8, step = Math.sin(b), sway = Math.sin(b / 2);
+        d.arms[0].rotation.z = -1.2 - step * 0.55;                    // arms alternate up/down out to the sides
+        d.arms[1].rotation.z = 1.2 - step * 0.55;
+        d.arms[0].rotation.x = -step * 0.3;                           // …and swing in opposition to the feet
+        d.arms[1].rotation.x = step * 0.3;
+        d.legs[0].rotation.x = step * 0.4;                            // stepping in place
+        d.legs[1].rotation.x = -step * 0.4;
+        av.rotation.y += sway * 0.3;                                  // hips/shoulders turn into the step
+        av.position.y += (1 - Math.abs(step)) * 0.08;                 // rise between steps, settle as a foot lands
+        if (d.head) { d.head.rotation.z = sway * 0.2; d.head.rotation.x = step * 0.12; }
+      }
       else if (player._fl === 'rear' && d.arms && d.arms.length >= 2) {   // 🐻 rear up like a bear
         d.arms[0].rotation.z = -1.3 * e; d.arms[1].rotation.z = 1.3 * e;
         d.arms[0].rotation.x = -0.5 * e; d.arms[1].rotation.x = -0.5 * e;
         if (d.head) d.head.rotation.x = -0.22 * e;                      // chin up
         av.position.y += e * 0.12;                                      // stretch tall
       }
-      if (p >= 1) { player._fl = null; player._flNext = t + 4 + Math.random() * 5; if (d.head) { d.head.rotation.y = 0; d.head.rotation.x = 0; } }
+      if (p >= 1) { player._fl = null; player._flNext = t + 4 + Math.random() * 5; if (d.head) { d.head.rotation.y = 0; d.head.rotation.x = 0; d.head.rotation.z = 0; } }
     } else if (t > player._flNext) {                                   // kick off a new one
       const opts = ['look', 'nod', 'hop', 'spin'];
-      if (d.arms && d.arms.length >= 2) opts.push('wave');
+      if (d.arms && d.arms.length >= 2) { opts.push('wave'); opts.push('dance'); opts.push('dance'); }   // bipeds dance — it's the fun one, so weight it
       if (d.bear) { opts.push('rear'); opts.push('rear'); }            // pandas/bears rear up more often
       player._fl = opts[(Math.random() * opts.length) | 0];
-      player._flStart = t; player._flDur = player._fl === 'spin' ? 1.2 : player._fl === 'wave' ? 1.1 : 0.85;
+      player._flStart = t; player._flDur = player._fl === 'dance' ? 2.6 : player._fl === 'spin' ? 1.2 : player._fl === 'wave' ? 1.1 : 0.85;
     }
   } else { player._fl = null; player._flNext = t + 2 + Math.random() * 3; }
 
