@@ -3,12 +3,12 @@
    picks up the latest version while online, and the WHOLE game still works with no Wi-Fi —
    including the CDN libraries (Three.js, fonts, Firebase), which we now cache too. After one
    online load the game runs offline. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v282';
+const CACHE = 'stackadoo-v283';
 
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
 const PRECACHE = [
-  'play.html', 'manifest.json', 'google-signin.js', 'interior-art.js?v=280', 'textures/oak-store-v1.jpg?v=280',
+  'play.html', 'manifest.json', 'google-signin.js', 'interior-art.js?v=283', 'textures/oak-store-v1.jpg?v=280',
   'lib/GLTFLoader.js',                       // 🎨 avatar model loader (avatars/*.glb cache on first use)
   'arcade/voiddrift.html',                   // 🚀 the arcade cabinet (self-contained, plays offline)
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',

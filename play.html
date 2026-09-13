@@ -57,7 +57,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="interior-art.js?v=280"></script>
+<script src="interior-art.js?v=283"></script>
 <script src="lib/GLTFLoader.js"></script><!-- 🎨 real 3D character models (avatars/<id>.glb), optional & offline-cached -->
 <!-- ☁️ Firebase (optional accounts + cloud save). Compat builds expose a global `firebase`.
      Auth + Firestore only — NO analytics, to keep the "no data collection" promise. -->
@@ -1173,7 +1173,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v282 — reading progress and fair learning rewards</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v283 — clearer shop shelves and deliberate jumping</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1882,7 +1882,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 282 — reading progress carries on; rewards count first-try answers.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 283 — six clear products, larger labels, and steadier movement.</div>
   </div>
 </div>
 <script>
@@ -7697,17 +7697,22 @@ function insideFeedStore(x, z) {
   return x > W.x0 + 0.4 && x < W.x1 + 0.6 && z > W.z0 + 0.4 && z < W.z1 + 0.6;
 }
 function feedSolidAt(x, y, z) {
-  if (G.world !== 'meadow' || y < 0 || y > 1) return false;
+  if (G.world !== 'meadow' || y < 0 || y > 3) return false;
   const W = FEED_WALL;
   const onPerim = (x === W.x0 || x === W.x1 || z === W.z0 || z === W.z1) && x >= W.x0 && x <= W.x1 && z >= W.z0 && z <= W.z1;
-  if (onPerim && !feedDoorCell(x, z)) return true;
+  if (onPerim && (!feedDoorCell(x, z) || y >= 2)) return true;
   if (y === 0) {
     if (x === 3 && z >= -18 && z <= -16) return true;     // west shelves
     if (x === 9 && z >= -18 && z <= -16) return true;     // east shelves
-    if (x >= 6 && x <= 8 && z === -18) return true; // pantry shelving
     if (x >= 8 && x <= 9 && z === -13) return true;       // cashier counter
   }
   return false;
+}
+function feedCeilingBlocks(pos, height, width) {
+  if (G.world !== 'meadow') return false;
+  const r = width / 2, W = FEED_WALL;
+  return pos.x + r > W.x0 + 1 && pos.x - r < W.x1 &&
+    pos.z + r > W.z0 + 1 && pos.z - r < W.z1 && pos.y < 2.9 && pos.y + height > 2.62;
 }
 function feedDist() { return G.world === 'meadow' ? Math.hypot(player.pos.x - FEED_POS.x, player.pos.z - FEED_POS.z) : 999; }
 function feedCounterDist() {
@@ -7720,6 +7725,7 @@ function feedDoorDist() {
 }
 const FEED_CUSTOMERS = ['🧑‍🌾', '👩‍🌾', '👨‍🌾', '🐴', '🐄', '🐔', '🐑', '🐖', '🐐', '🦆', '🐕', '🐰'];
 const FEED_ITEMS = [['🌽', 'Corn'], ['🌾', 'Hay Bale'], ['🥕', 'Carrots'], ['🐔', 'Chick Feed'], ['🦴', 'Dog Chow'], ['🍎', 'Apples'], ['🌻', 'Seed'], ['🥜', 'Peanuts'], ['🪣', 'Oats'], ['🧺', 'Bran'], ['🥚', 'Eggs'], ['🧀', 'Cheese']];
+const FEED_DISPLAY_NAMES = ['Corn','Hay Bale','Carrots','Dog Chow','Apples','Eggs'];
 let feedGoods = [];          // 3D shelf items (rebuilt with the store)
 let feedBoard = null;        // chalkboard canvas (order list)
 let _wasInFeed = false;
@@ -7739,7 +7745,7 @@ function makeChangeOrder() {
   else if (lvl === 3) { nItems = 2; pMin = 3; pMax = 19; }
   else if (lvl === 4) { nItems = (Math.random() < 0.5 ? 2 : 3); pMin = 5; pMax = 29; }
   else { nItems = 3; pMin = 8; pMax = 45; }
-  const pool = shuffle(FEED_ITEMS.slice()), items = []; let total = 0;
+  const pool = shuffle(FEED_ITEMS.filter(it => FEED_DISPLAY_NAMES.includes(it[1]))), items = []; let total = 0;
   for (let i = 0; i < nItems; i++) { const it = pool[i], price = ri(pMin, pMax); items.push({ emoji: it[0], name: it[1], price: price }); total += price; }
   // customer pays with the next round bill above the total (10s for the little ones, 50s/100s for the big kids)
   const step = lvl <= 3 ? 10 : 50;
@@ -12695,7 +12701,7 @@ function buildPizzeria(g) {
 function makeFeedSkuMesh(name) {
   const group = new THREE.Group(), materials = new Map();
   function piece(geo, color, x, y, z, scale, rot) {
-    if (!materials.has(color)) materials.set(color, new THREE.MeshLambertMaterial({color,emissive:color,emissiveIntensity:0.25}));
+    if (!materials.has(color)) materials.set(color, new THREE.MeshLambertMaterial({color,emissive:color,emissiveIntensity:0.6}));
     const mesh = new THREE.Mesh(geo, materials.get(color)); mesh.position.set(x,y,z);
     if (scale) mesh.scale.set(...scale); if (rot) mesh.rotation.set(...rot); group.add(mesh); return mesh;
   }
@@ -12757,7 +12763,7 @@ function makeFeedSkuMesh(name) {
       for(const g of parts){values.set(g.attributes[attr].array,offset);offset+=g.attributes[attr].array.length;}
       geo.setAttribute(attr,new THREE.BufferAttribute(values,3));
     }
-    geo.computeBoundingSphere(); const mesh=new THREE.Mesh(geo,material);group.add(mesh);parts.forEach(g=>g.dispose());
+    geo.computeBoundingSphere(); const mesh=new THREE.Mesh(geo,material);mesh.userData.feedProduct=true;group.add(mesh);parts.forEach(g=>g.dispose());
   }
   return group;
 }
@@ -12778,33 +12784,34 @@ function addFeedPackLabel(parent,name) {
   const m=new THREE.Mesh(new THREE.PlaneGeometry(.27,.27),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));m.position.set(0,.255,.18);parent.add(m);
 }
 function addFeedLabel(parent, name, x, y, z) {
-  const cv=document.createElement('canvas');cv.width=256;cv.height=96;const ctx=cv.getContext('2d');
-  const tex=new THREE.CanvasTexture(cv),mesh=new THREE.Mesh(new THREE.PlaneGeometry(0.72,0.27),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
-  mesh.position.set(x<6?x+0.39:x-0.39,y-0.13,z);mesh.rotation.y=x<6?Math.PI/2:-Math.PI/2;parent.add(mesh);
+  const cv=document.createElement('canvas');cv.width=512;cv.height=192;const ctx=cv.getContext('2d');
+  const tex=new THREE.CanvasTexture(cv),mesh=new THREE.Mesh(new THREE.PlaneGeometry(.96,.36),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+  mesh.position.set(x<6?x+0.48:x-0.48,y-0.17,z);mesh.rotation.y=x<6?Math.PI/2:-Math.PI/2;parent.add(mesh);
   return {cv,ctx,tex};
 }
 function paintFeedLabel(sku) {
   const label=sku.label;if(!label)return;const c=label.ctx;
-  c.fillStyle=sku.wanted&&!sku.taken?'#e4f7dc':'#fff7e7';c.fillRect(0,0,256,96);
-  c.fillStyle=sku.wanted?'#357252':'#9c7647';c.fillRect(0,0,256,5);
-  c.fillStyle='#293f33';c.textAlign='center';c.font='bold 27px sans-serif';c.fillText(sku.name,128,36);
-  c.font='bold 22px sans-serif';c.fillText(sku.taken?'IN YOUR BASKET':sku.price+' coins'+(sku.wanted?' · ON YOUR LIST':''),128,65);
-  c.font='15px sans-serif';if(!sku.taken)c.fillText('Walk closer · pick up',128,86);label.tex.needsUpdate=true;
+  c.fillStyle=sku.wanted&&!sku.taken?'#e4f7dc':'#fff7e7';c.fillRect(0,0,512,192);
+  c.fillStyle=sku.wanted?'#357252':'#9c7647';c.fillRect(0,0,512,10);
+  c.fillStyle='#293f33';c.textAlign='center';c.font='bold 52px sans-serif';c.fillText(sku.name,256,80,490);
+  c.font='bold 43px sans-serif';c.fillText(sku.taken?'IN BASKET':sku.price+' coins',256,150,490);
+  label.tex.needsUpdate=true;
 }
 function renderNearbyFeedShelf() {
   const el=$('feedShelfHud');
   if(!insideFeedStore(player.pos.x,player.pos.z)||popupOpen){el.hidden=true;return;}
-  const near=feedGoods.filter(g=>!g.taken && Math.abs(player.pos.z-g.mesh.position.z)<0.5 && Math.hypot(player.pos.x-g.mesh.position.x,player.pos.z-g.mesh.position.z)<2.15);
-  const signature=near.map(g=>g.name).join('|');
+  const distance=g=>Math.hypot(player.pos.x-g.mesh.position.x,player.pos.z-g.mesh.position.z);
+  const near=feedGoods.filter(g=>!g.taken && distance(g)<2.15).sort((a,b)=>Number(b.wanted)-Number(a.wanted)||distance(a)-distance(b)).slice(0,2);
+  const signature=near.map(g=>g.name+':'+g.price).join('|');
   if(el.dataset.items!==signature+'|'+near.map(g=>g.wanted).join(',')){
     el.dataset.items=signature+'|'+near.map(g=>g.wanted).join(',');el.replaceChildren();
-    near.forEach(g=>{const b=document.createElement('button');b.type='button';b.textContent=g.emoji+' Pick up '+g.name;b.onclick=()=>pickFeedItem(g);el.appendChild(b);});
+    near.forEach(g=>{const b=document.createElement('button');b.type='button';b.textContent=g.emoji+' Pick up '+g.name+' · '+g.price+' coins';b.onclick=()=>pickFeedItem(g);el.appendChild(b);});
   }
   el.hidden=!near.length;
 }
 
 function buildFeedStore(g) {
-  const WOOD = 0xC4B79E, WOOD2 = 0xB5904F, TRIM = 0xF4ECD8, ROOF = 0x4f6b4a, GREEN = 0x3f7d3a;
+  const WOOD = 0xe9dfc5, WOOD2 = 0xb88960, TRIM = 0xfff4df, ROOF = 0x42665b, GREEN = 0x42665b;
   const S = new THREE.Group();
   const W = FEED_WALL, cx = FEED_POS.x, cz = FEED_POS.z;
   const roomLight = new THREE.PointLight(0xffedd0, 0.32, 11, 1); roomLight.position.set(cx,2.4,cz); S.add(roomLight);
@@ -12825,7 +12832,7 @@ function buildFeedStore(g) {
   box(S, bw + 0.3, 1.35, 0.24, WOOD, cx, h + 0.55, southZ + 0.02);
   box(S, bw + 0.5, 0.16, 0.34, GREEN, cx, h + 1.18, southZ + 0.04);
   box(S, bw + 0.5, 0.16, 0.34, GREEN, cx, h + 0.08, southZ + 0.04);
-  signOn(S, 'STACK FEED', 'Walk in · Shop · Count change', GREEN, 6.4, 0.7, cx, h + 0.55, southZ + 0.16);
+  signOn(S, 'STACK FEED', 'Farm fresh • Feed & supplies', GREEN, 6.4, 0.7, cx, h + 0.55, southZ + 0.16);
   box(S, bw + 0.02, 0.26, 0.08, 0xB23A2E, cx, 0.3, southZ + 0.14);
   // porch
   box(S, bw + 0.4, 0.12, 1.5, WOOD2, cx, 0.06, southZ + 0.9);
@@ -12834,6 +12841,16 @@ function buildFeedStore(g) {
   [0xC0392B, 0xF2C037, 0x168039, 0xF5F0E6, 0xC0392B, 0xF2C037, 0x168039, 0xF5F0E6].forEach((cc, i) => {
     const b = box(S, 0.16, 0.22, 0.04, cc, cx - 3.4 + i * 0.95, 1.85, southZ + 1.2); b.rotation.z = Math.PI / 4;
   });
+  // Simple trim, striped canvas and flower boxes give the entrance a clear identity.
+  for(let i=0;i<10;i++)box(S,(bw+.5)/10,.035,1.62,i%2?0xeee3c9:0x648d7d,cx-bw/2-.25+(i+.5)*(bw+.5)/10,2.13,southZ+.7);
+  for(const px of [x0+.18,x1-.18])box(S,.2,2.65,.15,TRIM,px,1.34,southZ+.16);
+  for(const px of [3.25,9.75]){
+    box(S,.72,.32,.4,0xa86e4c,px,.38,southZ+.35);
+    for(const dx of [-.22,0,.22]){
+      box(S,.045,.32,.045,0x588049,px+dx,.67,southZ+.35);
+      const flower=new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),mat(dx===0?0xf4cb6a:0xc87873));flower.position.set(px+dx,.83,southZ+.35);S.add(flower);
+    }
+  }
   // peaked roof
   box(S, bw + 0.3, 0.16, bd + 0.3, ROOF, cx, h + 0.12, cz);
   box(S, 0.2, 0.7, bd + 0.1, ROOF, cx, h + 0.5, cz);
@@ -12844,10 +12861,9 @@ function buildFeedStore(g) {
   paneWindow(S, x1 + 0.02, 1.35, cz, 0.08, 1.1, 1, 2, TRIM);
   // 🪵 shelves (match collision cells x=3 and x=9, z=-18..-16)
   const shelf = (sx, sz) => {
-    box(S, 0.7, 0.12, 2.6, 0x8a5a34, sx, 0.55, sz).material=shelfWood;
-    box(S, 0.7, 0.12, 2.6, 0x8a5a34, sx, 1.15, sz).material=shelfWood;
-    box(S, 0.12, 1.25, 0.12, 0x6b4a2c, sx, 0.7, sz - 1.15);
-    box(S, 0.12, 1.25, 0.12, 0x6b4a2c, sx, 0.7, sz + 1.15);
+    box(S, 0.85, 0.12, 3.0, 0x8a5a34, sx, 0.78, sz).material=shelfWood;
+    box(S, 0.12, .78, 0.12, 0x6b4a2c, sx, .39, sz - 1.35);
+    box(S, 0.12, .78, 0.12, 0x6b4a2c, sx, .39, sz + 1.35);
   };
   shelf(3.5, -17); shelf(9.5, -17);
   // The detailed counter uses the same collision footprint as the earlier store.
@@ -12870,14 +12886,12 @@ function buildFeedStore(g) {
   // 🛒 3D goods on the shelves
   feedGoods = [];
   const spots = [
-    [3.5, 0.7, -18.0, 'Corn', 3], [3.5, 0.7, -17.2, 'Hay Bale', 4], [3.5, 0.7, -16.3, 'Carrots', 2],
-    [3.5, 1.3, -18.0, 'Chick Feed', 5], [3.5, 1.3, -17.2, 'Dog Chow', 6], [3.5, 1.3, -16.3, 'Apples', 4],
-    [9.5, 0.7, -18.0, 'Seed', 3], [9.5, 0.7, -17.2, 'Peanuts', 4], [9.5, 0.7, -16.3, 'Oats', 5],
-    [9.5, 1.3, -18.0, 'Bran', 3], [9.5, 1.3, -17.2, 'Eggs', 4], [9.5, 1.3, -16.3, 'Cheese', 5]
+    [3.5,.92,-18,'Corn',3], [3.5,.92,-17,'Carrots',2], [3.5,.92,-16,'Apples',4],
+    [9.5,.92,-18,'Hay Bale',4], [9.5,.92,-17,'Dog Chow',6], [9.5,.92,-16,'Eggs',4]
   ];
   const emojiOf = {}; FEED_ITEMS.forEach(([e, n]) => { emojiOf[n] = e; });
   spots.forEach(([x, y, z, name, shelfPrice]) => {
-    const m = makeFeedSkuMesh(name);
+    const m = makeFeedSkuMesh(name);m.scale.setScalar(1.35);
     m.position.set(x, y-0.07, z);m.rotation.y=x<6?Math.PI/2:-Math.PI/2;
     if(['Chick Feed','Dog Chow','Seed','Peanuts','Bran'].includes(name))addFeedPackLabel(m,name);
     S.add(m);
@@ -12898,7 +12912,7 @@ function buildFeedStore(g) {
 
 
   // Clone cached materials before lifting their shaded sides; never recolor other buildings.
-  const lifted=new Map();S.traverse(m=>{if(!m.isMesh||Array.isArray(m.material)||!m.material.isMeshLambertMaterial||m.material.map)return;
+  const lifted=new Map();S.traverse(m=>{if(!m.isMesh||m.userData.feedProduct||Array.isArray(m.material)||!m.material.isMeshLambertMaterial||m.material.map)return;
     const key=m.material.uuid;if(!lifted.has(key)){const fresh=m.material.clone();fresh.color.multiplyScalar(.68);fresh.emissive.copy(fresh.color);fresh.emissiveIntensity=Math.max(fresh.emissiveIntensity,.12);lifted.set(key,fresh);}m.material=lifted.get(key);
   });
   S.position.set(0, 0, 0);
@@ -13921,6 +13935,7 @@ function applyHeadwear() {
 }
 
 function playerBlocked() {
+  if (typeof feedCeilingBlocks === 'function' && feedCeilingBlocks(player.pos, player.height, player.width)) return true;
   const half = player.width / 2;
   const minX = Math.floor(player.pos.x - half), maxX = Math.floor(player.pos.x + half);
   const minY = Math.floor(player.pos.y + 0.01), maxY = Math.floor(player.pos.y + player.height - 0.01);
@@ -14556,7 +14571,8 @@ function updatePlayer(dt) {
   } else if (jmag > 0.22) {                                          // a little deadzone so tiny taps don't turn you
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
-    const cfx = -Math.sin(player.yaw), cfz = -Math.cos(player.yaw);   // "forward" (away from camera)
+    const moveYaw = touch.moveYaw == null ? player.yaw : touch.moveYaw;
+    const cfx = -Math.sin(moveYaw), cfz = -Math.cos(moveYaw);   // "forward" (away from camera)
     const crx = -cfz, crz = cfx;                                      // camera's right
     let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
     let dz = crz * touch.joyX + cfz * (-touch.joyY);
@@ -14620,14 +14636,8 @@ function updatePlayer(dt) {
   player.pos.z = Math.max(-lim, Math.min(lim, player.pos.z));
   if (player.pos.y < -5) { player.pos.copy(SPAWN); player.vel.set(0, 0, 0); }
 
-  // 🆘 anti-stuck: if you're pushing to move but wedged in place, hop to pop free
-  if (moving && player.onGround) {
-    const moved = Math.hypot(player.pos.x - (player._lastX != null ? player._lastX : player.pos.x),
-                             player.pos.z - (player._lastZ != null ? player._lastZ : player.pos.z));
-    player._stuckT = moved < 0.025 ? (player._stuckT || 0) + dt : 0;
-    if (player._stuckT > 0.8) { player.vel.y = jumpV; player.onGround = false; player._stuckT = 0; }
-  } else player._stuckT = 0;
-  player._lastX = player.pos.x; player._lastZ = player.pos.z;
+  // Movement never triggers a surprise jump. Curbs/stairs use collideAxis; Jump is explicit.
+  player._stuckT = 0;
 
   // footsteps
   if (moving && player.onGround) {
@@ -19621,7 +19631,7 @@ function updateRotateGate() {
 }
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
-const touch = { joyX: 0, joyY: 0, jump: false };
+const touch = { joyX: 0, joyY: 0, jump: false, moveYaw: null };
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
@@ -19655,7 +19665,7 @@ if (isTouch) {
     if (moveId !== null) return;
     const t = e.changedTouches[0];
     moveId = t.identifier; oX = t.clientX; oY = t.clientY; moved = 0; t0 = performance.now(); shown = false;
-    breakFired = false;
+    breakFired = false; touch.moveYaw = player.yaw;
     clearTimeout(breakT);
     breakT = setTimeout(fireBreak, 430);
     e.preventDefault();
@@ -19679,6 +19689,7 @@ if (isTouch) {
     if (liveRace) fireNitro();
   }, { passive: false });
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
+  $('btnJump').addEventListener('touchcancel', () => touch.jump = false);
   $('btnAction').addEventListener('touchstart', e => {
     e.preventDefault();
     tryUse();
@@ -19694,21 +19705,12 @@ if (isTouch) {
       clearTimeout(breakT);
       const dt = performance.now() - t0;
       const dy = t.clientY - oY, dx = t.clientX - oX;
-      // ⬆️ flick UP on your hero → jump! (the film-trick move — no button needed)
-      if (dt < 300 && dy < -64 && Math.abs(dx) < Math.abs(dy) * 0.7 && G.running && !popupOpen && !player.driving) {
-        const p = new THREE.Vector3(player.pos.x, player.pos.y + 0.9, player.pos.z).project(camera);
-        const sx = (p.x * 0.5 + 0.5) * innerWidth, sy = (-p.y * 0.5 + 0.5) * innerHeight;
-        if (Math.hypot(oX - sx, oY - sy) < Math.max(90, innerWidth * 0.09)) {
-          touch.jump = true;
-          clearTimeout(touch._flickT);
-          touch._flickT = setTimeout(() => { touch.jump = false; }, 260);
-        }
-      }
-      if (!breakFired && moved < 12 && dt < 320 && G.running && !popupOpen) {
+      // Dragging is movement only; use the dedicated Jump button.
+      if (e.type !== 'touchcancel' && !shown && !breakFired && moved < 12 && dt < 320 && G.running && !popupOpen) {
         const ndcX = (t.clientX / innerWidth) * 2 - 1, ndcY = -(t.clientY / innerHeight) * 2 + 1;
         interact(ndcX, ndcY, 'place');
       }
-      moveId = null; touch.joyX = 0; touch.joyY = 0;
+      moveId = null; touch.joyX = 0; touch.joyY = 0; touch.moveYaw = null;
       joyBase.style.display = 'none'; joyStick.style.left = '33px'; joyStick.style.top = '33px';
     }
   }
@@ -21609,7 +21611,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=282').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=283').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —

@@ -63,21 +63,14 @@ window.StackInteriorArt = (() => {
   }
   function store(){
     const p=new T.Group(),o=wood(),dark=0x504538;
-    // Back wall pantry: shallow stock keeps the middle aisle open.
-    box(p,7.35,1.1,-18.08,3.5,2.05,.12,o);
-    for(const x of [5.65,9.05])box(p,x,1.1,-17.92,.09,2.1,.55,o);
-    for(const y of [.42,.94,1.46])box(p,7.35,y,-17.92,3.5,.08,.58,o);
-    label(p,'PANTRY & SEEDS','Grown with care',7.35,2.08,-17.75,3.4,.35);
-    // Printed tins and jars share geometries/materials after merging.
-    const colors=[0xb75e45,0x839a56,0xd6b16e,0x5e8793];
-    for(let row=0;row<3;row++)for(let col=0;col<10;col++){
-      const x=5.85+col*.33,y=.6+row*.52,z=-17.76;
-      cylinder(p,x,y,z,.105,.27,colors[(row+col)%4]);cylinder(p,x,y+.145,z,.108,.024,0xbbbbb2);
-      packet(p,(row+col)%4,x,y,z+.108,.155,.22);
-    }
-    // Wall rails for pantry departments, visually above the existing collectible shelves.
-    label(p,'FARM FRESH','Fruit • vegetables • feed',2.72,2.24,-17,2.7,.36,Math.PI/2);
-    label(p,'DAIRY & PETS','Everyday essentials',10.28,2.24,-17,2.7,.36,-Math.PI/2);
+    // A quiet back wall replaces dozens of tiny, non-interactive tins.
+    box(p,7.45,1.55,-18.31,3.1,1.45,.08,0xf3ead4);
+    box(p,7.45,1.55,-18.24,2.85,1.2,.035,0xb7dce1);
+    for(const x of[6.03,7.45,8.87])box(p,x,1.55,-18.20,.07,1.25,.05,0xfff5df);
+    box(p,7.45,1.55,-18.19,2.85,.07,.05,0xfff5df);
+    label(p,'FRESH FROM THE FARM','Pick your order from the tables',7.45,2.4,-18.15,3.3,.38);
+    label(p,'FRUIT & VEG','Pick up from this table',2.72,2.24,-17,2.7,.36,Math.PI/2);
+    label(p,'FEED & EGGS','Pick up from this table',10.28,2.24,-17,2.7,.36,-Math.PI/2);
     // Detailed north-facing cashier counter, within the existing collision footprint.
     box(p,8.5,.48,-12.51,1.85,.86,.78,o);box(p,8.5,.94,-12.51,1.94,.09,.84,0x645346);
     for(const x of[7.72,9.28])box(p,x,.48,-12.935,.065,.8,.035,0xb09470);
@@ -94,13 +87,7 @@ window.StackInteriorArt = (() => {
     box(p,8.82,.996,-12.8,.17,.009,.19,0xf4eddc);
     box(p,8.15,.4,-11.88,.48,.1,.4,o);
     for(const x of[7.98,8.32])for(const z of[-12.02,-11.74])box(p,x,.2,z,.055,.4,.055,dark);
-    // Seed packets on the spare east wall. No protrusion into the walkable aisle.
-    box(p,10.27,1.25,-14.78,.09,1.55,1.8,o);
-    label(p,'GARDEN SEEDS','Plant something wonderful',10.21,2.13,-14.78,1.75,.31,-Math.PI/2);
-    for(let row=0;row<3;row++)for(let col=0;col<4;col++){
-      const z=-15.42+col*.43,y=.78+row*.4;
-      box(p,10.2,y,z,.035,.31,.28,0xe9ddb5);packet(p,col,10.174,y,z,.27,.30,-Math.PI/2);
-    }
+    label(p,'1 PICK  2 PACK','3 COUNT THE CHANGE',10.21,1.7,-14.6,1.8,.65,-Math.PI/2);
     // Entry mat and lamps establish an inviting threshold.
     const matLabel=label(p,'WELCOME','Pick • pack • count',6.5,.125,-12.4,1.7,.85,0,'#4d5b45');matLabel.rotation.x=-Math.PI/2;
     for(const x of[4.6,8.3]){

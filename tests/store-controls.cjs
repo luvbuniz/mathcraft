@@ -1,0 +1,32 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=require('path');
+const s=fs.readFileSync(path.join(__dirname,'../play.html'),'utf8');
+function fn(n){const a=s.indexOf('function '+n+'(');return s.slice(a,s.indexOf('\n}',a)+2);}
+const c=vm.createContext({G:{world:'meadow'},FEED_WALL:{x0:2,x1:10,z0:-19,z1:-12}});
+vm.runInContext(['feedDoorCell','feedSolidAt','feedCeilingBlocks'].map(fn).join('\n'),c);
+assert(c.feedSolidAt(2,3,-15),'wall stays solid above jumping height');
+assert(!c.feedSolidAt(5,1,-12),'doorway stays open');
+assert(c.feedSolidAt(5,2,-12),'door lintel blocks climbing');
+assert(!c.feedSolidAt(7,0,-18),'removed pantry is walkable');
+assert(!c.feedCeilingBlocks({x:6.5,y:0,z:-16},1.7,.6),'standing fits');
+assert(c.feedCeilingBlocks({x:6.5,y:1,z:-16},1.7,.6),'jump hits ceiling');
+c.G.world='city';assert(!c.feedCeilingBlocks({x:6.5,y:1,z:-16},1.7,.6),'other worlds unaffected');
+console.log('PASS store walls, doorway, headroom, roof barrier and freed pantry aisle');
+const start=s.indexOf('const touch = {'),end=s.indexOf('/* ============================ START MENU',start);
+const handlers={},nodes={},canvas={style:{},addEventListener(n,f){handlers[n]=f;}};
+function node(id){return nodes[id]||(nodes[id]={style:{},events:{},addEventListener(n,f){this.events[n]=f;}});}
+let interactions=0;
+const input=vm.createContext({isTouch:true,canvas,$:node,touch:undefined,player:{yaw:.75},G:{running:true},popupOpen:false,performance:{now:()=>100},clearTimeout(){},setTimeout(){return 1;},innerWidth:390,innerHeight:844,interact(){interactions++;},navigator:{},liveRace:false});
+vm.runInContext(s.slice(start,end)+'\nthis.inputState=touch;',input);
+const event=(type,x,y)=>({type,changedTouches:[{identifier:1,clientX:x,clientY:y}],preventDefault(){}});
+handlers.touchstart(event('touchstart',180,500));handlers.touchmove(event('touchmove',180,400));
+assert.equal(input.inputState.moveYaw,.75);assert(input.inputState.joyY<0);assert.equal(input.inputState.jump,false);
+handlers.touchend(event('touchend',180,400));assert.equal(input.inputState.jump,false);assert.equal(input.inputState.joyY,0);assert.equal(interactions,0);
+handlers.touchstart(event('touchstart',180,500));handlers.touchcancel(event('touchcancel',180,500));assert.equal(interactions,0,'cancel cannot place a block');
+node('btnJump').events.touchstart({preventDefault(){}});assert(input.inputState.jump);node('btnJump').events.touchcancel();assert(!input.inputState.jump);
+assert(!s.includes('player._stuckT > 0.8'),'no automatic stuck jump');
+console.log('PASS movement swipe does not jump/build, heading anchors, cancellation releases controls');
+const items=s.match(/const FEED_DISPLAY_NAMES = (\[[^;]+\]);/)[1];assert.equal(JSON.parse(items.replace(/'/g,'"')).length,6);
+assert(s.includes('FEED_ITEMS.filter(it => FEED_DISPLAY_NAMES.includes(it[1]))'));
+assert(s.includes("b.textContent=g.emoji+' Pick up '+g.name+' · '+g.price+' coins'"));
+new vm.Script(fs.readFileSync(path.join(__dirname,'../interior-art.js'),'utf8'));
+console.log('PASS six stocked products are the order pool; pickup buttons show names and prices; art parses');
