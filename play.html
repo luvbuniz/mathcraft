@@ -1173,7 +1173,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v284 — lighter loading, same world</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v285 — lighter flocks, same birds</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1882,7 +1882,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 284 — lighter character previews, same detailed heroes.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 285 — fewer drawing operations for pet birds.</div>
   </div>
 </div>
 <script>
@@ -18281,7 +18281,45 @@ const BIRD_BREEDS = [
   ['Lovebird', 0xE0673A, 'budgie'], ['White Cockatoo', 0xF4F1E8, 'cockatoo'], ['Toco Toucan', 0x1c1c1c, 'toucan'],
   ['Cardinal', 0xC0231F, 'cardinal'], ['Blue Jay', 0x4a8fd0, 'jay'], ['Robin', 0x6b4a30, 'robin'],
   ['Canary', 0xF2D71E, 'budgie'], ['Flamingo', 0xF2A0C0, 'flamingo'], ['Peacock', 0x1f7a6b, 'peacock'], ['Hummingbird', 0x2fae8e, 'hummer']];
+// A flock shares immutable geometry; each bird keeps independent moving pivots.
+const birdTemplateCache = new Map();
+const birdBatchMaterial = new THREE.MeshLambertMaterial({ vertexColors: true });
+function batchBirdParts(group) {
+  // One draw per rigid body/head/wing/tail, preserving every vertex and its colour.
+  const parts = group.children.filter(o => o.isMesh);
+  if (!parts.length) return;
+  const positions = [], normals = [], colors = [];
+  for (const part of parts) {
+    part.updateMatrix();
+    const geo = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
+    geo.applyMatrix4(part.matrix);
+    const pos = geo.getAttribute('position'), normal = geo.getAttribute('normal');
+    const col = part.material.color;
+    for (let i = 0; i < pos.count; i++) {
+      positions.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+      normals.push(normal.getX(i), normal.getY(i), normal.getZ(i));
+      colors.push(col.r, col.g, col.b);
+    }
+    group.remove(part); geo.dispose(); part.geometry.dispose();
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeBoundingSphere();
+  const mesh = new THREE.Mesh(geo, birdBatchMaterial);
+  mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh);
+}
+function cloneBirdTemplate(template) {
+  const bird = template.clone(true);
+  bird.userData.head = bird.getObjectByName('bird-head');
+  bird.userData.tail = bird.getObjectByName('bird-tail');
+  bird.userData.wings = [bird.getObjectByName('bird-wing-left'), bird.getObjectByName('bird-wing-right')];
+  return bird;
+}
 function buildBirdMesh(variant) {          // a flying bird of a chosen exotic breed (wings flap, tail steers)
+  const templateKey = ((variant || 0) % BIRD_BREEDS.length) + (ROUND_AV ? '-round' : '-box');
+  if (birdTemplateCache.has(templateKey)) return cloneBirdTemplate(birdTemplateCache.get(templateKey));
   const br = BIRD_BREEDS[(variant || 0) % BIRD_BREEDS.length], col = br[1], feat = br[2];
   const g = new THREE.Group();
   const belly = shade(col, 1.28), wingC = shade(col, 0.78), beak = 0xF2A93B, BLACK = 0x161616;
@@ -18306,8 +18344,12 @@ function buildBirdMesh(variant) {          // a flying bird of a chosen exotic b
   const legH = feat === 'flamingo' ? 0.24 : 0.08, legC = feat === 'flamingo' ? 0xE890AE : beak;
   box(g, 0.03, legH, 0.03, legC, -0.05, -0.14 - legH / 2, 0.03); box(g, 0.03, legH, 0.03, legC, 0.05, -0.14 - legH / 2, 0.03);   // feet/legs
   if (feat === 'hummer') g.scale.setScalar(0.66);   // tiny hummingbird
-  g.userData.wings = [wingL, wingR]; g.userData.tail = tail; g.userData.head = head;
-  return g;
+  head.name = 'bird-head'; tail.name = 'bird-tail';
+  wingL.name = 'bird-wing-left'; wingR.name = 'bird-wing-right';
+  [g, head, wingL, wingR, tail].forEach(batchBirdParts);
+  // The cached template has no cross-object userData references; bind those on each clone.
+  birdTemplateCache.set(templateKey, g);
+  return cloneBirdTemplate(g);
 }
 function buildFishbowl(variant) {          // a fish in a glass bowl
   const g = new THREE.Group();
@@ -21580,7 +21622,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=284-ready').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=285-ready').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
