@@ -204,6 +204,7 @@
   body.guideOpen #npcChat, body.guideOpen #npcBubbles, body.guideOpen #mouseLegend,
   body.guideOpen #feedListHud, body.guideOpen #feedShelfHud,
   body.feedInside #npcChat, body.feedInside #npcBubbles { display:none!important; }
+  body:not(.feedInside) #feedListHud { display:none!important; }
   body.feedInside #modeBtn, body.feedInside #undoBtn, body.feedInside #blockPaints,
   body.feedInside #mouseLegend, body.feedInside #hudMode, body.feedInside #hintBar,
   body.feedInside #placingTag { display:none!important; }
@@ -1081,6 +1082,33 @@
   #rideCaption { position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
     background:rgba(42,28,16,.82); color:#ffe7b3; font-weight:800; font-size:clamp(13px,2.4vw,17px);
     padding:8px 18px; border-radius:16px; white-space:nowrap; box-shadow:0 3px 0 rgba(0,0,0,.3); }
+
+  /* Keep conversation controls below the scene, clear of the action buttons. */
+  .npcBubble { width:max-content; box-sizing:border-box; }
+  body.npcChatting #blockPaints, body.npcChatting #mouseLegend { display:none!important; }
+  #badgePopup { justify-content:flex-end; padding:0; }
+  #badgePopup .popupCard { box-sizing:border-box; width:min(420px,100vw); height:100%; max-height:100%;
+    margin:0; border-radius:20px 0 0 20px; overflow-y:auto; }
+  #npcChat { width:max-content; max-width:min(420px,calc(100vw - 24px)); }
+  #npcChat.expanded { box-sizing:border-box; width:360px; padding:10px; background:#fffaf0;
+    border-radius:16px; box-shadow:0 3px 12px #0003; gap:6px; }
+  #npcChat button { font-size:13px; min-height:40px; padding:7px 11px; }
+  #npcChat .npcMore { pointer-events:auto; position:relative; align-self:center; }
+  #npcChat .npcMore summary { cursor:pointer; padding:8px; font-weight:bold; }
+  #npcChat .npcMore div { position:absolute; bottom:100%; left:0; width:220px; padding:8px;
+    background:#fffaf0; border-radius:12px; box-shadow:0 3px 12px #0003; display:grid; gap:6px; }
+  #npcChat #npcSayInput { box-sizing:border-box; min-width:0; flex:1; width:0; }
+  #npcChat .npcSayWrap { width:100%; }
+  @media (max-width:600px) {
+    #npcChat { left:10px; right:auto; transform:none; bottom:calc(132px + var(--npc-kb,0px)); max-width:calc(100vw - 20px); }
+    #npcChat.expanded { width:calc(100vw - 20px); }
+    #npcChat .npcMore div { left:auto; right:0; }
+    body.npcTyping #npcChat { bottom:calc(8px + var(--npc-kb,0px)); }
+    body.npcChatting #selfieBtn { display:none!important; }
+    #goalRow { display:none!important; }
+    #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
+  }
+
 </style>
 </head>
 <body>
@@ -1145,7 +1173,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v280 — shop at Stack Feed and make yourself at home</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v281 — badges, quieter conversations, and more room to explore</div>
 
       <div class="panel" id="continuePanel">
         <h2 class="panelTitle">Continue</h2>
@@ -1854,7 +1882,7 @@
       <button id="authOutBtn" class="libBtn" style="background:#eef3ec;color:#2f4a33">Sign out</button>
     </div>
     <div id="authMsg" style="min-height:16px; font-weight:700; font-size:13px; margin-top:8px"></div>
-    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 280 — a stocked Feed Store, furnished cottage, and walk-up stairs.</div>
+    <div style="color:#b8c4d8; font-size:11px; margin-top:8px">Build 281 — badges without hats, compact chat, and open town space.</div>
   </div>
 </div>
 <script>
@@ -2433,14 +2461,14 @@ const Sound = {
     this.engProfile = p;
     if (p.silent) return;                          // bikes / sailboats have no motor
     this.engineOsc = ctx.createOscillator(); this.engineOsc.type = p.wave; this.engineOsc.frequency.value = p.f0;       // main growl
-    this.engineOsc2 = ctx.createOscillator(); this.engineOsc2.type = p.wave; this.engineOsc2.frequency.value = p.f0 * 1.5; // detuned body
+    this.engineOsc2 = ctx.createOscillator(); this.engineOsc2.type = 'triangle'; this.engineOsc2.frequency.value = p.f0 * 1.01; // detuned body
     this.engineSub = ctx.createOscillator(); this.engineSub.type = 'triangle'; this.engineSub.frequency.value = p.f0 * 0.5; // sub rumble
-    this.engineLP = ctx.createBiquadFilter(); this.engineLP.type = 'lowpass'; this.engineLP.frequency.value = p.lp0; this.engineLP.Q.value = 7;
+    this.engineLP = ctx.createBiquadFilter(); this.engineLP.type = 'lowpass'; this.engineLP.frequency.value = p.lp0; this.engineLP.Q.value = 0.7;
     this.engineGain = ctx.createGain(); this.engineGain.gain.value = 0.0001;
     // a "chug" LFO modulates the volume so it putters like a real engine firing — slow & deep for a
     // diesel truck, fast & smooth for a sports car, slow & BIG for the bumpy monster truck.
-    this.engineLFO = ctx.createOscillator(); this.engineLFO.type = 'sawtooth'; this.engineLFO.frequency.value = p.chug;
-    this.engineLFOGain = ctx.createGain(); this.engineLFOGain.gain.value = p.chugDepth;
+    this.engineLFO = ctx.createOscillator(); this.engineLFO.type = 'sine'; this.engineLFO.frequency.value = p.chug;
+    this.engineLFOGain = ctx.createGain(); this.engineLFOGain.gain.value = p.chugDepth * 0.65;
     this.engineChug = ctx.createGain(); this.engineChug.gain.value = 1;
     this.engineLFO.connect(this.engineLFOGain); this.engineLFOGain.connect(this.engineChug.gain);
     this.engineOsc.connect(this.engineLP); this.engineOsc2.connect(this.engineLP); this.engineSub.connect(this.engineLP);
@@ -2450,13 +2478,14 @@ const Sound = {
   engineSet(s) {                                   // s = 0..1 (speed); reads mute live
     if (!this.engineGain) return;
     const p = this.engProfile || ENGINE_DEFAULT;
+    s = Math.max(0, Math.min(1, Number(s) || 0));
     const t = this.ctx.currentTime, f = p.f0 + s * p.fSpan;
     this.engineOsc.frequency.setTargetAtTime(f, t, 0.06);
-    this.engineOsc2.frequency.setTargetAtTime(f * 1.5, t, 0.06);
+    this.engineOsc2.frequency.setTargetAtTime(f * 1.01, t, 0.18);
     this.engineSub.frequency.setTargetAtTime(f * 0.5, t, 0.06);
     this.engineLFO.frequency.setTargetAtTime(p.chug + s * p.chug * 2.6, t, 0.08);   // putter speeds up with the revs
     this.engineLP.frequency.setTargetAtTime(p.lp0 + s * p.lpSpan, t, 0.08);         // engine brightens as it opens up
-    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.04 + s * 0.12) * p.gain, t, 0.08);
+    this.engineGain.gain.setTargetAtTime(this.muted ? 0.0001 : (0.03 + s * 0.08) * p.gain, t, 0.08);
   },
   engineStop() {
     if (!this.engineOsc) return;
@@ -4635,12 +4664,12 @@ let shopCat = 'food';
 /* ============================ BADGES & SAVING ============================ */
 /* Badges are themed per town so a reader isn't called a "Math Champion". The math
    ids stay the same (star/tophat/crown/champ) so older saves keep their badges &
-   wearable hats; reading & Spanish have their own sets. */
+   progress; reading & Spanish have their own sets. */
 const BADGE_SETS = {
   math: [
     { id: 'star',   n: 5,  icon: '⭐', name: 'Math Star' },
-    { id: 'tophat', n: 10, icon: '🧢', name: 'Cool Baseball Cap', wear: true },
-    { id: 'crown',  n: 15, icon: '👑', name: 'Golden Crown', wear: true },
+    { id: 'tophat', n: 10, icon: '🎯', name: 'Math Explorer' },
+    { id: 'crown',  n: 15, icon: '🏅', name: 'Math Achiever' },
     { id: 'champ',  n: 25, icon: '🏆', name: 'Math Champion' }
   ],
   reading: [
@@ -4856,24 +4885,8 @@ function renderBadges() {
       grid.appendChild(card);
     });
   });
-  // 🎩 Wear / take off your prize hat — only shown once you actually have one
   const row = $('hatToggleRow');
-  const hasHat = profile.badges.includes('crown') || profile.badges.includes('tophat') || G.owned.usahat || G.owned.hat;
-  if (hasHat) {
-    row.style.display = '';
-    row.innerHTML = '<button id="hatToggleBtn" style="font:inherit;font-weight:800;cursor:pointer;border:none;border-radius:12px;padding:10px 18px;color:#fff;background:' +
-      (profile.hideHat ? '#3aa657' : '#c2683a') + '">' +
-      (profile.hideHat ? '🎩 Put my prize hat on' : '🙅 Take my prize hat off') + '</button>';
-    $('hatToggleBtn').onclick = () => {
-      Sound.click();
-      profile.hideHat = !profile.hideHat;
-      saveProfile();
-      applyHeadwear();
-      renderBadges();
-    };
-  } else {
-    row.style.display = 'none';
-  }
+  if (row) { row.style.display = 'none'; row.innerHTML = ''; }
 }
 function openBadges() {
   if (popupOpen || G.over) return;
@@ -7142,7 +7155,7 @@ function toggleDrive() {
   player.yaw = a.yaw; player.vel.set(0, 0, 0);
   if (document.pointerLockElement) document.exitPointerLock();
   const prof = engineProfileFor(a.def.id);
-  Sound.engineStart(prof); Sound.honk(prof);
+  Sound.engineStart(prof); // horn is a deliberate action, not an automatic blast on entry
   const sb = $('sirenBtn');
   if (a.def.police || a.def.emergency) {
     player.sirenOn = true; Sound.sirenStart(); player._dashHintPending = true;
@@ -8776,10 +8789,7 @@ function lotClear(ox, oz, W, D) {
    group is REPOSITIONED on load to a spot clear of the player's builds (so it never sits on a home/pool). */
 let PARK_ZONE = { meadow: { cx: 0, cz: 18 }, city: { cx: 0, cz: 18 }, west: { cx: 0, cz: 16 } };
 let townPark = { meadow: null, city: null, west: null };   // the repositionable park groups (built at origin, moved into place)
-function inParkZone(x, z) {
-  const P = PARK_ZONE[G.world]; if (!P) return false;
-  return x >= P.cx - 16 && x <= P.cx + 16 && z >= P.cz - 2 && z <= P.cz + 18;
-}
+function inParkZone(x, z) { return false; }
 // candidate park centres, tried in order — central-south first, then swung wide east/west to dodge homes
 const PARK_CANDIDATES = [[0, 18], [22, 14], [-22, 14], [22, 4], [-22, 4], [0, 8], [24, 18], [-24, 12], [16, 28], [-16, 28]];
 function parkFootprintBlocks(cx, cz) {   // how many player blocks (and whether it's off-world/on a shop) a park here would hit
@@ -8793,17 +8803,7 @@ function parkFootprintBlocks(cx, cz) {   // how many player blocks (and whether 
   return n;
 }
 function repositionPark() {
-  const w = G.world, pk = townPark[w]; if (!pk) return;
-  let best = PARK_CANDIDATES[0], bestN = Infinity;
-  for (const [cx, cz] of PARK_CANDIDATES) {
-    const n = parkFootprintBlocks(cx, cz);
-    if (n < bestN) { bestN = n; best = [cx, cz]; }
-    if (n === 0) break;                                  // a perfectly clear spot — take it
-  }
-  const [bx, bz] = best;
-  pk.position.set(bx, 0, bz);
-  PARK_ZONE[w] = { cx: bx, cz: bz };
-  DOGPARK[w] = { x: bx - 8, z: bz + 8 };                 // keep the fetch game lined up with the dog-park section
+  // Public parks are retired; saved homes and equipment retain their coordinates.
 }
 function findHomeLot(W, D, allowClear) {
   const bx = player.pos.x, bz = player.pos.z;
@@ -11991,23 +11991,9 @@ function parkRulesSign(g, x, z) {
   signOn(g, 'PARK RULES', 'Be kind • Pick up • Have fun!', 0x3a6b3a, 1.55, 0.95, x, 1.5, z + 0.07);
 }
 function buildTownPark(g, cx, cz, name) {
-  for (let j = 0; j <= 14; j++) box(g, 2.2, 0.03, 1.0, 0xCBB890, cx, 0.02, cz + j);   // central path
-  for (let i = -12; i <= 12; i++) if (Math.abs(i) > 3) pickFence(g, cx + i, cz, true);   // front fence (center gap = main gate)
-  parkLamp(g, cx - 12, cz + 0.4); parkLamp(g, cx + 12, cz + 0.4); parkLamp(g, cx - 12, cz + 13.6); parkLamp(g, cx + 12, cz + 13.6);
-  parkGate(g, cx, cz, 7, name, '🐾 Dog Park   •   🎠 Playground', 0x2f6b4f, Math.PI);
-  // (trees are placed by the world, not the park, so the park group can be moved freely on load)
-  // ── 🐕 DOG PARK (west) — a roomy fenced run, left EMPTY so kids buy & place their own agility gear ──
-  const dx = cx - 8, dz = cz + 8;
-  for (let i = -5; i <= 5; i++) { if (i < -1 || i > 1) pickFence(g, dx + i, dz - 5, true); pickFence(g, dx + i, dz + 5, true); }
-  for (let j = -4; j <= 4; j++) { pickFence(g, dx - 5, dz + j, false); pickFence(g, dx + 5, dz + j, false); }
-  parkGate(g, dx, dz - 5, 4, 'DOG PARK', 'Play fetch! 🐾', 0x3a6b3a, Math.PI);
-  box(g, 0.9, 0.04, 0.9, 0xF2C84B, dx, 0.03, dz + 2);   // 🐾 fetch pad (matches the DOGPARK trigger at z+2) — kept so you can still play fetch
-  box(g, 0.12, 0.05, 0.12, 0x6b4a2c, dx, 0.06, dz + 2.1); [[-0.12, 0.04], [0.12, 0.04], [0, 0.16]].forEach(([bx, bz]) => box(g, 0.07, 0.05, 0.07, 0x6b4a2c, dx + bx, 0.06, dz + 2.1 - bz));   // paw print
-  // ── 🎠 PLAYGROUND (east) — just the gate + an EMPTY build-it mat; kids fill it with the gear they buy ──
-  const px = cx + 8, pz = cz + 8;
-  parkGate(g, px, pz - 5, 4, 'PLAYGROUND', 'Build & Play! 🎠', 0x2f6b4f, Math.PI);
-  for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) box(g, 0.98, 0.04, 0.98, (i + j) % 2 ? 0x53b0c0 : 0xE0a23a, px + i, 0.03, pz + j);   // checker play-mat (left empty on purpose)
+  // Retired public Dog Park / Playground. Do not touch player-placed objects here.
 }
+
 function buildCityDecor(g) {                  // (name kept) Reading Town's suburban ring + library
   buildLibrary(g);
   { const p = new THREE.Group(); buildTownPark(p, 0, 0, 'READING TOWN PARK'); p.position.set(PARK_ZONE.city.cx, 0, PARK_ZONE.city.cz); g.add(p); townPark.city = p; }   // 🏞️ one big park (gated Dog Park + Playground) — repositioned clear of homes on load
@@ -13786,7 +13772,7 @@ function renderLiftPad() {
 
 /* 🐕 DOG PARK — play fetch for coins. Walk to the 🐾 throw pad, tap ⭐ USE to start, then tap USE
    to throw the ball; a friendly park pup runs it down and brings it back. Pets are the hook! */
-let DOGPARK = { meadow: { x: PARK_ZONE.meadow.cx - 8, z: PARK_ZONE.meadow.cz + 8 }, city: { x: PARK_ZONE.city.cx - 8, z: PARK_ZONE.city.cz + 8 }, west: { x: PARK_ZONE.west.cx - 8, z: PARK_ZONE.west.cz + 8 } };   // dog-park section center inside the big Town Park (throw pad at z+2); updated when the park is repositioned
+let DOGPARK = {}; // no public fetch zones; personal pets remain unchanged
 const FETCH_BALLS = [{ n: 'Tennis Ball', c: 0xC9E04A }, { n: 'Basketball', c: 0xE07B2A }, { n: 'Beach Ball', c: 0x4a9ad8 }];
 let fetchGame = null;
 function dogParkDist() { const P = DOGPARK[G.world]; return P ? Math.hypot(player.pos.x - P.x, player.pos.z - (P.z + 2)) : 999; }
@@ -13898,61 +13884,14 @@ function setAvatar(index) {
   } finally { ROUND_AV = false; }
   scene.add(player.avatar);
 }
-/* Badge prizes go on your head! Best earned hat wins: crown > top hat > party hat. */
+/* Achievements live in the badge panel; model costumes stay untouched. */
 function applyHeadwear() {
   const d = player.avatarData;
   if (!d) return;
-  if (d.headwear) {
-    if (d.headwear.parent) d.headwear.parent.remove(d.headwear);
-    if (d.headwearWrap && d.headwearWrap.parent) d.headwearWrap.parent.remove(d.headwearWrap);
-    d.headwear = null; d.headwearWrap = null;
+  for (const part of [d.headwear, d.headwearWrap]) {
+    if (part && part.parent) part.parent.remove(part);
   }
-  if (profile.hideHat) return;         // player chose to go bare-headed (toggle in 🏅 Badges)
-  const topY = d.hatY != null ? d.hatY : (d.quad ? 0.13 : 0.25);   // top of the head (round-headed kids set their own)
-  let h = null;
-  if (G.owned.usahat) {                 // a bought cosmetic the player chose to wear — it wins
-    h = new THREE.Group();
-    h.add(new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.04, 14), mat(0xF4F4F4)));      // white brim
-    const blue = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.13, 14), mat(0x0A3161)); // blue base band
-    blue.position.y = 0.085; h.add(blue);
-    for (let i = 0; i < 5; i++) { const st = box(h, 0.025, 0.025, 0.02, 0xFFFFFF, 0, 0.085, 0); st.position.x = Math.cos(i / 5 * Math.PI * 2) * 0.19; st.position.z = Math.sin(i / 5 * Math.PI * 2) * 0.19; }  // white stars
-    for (let i = 0; i < 5; i++) {                                                                 // red & white striped top
-      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, 14), mat(i % 2 ? 0xFFFFFF : 0xB22234));
-      seg.position.y = 0.17 + i * 0.06; h.add(seg);
-    }
-    h.position.y = topY + 0.04;
-  } else if (profile.badges.includes('crown')) {
-    h = new THREE.Group();
-    addCrown(h, 0, 0xFFD23E);
-    h.position.y = topY + 0.04;
-  } else if (profile.badges.includes('tophat')) {
-    h = new THREE.Group();                                          // 🧢 a cool baseball cap
-    const capCol = 0xE23B3B, brimCol = 0xB52D2D;
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(capCol));
-    h.add(dome);                                                    // rounded cap dome
-    box(h, 0.05, 0.05, 0.05, capCol, 0, 0.2, 0);                    // top button
-    box(h, 0.28, 0.04, 0.22, brimCol, 0, 0.01, 0.21);              // forward brim
-    box(h, 0.11, 0.09, 0.02, 0xFFFFFF, 0, 0.11, 0.2);              // little white logo patch
-    h.position.y = topY + 0.02;
-  } else if (G.owned.hat) {
-    h = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.18, 0.4, 6), mat(0x2BC4E8));
-    h.position.y = topY + 0.2;
-  }
-  if (h) {
-    if (d.glb && d.headBone && d.hatBoneMatrix) {
-      // 🦁 on model heroes the hat rides the head BONE — crowns stay on through every move.
-      // The wrap replays the bind-pose proxy transform inside bone space (incl. the
-      // armature's 0.01 scale), so the hat's usual topY offset works unchanged.
-      const wrap = new THREE.Group();
-      d.headBone.add(wrap);
-      d.hatBoneMatrix.decompose(wrap.position, wrap.quaternion, wrap.scale);
-      wrap.add(h);
-      d.headwearWrap = wrap;
-    } else {
-      d.head.add(h);
-    }
-    d.headwear = h;
-  }
+  d.headwear = null; d.headwearWrap = null;
 }
 
 function playerBlocked() {
@@ -16023,6 +15962,7 @@ function renderShop() {
   const wrap = $('shopItems');
   wrap.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
+    if (item.id === 'hat' || item.id === 'usahat') return; // retired wearables; saved ownership remains
     if (item.hidden) return;
     if (catOf(item.id) !== shopCat) return;                        // show only the active department
     if (item.id === 'powerBlocks' && !G.gloomiesEnabled) return;   // no Gloomy-zappers in the no-Gloomies game
@@ -18982,6 +18922,8 @@ function openHudMenu() {
   const m = $('hudMenu');
   const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
   const items = [
+    ['goalRow', '🎯', '<b>My dream goal</b>'],
+    ['badgeBtn', '🏅', '<b>My badges</b>'],
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
     ['mirrorBtn', '🪞', '<b>Hero Mirror</b> <small>' + (heroMirrorUnlocked() ? 'switch hero' : '🔒 finish 3 quests') + '</small>'],
     ['classicBtn', profile.classicHeroes ? '🧱' : '🎬', '<b>Hero style</b> <small>' + (profile.classicHeroes ? 'classic blocky' : 'studio models') + '</small>'],
@@ -20544,16 +20486,16 @@ const NPC_CAST = [
   { id: 'spark', name: 'Spark', lines: [
     'Hi {name}! How are you today?',
     'I\'m Spark! Need a hand with a ❓ puzzle?',
-    'Have you seen the 🛝 playground yet?',
-    'I want to try the swings — will you come with me?',
-    'Race you to the 🛝 playground!',
-    'The curly slide looks SO twisty. Is it fast?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
+    'What colors will you choose for your next room?',
   ], replies: {
     hi: 'Hi {name}! ✨ You sparkle extra bright today!',
     how: ['I\'m sparkly-great! How are YOU, {name}?', 'A little floaty, a little giggly. You? ✨', 'Better now that you\'re here, {name}!'],
     name: ['I\'m Spark! And you\'re {name} — I remembered! ✨', 'Spark\'s the name. Sparkles are the game! 🪄'],
-    playground: 'Swings first, then the twisty slide! Meet you there 🛝',
-    fun: ['I can fly... but the swings are still my favorite. Wheee! ✨', 'My wand only makes sparkles. Okay — MOSTLY sparkles. 🪄', 'If I twirl fast enough, I make my own glitter storm.', 'Favorite snack: sun-warm berries. Want to plant some?'],
+    playground: 'Let us explore town and find a puzzle! ❓',
+    fun: ['Every big adventure starts with one small step!', 'Try a puzzle, then make something your own.'],
     help: ['Walk up to a glowing ❓ — that\'s math practice. I cheer, I don\'t give the answer! ✨', 'Stuck? Tap the 🤔 hint. It teaches the steps — still YOUR win, {name}!', 'I can\'t do the puzzle for you. Trying is the magic.'],
     helpRead: ['📚 Those ❓ stations are reading puzzles. Walk up and try one — I\'ll cheer!', 'I won\'t spoil the sentence. Try it, then use 🤔 if you get stuck!'],
     helpLang: ['🏖️ ❓ stations here are Spanish words. Walk up and pick the matching one!', 'I won\'t say the answer — trying is how it sticks, {name}!'],
@@ -20563,15 +20505,15 @@ const NPC_CAST = [
   { id: 'panda', name: 'Momma Panda', lines: [
     'Hello {name}! How are you, dear?',
     'I\'m Momma Panda. Need a little help with a ❓?',
-    'Is the ⚖️ see-saw fun? I\'ve never tried one!',
-    'Could you build a see-saw at the 🛝 playground for us?',
-    'A picnic by the playground sounds lovely. 🧺',
-    'Which is better — the swings or the slide?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
   ], replies: {
     hi: 'Hello, dear {name}! 🐼 Have you had a snack today?',
     how: ['I\'m cozy and calm. How are you feeling, {name}?', 'Very well, thank you! Did you rest today?', 'Happy as a picnic. And you, little builder?'],
     name: ['I\'m Momma Panda. You can call me Momma, {name}. 🐼', 'Momma Panda — hugs included, no extra charge. 🤗'],
-    playground: 'I\'ll bring the picnic basket for after the see-saw! 🧺',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['Bamboo crunches louder than carrots. True fact! 🎍', 'I give the BEST hugs. It\'s a panda thing. 🤗', 'Slow is okay. Slow still gets you there.', 'Nap rule: five more minutes. Then five more.'],
     help: ['The glowing ❓ is math practice. Walk over — I\'ll wait right here. 🐼', 'Hints teach the method, not the answer. That\'s the kind way.', 'You can do hard things, {name}. One step at a time.'],
     helpRead: ['Those ❓ spots are reading. Take your time — no rush.', 'Sound it out. I\'ll cheer the try, not just the win. 🐼'],
@@ -20582,15 +20524,15 @@ const NPC_CAST = [
   { id: 'bunny', name: 'Bounce', lines: [
     'Hi {name}! How\'s your hop today?',
     'I\'m Bounce! Want help finding a ❓?',
-    'Boing! I bet I can hop higher than the swings!',
-    'Meet me at the 🛝 playground later?',
-    'Is there a 🏖️ sandbox? I dig SUPER fast!',
-    'Tag — you\'re it, {name}! First one to the playground wins! 🛝',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
   ], replies: {
     hi: 'Boing! Hi {name}! Watch how high I can hop!',
     how: ['BOUNCY! How are YOU, {name}?', 'I have too much hop and not enough pockets.', 'Great! I found a clover. Want to see later?'],
     name: ['Bounce! Because standing still is a rumor. 🐰', 'I\'m Bounce — the hoppy one. You\'re {name}!'],
-    playground: 'Sandbox! Sandbox! I call the 🏖️ sandbox!',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['I once hopped over a WHOLE fence. It was a tiny fence. Don\'t ask. 🐰', 'Carrots are just orange candy. That\'s my whole speech. 🥕', 'Thump-thump is how bunnies say yes.', 'I hide snacks and forget. That\'s a feature.'],
     help: ['Race you to a glowing ❓! Math first, then more hopping.', 'I won\'t shout the answer. Hop, try, hop again!', 'Hint button is 🤔 — like a carrot for your brain.'],
     helpRead: ['Reading ❓ time! I\'ll bounce in place so I don\'t spoil it.'],
@@ -20603,13 +20545,13 @@ const NPC_CAST = [
     'How are you? Need help with a ❓?',
     'ROAR! ...too scary? I\'m friendly, promise. 🦖',
     'My little arms can\'t reach the monkey bars. 😅',
-    'Will you go down the 🛝 slide with me later?',
+    'Will you explore town with me later?',
     'You earn 🪙 answering ❓ questions? You\'re so smart, {name}!',
   ], replies: {
     hi: 'RAWR! That means "hi" in dinosaur, {name}! 🦖',
     how: ['Stomp-stomp happy! How are you, {name}?', 'My arms are small but my mood is BIG.', 'Good! I practiced a quiet roar. Want to hear it later?'],
     name: ['Rexy! Not scary — just tall. 🦖', 'I\'m Rexy. You\'re {name}. Team? Team.'],
-    playground: 'I\'m the FASTEST down the slide. My tail is a racing stripe! 🛝',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['My arms are small but my heart is HUGE. 🦖💚', 'I tried the monkey bars once. Once. 😅', 'Tiny arms, huge high-fives. Physics is rude.', 'I roar at math sometimes. Then I try anyway.'],
     help: ['Walk to a ❓ — that\'s how we get 🪙. I\'ll stomp-cheer, not spoil it.', 'Stuck? 🤔 hint. Even dinos use hints.', 'Hard puzzles feel like tall trees. Climb one branch.'],
     helpRead: ['Reading ❓ ahead! I\'ll use my quiet roar for "you got this."'],
@@ -20620,7 +20562,7 @@ const NPC_CAST = [
   { id: 'queenfox', name: 'Foxy', lines: [
     'Hello {name}! I\'m Foxy — how are you?',
     'Psst — need help finding a ❓ station?',
-    'I know ALL the shortcuts to the 🛝 playground!',
+    'What would you like to build next, {name}?',
     'My tail is fluffier than any pillow. Royal fox fact! 🦊',
     'Race you! Foxes get a head start — new rule I just made up.',
     'Something smells like adventure, {name}. Follow me!',
@@ -20628,7 +20570,7 @@ const NPC_CAST = [
     hi: 'Well hello, {name}! *swish swish* That\'s my happy tail! 🦊',
     how: ['Sly and sunny. How about you, {name}?', 'My tail says we\'re both doing great.', 'Royal mood: curious. Your move!'],
     name: ['Foxy. Some say Queen. I allow both. 👑🦊', 'I\'m Foxy — and I already know you\'re {name}.'],
-    playground: 'Foxes LOVE tunnels — meet you under the slide! 🛝',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['I\'m secretly royalty. The crown gave it away, didn\'t it? 👑', 'My tail has a mind of its own. We\'ve agreed to disagree. 🦊', 'I collect shortcuts. Want one to a ❓?', 'Fluffy tails do not help math. Trying does.'],
     help: ['I know a shortcut to a glowing ❓. I won\'t whisper the answer, though. 🦊', 'Clever isn\'t cheating. Hints are 🤔 — still your puzzle.', 'Math is a fox-hunt. Sniff, try, find it.'],
     helpRead: ['Reading ❓! I\'ll keep the spoilers in my tail.'],
@@ -20640,14 +20582,14 @@ const NPC_CAST = [
     'BEEP! Hello {name}! How are your systems?',
     'I\'m Bolt. I can point you to a ❓ station!',
     'My favorite number is... ALL of them. 🤖',
-    'Computing: the 🛝 slide is 100% fun. Verified!',
-    'Can robots use swings? Requesting a push!',
+    'Computing: every solved puzzle is progress!',
+    'What would you like to build next, {name}?',
     'Your math answers charge my batteries, {name}! ⚡',
   ], replies: {
     hi: 'BOOP! Greetings, {name}! Systems: happy! 🤖',
     how: ['Status: charged and cheerful. Query: how are YOU, {name}?', 'All lights green. One light wants a high five.', 'Battery 98%. Friendship 100%.'],
     name: ['Bolt. Model: friend. Serial number: secret. 🤖', 'I am Bolt. You are {name}. Pairing complete!'],
-    playground: 'Calculating shortest path to the swings... follow me! 🛝',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['I dance in ro-bot style. It\'s the only style I have. 🤖', 'My batteries run on high fives. Recharge me any time! ⚡', 'Beep means yes. Boop means also yes.', 'I counted to a million once. It was mostly for fun.'],
     help: ['Navigate to a glowing ❓. I will not output the answer. That would skip the learning loop.', 'Hint = 🤔. Answer = you. I am just the cheer subroutine.', 'Math charges me. Your try charges you, {name}.'],
     helpRead: ['Reading ❓ detected. I will idle nearby. No spoilers in my logs.'],
@@ -20659,14 +20601,14 @@ const NPC_CAST = [
     'Hi {name}! I\'m Ember. Warm hellos only. 🐉',
     'How are you? Want help finding a ❓?',
     'Don\'t worry — I only breathe WARM air. Mostly. 🐉',
-    'My wings are too little to fly. The swings count, right?',
-    'I could toast marshmallows for the whole 🛝 playground!',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
     'Stomp with me, {name}! It makes the flowers giggle. 🌸',
   ], replies: {
     hi: 'Rrrrawr-hello, {name}! You look fireproof to me! 🐉',
     how: ['Toasty and friendly. How are you, {name}?', 'A little smoky. A lot happy.', 'Better when friends visit the den!'],
     name: ['Ember! I glow when I\'m proud of you. 🐉', 'I\'m Ember. You\'re {name}. No singeing, promise.'],
-    playground: 'Slide first! My scales make me EXTRA slippery! 🛝',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['My sneezes are 10% sparks. Bless me carefully. 🔥', 'Dragons hoard treasure. I hoard nice friends like you. 💚', 'Marshmallows are my love language.', 'When a puzzle is hard, I breathe SLOW, not hot.'],
     help: ['A ❓ is a little treasure hunt. I won\'t burn the map — you solve it.', 'Stuck? Cool the fire, tap 🤔, try again.', 'Brave is trying, {name}. Not already knowing.'],
     helpRead: ['Reading ❓! I\'ll keep my sparks small so you can think.'],
@@ -20677,16 +20619,16 @@ const NPC_CAST = [
   { id: 'princess', name: 'Princess Pea', lines: [
     'Greetings, {name}! How fares the kingdom today?',
     'I am Princess Pea. Need help with a ❓ quest?',
-    'Which way to the royal 🛝 playground?',
-    'A princess NEVER skips the swings. Royal decree!',
+    'What would you like to build next, {name}?',
+    'What would you like to build next, {name}?',
     'Your buildings are castle-worthy, {name}! 🏰',
-    'Shall we have a royal race to the slide?',
+    'Shall we find a new story to read?',
   ], replies: {
     hi: 'Why hello, {name}! You may skip the bowing. 👑',
     how: ['Quite well, thank you! And you, {name}?', 'Royal mood: delighted. Yours?', 'My crown is on straight. That means a good day.'],
     name: ['Princess Pea, at your service. 👑', 'Pea for short. Princess for long. You\'re {name}!'],
-    playground: 'The swings are my throne today! To the playground! 🛝',
-    fun: ['My crown stays on even down the slide. Royal secret: it\'s SPARKLE glue. 👑', 'Royal fact: princesses have the LOUDEST wheee. 🎀', 'Peas are vegetables AND names. I\'m both.', 'A knight is just a kid who tried the hard ❓.'],
+    playground: 'Let us explore town and find a puzzle! ❓',
+    fun: ['Every big adventure starts with one small step!', 'Try a puzzle, then make something your own.'],
     help: ['A ❓ is a royal quest. I will not gift the answer — that would spoil the ball.', 'Hints are allowed. Cheating is not. 🤔 is the court wizard.', 'You\'re hereby brave enough to try, {name}.'],
     helpRead: ['Reading ❓: a story quest. I shall wait by the marquee.'],
     helpLang: ['Spanish ❓! A new royal language. You may lead.'],
@@ -20697,14 +20639,14 @@ const NPC_CAST = [
     'Hi {name}! I\'m Twirl — how are you?',
     'Need a sparkly nudge toward a ❓?',
     'I dance everywhere I go — it\'s faster than walking! 💃',
-    'Do you think the 🛝 slide works with four... I mean two legs?',
+    'A cozy room needs somewhere to sit and somewhere to dream!',
     'My horn glows when I\'m happy. It\'s VERY glowy today! 🦄',
     'Twirl with me, {name}! Spinning makes everything sparklier!',
   ], replies: {
     hi: 'Hi hi hi {name}! *twirls* That\'s how unicorns wave! 🦄',
     how: ['Glowy and spinny! How are YOU, {name}?', 'My horn is on high-happy. Yours?', 'I\'d be even better if we danced after a ❓!'],
     name: ['Twirl! Because walking in a straight line is optional. 🦄', 'I\'m Twirl. You\'re {name}. Sparkle team!'],
-    playground: 'I\'m going to dance ALL the way down the slide! 🛝✨',
+    playground: 'Let us explore town and find a puzzle! ❓',
     fun: ['My mane does its own dance. I just follow it. 💫', 'Rainbows are just the sky dancing. True story! 🌈', 'I once spun so much I made a tiny breeze.', 'Hard puzzles still sparkle when you try.'],
     help: ['Glow toward a ❓! I\'ll twirl nearby. No answer-spoilers — that dims the horn.', '🤔 is a hint, not a giveaway. Still your sparkle, {name}.', 'Math is a dance: step, check, step.'],
     helpRead: ['Reading ❓! I\'ll keep my twirls quiet so you can read.'],
@@ -20735,6 +20677,7 @@ function clearNpcs() {
   for (const n of npcs) scene.remove(n.group);
   npcs = [];
   hideNpcChat();
+  dismissedChatNpc = null;
   const holder = $('npcBubbles'); if (holder) holder.innerHTML = '';
   playerBubbleEl = null;                  // its div was just wiped with the container
 }
@@ -20828,7 +20771,12 @@ function respawnNpcs() {
     });
   });
 }
-function npcSay(n, text, ms) {           // put words in a friend's bubble
+function npcSay(n, text, ms) {
+  if (chatNpc && npcChatExpanded && chatNpc !== n) return;
+  for (const other of npcs) if (other !== n) {
+    other.sayUntil = 0;
+    if (other.el) other.el.style.display = 'none';
+  }           // put words in a friend's bubble
   n.say = text; n.sayUntil = performance.now() + (ms || 4600);
   const holder = $('npcBubbles'); if (!holder) return;
   if (!n.el) { n.el = document.createElement('div'); n.el.className = 'npcBubble'; holder.appendChild(n.el); }
@@ -20850,7 +20798,6 @@ const NPC_CHIPS = [
   { id: 'name', label: '📛 What\'s your name?' },
   { id: 'fun', label: '😄 Tell me something!' },
   { id: 'help', label: '❓ Need help?' },
-  { id: 'playground', label: '🛝 Playground?' },
   { id: 'live', label: '🏠 Live here!' },
   { id: 'bye', label: '👋 Bye!' },
 ];
@@ -20868,13 +20815,24 @@ function npcHelpBag(n) {
   if (w === 'beach' && R.helpLang) return R.helpLang;
   return R.help || R.helpRead || ['Walk up to a glowing ❓ — I\'ll cheer, I won\'t give the answer!'];
 }
-let chatNpc = null;
+let chatNpc = null, npcChatExpanded = false, dismissedChatNpc = null;
 let playerBubbleEl = null, playerBubbleUntil = 0;
 let _playerLotIx = -1;                   // which home lot the player is standing in (doorstep greetings)
-function showNpcChat(n) {
-  chatNpc = n;
+function showNpcChat(n, expanded = false) {
+  chatNpc = n; npcChatExpanded = expanded;
   const el = $('npcChat'); if (!el) return;
-  el.innerHTML = NPC_CHIPS.map(c => '<button type="button" data-c="' + c.id + '">' + c.label + '</button>').join('') +
+  if (!expanded) {
+    el.innerHTML = '<button type="button" id="npcTalkBtn">💬 Talk to ' + n.cast.name + '</button>';
+    el.querySelector('button').onclick = ev => { ev.preventDefault(); ev.stopPropagation(); showNpcChat(n, true); };
+    el.style.display = 'flex'; el.classList.remove('expanded');
+    document.body.classList.remove('npcChatting');
+    return;
+  }
+  el.classList.add('expanded');
+  const primary = NPC_CHIPS.filter(c => ['hi', 'help', 'bye'].includes(c.id));
+  const extra = NPC_CHIPS.filter(c => !['hi', 'help', 'bye'].includes(c.id));
+  el.innerHTML = primary.map(c => '<button type="button" data-c="' + c.id + '">' + c.label + '</button>').join('') +
+    '<details class="npcMore"><summary>More…</summary><div>' + extra.map(c => '<button type="button" data-c="'+c.id+'">'+c.label+'</button>').join('') + '</div></details>' +
     // ⌨️ Fiona's ask: TYPE a word to a friend. Kid-safe by design — the friend only understands
     // a handful of magic words (matched locally, hand-written replies; nothing goes online).
     // Own row under the chips so a phone/tablet keyboard can open below the field.
@@ -20962,7 +20920,8 @@ function npcWordSend() {
   n.replyAt = now + 650;
 }
 function hideNpcChat() {
-  chatNpc = null;
+  dismissedChatNpc = chatNpc || dismissedChatNpc;
+  chatNpc = null; npcChatExpanded = false;
   document.body.classList.remove('npcTyping');
   npcKbSync();
   const el = $('npcChat'); if (el) el.style.display = 'none';
@@ -21123,6 +21082,8 @@ function npcRectsReset() {
   if (chat && chat.style.display === 'flex') npcRects.push(chat.getBoundingClientRect());
 }
 function npcResolveBubble(el) {
+  const width = el.getBoundingClientRect().width;
+  el.style.left = Math.max(width / 2 + 8, Math.min(innerWidth - width / 2 - 8, parseFloat(el.style.left))) + 'px';
   for (let k = 0; k < 5; k++) {
     const r = el.getBoundingClientRect();
     let hit = null;
@@ -21163,7 +21124,8 @@ function updateNpcs(dt, now) {
     const d0 = Math.hypot(player.pos.x - n.group.position.x, player.pos.z - n.group.position.z);
     if (d0 < nd) { nd = d0; nearest = n; }
   }
-  if (nearest && nd < 3.5 && !player.driving && !trainRide) { if (chatNpc !== nearest) showNpcChat(nearest); }
+  if (dismissedChatNpc && Math.hypot(player.pos.x-dismissedChatNpc.group.position.x, player.pos.z-dismissedChatNpc.group.position.z) > 5) dismissedChatNpc = null;
+  if (nearest && nearest !== dismissedChatNpc && nd < 3.5 && !popupOpen && !player.driving && !trainRide) { if (chatNpc !== nearest) showNpcChat(nearest); }
   else if (chatNpc && (!nearest || nd > 4.0 || player.driving || trainRide)) hideNpcChat();
 
   // 🏠👋 doorstep manners: step into a friend's ASSIGNED house and they welcome you in
@@ -21258,7 +21220,7 @@ function updateNpcs(dt, now) {
       while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
       g.rotation.y += dy * Math.min(1, dt * 6);
       npcLegsRest(n);
-      if (pd < 3.4 && now >= n.coolAt && !popupOpen && !player.driving) npcSpeak(n, now);
+      if (n === nearest && n !== dismissedChatNpc && pd < 3.4 && now >= n.coolAt && !popupOpen && !player.driving) npcSpeak(n, now);
       n.mode = 'idle'; n.timer = 1.5 + Math.random() * 2;
     } else if (n.mode === 'walk' && n.target) {
       const r = npcWalkToward(n, n.target.x, n.target.z, dt);
@@ -21621,7 +21583,7 @@ addEventListener('resize', () => {
 // (Quietly does nothing when opened from a plain file:// — it needs to be served over http/https.)
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=280').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=281').then(reg => { try { reg.update(); } catch (e) {} }).catch(() => {});
   });
 }
 /* 🛡️ storage blocked (Brave "Block all cookies" & co)? Say so kindly on the start screen —
