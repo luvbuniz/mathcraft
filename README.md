@@ -25,7 +25,12 @@ No images, models, or audio files to download.
    bushes, flowers), **cooking items** (pots, frying pans, bacon, pies), a
    tree ladder, and more.
 
-   **Roofs:** stack roof tiles on top of your walls for a peaked roof.
+   **Roofs:** stack roof tiles on top of your walls for a peaked roof. For a
+   flat "old-fashioned" brick roof, pop a brick on top of one wall and another
+   straight across on the far wall — a **🌉 Fill across** button appears and
+   lays the whole row in one tap. Press **C** twice for the **🦅 bird's eye**
+   view first: tap any block from above to build on top of it (or remove it),
+   no ladder-walking needed.
    **Cooking:** aim at your stove (tap its top) and place a pot, pan, or
    bacon on a burner to make it steam and sizzle — or put a pie in to bake
    in the glowing oven.
@@ -52,6 +57,38 @@ subject at the **❓ stations**, and its own saved build:
 Each world also looks the part: 🌳 Math Meadow has wildflowers and green grass,
 🏘️ Reading Town has a lit skyline on the horizon, and 🏖️ Spanish Beach is a sandy
 island ringed by ocean with palm trees and beach umbrellas.
+
+🕹️ **The Stack Arcade** sits next to the Cinema in Reading Town. Word games cost
+**2 🪙 a play** (coins come from learning!) and pay out **🎫 prize tickets**
+(their own currency — separate from the Western's 🎟️ ride tickets):
+**📖 Word Quiz** is the gentlest machine — five friendly "which word is a noun?"
+questions with a real 💡 hint button — and **⛄ Snowman Spell** is a
+guess-the-letters game where every word comes with its sentence as a clue —
+save the snowman before the sun melts him! Winning opens a short no-reading
+**✨ Gloomy Bop** bonus round, and tickets buy **arcade-only prizes** at the
+counter (a trophy, a claw-machine bear, a glowing neon OPEN sign, and a mini
+arcade cabinet) to place in your house. Tickets never turn back into coins, so
+the arcade is where learning money gets spent — never a coin farm.
+
+🧑‍🤝‍🧑 **Town friends:** four heroes (Spark, Momma Panda, Bounce & Rexy) stroll
+around every world near spawn. Walk up to one — or tap them — and they chat in
+a **speech bubble** that greets you by name, and mostly about the **🛝
+playground**: they ask about the swings and see-saw and invite you to meet
+them there, a friendly nudge to build one (playground gear is in the Stack
+Barn's 🏞️ Park & Playground shelf).
+
+💬 **Talk back with word-chips:** stand near a friend and five big preset
+phrases appear — 👋 Hi! / 🛝 Playground? / 😄 Tell me something! / 🏠 Live
+here! / 👋 Bye! Your words pop up over your own head and the friend answers
+in character. No typing and no free chat — on purpose.
+
+🏠 **Give a friend a house:** build them a house, stand inside it, and tap
+**🏠 Live here!** — that friend moves in (saved per world). Friends with a
+home actually *live*: they sit on the couch, nap on the bed, and "cook" at
+the stove, with little homey thoughts in their bubbles. They can't walk
+through walls or furniture, and if someone bricks a friend in completely
+(looking at you, Leo 😄), they find a "secret door" and pop back out. Pet
+birds respect walls now too.
 
 Find the **🌀 portal** in any world and tap it (or press **E** nearby) to **travel**
 to another world without going back to the home screen — your house in each world
@@ -96,6 +133,15 @@ Stack Mart is open in **both** modes (press **B**); **doors are bought there**
 for coins. To place a door, chair, table, or other item, open your **🎒
 backpack (I)**, tap **Place**, then press **D** where you want it.
 
+### 🎨 Real 3D character models (optional)
+
+Drop a `.glb` model at `avatars/<id>.glb` (e.g. `avatars/leo.glb` from Meshy,
+Blender, or an artist) and that hero **upgrades automatically** — auto-scaled,
+grounded, shadowed, with walk/idle animations if the model is rigged, and the
+picker card repaints with the real model. No file → the hero quietly stays
+procedural, so the game still works offline and heroes ship one at a time.
+Full weekend guide: [`avatars/README.md`](avatars/README.md).
+
 ## 🦊 The heroes
 
 Seven blocky, procedurally built avatars to choose from — and the
@@ -125,13 +171,21 @@ four-legged animals really walk on four legs:
 | `1` / `2` | Quick-select block 🧱 or door 🚪 (or choose any item in the 🎒 backpack) |
 | `E` | Use a math station / open Stack Mart |
 | `B` | Open 🛒 Stack Mart — blocks, doors, roof tiles, furniture, cooking items, gear |
-| `C` | Toggle camera: 🧍 see your character / 👁️ look through their eyes |
+| `C` | Cycle camera: 🧍 see your character / 👁️ their eyes / 🦅 bird's eye (top-down — great for building) |
 | `F` | Throw a softball at the Gloomies (Shelter Rush, after the timer ends) |
 | Mouse (optional) | Click the game to look around; left-click places, right-click removes |
 
-On-screen buttons (top-right corner): **🔊** sound, **🧍/👁️** view, **🏠**
-save & go home, **💾** save, **🎒** backpack, and **📸** take a photo of
-your build (saves a picture you can keep or share). They work with a tap too.
+On-screen buttons (top-right corner): just three now — **☰ menu**, **🧍/👁️/🦅
+view** (opens a labeled chooser), and **🎒 backpack**. Everything else lives
+in the ☰ menu as a **labeled list** kids can read: 🗺️ Quest Board (with live
+progress), 🤳 Selfie mode, 🔊 Sound, ❔ How to play, 💾 Save game, and 🏠 Save
+& go home. (The old 📸 photo button is gone — it dropped files into Downloads
+and popped share sheets, which annoyed parents more than it delighted kids.)
+
+**🔄 Phones play sideways:** once a game starts on a phone, Stackadoo locks to
+landscape where the browser allows it (Android), and everywhere else shows a
+big friendly "Turn your phone sideways!" screen — the game pauses safely until
+the phone is flipped. Tablets can play either way.
 
 **🎨 Paint:** open the backpack and pick a paint color, then the blocks you
 place come out in that color — great for decorating houses.
@@ -177,9 +231,9 @@ tiles** stack on top of your walls to cap a house with a peaked roof.
 ## 💾 Saving with your name, and badges
 
 Type your **name** on the start screen and the game keeps a personal save
-just for you — it **auto-saves every few seconds**, plus there's a **💾
-Save** button and a **🏠 Home** button right in the game (Home saves first,
-then returns to the menu). Each saved world shows up as its own row on the
+just for you — it **auto-saves every few seconds**, plus **💾 Save game** and
+**🏠 Save & go home** live in the ☰ menu (Home saves first, then returns to
+the menu). Each saved world shows up as its own row on the
 start screen, so several kids can share one device and keep separate
 worlds. Tap a name to keep building, or press **Start Adventure** for a
 brand-new world.

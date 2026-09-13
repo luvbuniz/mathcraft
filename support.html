@@ -22,7 +22,8 @@
 <meta name="twitter:title" content="Stackadoo — Support, Privacy & Terms">
 <meta name="twitter:description" content="Support, privacy & terms for Stackadoo — kid-safe, no ads, no chat, no data collection.">
 <meta name="twitter:image" content="https://stackadoo.com/shots/build.jpg">
-<link rel="icon" href="icon.svg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
@@ -107,20 +108,21 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
   <!-- CONTACT -->
   <div class="card">
     <h2>📬 Get help</h2>
-    <p>Questions, a purchase that didn&rsquo;t unlock, a refund, a bug, or just an idea from your kid? Email us and a real person (a parent, like you) will reply — usually within a day or two.</p>
+    <p>Questions, a refund from an earlier purchase, a bug, or just an idea from your kid? Email us and a real person (a parent, like you) will reply — usually within a day or two.</p>
     <a class="email" href="mailto:support@stackadoo.com">support@stackadoo.com</a>
+    <p style="margin-top:12px;font-size:14px;color:#5d7280">Signed in to sync? You can <a href="delete-account.html">delete your account &amp; data</a> any time.</p>
   </div>
 
   <!-- FAQ -->
   <section id="faq">
     <h2 class="sec">Frequently asked</h2>
     <details open><summary>Do I need to download anything?</summary><p>No. Stackadoo runs right in your browser. On a tablet or phone you can &ldquo;Add to Home Screen&rdquo; for an app-like icon that even works offline.</p><p id="installWrap" style="display:none"><button id="installBtn" style="font-family:var(--display);font-weight:600;font-size:16px;color:#fff;background:var(--green);border:none;border-radius:12px;padding:11px 18px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)">📲 Install Stackadoo as an app</button></p></details>
-    <details><summary>Is it really safe for kids?</summary><p>Yes. There&rsquo;s no advertising, no chat, no contact with strangers, and no purchasable in-game currency. The only purchase is one optional unlock, made by a parent.</p></details>
+    <details><summary>Is it really safe for kids?</summary><p>Yes. There&rsquo;s no advertising, no chat, no contact with strangers, and no purchasable in-game currency. During closed testing there are no payments at all.</p></details>
     <details><summary>What ages is it for?</summary><p>It&rsquo;s tuned for grades 2&ndash;5 (roughly ages 7&ndash;11), with difficulty that adapts up and down to fit your child.</p></details>
-    <details><summary>What do I get when I unlock?</summary><p>Math Meadow is free forever. The one-time unlock makes you a <strong>Founding Family</strong>: you get the early/beta version other parents don&rsquo;t have yet, the paid worlds (Reading Town today), <strong>and every world and update we add later &mdash; free, for life.</strong> One payment, never again, no subscription.</p></details>
+    <details><summary>Does it cost anything?</summary><p>Not right now. Stackadoo is in closed testing and we&rsquo;ve taken payments off. Math Meadow and Reading Town are free to play &mdash; no account, no unlock, no subscription.</p></details>
     <details><summary>Can my child accidentally delete their game?</summary><p>We protect against it two ways. Deleting a saved game always requires typing a randomly shown code, and the 🗑️ delete buttons are <strong>hidden by default for Grades 1&ndash;3</strong>. You can change this any time in the in-game <strong>Grown-ups</strong> page (the &ldquo;Game deletes&rdquo; setting): hide the buttons for everyone, or show them for older kids&mdash;they&rsquo;ll still need the code.</p></details>
-    <details><summary>I paid but a world is still locked.</summary><p>The unlock saves on the device you bought it on &mdash; make sure you returned to the game after paying. Still stuck? Email <a href="mailto:support@stackadoo.com">support@stackadoo.com</a> and we&rsquo;ll get you unlocked right away.</p></details>
-    <details><summary>Can my kids play on more than one device?</summary><p>Yes. The unlock saves on the device you bought it on; to use it on another tablet or phone, email <a href="mailto:support@stackadoo.com">support@stackadoo.com</a> and we&rsquo;ll send a <strong>restore code</strong> to type into the game&rsquo;s &ldquo;Have a code?&rdquo; box. Your purchase is good for your family for life.</p></details>
+    <details><summary>I paid before closed testing and a world is still locked.</summary><p>Payments are off during closed testing, so worlds should already be open. If something is still locked, tap <strong>☁️ Sign in</strong> with the same grown-up account, or email <a href="mailto:support@stackadoo.com">support@stackadoo.com</a> and we&rsquo;ll sort it right away.</p></details>
+    <details><summary>Can my kids play on more than one device?</summary><p>Yes. Tap <strong>☁️ Sign in</strong> on the home screen (Google or email) and every child&rsquo;s worlds <strong>follow you to any device</strong>. A grown-up signs in; kids stay nicknames &mdash; no child data is collected.</p></details>
     <details><summary>How do I get a refund?</summary><p>Just ask within 30 days — see the refund policy below. No hoops.</p></details>
   </section>
 
@@ -137,13 +139,13 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
     <p>Your child&rsquo;s saves (houses, blocks, badges, settings) are stored locally on your device using your browser&rsquo;s storage. If you don&rsquo;t sign in, they never leave the device and are never sent to us. Clearing your browser data removes them.</p>
 
     <h3>Optional grown-up account &amp; cloud sync</h3>
-    <p>Signing in is <strong>optional</strong> and meant for a parent. If you choose to create an account (with Google, or an email and password), we store your <strong>email address</strong> and a copy of your family&rsquo;s game saves, so your purchase and worlds can follow you to another device. Children are only ever nicknames under your account &mdash; we never collect a child&rsquo;s email or personal details. Sign-in is handled by Google Firebase Authentication. You can sign out any time, and you can ask us to delete your account and its data at <a href="mailto:support@stackadoo.com">support@stackadoo.com</a>. If you never sign in, nothing leaves your device.</p>
+    <p>Signing in is <strong>optional</strong> and meant for a parent. If you choose to create an account (with Google, or an email and password), we store your <strong>email address</strong> and a copy of your family&rsquo;s game saves, so your worlds can follow you to another device. Children are only ever nicknames under your account &mdash; we never collect a child&rsquo;s email or personal details. Sign-in is handled by Google Firebase Authentication. You can sign out any time, and you can ask us to delete your account and its data at <a href="mailto:support@stackadoo.com">support@stackadoo.com</a>. If you never sign in, nothing leaves your device.</p>
 
     <h3>No tracking, no ads</h3>
     <p>We don&rsquo;t use advertising, advertising networks, behavioral tracking, or third-party analytics that profile children. There are no third-party ad or social trackers embedded in the game.</p>
 
     <h3>Payments</h3>
-    <p>If you choose the optional one-time unlock, payment is handled entirely by <a href="https://stripe.com" target="_blank" rel="noopener">Stripe</a>, a trusted payment processor. We never see or store your full card number. Stripe processes your payment details under its own <a href="https://stripe.com/privacy" target="_blank" rel="noopener">privacy policy</a>. We only learn that a purchase succeeded.</p>
+    <p>Payments are currently off during closed testing. If you bought an unlock earlier, that payment was handled by <a href="https://stripe.com" target="_blank" rel="noopener">Stripe</a>. We never see or store your full card number. Stripe processes payment details under its own <a href="https://stripe.com/privacy" target="_blank" rel="noopener">privacy policy</a>.</p>
 
     <h3>Children&rsquo;s privacy (COPPA)</h3>
     <p>Stackadoo is designed to comply with the U.S. Children&rsquo;s Online Privacy Protection Act (COPPA). We do not collect personal information from children. The only personal information we ever collect is an optional <strong>parent&rsquo;s</strong> email &mdash; and only if a grown-up chooses to create an account &mdash; never from a child. We don&rsquo;t sell or share data. If you believe we have inadvertently received any personal information from a child, email us and we will delete it promptly.</p>
@@ -160,8 +162,8 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
     <h3>Using Stackadoo</h3>
     <p>Stackadoo is an educational game published by Buni LLC. You may play it for personal, non-commercial, family use. Please don&rsquo;t copy, resell, or redistribute the game or its content.</p>
 
-    <h3>The optional unlock</h3>
-    <p>Stackadoo is free to play. You may choose to buy a one-time unlock &mdash; a single payment, not a subscription. It unlocks the full game (Reading Town today) <strong>plus every world and update we add later, free for life</strong>, for your family. The unlock saves on the device you purchase it on; if you switch or add a device, email us and we&rsquo;ll send a restore code. Purchases are made and managed by a parent or guardian.</p>
+    <h3>Payments during closed testing</h3>
+    <p>Stackadoo is free to play. We&rsquo;ve taken payments off during closed testing, so there is no unlock to buy. Math Meadow and Reading Town are open. If you purchased earlier, a parent can optionally <strong>sign in</strong> so your worlds sync across devices.</p>
 
     <h3>Educational disclaimer</h3>
     <p>Stackadoo is a fun supplement to learning, not a replacement for school, a curriculum, or a teacher. We make no guarantee of specific educational outcomes or test results.</p>
@@ -177,7 +179,7 @@ window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault()
   <section id="refunds">
     <span class="pill">Refund Policy</span>
     <h2 class="sec">Not happy? We&rsquo;ll refund it</h2>
-    <p>If the unlock isn&rsquo;t right for your family, email <a href="mailto:support@stackadoo.com">support@stackadoo.com</a> within <strong>30 days</strong> of purchase and we&rsquo;ll refund you, no questions asked. Include the email address used at checkout so we can find the payment quickly.</p>
+    <p>If you purchased before closed testing and would like a refund, email <a href="mailto:support@stackadoo.com">support@stackadoo.com</a> within <strong>30 days</strong> of purchase and we&rsquo;ll refund you, no questions asked. Include the email address used at checkout so we can find the payment quickly.</p>
   </section>
 
 </main>
