@@ -3990,8 +3990,18 @@ const AVATARS = [
   }
 ];
 
-// Keep the full indexed registry for old saves; offer a small core cast to new players.
-const CORE_HERO_IDS = new Set(['queenfox', 'kinglion', 'dragon', 'bunny', 'leo', 'fiona']);
+// Keep the full indexed registry for old saves; the picker offers every hero that has a
+// studio model at avatars/<id>.glb - those are the ones with real dance/spin/cheer clips,
+// so every hero a kid can choose can actually perform. The six without a model
+// (deer, ninjadog, astronaut, superhero, knight, trex) stay out of the picker but remain
+// indexed, so old saves and the NPC cast still resolve them.
+// Nothing here is preloaded: fetchAvatarBytes() pulls a .glb only when that hero is first
+// used, then caches it - so a longer list costs nothing until a hero is actually picked.
+const CORE_HERO_IDS = new Set([
+  'leo', 'fiona', 'queenfox', 'kinglion', 'dragon', 'bunny',
+  'princess', 'peacock', 'unicorn', 'tiger', 'piratecat', 'robot',
+  'wizard', 'panda', 'penguin', 'spark'
+]);
 AVATARS.forEach(av => { av.hidden = !CORE_HERO_IDS.has(av.id); });
 
 /* ============================ 🎨 REAL 3D CHARACTER MODELS (GLB) ============================
