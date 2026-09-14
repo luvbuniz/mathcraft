@@ -13107,11 +13107,29 @@ function buildMeadowDecor(g) {
   buildMeadowVillage(g);                                // 🏘️ the plaza green, well, trees & welcome arch
   { const p = new THREE.Group(); buildTownPark(p, 0, 0, 'MEADOW PARK'); p.position.set(PARK_ZONE.meadow.cx, 0, PARK_ZONE.meadow.cz); g.add(p); townPark.meadow = p; }   // 🏞️ one big park (gated Dog Park + Playground) — repositioned clear of homes on load
   // a Cotswold hamlet ringing the meadow — honey-stone cottages on the skyline, well past the build field
-  const HN = 16;
+  // 🏁 The ring sweeps straight through the County Fair: the fairground sits 32.8 out from the
+  // centre and its race track reaches ~12 further, while the ring runs at 38-42 - so cottage 14
+  // used to land ON the speedway. Nudge a fouled cottage along the ring (then in/out) until its
+  // whole footprint clears the fairground, and skip that spoke if nothing does.
+  const HN = 16, COT_R = 2.6;                                              // cottage half-diagonal incl. porch
+  const FAIR_CLEAR = 15.2 + COT_R;                                         // 15.2 matches inShopZone's fairground radius
+  const spotClear = (cx, cz) =>
+    Math.hypot(cx - FAIR_POS.x, cz - FAIR_POS.z) > FAIR_CLEAR &&
+    Math.abs(cx) < WORLD_R + 14 && Math.abs(cz) < WORLD_R + 14;
   for (let i = 0; i < HN; i++) {
-    const a = (i / HN) * Math.PI * 2 + 0.15;
-    const r = 38 + (i % 3) * 2;                                            // pushed out to ring the bigger (R=40) world
-    cotswoldCottage(g, Math.cos(a) * r, Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)) + (Math.random() - 0.5) * 0.3);
+    const a0 = (i / HN) * Math.PI * 2 + 0.15;
+    const r0 = 38 + (i % 3) * 2;                                           // pushed out to ring the bigger (R=40) world
+    let done = false;
+    for (const da of [0, 0.13, -0.13, 0.26, -0.26, 0.39, -0.39]) {         // slide along the ring first - keeps the skyline even
+      for (const dr of [0, 3, 6, -3]) {                                    // then nudge the radius
+        const a = a0 + da, r = r0 + dr;
+        const cx = Math.cos(a) * r, cz = Math.sin(a) * r;
+        if (!spotClear(cx, cz)) continue;
+        cotswoldCottage(g, cx, cz, Math.atan2(-Math.cos(a), -Math.sin(a)) + (Math.random() - 0.5) * 0.3);
+        done = true; break;
+      }
+      if (done) break;
+    }
   }
 }
 // ════════════════ 🤠 COUNTRY WESTERN — a frontier theme-park town (Science Park) ════════════════
