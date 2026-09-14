@@ -43,6 +43,19 @@ function today_() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 }
 
+/**
+ * Normalise a date cell back to 'yyyy-MM-dd'.
+ * We WRITE the string '2026-09-09', but Sheets silently turns that cell into a real
+ * Date - so reading it back gives a Date object, and `String(cell) === tday` never
+ * matched. Result: every heartbeat appended a brand-new daily row instead of
+ * incrementing one, and the same-day check below always fired. Always compare
+ * through this.
+ */
+function dayKey_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  return String(v || '');
+}
+
 /** Upsert one row per device (keeps the sheet small no matter how many heartbeats). */
 function logPing(id, ev, g, t) {
   var lock = LockService.getScriptLock();
@@ -63,7 +76,7 @@ function logPing(id, ev, g, t) {
       var lastSeen = Math.max(Number(prev[2]) || 0, t);
       var played = (Number(prev[3]) || 0) || playedNow;
       dev.getRange(r, 3, 1, 3).setValues([[lastSeen, played, g]]);   // lastSeen, played, hasGame(latest)
-      if (prev[5] !== tday) { dev.getRange(r, 6).setValue(tday); bumpDay_(s.day, tday); }
+      if (dayKey_(prev[5]) !== tday) { dev.getRange(r, 6).setValue(tday); bumpDay_(s.day, tday); }
     }
   } finally { lock.releaseLock(); }
 }
@@ -93,7 +106,7 @@ function logHero_(id) {
 function bumpDay_(day, tday) {
   var data = day.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === tday) { day.getRange(i + 1, 2).setValue((Number(data[i][1]) || 0) + 1); return; }
+    if (dayKey_(data[i][0]) === tday) { day.getRange(i + 1, 2).setValue((Number(data[i][1]) || 0) + 1); return; }
   }
   day.appendRow([tday, 1]);
 }
@@ -116,8 +129,14 @@ function report() {
   var hd = s.hero.getDataRange().getValues(), heroes = [];
   for (var k = 1; k < hd.length; k++) heroes.push({ hero: String(hd[k][0]), picks: Number(hd[k][1]) || 0 });
   heroes.sort(function (a, b) { return b.picks - a.picks; });
-  var dd = s.day.getDataRange().getValues(), rows = [];
-  for (var j = 1; j < dd.length; j++) rows.push({ date: String(dd[j][0]), visitors: Number(dd[j][1]) || 0 });
+  // Sum by date: the bug above scattered each day across many rows, so fold them
+  // back together rather than showing the same date seven times.
+  var dd = s.day.getDataRange().getValues(), byDay = {}, rows = [];
+  for (var j = 1; j < dd.length; j++) {
+    var k = dayKey_(dd[j][0]);
+    if (k) byDay[k] = (byDay[k] || 0) + (Number(dd[j][1]) || 0);
+  }
+  for (var key in byDay) rows.push({ date: key, visitors: byDay[key] });
   rows.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   return {
     ok: true, generated: now,
