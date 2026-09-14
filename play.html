@@ -13995,6 +13995,12 @@ function setAvatar(index) {
   // startGame's catch and skipped everything after it — HUD, NPCs, G.running. Fall back.
   if (!AVATARS[index] || typeof AVATARS[index].build !== 'function') index = 0;
   G.avatarIndex = index;
+  // 📊 tally which hero is being played - swapHero() funnels through here too, so this
+  // catches both "started as" and "switched to". Guarded: Analytics is defined further down.
+  try {
+    const hid = (AVATARS[index] || {}).id;
+    if (hid && typeof Analytics !== 'undefined' && Analytics.hero) Analytics.hero(hid);
+  } catch (e) {}
   ROUND_AV = true;                         // build a soft, rounded character (avatars only — the world stays voxel)
   try {
     const data = AVATARS[index].build();
@@ -21808,7 +21814,19 @@ const Analytics = (function () {
       if (navigator.sendBeacon) navigator.sendBeacon(u); else new Image().src = u;
     } catch (e) {}
   }
-  return { send: send, play: function () { send('play'); }, id: aid };
+  /* 📊 Which heroes actually get played. Sent at most ONCE PER HERO PER SESSION, so a
+     kid swapping back and forth doesn't skew the tally. Carries only the hero id - no
+     device row is touched, so this can't disturb the visitor/player counts. */
+  const heroSent = {};
+  function hero(id) {
+    if (!id || heroSent[id] || !ANALYTICS_URL) return;
+    heroSent[id] = 1;
+    try {
+      const u = ANALYTICS_URL + '?hero=' + encodeURIComponent(id) + '&t=' + Date.now();
+      if (navigator.sendBeacon) navigator.sendBeacon(u); else new Image().src = u;
+    } catch (e) {}
+  }
+  return { send: send, play: function () { send('play'); }, hero: hero, id: aid };
 })();
 Analytics.send('visit');                                   // someone opened the site
 setInterval(function () { if (!document.hidden) Analytics.send('beat'); }, 60000);  // still here = active

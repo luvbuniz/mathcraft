@@ -91,6 +91,13 @@
       <div id="daily"></div>
     </div>
 
+    <div class="card">
+      <h3 style="margin:0 0 8px">Heroes — who kids actually play</h3>
+      <div id="heroes"></div>
+      <p class="note" style="margin-top:8px">Counted once per hero per session. A hero nobody
+        picks is costing download size for nothing — and the top few are worth promoting.</p>
+    </div>
+
     <div class="row" style="justify-content:space-between">
       <button class="refresh" onclick="loadStats()">↻ Refresh</button>
       <span class="foot" id="updated"></span>
@@ -342,6 +349,15 @@ function render(d) {
     '<span class="t"><span class="f" style="width:' + Math.round((x.visitors || 0) / max * 100) + '%"></span></span>' +
     '<span class="v">' + (x.visitors || 0) + '</span></div>'
   ).join('') || '<p class="note">No data yet.</p>';
+  // hero popularity — same mini-bar style as the daily chart
+  const heroes = d.heroes || [];
+  const hmax = Math.max(1, ...heroes.map(x => x.picks || 0));
+  const htotal = heroes.reduce((a, x) => a + (x.picks || 0), 0);
+  $('heroes').innerHTML = heroes.map(x =>
+    '<div class="barRow"><span class="d">' + String(x.hero || '?') + '</span>' +
+    '<span class="t"><span class="f" style="width:' + Math.round((x.picks || 0) / hmax * 100) + '%"></span></span>' +
+    '<span class="v">' + (x.picks || 0) + (htotal ? ' · ' + Math.round((x.picks || 0) / htotal * 100) + '%' : '') + '</span></div>'
+  ).join('') || '<p class="note">No hero data yet — this starts filling once the new build is live.</p>';
   $('updated').textContent = 'updated ' + new Date(d.generated || Date.now()).toLocaleString();
 }
 

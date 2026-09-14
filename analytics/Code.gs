@@ -23,6 +23,7 @@ function handle(e) {
     if (p.key !== ADMIN_KEY) return json_({ ok: false, error: 'unauthorized' });
     return json_(report());
   }
+  if (p.hero) { logHero_(p.hero); return json_({ ok: true }); }   // hero tally only - no device row
   if (p.id) logPing(p.id, p.e || 'visit', p.g === '1' ? 1 : 0, Number(p.t) || Date.now());
   return json_({ ok: true });
 }
@@ -33,7 +34,9 @@ function sheets_() {
   if (!dev) { dev = ss.insertSheet('devices'); dev.appendRow(['id', 'firstSeen', 'lastSeen', 'played', 'hasGame', 'lastDay']); }
   var day = ss.getSheetByName('daily');
   if (!day) { day = ss.insertSheet('daily'); day.appendRow(['date', 'visitors']); }
-  return { dev: dev, day: day };
+  var hero = ss.getSheetByName('heroes');
+  if (!hero) { hero = ss.insertSheet('heroes'); hero.appendRow(['hero', 'picks', 'lastPicked']); }
+  return { dev: dev, day: day, hero: hero };
 }
 
 function today_() {
@@ -65,6 +68,27 @@ function logPing(id, ev, g, t) {
   } finally { lock.releaseLock(); }
 }
 
+/**
+ * Tally one hero pick. Deliberately stores NO device id - just a running count per
+ * hero - so it answers "is anyone playing this one?" without linking heroes to people.
+ */
+function logHero_(id) {
+  id = String(id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24);
+  if (!id) return;
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch (err) { return; }
+  try {
+    var h = sheets_().hero, data = h.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === id) {
+        h.getRange(i + 1, 2, 1, 2).setValues([[(Number(data[i][1]) || 0) + 1, Date.now()]]);
+        return;
+      }
+    }
+    h.appendRow([id, 1, Date.now()]);
+  } finally { lock.releaseLock(); }
+}
+
 /** Count one distinct device for "visitors today". */
 function bumpDay_(day, tday) {
   var data = day.getDataRange().getValues();
@@ -89,6 +113,9 @@ function report() {
     if (lastSeen >= d7) { visitors7++; if (isPlayer) players7++; if (hasGame) activeGames7++; }
     if (lastSeen >= d5m) activeNow++;
   }
+  var hd = s.hero.getDataRange().getValues(), heroes = [];
+  for (var k = 1; k < hd.length; k++) heroes.push({ hero: String(hd[k][0]), picks: Number(hd[k][1]) || 0 });
+  heroes.sort(function (a, b) { return b.picks - a.picks; });
   var dd = s.day.getDataRange().getValues(), rows = [];
   for (var j = 1; j < dd.length; j++) rows.push({ date: String(dd[j][0]), visitors: Number(dd[j][1]) || 0 });
   rows.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
@@ -97,6 +124,7 @@ function report() {
     visitorsAll: visitorsAll, playersAll: playersAll,
     visitors7: visitors7, players7: players7,
     activeNow: activeNow, activeGames7: activeGames7,
+    heroes: heroes,
     daily: rows.slice(-7)
   };
 }
