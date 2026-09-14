@@ -3,7 +3,7 @@
    picks up the latest version while online, and the WHOLE game still works with no Wi-Fi —
    including the CDN libraries (Three.js, fonts, Firebase), which we now cache too. After one
    online load the game runs offline. Saves live in localStorage and are untouched by this. */
-const CACHE = 'stackadoo-v293';
+const CACHE = 'stackadoo-v294';
 
 // The critical pieces the game needs to even start — precached on install so a first offline
 // launch works. Cross-origin entries (Three.js / fonts / Firebase) are stored as opaque copies.
@@ -21,7 +21,16 @@ const PRECACHE = [
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(
-    PRECACHE.map(u => fetch(new Request(u, { mode: 'no-cors' })).then(r => c.put(u, r)).catch(() => {}))
+    // Fetch cross-origin entries with CORS so we can actually SEE the status. The old
+    // no-cors fetch returned an OPAQUE response - status always 0, success and failure
+    // indistinguishable - and cached it blindly. A captive-portal page or an error body
+    // could be stored *as if it were the Firebase SDK*, and then served from cache on
+    // every later network hiccup, leaving `typeof firebase === "undefined"` forever.
+    // Now: only a genuine 200 is cached. A miss just means no offline copy, and
+    // network-first fetches it live.
+    PRECACHE.map(u => fetch(new Request(u, { mode: u.indexOf('http') === 0 ? 'cors' : 'same-origin' }))
+      .then(r => { if (r && r.ok && r.type !== 'opaque') return c.put(u, r); })
+      .catch(() => {}))
   )));
 });
 

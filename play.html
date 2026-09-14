@@ -1923,6 +1923,37 @@
       (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
       !!navigator.standalone;
   }
+  /* 🩺 The SDK either downloaded or it didn't. The old copy blamed COOKIES, which has
+     nothing to do with a <script> failing to load - so a parent could follow those steps
+     forever and never fix it. Retry once (a slow CDN shouldn't be a dead end), and only
+     then say what actually went wrong. */
+  var SDK_URLS = [
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js'
+  ];
+  function sdkMissing() { return typeof firebase === 'undefined' || !firebase.initializeApp; }
+  var _retried = false;
+  function retrySdk(done) {
+    if (!sdkMissing()) return done(true);
+    if (_retried) return done(false);
+    _retried = true;
+    var i = 0;
+    (function next() {
+      if (i >= SDK_URLS.length) return done(!sdkMissing());
+      var sc = document.createElement('script');
+      sc.src = SDK_URLS[i++] + '?r=' + Date.now();      // cache-bust past any poisoned copy
+      sc.onload = next;
+      sc.onerror = function () { done(false); };
+      document.head.appendChild(sc);
+    })();
+  }
+  function signInProblem() {
+    if (navigator.onLine === false)
+      return 'You are offline right now \u2014 signing in needs internet. Everything else still works, and this world is saved on this device.';
+    return 'Your browser or network is blocking Google\u2019s sign-in files (gstatic.com). Brave or Edge shields, or a school/work Wi\u2011Fi filter, are the usual cause \u2014 turn shields off for stackadoo.com, or open it in Chrome. You can keep playing without signing in; you just won\u2019t sync between devices.';
+  }
+  window.__sdkMissing = sdkMissing; window.__retrySdk = retrySdk; window.__signInProblem = signInProblem;
   function initFb() {
     try {
       if (typeof firebase === 'undefined' || !firebase.auth) return false;
@@ -2036,7 +2067,7 @@
     if (un) {
       un.style.display = ready ? 'none' : 'block';
       un.textContent = ready ? '' : (typeof firebase === 'undefined'
-        ? 'Google is blocked on this page. In Edge/Brave click the lock → cookies/trackers → allow stackadoo.com and google.com. Or open this in Chrome.'
+        ? signInProblem()
         : 'Connecting to Google…');
     }
   }
@@ -2046,10 +2077,17 @@
     paint();
     var msg = el('authMsg');
     if (msg && !(window.fbAuth && window.fbDb)) {
-      msg.style.color = '#c0392b';
-      msg.textContent = (typeof firebase === 'undefined')
-        ? 'This browser is blocking Google. Try Chrome, or allow cookies for stackadoo.com.'
-        : 'Connecting… tap Continue with Google in a moment.';
+      if (sdkMissing()) {                       // give it one more go before blaming anything
+        msg.style.color = '#2E5E8C';
+        msg.textContent = 'Loading Google sign-in…';
+        retrySdk(function (ok) {
+          if (ok && initFb()) { paint(); if (msg) msg.textContent = ''; return; }
+          msg.style.color = '#c0392b'; msg.textContent = signInProblem(); paint();
+        });
+      } else {
+        msg.style.color = '#2E5E8C';
+        msg.textContent = 'Connecting… tap Continue with Google in a moment.';
+      }
     } else if (msg) msg.textContent = '';
     if (typeof window.openAuth === 'function') {
       try { window.openAuth(); } catch (e) {}
@@ -2060,7 +2098,11 @@
     initFb();
     var m = el('authMsg');
     if (!window.fbAuth || typeof firebase === 'undefined') {
-      if (m) { m.style.color = '#c0392b'; m.textContent = 'Google is blocked. Open stackadoo.com in Chrome, or allow cookies for this site.'; }
+      if (m) { m.style.color = '#2E5E8C'; m.textContent = 'Loading Google sign-in…'; }
+      retrySdk(function (ok) {
+        if (ok && initFb()) { paint(); if (m) m.textContent = ''; goGoogle(); return; }
+        if (m) { m.style.color = '#c0392b'; m.textContent = signInProblem(); }
+      });
       bootOpenAuth();
       return;
     }
@@ -20376,7 +20418,17 @@ function authGoogleFail(e) {
 }
 function popupGoogle() {
   const a = fbAuth || window.fbAuth;
-  if (!a) { authMsg('Sign-in needs Google — try Chrome, or allow cookies for stackadoo.com.', true); return; }
+  // email+password needs the very same SDK, so this is the same failure - retry, then be honest
+  if (!a) {
+    authMsg('Loading sign-in…');
+    if (typeof window.__retrySdk === 'function') {
+      window.__retrySdk(function (ok) {
+        authMsg(ok ? 'Ready — tap Sign in again.'
+                   : (window.__signInProblem ? window.__signInProblem() : 'Sign-in files could not load.'), !ok);
+      });
+    } else authMsg('Sign-in is still loading — wait a second and tap Sign in again.', true);
+    return;
+  }
   const p = new firebase.auth.GoogleAuthProvider();
   p.addScope('email');
   p.setCustomParameters({ prompt: 'select_account' });
@@ -20474,7 +20526,7 @@ function renderAuthUI() {
     out.style.display = 'block';   // always show Google + email — never hide behind "needs internet"
     un.style.display = cloudReady() ? 'none' : 'block';
     if (!cloudReady()) un.textContent = (typeof firebase === 'undefined')
-      ? 'Google is blocked on this page. Allow cookies for stackadoo.com, or open this in Chrome.'
+      ? (typeof window.__signInProblem === 'function' ? window.__signInProblem() : 'Sign-in files could not load. Try Chrome, or check your network.')
       : 'Connecting to Google… you can still tap Continue with Google.';
   }
   const g = $('authEntryGrown'); if (g) g.textContent = user ? '☁️ Account — synced ✓' : '☁️ Sign in to sync & restore';

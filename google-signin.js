@@ -74,7 +74,7 @@
   }
 
   function popupFlow() {
-    if (!ensureFirebase() || !ready()) { authMsg('Sign-in needs an internet connection. If you are online, allow cookies for stackadoo.com (Edge: lock icon → cookies).', true); return; }
+    if (!ensureFirebase() || !ready()) { authMsg(typeof window.__signInProblem === 'function' ? window.__signInProblem() : 'Sign-in files could not load. Try Chrome, or check your network.', true); return; }
     var p = new firebase.auth.GoogleAuthProvider();
     p.addScope('email');
     p.setCustomParameters({ prompt: 'select_account' });
@@ -102,7 +102,7 @@
 
   window.authGoogle = function () {
     ensureFirebase();
-    if (!ready()) { authMsg('Sign-in needs an internet connection. If you are online, allow cookies for stackadoo.com (Edge: lock icon → cookies).', true); return; }
+    if (!ready()) { authMsg(typeof window.__signInProblem === 'function' ? window.__signInProblem() : 'Sign-in files could not load. Try Chrome, or check your network.', true); return; }
     authMsg('Opening Google…');
     if (gisReady()) {
       try {
