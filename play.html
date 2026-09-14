@@ -125,8 +125,16 @@
   #hudNameRow { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
   #playerRow { font-weight:800; }
   #hudChips { display:flex; flex-wrap:wrap; gap:5px; }
+  /* #hud is pointer-events:none so taps reach the world - but the 🧱/🪙 chips are the
+     touch door to the Secret Move Lab (5 quick taps), so they must take taps themselves.
+     user-select:none stops rapid tapping from selecting the number instead. */
   .stat { display:inline-flex; align-items:center; gap:3px; background:rgba(0,0,0,.06);
-    border-radius:9px; padding:2px 8px; white-space:nowrap; font-size:.92em; line-height:1.5; }
+    border-radius:9px; padding:2px 8px; white-space:nowrap; font-size:.92em; line-height:1.5;
+    pointer-events:auto; cursor:pointer; touch-action:manipulation;
+    -webkit-user-select:none; user-select:none; position:relative; }
+  /* the chip is only ~35x19 - too small for five fast taps on a phone, so grow the
+     TAP area by 9px all round without changing a single pixel of how it looks */
+  .stat::after { content:''; position:absolute; inset:-9px; }
   #solvedGoal { opacity:.65; font-size:.82em; margin-left:2px; }
   #blockCount, #powerCount, #coinCount { display:inline-block; }
   .countPop { animation:countPop .5s; color:#2f7d27; }
