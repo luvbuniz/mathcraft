@@ -1181,7 +1181,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v287 — clear save-and-leave confirmation</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v295 — slower, grade-aligned math practice</div>
 
       <p id="leaveSavedNotice" role="status" hidden style="color:#286444;font-weight:bold"></p>
       <div class="panel" id="continuePanel">
@@ -1243,7 +1243,8 @@
       </div>
 
       <div class="field">
-        <span class="fieldLabel">Where should we start? (it climbs as you play — you earn your level!)</span>
+        <span class="fieldLabel">Math practice starting point</span>
+        <small style="display:block;color:#8a7444;margin:4px 0 7px">Math stays within this US grade level and includes easier review when it helps.</small>
         <div class="choiceGrid grades" id="gradeRow">
           <button class="choice selected" data-grade="2"><b>🌱 Just starting</b><small>Add &amp; subtract</small></button>
           <button class="choice" data-grade="3"><b>🙂 Some practice</b><small>Bigger numbers &amp; times tables</small></button>
@@ -1391,6 +1392,7 @@
     <div id="paperTip" style="display:none">✏️ Tricky one — grab paper and work it out!</div>
     <div id="mathChoices"></div>
     <button id="hintBtn">🤔 Need a hint?</button>
+    <button id="mathEasier" class="btn btn-ghost" style="margin:8px auto 0;display:block">🌱 Easier question</button>
     <div id="hintBox"></div>
     <div id="mathFeedback"></div>
     <div id="rewardChoice" style="display:none"></div>
@@ -1401,8 +1403,9 @@
       <div id="fixProblem" class="fixProblem"></div>
       <div id="fixAns" class="fixAns"></div>
       <div id="fixTapped" class="fixTapped" style="display:none;margin:6px 0 2px;font-weight:800;color:#8a4b1a"></div>
-      <div id="fixBody"></div>
-      <div id="fixNote"></div>
+    <div id="fixBody"></div>
+    <div id="fixNote"></div>
+      <button id="fixEasier" class="btn btn-ghost" style="margin:8px auto 0;display:block">🌱 Try an easier question</button>
       <button id="fixClose" class="locked" disabled></button>
     </div>
   </div>
@@ -2594,22 +2597,138 @@ function ri(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min
 function pick(arr) { return arr[ri(0, arr.length - 1)]; }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = ri(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-function makeEquation(grade) {
-  const skillLevel = (typeof G !== 'undefined' && G.skillLevel) || null;
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const eq = generateOnce(grade);
-    // honor this skill's own difficulty: if the kid has earned a harder (or gentler) level
-    // for this kind of problem, re-roll a few times to serve it at that level instead.
-    const sl = skillLevel && skillLevel[eq.skill];
-    if (sl && sl !== grade) {
-      for (let k = 0; k < 5; k++) {
-        const e2 = generateOnce(Math.max(1, Math.min(5, sl)));
-        if (e2.skill === eq.skill && !usedEquations.has(e2.text)) { usedEquations.add(e2.text); return e2; }
-      }
-    }
-    if (!usedEquations.has(eq.text)) { usedEquations.add(eq.text); return eq; }
+/*
+   Core Math Meadow questions use a bounded, reviewed template registry.  The older
+   generateOnce() function remains below for activity-specific legacy callers, but it
+   is deliberately not a fallback for this popup: running out of fresh questions may
+   repeat an allowed question, never introduce a harder one.
+*/
+const CORE_MATH_TEMPLATES = [
+  { id:'ccss-1oa-add-10', skill:'add', band:1, grade:1, standard:'1.OA.C.6', make: coreAdd },
+  { id:'ccss-1oa-add-20-no-regroup', skill:'add', band:2, grade:1, standard:'1.OA.C.6', make: coreAdd },
+  { id:'ccss-1oa-add-20-regroup', skill:'add', band:3, grade:1, standard:'1.OA.C.6', make: coreAdd },
+  { id:'ccss-2nbt-add-100-no-regroup', skill:'add', band:4, grade:2, standard:'2.NBT.B.5', make: coreAdd },
+  { id:'ccss-2nbt-add-100-regroup', skill:'add', band:5, grade:2, standard:'2.NBT.B.5', make: coreAdd },
+  { id:'ccss-1oa-sub-10', skill:'sub', band:1, grade:1, standard:'1.OA.C.6', make: coreSub },
+  { id:'ccss-1oa-sub-20-no-regroup', skill:'sub', band:2, grade:1, standard:'1.OA.C.6', make: coreSub },
+  { id:'ccss-1oa-sub-20-regroup', skill:'sub', band:3, grade:1, standard:'1.OA.C.6', make: coreSub },
+  { id:'ccss-2nbt-sub-100-no-regroup', skill:'sub', band:4, grade:2, standard:'2.NBT.B.5', make: coreSub },
+  { id:'ccss-2nbt-sub-100-regroup', skill:'sub', band:5, grade:2, standard:'2.NBT.B.5', make: coreSub },
+  { id:'ccss-3oa-mul-groups', skill:'mul', band:1, grade:3, standard:'3.OA.A.1', make: coreMul },
+  { id:'ccss-3oa-mul-facts-easy', skill:'mul', band:2, grade:3, standard:'3.OA.C.7', make: coreMul },
+  { id:'ccss-3oa-mul-facts', skill:'mul', band:3, grade:3, standard:'3.OA.C.7', make: coreMul },
+  { id:'ccss-4nbt-mul-multidigit', skill:'mul', band:4, grade:4, standard:'4.NBT.B.5', make: coreMul },
+  { id:'ccss-3oa-div-groups', skill:'div', band:1, grade:3, standard:'3.OA.A.2', make: coreDiv },
+  { id:'ccss-3oa-div-facts-easy', skill:'div', band:2, grade:3, standard:'3.OA.C.7', make: coreDiv },
+  { id:'ccss-3oa-div-facts', skill:'div', band:3, grade:3, standard:'3.OA.C.7', make: coreDiv },
+  { id:'ccss-4nbt-div-whole', skill:'div', band:4, grade:4, standard:'4.NBT.B.6', make: coreDiv },
+  { id:'ccss-3nbt-round-10', skill:'round', band:1, grade:3, standard:'3.NBT.A.1', make: coreRound },
+  { id:'ccss-4nbt-round-place', skill:'round', band:2, grade:4, standard:'4.NBT.A.3', make: coreRound },
+  { id:'ccss-4nf-fraction-unit', skill:'frac', band:1, grade:4, standard:'4.NF.B.4', make: coreFraction },
+  { id:'ccss-4nf-fraction-same-denom', skill:'frac', band:2, grade:4, standard:'4.NF.B.3', make: coreFraction },
+  { id:'ccss-5nbt-decimal-add-sub', skill:'dec', band:1, grade:5, standard:'5.NBT.B.7', make: coreDecimal }
+];
+const CORE_START_BANDS = {
+  add: 1, sub: 1, mul: 1, div: 1, round: 1, frac: 1, dec: 1
+};
+let forcedCoreQuestion = null; // used only by the explicit “Easier question” action
+function coreChoices(answer, distractors) {
+  const opts = [String(answer)], seen = new Set(opts);
+  distractors.forEach(value => { value = String(value); if (!seen.has(value) && opts.length < 4) { seen.add(value); opts.push(value); } });
+  let n = Number(answer), guard = 0;
+  while (opts.length < 4 && guard++ < 20) {
+    const extra = String(Number.isFinite(n) ? n + guard + 1 : guard + 2);
+    if (!seen.has(extra)) { seen.add(extra); opts.push(extra); }
   }
-  return generateOnce(grade);             // session has seen a LOT of math — allow anything
+  return shuffle(opts);
+}
+function coreResult(text, answer, skill, band, hint, hintHTML) {
+  const n = Number(answer), step = Math.max(1, Math.min(10, Math.round(Math.abs(n) / 10) || 1));
+  return { text, answer:String(answer), options:coreChoices(answer, [n + 1, Math.max(0, n - 1), n + step]),
+    reward:Math.max(2, Math.min(7, 2 + band)), hint, hintHTML, skill, difficultyBand:band, coreMath:true };
+}
+function coreAdd(band) {
+  let a, b, limit;
+  if (band === 1) { a = ri(1, 5); b = ri(1, 10 - a); limit = 10; }
+  else if (band === 2) { do { a = ri(4, 14); b = ri(1, 20 - a); } while (a + b <= 10 || (a % 10) + (b % 10) >= 10); limit = 20; }
+  else if (band === 3) { do { a = ri(7, 15); b = ri(2, 20 - a); } while ((a % 10) + (b % 10) < 10); limit = 20; }
+  else if (band === 4) { do { a = ri(12, 89); b = ri(10, 99 - a); } while ((a % 10) + (b % 10) >= 10); limit = 100; }
+  else { do { a = ri(12, 89); b = ri(10, 99 - a); } while ((a % 10) + (b % 10) < 10); limit = 100; }
+  return coreResult(a + ' + ' + b, a + b, 'add', band, 'Start at ' + a + ' and count up ' + b + ' more.', limit <= 20 ? kidHintHTML(a, b, '+') : null);
+}
+function coreSub(band) {
+  let a, b, floor;
+  if (band === 1) { a = ri(4, 10); b = ri(1, a - 1); }
+  else if (band === 2) { do { a = ri(11, 20); b = ri(1, a - 1); } while ((a % 10) < (b % 10)); }
+  else if (band === 3) { do { a = ri(11, 20); b = ri(2, a - 1); } while ((a % 10) >= (b % 10)); }
+  else if (band === 4) { do { a = ri(21, 99); b = ri(10, a - 1); } while ((a % 10) < (b % 10)); }
+  else { do { a = ri(21, 99); b = ri(10, a - 1); } while ((a % 10) >= (b % 10)); }
+  return coreResult(a + ' − ' + b, a - b, 'sub', band, 'Start at ' + a + ' and count back ' + b + ' steps.', a <= 20 ? kidHintHTML(a, b, '-') : null);
+}
+function coreMul(band) {
+  let a, b;
+  if (band === 1) { a = pick([2, 5]); b = ri(1, 5); }
+  else if (band === 2) { a = ri(2, 5); b = ri(2, 6); }
+  else if (band === 3) { a = ri(2, 9); b = ri(2, 9); }
+  else { a = ri(11, 99); b = ri(2, 9); }
+  return coreResult(a + ' × ' + b, a * b, 'mul', band, a + ' × ' + b + ' means ' + a + ' groups of ' + b + '.', band <= 3 ? mulHintHTML(a, b) : null);
+}
+function coreDiv(band) {
+  let divisor, quotient;
+  if (band === 1) { divisor = pick([2, 5]); quotient = ri(1, 5); }
+  else if (band === 2) { divisor = ri(2, 5); quotient = ri(2, 6); }
+  else if (band === 3) { divisor = ri(2, 9); quotient = ri(2, 9); }
+  else { divisor = ri(2, 9); quotient = ri(11, 20); }
+  const dividend = divisor * quotient;
+  return coreResult(dividend + ' ÷ ' + divisor, quotient, 'div', band, 'Think backwards: ' + divisor + ' × ? = ' + dividend + '.');
+}
+function coreRound(band) {
+  const to = band === 1 ? 10 : pick([10, 100]);
+  const n = band === 1 ? ri(12, 98) : ri(112, 998);
+  const answer = Math.round(n / to) * to;
+  return coreResult('Round ' + n + ' to the nearest ' + to, answer, 'round', band,
+    to === 10 ? 'Look at the ones digit: 5 or more rounds up.' : 'Look at the last two digits: 50 or more rounds up.');
+}
+function coreFraction(band) {
+  const d = band === 1 ? pick([2, 3, 4]) : pick([2, 3, 4, 5, 6]);
+  if (band === 1) {
+    const answer = ri(2, 9), whole = d * answer;
+    return coreResult('1/' + d + ' of ' + whole, answer, 'frac', band, 'Split ' + whole + ' into ' + d + ' equal groups.');
+  }
+  const n1 = ri(1, d - 2), n2 = ri(1, d - n1 - 1), answer = (n1 + n2) + '/' + d;
+  return { text:n1 + '/' + d + ' + ' + n2 + '/' + d, answer, options:shuffle([answer, (n1 + n2 + 1) + '/' + d, Math.max(1, n1 + n2 - 1) + '/' + d, (n1 + n2) + '/' + (d + 1)]), reward:4, hint:'The bottom number stays ' + d + '; add the top numbers.', skill:'frac', difficultyBand:band, coreMath:true };
+}
+function coreDecimal() {
+  const a = ri(10, 89) / 10, b = ri(10, 89) / 10, answer = (Math.round((a + b) * 10) / 10).toFixed(1);
+  return { text:a.toFixed(1) + ' + ' + b.toFixed(1), answer, options:shuffle([answer, (Number(answer) + .1).toFixed(1), Math.max(0, Number(answer) - .1).toFixed(1), (Number(answer) + 1).toFixed(1)]), reward:4, hint:'Line up the decimal points, then add the tenths.', skill:'dec', difficultyBand:1, coreMath:true };
+}
+function maxCoreBand(skill, ceiling) {
+  const bands = CORE_MATH_TEMPLATES.filter(t => t.skill === skill && t.grade <= ceiling).map(t => t.band);
+  return bands.length ? Math.max.apply(null, bands) : 0;
+}
+function makeEquation() {
+  const learning = ensureMathLearning();
+  const ceiling = learning.gradeCeiling;
+  const skills = [...new Set(CORE_MATH_TEMPLATES.filter(t => t.grade <= ceiling).map(t => t.skill))];
+  const requested = forcedCoreQuestion; forcedCoreQuestion = null;
+  const skill = requested && skills.includes(requested.skill) ? requested.skill : pick(skills);
+  const current = Math.max(1, Math.min(maxCoreBand(skill, ceiling), learning.bands[skill] || CORE_START_BANDS[skill] || 1));
+  const review = !requested && current > 1 && Math.random() < 0.20;
+  const band = requested ? Math.max(1, Math.min(current, requested.band || current)) : (review ? current - 1 : current);
+  const eligible = CORE_MATH_TEMPLATES.filter(t => t.skill === skill && t.band === band && t.grade <= ceiling);
+  const template = pick(eligible);
+  let question = null;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const candidate = template.make(band);
+    if (!usedEquations.has(candidate.text)) { question = candidate; usedEquations.add(candidate.text); break; }
+  }
+  question = question || template.make(band); // eligible pool exhausted: repeat an allowed question only
+  question.templateId = template.id;
+  question.curriculumGrade = template.grade;
+  question.curriculumStandard = template.standard;
+  question.difficultyBand = band;
+  question.isReview = review;
+  return question;
 }
 
 /* ===================== READING CITY (English literacy) ===================== */
@@ -3047,7 +3166,7 @@ function generateOnce(grade) {
       const n = ri(112, 988), to = pick([10, 100]);
       answer = Math.round(n / to) * to; reward = 4; skill = 'round';
       text = 'Round ' + n + ' to the nearest ' + to;
-      hint = to === 10 ? 'Look at the ones digit: 5 or more rounds up, less than 5 rounds down.' : 'Look at the tens digit: 50 or more rounds up, less rounds down.';
+      hint = to === 10 ? 'Look at the ones digit: 5 or more rounds up, less than 5 rounds down.' : 'Look at the last two digits: 50 or more rounds up, less rounds down.';
       distractors = [answer + to, Math.max(0, answer - to), answer + to * 2];
     } else if (kind === 'div') {
       const b = ri(2, 9), q = ri(2, 9), a = b * q;
@@ -4447,7 +4566,7 @@ const G = {
   activeCar: null, carColors: {},
   quest: { stage: 'none', spot: null, tid: null, found: [] },
   warned60: false, warned10: false,
-  mathLevel: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
+  mathLevel: 2, mathGradeCeiling: 2, mathCorrectStreak: 0, mathMisses: 0, skillLevel: {}, skillStreak: {}, skillMiss: {}
 };
 
 /* ===== Stackadoo Worlds: each is its own themed place + question subject =====
@@ -4781,7 +4900,7 @@ function subjectSolved(subj, p) {             // how many problems solved in a g
 function freshProfile() {
   return { totalSolved: 0, totalWrong: 0, badges: [], byOp: {}, byOpWrong: {}, byGrade: {}, byDay: {}, wrongByDay: {}, fastWrong: 0, secondsPlayed: 0, firstPlayed: 0, lastPlayed: 0, stars: 0, starsByDay: {}, readLevel: null, readFirstRight: 0, readFirstTotal: 0, readFirstByGrade: {}, spellLevel: null, spellFirstRight: 0, spellFirstTotal: 0, spellFirstByGrade: {}, spanFirstRight: 0, spanFirstTotal: 0, spanFirstByGrade: {}, grammarFirstRight: 0, grammarFirstTotal: 0, stemSolved: 0, ticketsEarned: 0, trainRides: 0, questsDone: {}, questsBaselined: false, bestStreak: 0,
     garage: {}, garageColors: {}, activeVehicle: null, garageMigrated: false,
-    pack: null, packMigrated: false, level: null, grade: null,
+    pack: null, packMigrated: false, level: null, grade: null, mathLearning: null,
     pizzaTaught: {} };                        // 🍕 which pizzeria levels have shown their how-to card
 }
 let profile = freshProfile();
@@ -4807,6 +4926,51 @@ function loadProfileFor(name) {
   // and we don't fire a "level up!" storm for progress they made before levels existed)
   if (profile.level == null) profile.level = levelFromScore(profile.stars || 0);
   if (!profile.firstPlayed) profile.firstPlayed = Date.now();
+  // Math learning is kept once per player, rather than once per world.  Older saves
+  // begin a conservative fresh evidence window; their old global level is never treated
+  // as proof of mastery.
+  ensureMathLearning();
+}
+
+function safeMathGrade(value, fallback) {
+  value = Number(value);
+  return value >= 1 && value <= 5 && Math.floor(value) === value ? value : fallback;
+}
+function initialMathBands() { return Object.assign({}, CORE_START_BANDS); }
+function ensureMathLearning() {
+  const legacyCeiling = safeMathGrade(G.gradePin, 0) || safeMathGrade(G.mathGradeCeiling, 0) || safeMathGrade(G.grade, 2);
+  let learning = profile && profile.mathLearning;
+  if (!learning || learning.version !== 1) {
+    learning = { version:1, curriculum:'US-CCSS', gradeCeiling:legacyCeiling, bands:initialMathBands(), evidence:{}, unansweredExits:0 };
+    if (profile) { profile.mathLearning = learning; profileDirty = true; }
+  }
+  learning.curriculum = 'US-CCSS';
+  learning.gradeCeiling = safeMathGrade(learning.gradeCeiling, legacyCeiling);
+  learning.bands = learning.bands || initialMathBands();
+  learning.evidence = learning.evidence || {};
+  learning.unansweredExits = Math.max(0, Number(learning.unansweredExits) || 0);
+  Object.keys(CORE_START_BANDS).forEach(skill => {
+    const max = maxCoreBand(skill, learning.gradeCeiling);
+    if (!max) { delete learning.bands[skill]; return; }
+    learning.bands[skill] = Math.max(1, Math.min(max, Number(learning.bands[skill]) || CORE_START_BANDS[skill]));
+  });
+  G.mathGradeCeiling = learning.gradeCeiling;
+  G.mathLevel = learning.gradeCeiling; // legacy UI/report compatibility; it no longer selects popup difficulty
+  return learning;
+}
+function setMathGradeCeiling(value) {
+  const learning = ensureMathLearning();
+  learning.gradeCeiling = safeMathGrade(value, learning.gradeCeiling);
+  Object.keys(CORE_START_BANDS).forEach(skill => {
+    const max = maxCoreBand(skill, learning.gradeCeiling);
+    if (!max) delete learning.bands[skill];
+    else learning.bands[skill] = Math.max(1, Math.min(max, learning.bands[skill] || CORE_START_BANDS[skill]));
+  });
+  learning.evidence = learning.evidence || {};
+  G.mathGradeCeiling = learning.gradeCeiling;
+  G.mathLevel = learning.gradeCeiling;
+  profileDirty = true;
+  return learning.gradeCeiling;
 }
 /* Estimate a Math Score from a profile's solve history (for saves made before Stars were added) */
 function estimateStars(p) {
@@ -5491,7 +5655,7 @@ function saveGame() {
       blocks: G.blocks, powerBlocks: G.powerBlocks, doors: G.doors, coins: G.coins, tickets: G.tickets, prizeTickets: G.prizeTickets, tokens: G.tokens, raceFlags: G.raceFlags, nitroCharges: G.nitroCharges, berries: G.berries, solved: G.solved, goal: G.goal,
       furniture: G.furniture, owned: G.owned, timer: G.timer, timerMax: G.timerMax, balls: G.balls,
       pickupColor: G.pickupColor, activeCar: G.activeCar, carColors: G.carColors,
-      shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel, gradePin: G.gradePin || 0,
+      shelterRewarded: G.shelterRewarded, mathLevel: G.mathLevel, mathGradeCeiling: G.mathGradeCeiling || 0, gradePin: G.gradePin || 0,
       mathCorrectStreak: G.mathCorrectStreak, mathMisses: G.mathMisses,
       placed: serializeWorld(),
       floors: serializeFloors(),
@@ -5593,6 +5757,7 @@ function restoreGame(s) {
   G.balls = s.balls || 0;
   G.shelterRewarded = !!s.shelterRewarded;
   G.mathLevel = Math.max(1, Math.min(5, s.mathLevel || G.grade || 2));
+  G.mathGradeCeiling = safeMathGrade(s.mathGradeCeiling, 0) || safeMathGrade(s.gradePin, 0) || safeMathGrade(s.grade, G.grade || 2);
   G.gradePin = s.gradePin || 0;                 // 🎚️ when set (1–5), difficulty is capped at this grade (won't climb)
   G.mathCorrectStreak = s.mathCorrectStreak || 0;
   G.mathMisses = s.mathMisses || 0;
@@ -5646,18 +5811,27 @@ function restoreGame(s) {
    Use ?grade=off to let the difficulty adapt (climb) again. */
 let GRADE_OVERRIDE = null;
 try { const _g = new URLSearchParams(location.search).get('grade'); if (_g != null) GRADE_OVERRIDE = /^[1-5]$/.test(_g) ? +_g : ((_g === 'off' || _g === 'auto') ? 0 : null); } catch (e) {}
+// Math-only parent setting: ?mathGrade=2 changes the Math Meadow ceiling without
+// resetting reading, spelling, Spanish, houses, coins, or any other subject state.
+let MATH_GRADE_OVERRIDE = null;
+try { const _mg = new URLSearchParams(location.search).get('mathGrade'); if (_mg != null) MATH_GRADE_OVERRIDE = /^[1-5]$/.test(_mg) ? +_mg : null; } catch (e) {}
 function applyGradeOverride() {
-  if (GRADE_OVERRIDE == null || !G.running) return;
+  if ((GRADE_OVERRIDE == null && MATH_GRADE_OVERRIDE == null) || !G.running) return;
   const N = GRADE_OVERRIDE; GRADE_OVERRIDE = null;          // apply once
   if (N === 0) {
     G.gradePin = 0;
     toast('🎚️ Difficulty unpinned — questions will adapt to how ' + (G.playerName || 'they') + ' play again.', 5000);
-  } else {
+  } else if (N != null) {
     G.grade = N; G.mathLevel = N; G.gradePin = N;
     G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
     G.mathCorrectStreak = 0; G.mathMisses = 0; G.mathRecent = [];
     if (typeof profile === 'object' && profile) { profile.readLevel = N; profile.spellLevel = N; profile.spanLevel = N; profile.readStreak = profile.readSlip = profile.spellStreak = profile.spellSlip = 0; profileDirty = true; if (typeof saveProfile === 'function') saveProfile(); }
     toast('🎚️ ' + (G.playerName || 'Player') + ' is now set to Grade ' + N + '! Questions are Grade ' + N + ' — coins, houses & pets all kept. 💾', 6000);
+  }
+  if (MATH_GRADE_OVERRIDE != null) {
+    const mathGrade = MATH_GRADE_OVERRIDE; MATH_GRADE_OVERRIDE = null;
+    setMathGradeCeiling(mathGrade);
+    toast('🎚️ Math is now set to US Grade ' + mathGrade + '. Easier practice stays available; other subjects are unchanged. 💾', 6000);
   }
   if (typeof saveGame === 'function') saveGame();
   try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}   // tidy the URL so a reload won't re-trigger
@@ -5714,7 +5888,7 @@ function resetGameState() {
   G.readLevel = null; G.readStreak = 0; G.readSlip = 0;
   G.spellLevel = null; G.spellStreak = 0; G.spellSlip = 0;
   G.shieldUntil = 0; G.shieldStreak = 0;
-  G.mathLevel = G.grade; G.gradePin = 0; G.mathCorrectStreak = 0; G.mathMisses = 0;
+  G.mathLevel = G.grade; G.mathGradeCeiling = G.grade; G.gradePin = 0; G.mathCorrectStreak = 0; G.mathMisses = 0;
   G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
   G.selectedSlot = 'block'; G.buildMode = false; G.blockColor = 0xC9B79A; G.windowStyle = 'plain'; G.doorStyle = 'plain'; G.furnFinish = 0;
   G.owned = { ladder: false, shoes: false, boots: false, hat: false, leash: false, usahat: false, treasuremap: false, pickup: false, tesla: false, jeep: false, minivan: false, police: false, monster: false, convertible: false, corvette: false, race: false, firetruck: false, ambulance: false, taxi: false, bus: false, bike: false, speedboat: false, sailboat: false };
@@ -15678,7 +15852,65 @@ function fmtTime(s) {
 /* ============================ MATH POPUP ============================ */
 let currentEq = null, popupOpen = false, wrongStreak = 0, mathLocked = false, breatherTimer = null, mathCooldownUntil = 0, answerUnlockTimer = null, nextQuestionTimer = null, pendingReward = 0, questionShownAt = 0, answerUnlockedAt = 0;
 function adaptiveMathLevel() {
-  return Math.max(1, Math.min(G.gradePin || 5, G.mathLevel || G.grade || 2));   // 🎚️ a grade pin caps the difficulty
+  return ensureMathLearning().gradeCeiling; // retained for legacy callers; core templates choose their own bounded band
+}
+function coreEvidence(learning, skill, band) {
+  learning.evidence[skill] = learning.evidence[skill] || {};
+  learning.evidence[skill][band] = Array.isArray(learning.evidence[skill][band]) ? learning.evidence[skill][band] : [];
+  return learning.evidence[skill][band];
+}
+function recordCoreMathAttempt(eq, correct) {
+  if (!eq || !eq.coreMath || eq.attemptRecorded) return '';
+  eq.attemptRecorded = true;
+  const learning = ensureMathLearning(), skill = eq.skill, band = eq.difficultyBand;
+  learning.unansweredExits = 0;
+  if (correct && eq.assisted) { profileDirty = true; return ''; } // a hinted answer is welcome, but is not independent mastery evidence
+  if (eq.isReview) { profileDirty = true; return ''; } // review supports confidence, never advances or lowers the active band
+  const evidence = coreEvidence(learning, skill, band);
+  evidence.push({ correct:!!correct, templateId:eq.templateId, text:eq.text, at:Date.now() });
+  while (evidence.length > 20) evidence.shift();
+  const active = learning.bands[skill] || 1;
+  let note = '';
+  if (!correct && band === active) {
+    const lastFive = evidence.slice(-5);
+    const misses = lastFive.filter(item => !item.correct).length;
+    if (lastFive.length >= 2 && misses >= 2 && active > 1) {
+      learning.bands[skill] = active - 1;
+      learning.evidence[skill] = {}; // a gentler band starts a fresh evidence window
+      note = '🌱 The next ' + (SKILL_LABELS[skill] || 'math') + ' question will be a little easier.';
+    }
+  } else if (correct && band === active && evidence.length >= 20) {
+    const recent = evidence.slice(-20), correctN = recent.filter(item => item.correct).length;
+    const lastTenN = recent.slice(-10).filter(item => item.correct).length;
+    const variety = new Set(recent.map(item => item.text + '|' + item.templateId)).size;
+    const max = maxCoreBand(skill, learning.gradeCeiling);
+    if (correctN >= 18 && lastTenN >= 9 && variety >= 10 && active < max) {
+      learning.bands[skill] = active + 1;
+      learning.evidence[skill] = {}; // no cascading promotion from old answers
+      note = '🌟 You are ready for one small new ' + (SKILL_LABELS[skill] || 'math') + ' step!';
+    }
+  }
+  profileDirty = true;
+  return note;
+}
+function recordMathExit() {
+  if (!currentEq || !currentEq.coreMath || currentEq.attemptRecorded) return;
+  const learning = ensureMathLearning();
+  learning.unansweredExits++;
+  profileDirty = true;
+}
+function requestEasierQuestion() {
+  if (!currentEq || !currentEq.coreMath) return;
+  const learning = ensureMathLearning(), skill = currentEq.skill;
+  learning.unansweredExits = 0;
+  learning.bands[skill] = Math.max(1, (learning.bands[skill] || 1) - 1);
+  learning.evidence[skill] = {};
+  forcedCoreQuestion = { skill, band:learning.bands[skill] };
+  currentEq.attemptRecorded = true; // an explicit change of question is never a wrong answer or promotion evidence
+  profileDirty = true;
+  hideFixIt();
+  renderMathQuestion();
+  const feedback = $('mathFeedback'); if (feedback) feedback.textContent = '🌱 Here is an easier ' + (SKILL_LABELS[(currentEq && currentEq.skill) || skill] || 'math') + ' question.';
 }
 /* Per-skill difficulty: each kind of problem (add, mul, frac…) climbs or eases on
    its own. Strong at multiplication? Those get a touch harder. Shaky on fractions?
@@ -15758,7 +15990,7 @@ function renderMathQuestion() {
   wrap.innerHTML = '';
   const level = adaptiveMathLevel();
   currentEq = makeQuestion(level);
-  currentEq.level = level;
+  currentEq.level = currentEq.curriculumGrade || level;
   // Ensure answer + options are comparable strings (guards any non-math path too)
   currentEq.answer = String(currentEq.answer);
   currentEq.options = (currentEq.options || []).map(String);
@@ -15771,9 +16003,12 @@ function renderMathQuestion() {
   eqBox.textContent = curWorld().subject !== 'math' ? qt + '?'
     : (qt.indexOf('=') >= 0 || qt.trim().slice(-1) === '?') ? qt : qt + ' = ?';
   eqBox.classList.toggle('wordy', currentEq.text.length > 20);
+  const easier = $('mathEasier'); if (easier) easier.style.display = currentEq.coreMath ? 'block' : 'none';
   // nudge kids to use paper — but only on genuinely tricky problems, not easy ones like "8 - 1"
   $('paperTip').style.display = isTrickyQuestion(currentEq) ? 'block' : 'none';
-  $('mathPrompt').textContent = 'Read the whole question. Answers unlock in a moment...';
+  const learning = curWorld().subject === 'math' ? ensureMathLearning() : null;
+  const gentlePrompt = learning && learning.unansweredExits >= 2;
+  $('mathPrompt').textContent = gentlePrompt ? 'Want an easier question? You can choose one below, or try this one when you are ready.' : 'Read the whole question. Answers unlock in a moment...';
   currentEq.options.forEach(opt => {
     const b = document.createElement('button');
     b.className = 'answerBlock';
@@ -15789,11 +16024,12 @@ function renderMathQuestion() {
     if (currentEq !== question || mathLocked) return;
     wrap.querySelectorAll('.answerBlock').forEach(b => b.disabled = false);
     answerUnlockedAt = performance.now();
-    $('mathPrompt').textContent = 'Choose the answer, then pick your reward!';
+    $('mathPrompt').textContent = gentlePrompt ? 'Try this one, or choose an easier question below.' : 'Choose the answer, then pick your reward!';
   }, 900);
 }
 function showHint() {
   if (!currentEq) return;
+  currentEq.assisted = true;
   if (currentEq.hintHTML) $('hintBox').innerHTML = currentEq.hintHTML;
   else $('hintBox').textContent = '💡 ' + currentEq.hint;
   $('hintBox').style.display = 'block';
@@ -15904,8 +16140,7 @@ function showFixIt(note, tapped) {
 function startFixLock() {
   fixLocked = true;
   let secs = fixLockSeconds();
-  const btn = $('fixClose'), mc = $('mathClose');
-  if (mc) mc.style.visibility = 'hidden';                     // no escaping past the lesson via the popup X
+  const btn = $('fixClose');
   btn.disabled = true; btn.classList.add('locked');
   if (fixLockTimer) clearInterval(fixLockTimer);
   const tick = () => {
@@ -15914,7 +16149,6 @@ function startFixLock() {
     fixLocked = false;
     btn.disabled = false; btn.classList.remove('locked');
     btn.textContent = '✅ Got it! Next question';
-    if (mc) mc.style.visibility = 'visible';
   };
   tick();
   fixLockTimer = setInterval(tick, 1000);
@@ -15931,6 +16165,7 @@ function closeFixIt() {
   renderMathQuestion();                                       // a fresh problem to try
 }
 $w('fixClose').onclick = () => { if (fixLocked) return; Sound.click(); closeFixIt(); };
+$w('fixEasier').onclick = () => { Sound.click(); requestEasierQuestion(); };
 function openMath() {
   if (popupOpen || G.over || performance.now() < mathCooldownUntil) return;   // brief cooldown stops spam-reopening
   popupOpen = true;
@@ -15979,14 +16214,8 @@ function answerPicked(btn, opt) {
     G.mathCorrectStreak++;
     G.mathRecent = (G.mathRecent || []); G.mathRecent.push(1); if (G.mathRecent.length > 5) G.mathRecent.shift();   // rolling window for adaptive easing
     if (G.mathCorrectStreak > (profile.bestStreak || 0)) { profile.bestStreak = G.mathCorrectStreak; profileDirty = true; }
-    bumpSkill(currentEq.skill, true);
-    const ceiling = G.gradePin || 5;              // earned difficulty climbs past the picked grade — unless a 🎚️ grade pin caps it
-    let levelNote = '';
-    if (G.mathCorrectStreak >= 3 && G.mathLevel < ceiling) {
-      G.mathLevel++;
-      G.mathCorrectStreak = 0;
-      levelNote = ' New challenge level unlocked!';
-    }
+    let levelNote = currentEq.coreMath ? recordCoreMathAttempt(currentEq, true) : '';
+    if (!currentEq.coreMath) bumpSkill(currentEq.skill, true); // activity-specific games keep their existing behavior
     if (G.solved === 10) setTimeout(() => { Sound.fanfare(); toast('🌟 WOW! 10 problems solved! You are a math star!', 4000); }, 900);
     // Power Blocks are rare now: about one every 10 solves, and only when Gloomies are on
     if (G.gloomiesEnabled && G.solved % 10 === 0) {
@@ -16041,7 +16270,8 @@ function answerPicked(btn, opt) {
     Sound.wrong();
     const fast = answerUnlockedAt && (performance.now() - answerUnlockedAt) < 1500;  // quick tap = likely guess
     recordWrong(currentEq, fast);
-    bumpSkill(currentEq.skill, false);
+    let easierNote = currentEq.coreMath ? recordCoreMathAttempt(currentEq, false) : '';
+    if (!currentEq.coreMath) bumpSkill(currentEq.skill, false); // activity-specific games keep their existing behavior
     btn.classList.add('shake');
     mathLocked = true;                 // no button mashing!
     const choiceWrap = $('mathChoices');
@@ -16051,10 +16281,9 @@ function answerPicked(btn, opt) {
     G.mathMisses++;
     G.mathRecent = (G.mathRecent || []); G.mathRecent.push(0); if (G.mathRecent.length > 5) G.mathRecent.shift();
     const recentWrong = G.mathRecent.filter(v => !v).length;
-    let easierNote = '';
-    // ease DOWN on 2 in a row OR when most of the last few were wrong (so a kid stuck on a
-    // too-hard level — e.g. a little one on a grade-5 save — gets brought down even at ~50%).
-    if ((G.mathMisses >= 2 || (G.mathRecent.length >= 4 && recentWrong >= 3)) && G.mathLevel > 1) {
+    // Legacy non-core questions retain their prior broad easing. The core popup records
+    // its own skill/band evidence above and never changes the selected grade ceiling.
+    if (!currentEq.coreMath && (G.mathMisses >= 2 || (G.mathRecent.length >= 4 && recentWrong >= 3)) && G.mathLevel > 1) {
       G.mathLevel--;
       G.mathMisses = 0; G.mathRecent = [];
       if (currentEq && currentEq.skill && G.skillLevel) G.skillLevel[currentEq.skill] = Math.max(1, (G.skillLevel[currentEq.skill] || G.mathLevel) - 1);
@@ -16067,8 +16296,9 @@ function answerPicked(btn, opt) {
   }
 }
 $w('hintBtn').onclick = () => { Sound.click(); showHint(); };
+$w('mathEasier').onclick = () => { Sound.click(); requestEasierQuestion(); };
 function closeMath() {
-  if (fixLocked) return;            // the "let's fix it" lesson is still locked — can't leave yet
+  recordMathExit();                  // closing is neutral; it only offers help after repeated exits
   hideFixIt();
   if (breatherTimer) { clearInterval(breatherTimer); breatherTimer = null; }
   if (answerUnlockTimer) { clearTimeout(answerUnlockTimer); answerUnlockTimer = null; }
@@ -19943,7 +20173,7 @@ function syncGloomyMenu() {
 }
 // the "Choose your level" cards describe what each grade covers in the chosen world
 const GRADE_DESCS = {
-  meadow: { 2: 'Add & subtract to 100', 3: 'To 1,000 & times tables', 4: 'Multi-digit × and ÷', 5: 'Fractions & decimals' },
+  meadow: { 2: 'Up to add & subtract within 100', 3: 'Up to multiplication & division facts', 4: 'Up to multi-digit × and ÷', 5: 'Fractions & decimals' },
   city:   { 2: 'Short stories • who & what', 3: 'Longer stories • the main idea', 4: 'Similes & describing words', 5: 'Metaphors & author\'s craft' },
   beach:  { 2: 'First words & greetings', 3: 'Colors, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' },
   west:   { 2: 'Shapes & simple machines', 3: 'Forces, ramps & materials', 4: 'Bridges, levers & measuring', 5: 'Trusses, loads & balance' }
@@ -20002,6 +20232,7 @@ function buildMenu() {
     b.classList.add('selected');
     G.grade = parseInt(b.dataset.grade);
     G.mathLevel = G.grade;
+    setMathGradeCeiling(G.grade); // Math Meadow keeps this ceiling independently of later reading/spelling choices.
     G.mathCorrectStreak = 0;
     G.mathMisses = 0;
     G.skillLevel = {}; G.skillStreak = {}; G.skillMiss = {};
