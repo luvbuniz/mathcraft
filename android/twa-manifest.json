@@ -1,0 +1,42 @@
+{
+  "packageId": "com.stackadoo.twa",
+  "host": "stackadoo.com",
+  "name": "Stackadoo",
+  "launcherName": "Stackadoo",
+  "display": "standalone",
+  "themeColor": "#87CEEB",
+  "themeColorDark": "#87CEEB",
+  "navigationColor": "#87CEEB",
+  "navigationColorDark": "#87CEEB",
+  "navigationDividerColor": "#87CEEB",
+  "navigationDividerColorDark": "#87CEEB",
+  "backgroundColor": "#87CEEB",
+  "enableNotifications": true,
+  "startUrl": "/play.html",
+  "iconUrl": "https://stackadoo.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionCode": 37,
+  "appVersion": "1.0.37",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://stackadoo.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://stackadoo.com/",
+  "minSdkVersion": 23,
+  "orientation": "any",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "displayOverride": []
+}

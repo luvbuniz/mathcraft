@@ -5,6 +5,7 @@
 # and fails ("Asset too large").
 .git/
 .github/
+android/
 .wrangler/
 node_modules/
 admin.html
