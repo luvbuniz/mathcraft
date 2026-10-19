@@ -6,7 +6,8 @@ package `com.stackadoo.twa`. It does not bundle or modify game code or saved wor
 ## Release 38 (1.0.38)
 
 - Compile and target SDK: 36 (Android 16).
-- Minimum SDK: 23 (Android 6), preserved from the original PWABuilder package.
+- Minimum SDK: 24 (Android 7.0). Raised from 23 in 1.0.38 because Play automatic protection
+  requires minSdk 24 or higher.
 - Android Gradle Plugin 8.10.1, Gradle 8.11.1, Java 17.
 - Android Browser Helper 2.7.2 includes edge-to-edge splash-screen support.
   Version 2.7.3 raises its minimum SDK to 24, so this project deliberately pins 2.7.2.
