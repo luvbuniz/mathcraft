@@ -14,14 +14,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stackadoo">
-<meta name="description" content="A 3D world where kids build houses and drive cars by solving math, reading & Spanish — sneaky learning that feels like play. Free to start!">
+<meta name="description" content="A 3D world where kids build houses and drive cars by solving math & reading — sneaky learning that feels like play. Free to start!">
 <link rel="canonical" href="https://stackadoo.com/play.html">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <!-- Social link previews (Open Graph + Twitter). Uses shots/build.jpg (900×563) as the banner image. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Stackadoo">
 <meta property="og:title" content="Stackadoo — Build & drive by doing math!">
-<meta property="og:description" content="Kids build houses and drive cars by solving math, reading & Spanish. Sneaky learning that feels like play — free to start!">
+<meta property="og:description" content="Kids build houses and drive cars by solving math & reading. Sneaky learning that feels like play — free to start!">
 <meta property="og:url" content="https://stackadoo.com/play.html">
 <meta property="og:image" content="https://stackadoo.com/shots/build.jpg">
 <meta property="og:image:width" content="900">
@@ -30,7 +30,7 @@
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Stackadoo — Build & drive by doing math!">
-<meta name="twitter:description" content="Kids build & drive by solving math, reading & Spanish. Free to start!">
+<meta name="twitter:description" content="Kids build & drive by solving math & reading. Free to start!">
 <meta name="twitter:image" content="https://stackadoo.com/shots/build.jpg">
 <meta name="twitter:site" content="@Stackadoo">
 <!-- Structured data (JSON-LD) — the playable game itself -->
@@ -41,7 +41,7 @@
   "name": "Stackadoo",
   "url": "https://stackadoo.com/play.html",
   "image": "https://stackadoo.com/shots/build.jpg",
-  "description": "A 3D world where kids build houses and drive cars by solving math, reading and Spanish. Sneaky learning that feels like play. Free to start.",
+  "description": "A 3D world where kids build houses and drive cars by solving math and reading. Sneaky learning that feels like play. Free to start.",
   "applicationCategory": "GameApplication",
   "operatingSystem": "Web browser",
   "gamePlatform": "Web",
@@ -1181,7 +1181,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v295 — slower, grade-aligned math practice</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v296 — Spanish Beach removed; slower, grade-aligned math practice</div>
 
       <p id="leaveSavedNotice" role="status" hidden style="color:#286444;font-weight:bold"></p>
       <div class="panel" id="continuePanel">
@@ -1236,7 +1236,6 @@
         <div class="choiceGrid grades" id="worldRow">
           <button class="choice selected" data-world="meadow" data-desc="Solve math problems"><b>🌳 Math Meadow</b><small>Solve math problems</small></button>
           <button class="choice" data-world="city" data-desc="Reading &amp; grammar"><b>🏘️ Reading Town</b><small>Reading &amp; grammar</small></button>
-          <button class="choice" data-world="beach" data-desc="Beginner Spanish"><b>🏖️ Spanish Beach</b><small>Beginner Spanish • 🔜 Coming soon</small></button>
           <button class="choice" data-world="west" data-desc="Build a frontier town"><b>🤠 Country Western</b><small>Build a frontier town</small></button>
         </div>
         <small style="display:block;color:#8a7444;margin-top:6px">You can hop between worlds in‑game through the 🌀 portal.</small>
@@ -2212,7 +2211,7 @@
         var name = o.name || o._name || (k.split(':')[1] || '').split('::')[0] || 'Player';
         if (!name || names[name.toLowerCase()]) continue;
         names[name.toLowerCase()] = 1;
-        rows.push({ name: name, world: o.world || 'meadow', grade: o.grade || 2, when: o.when || o.lastPlayed || 0, blocks: 16, fromProfile: true });
+        rows.push({ name: name, world: (o.world && o.world !== 'beach') ? o.world : 'meadow', grade: o.grade || 2, when: o.when || o.lastPlayed || 0, blocks: 16, fromProfile: true });
       }
     } catch (e) {}
     list.innerHTML = '';
@@ -2252,6 +2251,7 @@
   function bootPlay(name, world, grade) {
     name = String(name || 'Player').replace(/^\s+|\s+$/g, '');
     world = world || 'meadow';
+    if (world === 'beach') world = 'meadow';   // 🏖️ Spanish Beach was removed — land in Math Meadow
     grade = parseInt(grade, 10) || 2;
     try {
       if (typeof G !== 'undefined') {
@@ -4577,8 +4577,7 @@ const WORLDS = {
             sky: 0x87CEEB, fog: 0x87CEEB, ground: [0x6FBF4B, 0x63B243, 0x79C957] },
   city:   { id: 'city',   name: 'Reading Town',   emoji: '🏘️', subject: 'reading', chip: 'Reading',
             sky: 0x9FC6E8, fog: 0xC2DCF0, ground: [0x86C05A, 0x79B24E, 0x93C970] },
-  beach:  { id: 'beach',  name: 'Spanish Beach',  emoji: '🏖️', subject: 'spanish', chip: 'Español', comingSoon: true,
-            sky: 0x7FD3EA, fog: 0xBFE8F2, ground: [0xF0DEA6, 0xEAD79A, 0xF5E6B8] },
+  // 🏖️ Spanish Beach was REMOVED (Oct 2026). Old 'beach' saves are left in storage but routed to Math Meadow — see REMOVED_WORLDS.
   // 🔬 Science Park — three themed STEM/science worlds (groundwork; built out later)
   west:   { id: 'west',   name: 'Country Western', emoji: '🤠', subject: 'science', chip: 'Engineering', park: 'science', blurb: '🤠 Build your own frontier homestead — cowboy houses, a tour train & a build park!',
             sky: 0x7CC4F0, fog: 0xCFE6F2, ground: [0xD9A86A, 0xCF9E60, 0xE3B878] },   // bright blue desert sky over the sandy ground
@@ -4587,7 +4586,9 @@ const WORLDS = {
   space:  { id: 'space',  name: 'Space Station',  emoji: '🚀', subject: 'science', chip: 'Space', comingSoon: true, park: 'science', blurb: '🪐 Blast off — gravity, planets & space science!',
             sky: 0x161628, fog: 0x2A2A40, ground: [0x6A6F78, 0x5E636B, 0x767B84] }
 };
-const WORLD_ORDER = ['meadow', 'city', 'beach', 'west', 'costa', 'space'];
+const WORLD_ORDER = ['meadow', 'city', 'west', 'costa', 'space'];
+const REMOVED_WORLDS = ['beach'];                    // retired worlds: never reachable; any save/state pointing here lands in Math Meadow
+const safeWorld = id => (id && WORLDS[id]) ? id : 'meadow';
 const SCIENCE_WORLDS = ['west', 'costa', 'space'];   // the three worlds grouped under 🔬 Science Park
 /* Where each world places the (shared) shops. Reading Town clusters them into a
    downtown row along Main Street, just south of the Library, so kids can drive there. */
@@ -4886,7 +4887,7 @@ const BADGE_SETS = {
     { id: 'e_champ', n: 25, icon: '🏆', name: 'Spanish Champion' }
   ]
 };
-const BADGE_SUBJECTS = [['math', '🌳 Math Meadow'], ['reading', '🏘️ Reading Town'], ['spanish', '🏖️ Spanish Beach']];
+const BADGE_SUBJECTS = [['math', '🌳 Math Meadow'], ['reading', '🏘️ Reading Town']];   // 🏖️ Spanish Beach removed (Oct 2026)
 const BADGES = BADGE_SETS.math;               // back-compat: HUD next-goal + math wearables
 const subjectOf = op => (op === 'reading' || op === 'spelling' || op === 'grammar' ? 'reading' : op === 'spanish' ? 'spanish' : 'math');
 function subjectSolved(subj, p) {             // how many problems solved in a given town
@@ -5240,7 +5241,7 @@ function doUnlock() {
   closeUnlock();
   renderWorldLocks();
   if (typeof Sound !== 'undefined' && Sound.fanfare) Sound.fanfare();
-  toast('🎉 You\'re a Founding Family! 🏘️ Reading Town is open — find a 🌀 portal to visit. Every future world & update is yours, free for life. 🏖️ Spanish Beach coming soon!', 5200);
+  toast('🎉 You\'re a Founding Family! 🏘️ Reading Town is open — find a 🌀 portal to visit. Every future world & update is yours, free for life.', 5200);
   if (G.running) setTimeout(openTravel, 300);     // re-open the travel chooser, now unlocked
 }
 /* reflect lock state on the homepage world picker */
@@ -5413,7 +5414,7 @@ function renderGrownup() {
       html += '<div class="guSkillSub">No grammar yet — try the 🎬 Grammar Cinema.</div>';
     }
     // ===== 🇪🇸 SPANISH =====
-    html += sectionHead('🇪🇸 Spanish');
+    if ((p.spanFirstTotal || 0) > 0) html += sectionHead('🇪🇸 Spanish');   // Spanish Beach removed: only show past Spanish results
     const spTotal = p.spanFirstTotal || 0, spRight = p.spanFirstRight || 0;
     if (spTotal > 0) {
       const sv = Math.round(spRight / spTotal * 100);
@@ -5424,8 +5425,6 @@ function renderGrownup() {
       else { vrate = '🔴 Needs support — practice together'; vcol = '#c0392b'; }
       html += '<div class="guStats"><span>🗣️ Spanish: ' + sv + '% (first try)</span><span>🏪 ' + spRight + '/' + spTotal + '</span></div>';
       html += '<div class="guFocus" style="color:' + vcol + '">' + vrate + '</div>';
-    } else {
-      html += '<div class="guSkillSub">No Spanish yet — visit 🏪 El Mercadito in Spanish Beach.</div>';
     }
 
     card.innerHTML = html;
@@ -5673,7 +5672,7 @@ function saveGame() {
   return true;
 }
 function listSaves() {
-  const out = [];
+  const out = [], retired = [];
   const namesWithSave = new Set();
   for (let i = 0; i < LS.length; i++) {
     const k = LS.key(i);
@@ -5682,6 +5681,10 @@ function listSaves() {
         const s = JSON.parse(LS.getItem(k));
         if (s) {
           if (!s.name) s.name = k.slice(SAVE_PREFIX.length).split('::')[0] || 'Player';
+          if (s.world && !WORLDS[s.world]) {               // 🏖️ save from a removed world → offer a safe Math Meadow slot (old data kept, not loaded)
+            if (!retired.some(r => r.name === s.name)) retired.push({ name: s.name, world: 'meadow', grade: s.grade || 2, avatarIndex: s.avatarIndex || 0, when: s.when || 0, blocks: 16, fromProfile: true });
+            continue;
+          }
           out.push(s);
           namesWithSave.add(String(s.name || '').toLowerCase());
         }
@@ -5704,6 +5707,7 @@ function listSaves() {
       namesWithSave.add(String(nm).toLowerCase());
     });
   } catch (e) {}
+  retired.forEach(r => { if (!namesWithSave.has(String(r.name).toLowerCase())) { out.push(r); namesWithSave.add(String(r.name).toLowerCase()); } });
   return out.sort((a, b) => (b.when || 0) - (a.when || 0));
 }
 function loadSaveFor(name, world) {
@@ -20342,7 +20346,7 @@ function refreshSavedList() {
       try { if (typeof Sound !== 'undefined' && Sound.click) Sound.click(); } catch (err) {}
       try { restoreGame(s); } catch (err) {
         console.error('restoreGame', err);
-        try { G.playerName = s.name; G.world = s.world || 'meadow'; G.grade = s.grade || 2; startGame(); } catch (e2) { console.error(e2); }
+        try { G.playerName = s.name; G.world = safeWorld(s.world); G.grade = s.grade || 2; startGame(); } catch (e2) { console.error(e2); }
       }
     };
     load.onauxclick = (e) => { e.preventDefault(); e.stopPropagation(); };
