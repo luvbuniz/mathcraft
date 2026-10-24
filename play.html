@@ -10827,7 +10827,6 @@ function storyContentWords(str) {
 }
 function questionFitsText(q, text, variant) {
   if (!q || !text) return false;
-  if (variant != null && STORY_Q_MIN_VARIANT[q.q] != null) return variant >= STORY_Q_MIN_VARIANT[q.q];   // hand-checked
   const plain = String(text).replace(/\s+/g, ' ').toLowerCase();
   const quotes = (q.q.match(/"([^"]{4,})"/g) || []).map(x => x.slice(1, -1).toLowerCase().replace(/[.,!?]$/, ''));
   if (quotes.some(x => plain.indexOf(x) < 0)) return false;           // a quoted line must be in the text shown
@@ -10835,6 +10834,7 @@ function questionFitsText(q, text, variant) {
   const frac = ws => ws.length ? ws.filter(w => have.has(w)).length / ws.length : 1;
   const names = (q.q.replace(/^\W*\w+/, '') + ' ' + q.a.replace(/^\W*\w+/, '')).match(/\b[A-Z][a-z]{2,}\b/g) || [];
   if (names.some(n => !have.has(storyStem(n)) && !STOP_WORDS.has(n.toLowerCase()))) return false;   // every named character/place must appear
+  if (variant != null && STORY_Q_MIN_VARIANT[q.q] != null) return variant >= STORY_Q_MIN_VARIANT[q.q];   // hand-checked (names and quotes still checked above)
   const qText = q.q.replace(/"[^"]*"/g, ' ');
   if (quotes.length) return true;                                      // e.g. simile / metaphor about a quoted line
   if (frac(storyContentWords(qText)) < 0.67) return false;            // the question is about something in this text
