@@ -28,15 +28,23 @@ COMMON = ('Instrumental only, no vocals, no humming, no whistling. Major key, br
           'repetitive. Clean, uncluttered mix that sits nicely under spoken dialogue. '
           'For a kids building-and-learning game, ages 6 to 10.')
 WORLDS = {
+    # Math Meadow: a bright medieval / country-folk village fair.
     'meadow': [
-        'Sunny farm-town adventure, 118 BPM. Ukulele strums, marimba lead, pizzicato strings, light hand claps, shaker, soft kick.',
-        'Cheerful morning on the meadow, 112 BPM. Acoustic guitar picking, glockenspiel melody, bouncy bass, brushed snare.',
-        'Busy happy building day, 122 BPM. Xylophone and kalimba lead, plucked strings, tambourine, warm bass, light drums.',
+        'Bright medieval village fair, 120 BPM, lively jig feel. Tin whistle and recorder melody, hammered dulcimer, '
+        'lute strums, frame drum and tambourine, light hand claps.',
+        'Sunny country-folk harvest festival on the village green, 112 BPM. Fiddle and mandolin melody, acoustic guitar, '
+        'bodhran, warm upright bass, footstomp rhythm.',
+        'Cheerful castle-town market day, 116 BPM, bouncy dance in a skipping rhythm. Recorder and hurdy-gurdy tune, '
+        'plucked lute, glockenspiel sparkles, tabor drum and shaker.',
     ],
+    # Reading Town: light modern pop / indie.
     'city': [
-        'Friendly small-town high street, 112 BPM. Upright piano, glockenspiel, walking bass, brushed drums, light muted horns.',
-        'Storybook town stroll, 108 BPM. Celesta and clarinet melody, pizzicato strings, soft swing groove.',
-        'Bright library-and-cinema town, 116 BPM. Electric piano, vibraphone, finger snaps, gentle funky bass.',
+        'Light modern indie pop, 112 BPM. Clean jangly electric guitar, bright piano chords, glockenspiel hook, '
+        'bouncy bass, tight soft drums with finger snaps.',
+        'Sunny feel-good indie pop afternoon, 108 BPM. Ukulele and acoustic guitar strums, warm synth pad, '
+        'hand claps, light groove, a simple whistle-free synth lead.',
+        'Upbeat modern pop for a friendly town, 118 BPM. Soft plucky synths, electric piano, punchy-but-gentle '
+        'drums, round bass, sparkly bell melody.',
     ],
     'beach': [
         'Sunny Spanish beach, 110 BPM. Nylon-string guitar, steel drums, bongos and shaker, warm bass.',
