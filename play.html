@@ -69,6 +69,10 @@
   :root { color-scheme: light; }   /* keep the bright kid palette — opt out of browser auto-dark-mode */
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { width:100%; height:100%; overflow:hidden; font-family:'Comic Sans MS','Chalkboard SE','Segoe UI',sans-serif; background:#87CEEB; }
+  /* Pip QA P1-3: a held finger on game UI must never select text or open Chrome's
+     "Tap to see search results" sheet / long-press menu. Typing boxes stay selectable. */
+  body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  input, textarea, [contenteditable="true"] { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
   canvas { display:block; }
   button { font-family:inherit; cursor:pointer; border:none; }
 
@@ -11240,9 +11244,10 @@ function voidKey(type, code, key) {
 /* 🔴 Auto-fire: a gentle repeating Space so little ones just steer. Pip QA N1: it only fires
    while the kid is actually steering (stick touched in the last 2.5 s), so an idle ship
    no longer farms points, and it no longer auto-restarts a lost run. */
-let voidAuto = true, voidFireTimer = null, voidSteerAt = 0;
+let voidAuto = true, voidFireTimer = null, voidSteerAt = 0, voidFireUI = null;
 function setVoidAuto(on) {
   voidAuto = on;
+  if (voidFireUI) voidFireUI();             // Pip QA P1-2: the label always shows the real state (2nd game said "manual")
   if (voidFireTimer) { clearInterval(voidFireTimer); voidFireTimer = null; }
   if (on) voidFireTimer = setInterval(function () {
     const idle = performance.now() - voidSteerAt > 2500;
@@ -11259,7 +11264,7 @@ function startVoidDrift() {
   $('arcadePopup').style.display = 'none';                 // tuck the lobby away; popupOpen stays true (freezes the 3D world)
   const ov = document.createElement('div');
   ov.id = 'voidOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:#05060d;display:flex;flex-direction:column';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:#05060d;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none';
   const frame = document.createElement('iframe');
   frame.id = 'voidFrame'; frame.src = 'arcade/voiddrift.html';
   frame.style.cssText = 'flex:1;width:100%;border:0;display:block';
@@ -11313,8 +11318,9 @@ function startVoidDrift() {
   const fire = document.createElement('button');
   fire.style.cssText = 'pointer-events:auto;width:118px;height:118px;border-radius:50%;border:2px solid rgba(255,120,120,.6);color:#fff;font-size:17px;font-weight:800;touch-action:none;line-height:1.2';
   const setFireUI = function () { fire.innerHTML = voidAuto ? '🔴<br>AUTO' : '⚪<br>manual'; fire.style.background = voidAuto ? 'rgba(200,45,55,.88)' : 'rgba(55,65,95,.72)'; };
-  fire.onclick = function () { setVoidAuto(!voidAuto); setFireUI(); };
-  setFireUI();
+  fire.onclick = function () { setVoidAuto(!voidAuto); };
+  voidFireUI = setFireUI;
+  voidAuto = true; setFireUI();             // every run starts on auto-fire (it switches on once the game loads)
   pad.appendChild(joy); pad.appendChild(fire); ov.appendChild(pad);
   document.body.appendChild(ov);
   voidState = { left: VOID_SECONDS, timer: null, joyId: null };
@@ -11325,6 +11331,9 @@ function startVoidDrift() {
   idleTip.textContent = '🕹️ Steer your ship to fire!';
   ov.appendChild(idleTip);
   frame.addEventListener('load', function () { try { frame.contentWindow.addEventListener('keydown', function (e) { if (e.isTrusted) voidSteerAt = performance.now(); }); } catch (e) {} });
+  frame.addEventListener('load', function () {   // Pip QA P1-3: no text selection / search sheet inside the game either
+    try { const st = frame.contentDocument.createElement('style'); st.textContent = '*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}'; frame.contentDocument.head.appendChild(st); } catch (e) {}
+  });
   frame.addEventListener('load', function () {
     setTimeout(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 70); setVoidAuto(true); }, 300);   // auto-launch + start auto-fire
   });
@@ -11335,13 +11344,26 @@ function startVoidDrift() {
     if (voidState.left <= 0) endVoidDrift();               // ⏰ HARD close — time's up, no matter what
   }, 1000);
 }
+/* 🛡️ swallow taps for a moment after a full-screen game closes, so a held or late finger
+   doesn't land on whatever is underneath (Pip QA P1-3). */
+function tapGuard(ms) {
+  const g = document.createElement('div');
+  g.className = 'tapGuard';
+  g.style.cssText = 'position:fixed;inset:0;z-index:260;background:transparent;touch-action:none';
+  const eat = function (e) { e.preventDefault(); e.stopPropagation(); };
+  ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup', 'contextmenu'].forEach(function (t) { g.addEventListener(t, eat, { passive: false }); });
+  document.body.appendChild(g);
+  setTimeout(function () { g.remove(); }, ms || 600);
+  return g;
+}
 function endVoidDrift(early) {
   const ov = $('voidOverlay'); if (!ov) return;
   if (voidState && voidState.timer) clearInterval(voidState.timer);
   setVoidAuto(false);                                      // stop the auto-fire loop
   let score = 0;
   try { score = parseInt($('voidFrame').contentDocument.getElementById('scoreVal').textContent, 10) || 0; } catch (e) {}
-  ov.remove(); voidState = null;
+  ov.remove(); voidState = null; voidFireUI = null;
+  tapGuard(600);                                           // Pip QA P1-3: a finger still held when the timer ends can't tap the lobby
   const won = early ? 0 : Math.min(12, Math.floor(score / 250));   // 🎫 prize tickets — only for finishing the run (Pip QA N1)
   if (won > 0) { G.prizeTickets = (G.prizeTickets || 0) + won; refreshHUD(); }
   if (Sound.fanfare) Sound.fanfare();
