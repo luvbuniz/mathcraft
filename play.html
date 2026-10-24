@@ -4689,6 +4689,32 @@ const AVATAR_MODEL_TWEAKS = {
    friends only: vehicles keep their studio models either way (the fire truck stays fancy).
    Lives on the player's profile (like hideHat), so each kid keeps their own look. */
 const classicHeroes = () => !!(profile && profile.classicHeroes);
+/* 🧹 Free a hero / town friend we're done with (Pip retest rt04: the tab crashed in Reading Town).
+   Every world trip, hero swap and style toggle builds a fresh hero + friends — each studio
+   model is its own parsed copy (30–100k vertices, a 1024² texture, a bone texture) — and the
+   old ones were only scene.remove()d, so their GPU buffers and the renderer's bookkeeping
+   stayed alive (~11 MB of JS heap + ~6 textures per trip). Geometries in hero builds are
+   always per-build; the shared colour materials (mat(), blocky ink, pixel faces) are kept. */
+function sharedAvatarMats() {
+  const keep = new Set(matCacheSet); keep.add(BLK_MAT); keep.add(BLK_LINE_MAT);
+  for (const k in PIXEL_FACE_CACHE) { const e = PIXEL_FACE_CACHE[k]; for (const j in e) if (e[j] && e[j].isMaterial) keep.add(e[j]); }
+  return keep;
+}
+function disposeAvatarObject(obj, data) {
+  if (!obj) return;
+  if (obj.parent) obj.parent.remove(obj);
+  try {
+    if (data && data.mixer) { data.mixer.stopAllAction(); data.mixer.uncacheRoot(data.mixer.getRoot()); }
+    const keep = sharedAvatarMats(), mats = new Set(), skels = new Set();
+    obj.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.skeleton) skels.add(o.skeleton);
+      if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m && !keep.has(m)) mats.add(m); });
+    });
+    mats.forEach(m => { for (const k in m) { const v = m[k]; if (v && v.isTexture) v.dispose(); } m.dispose(); });
+    skels.forEach(sk => { if (sk.dispose) sk.dispose(); });
+  } catch (e) { console.warn('avatar dispose failed', e); }
+}
 const glbBytes = new Map();                   // id → ArrayBuffer | null
 const glbRequests = new Map();                // coalesce a hero + NPC requesting the same file
 function fetchAvatarBytes(id) {
@@ -4938,14 +4964,14 @@ function maybeUpgradeAvatarToModel(index) {
     return;
   }
   parseAvatarModel(av.id).then(data => {
-    if (!player.avatarData || player.avatarIndexLoading !== index) return;   // player switched heroes meanwhile
+    if (!player.avatarData || player.avatarIndexLoading !== index) { if (data) disposeAvatarObject(data.group, data); return; }   // player switched heroes meanwhile
     if (!data) {                                                    // no model / bad model → keep procedural…
       player.avatarWarming = false;                                 // …and stop hiding it right away
       if (player.avatar) player.avatar.visible = !G.firstPerson;
       return;
     }
     const old = player.avatar;
-    if (old) { data.group.position.copy(old.position); data.group.rotation.copy(old.rotation); scene.remove(old); }
+    if (old) { data.group.position.copy(old.position); data.group.rotation.copy(old.rotation); disposeAvatarObject(old, player.avatarData); }
     data.armRest = null;
     player.avatar = data.group;
     player.avatarData = data;
@@ -15103,7 +15129,7 @@ function endFetch() {
 }
 
 function setAvatar(index) {
-  if (player.avatar) scene.remove(player.avatar);
+  if (player.avatar) disposeAvatarObject(player.avatar, player.avatarData);   // 🧹 free the old hero (rt04)
   // Old saves (and profile-only rows) can carry no avatarIndex at all. AVATARS[undefined]
   // is undefined, and this function only has a `finally`, so the TypeError escaped into
   // startGame's catch and skipped everything after it — HUD, NPCs, G.running. Fall back.
@@ -22187,7 +22213,7 @@ const NPC_ACT_LINES = {                        // little thoughts while using th
 let npcs = [];
 const npcV = new THREE.Vector3();
 function clearNpcs() {
-  for (const n of npcs) scene.remove(n.group);
+  for (const n of npcs) disposeAvatarObject(n.group, n.d);   // 🧹 free each friend (rt04)
   npcs = [];
   hideNpcChat();
   dismissedChatNpc = null;
@@ -22269,7 +22295,7 @@ function respawnNpcs() {
     parseAvatarModel(cast.id).then(md => {
       const alive = npcs.indexOf(n) >= 0 && n.d === d;
       if (alive) d.group.visible = true;                       // model or not, stop hiding the friend
-      if (!md || !alive) return;                               // world changed meanwhile / no model
+      if (!md || !alive) { if (md) disposeAvatarObject(md.group, md); return; }   // world changed meanwhile / no model
       md.group.position.copy(n.group.position);
       md.group.rotation.y = n.group.rotation.y;
       md.group.scale.setScalar(0.92);
@@ -22278,7 +22304,7 @@ function respawnNpcs() {
       const tap = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.9, 1.1), new THREE.MeshBasicMaterial({ visible: false }));
       tap.position.y = 0.95;
       md.group.add(tap);
-      scene.remove(n.group);
+      disposeAvatarObject(n.group, n.d);                       // 🧹 the boxy stand-in is done
       n.d = md; n.group = md.group;
       scene.add(md.group);
     });
