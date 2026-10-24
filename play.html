@@ -3644,7 +3644,7 @@ function blockKidBase(skin) {
   const g = new THREE.Group();
   const hinge = (x, y) => { const L = new THREE.Group(); L.position.set(x, y, 0); g.add(L); return L; };
   const legs = [hinge(-0.125, 0.5), hinge(0.125, 0.5)];
-  const arms = [hinge(-0.345, 1.0), hinge(0.345, 1.0)];
+  const arms = [hinge(-0.345, 0.96), hinge(0.345, 0.96)];           // a bit below the neck line: no shrug, even mid-swing
   box(g, 0.17, 0.12, 0.17, skin, 0, 1.06, 0);                        // neck
   const head = new THREE.Group(); head.position.set(0, 1.08 + BLK_HEAD * BLK_HEAD_SCALE / 2, 0); head.scale.setScalar(BLK_HEAD_SCALE); g.add(head);
   box(head, BLK_HEAD, BLK_HEAD, BLK_HEAD, skin, 0, 0, 0);
@@ -3795,7 +3795,7 @@ const AVATARS = [
         box(g, 0.5, 0.52, 0.46, blue, 0, 0.72, 0);                     // round body
         decal(g, 0.36, 0.38, 0.02, blueL, 0, 0.7, 0.235);               // bright chest
         box(g, 0.24, 0.32, 0.24, blue, 0, 1.08, 0.06);                 // long neck
-        const arms = [hinge(-0.28, 0.98), hinge(0.28, 0.98)];          // wings
+        const arms = [hinge(-0.28, 0.9), hinge(0.28, 0.9)];            // wings, tucked below where the neck leaves the body
         arms.forEach(A => {
           box(A, 0.08, 0.42, 0.32, blue, 0, -0.2, -0.03);
           box(A, 0.085, 0.16, 0.26, teal, 0, -0.38, -0.05);
@@ -4415,7 +4415,7 @@ const AVATARS = [
         box(g, 0.16, 0.04, 0.06, gold, -0.33, 0.6, 0.1);
         box(g, 0.05, 0.12, 0.05, 0x5A3A22, -0.335, 0.68, 0.1);
         a.arms.forEach((A, i) => {
-          box(A, 0.24, 0.14, 0.26, armorD, 0, -0.02, 0);                    // shoulder plate
+          box(A, 0.24, 0.12, 0.26, armorD, 0, -0.06, 0);                    // shoulder plate, sitting below the neck line
           box(A, 0.17, 0.3, 0.18, armor, 0, -0.24, 0);
           box(A, 0.19, 0.14, 0.2, armorD, 0, -0.43, 0);                     // gauntlet
           if (i === 1) {
