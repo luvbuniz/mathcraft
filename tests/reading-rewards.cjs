@@ -13,7 +13,7 @@ function setup(){
   Sound:{correct(){},wrong(){},fanfare(){}},Narrator:{stop(){},cinemaLine(){},spellWord(){}},
   saveProfile(){},refreshHUD(){},bumpHud(){},awardToken(){},awardTokenHalf(){},recordSolve(){counts.solve++;},recordWrong(){counts.wrong++;},recordPractice(){counts.practice++;},
   disableChoices(){},markCorrectChoice(){},deviceDef(){return null;},readLevelNow(){return c.G.readLevel;},
-  unlockNextCartoon(){counts.cartoon++;return null;},wizUnlockForSession(){return null;},wizEpisodeForStory(){return null;},wizIsUnlocked(){return false;},wizPlay(){},WIZ_TV:{unlock:{passFrac:0.6}},libFirstTryNeed(n){return n===3?2:Math.ceil(n*0.6);},libFirstTryPassed(f,n){return n>0&&(f||0)>=(n===3?2:Math.ceil(n*0.6));},closeLibrary(){c.lib=null;},openLibrary(){},closePost(){c.spell=null;},openPost(){},
+  unlockNextCartoon(){counts.cartoon++;return null;},wizUnlockForSession(){return null;},wizEpisodeForStory(){return null;},wizIsUnlocked(){return false;},wizHasTicket(){return false;},wizPlay(){},WIZ_TV:{unlock:{passFrac:0.6}},libFirstTryNeed(n){return n===3?2:Math.ceil(n*0.6);},libFirstTryPassed(f,n){return n>0&&(f||0)>=(n===3?2:Math.ceil(n*0.6));},closeLibrary(){c.lib=null;},openLibrary(){},closePost(){c.spell=null;},openPost(){},
   noteGrammarConcept(){},saveCinemaProgress(){},arcadeWallet(){},arcadeGameOver(){c.arcade.kind='over';},
   renderLib(){counts.render++;c.lib.attempted=false;},renderSpell(){counts.render++;c.spell.attempted=false;},renderScene(){counts.render++;c.cinema.attempted=false;},nextQuizQ(){counts.render++;},
   setTimeout(f){timers.push(f);},console});

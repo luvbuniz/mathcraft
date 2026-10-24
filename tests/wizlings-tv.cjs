@@ -10,7 +10,7 @@ assert.ok(a > 0 && b > a, 'Wizlings TV logic block markers missing from play.htm
 const ctx = vm.createContext({ URLSearchParams, location: { search: '' }, console });
 const qa = html.indexOf('/* LIBQ-LOGIC-START */'), qb = html.indexOf('/* LIBQ-LOGIC-END */');
 assert.ok(qa > 0 && qb > qa, 'LIBQ logic markers missing');
-vm.runInContext(html.slice(qa, qb) + '\n' + html.slice(a, b) + '\nthis.WIZ_TV = WIZ_TV;', ctx);
+vm.runInContext(html.slice(qa, qb) + '\n' + html.slice(a, b) + '\nthis.WIZ_TV = WIZ_TV; this.WIZ_TV_USE_AFTER_S = WIZ_TV_USE_AFTER_S;', ctx);
 const W = ctx;
 const STORY_TITLES = [...html.matchAll(/\{ e: '[^']*', t: ("|')(.*?)\1/g)].map(m => m[2].replace(/\\'/g, "'"));
 function session(title, opts) { return Object.assign({ story: { t: title }, qs: [{}, {}, {}, {}], qi: 4, firstRight: 4 }, opts || {}); }
@@ -70,9 +70,10 @@ test('unlocks are per profile', () => {
   W.wizUnlockForSession(session('Scooter: From Wizard to Pomeranian'), leo);
   const ep1 = W.WIZ_TV.episodes[0];
   assert.equal(W.wizIsUnlocked(ep1, leo), true); assert.equal(W.wizIsUnlocked(ep1, fiona), false);
-  assert.deepEqual(JSON.parse(JSON.stringify(leo)), { wizTvUnlocked: ['ep1'] });   // survives the JSON save
+  assert.deepEqual(JSON.parse(JSON.stringify(leo)), { wizTvUnlocked: ['ep1'], wizTvTickets: ['ep1'] });   // survives the JSON save
 });
 const ep = id => W.WIZ_TV.episodes.find(e => e.id === id);
+function extract(name) { const s = html.indexOf('function ' + name + '('); return html.slice(s, html.indexOf('\n}', s) + 2); }
 test('pick-a-cut: portrait phones get the vertical cut', () => {
   assert.equal(W.wizPickCut(ep('ep2'), 390, 844), 'v');
   assert.equal(W.wizPickCut(ep('ep7'), 360, 740), 'v');
@@ -94,8 +95,97 @@ test('only the chosen cut’s URL is built; base override is local-only', () => 
   assert.equal(W.wizTvBase({ search: '?wiztvbase=https://evil.example/' }), W.WIZ_TV.base);
 });
 
+// ---- 🎟️ one viewing per pass (Amy, Oct 24) ----
+const bronco = () => session("Bronco's Icy Escape");
+const reload = p => JSON.parse(JSON.stringify(p));                 // what the profile save/load round trip does
+function spendHarness(p) {                                       // the real wizMaybeSpend + logic, with a fake save
+  let saves = 0;
+  const c = vm.createContext({ WizTV: { open: true, used: false, ep: null, played: 0, furthest: 0, ended: false }, profile: p, profileDirty: false,
+    saveProfile() { saves++; }, console });
+  vm.runInContext(html.slice(qa, qb) + '\n' + html.slice(a, b) + '\n' + extract('wizMaybeSpend') + 'this.spend=wizMaybeSpend; this.WIZ_TV = WIZ_TV;', c);
+  c.WizTV.ep = c.WIZ_TV.episodes.find(e => e.id === 'ep3');
+  return { c, saves: () => saves };
+}
+test('the 20 s threshold is one named constant', () => {
+  assert.equal(W.WIZ_TV_USE_AFTER_S, 20);
+  assert.equal((html.match(/WIZ_TV_USE_AFTER_S\s*=/g) || []).length, 1);
+});
+test('pass → one ticket → watch to the end → ticket spent and Watch locked', () => {
+  const p = {};
+  const r = W.wizUnlockForSession(bronco(), p);
+  assert.equal(r.ticket, true); assert.equal(W.wizHasTicket(ep('ep3'), p), true);
+  const h = spendHarness(p); h.c.WizTV.ended = true; h.c.spend();
+  assert.equal(W.wizHasTicket(ep('ep3'), p), false); assert.equal(W.wizIsUnlocked(ep('ep3'), p), true);   // watched, not forgotten
+  assert.equal(h.saves(), 1); assert.equal(h.c.profileDirty, true);
+  h.c.spend(); assert.equal(h.saves(), 1);                                                                // spends once
+});
+test('20 s of watching spends it even without reaching the end; seeking past 20 s counts too', () => {
+  for (const [played, furthest] of [[20, 20], [20.4, 6], [3, 140]]) {
+    const p = {}; W.wizUnlockForSession(bronco(), p);
+    const h = spendHarness(p); h.c.WizTV.played = played; h.c.WizTV.furthest = furthest; h.c.spend();
+    assert.equal(W.wizHasTicket(ep('ep3'), p), false, played + '/' + furthest);
+  }
+});
+test('a reload stays locked', () => {
+  let p = {}; W.wizUnlockForSession(bronco(), p);
+  const h = spendHarness(p); h.c.WizTV.ended = true; h.c.spend();
+  p = reload(p);
+  assert.equal(W.wizHasTicket(ep('ep3'), p), false); assert.equal(W.wizIsUnlocked(ep('ep3'), p), true);
+  assert.deepEqual(p.wizTvTickets, []);
+});
+test('passing again re-earns exactly one viewing', () => {
+  let p = {}; W.wizUnlockForSession(bronco(), p);
+  const h = spendHarness(p); h.c.WizTV.ended = true; h.c.spend(); p = reload(p);
+  const r = W.wizUnlockForSession(bronco(), p);
+  assert.equal(r.isNew, false); assert.equal(r.ticket, true);
+  assert.deepEqual([...p.wizTvTickets], ['ep3']); assert.equal(W.wizHasTicket(ep('ep3'), reload(p)), true);
+  // a failed re-read (1 of 4 first try) earns nothing
+  const p2 = reload(p); W.wizUseTicket(ep('ep3'), p2);
+  assert.equal(W.wizUnlockForSession(session("Bronco's Icy Escape", { firstRight: 1 }), p2), null);
+  assert.equal(W.wizHasTicket(ep('ep3'), p2), false);
+});
+test('closing early (< 20 s) or a network error before playback keeps the ticket', () => {
+  for (const [played, furthest] of [[0, 0], [19.9, 19.9], [5, 12]]) {
+    const p = {}; W.wizUnlockForSession(bronco(), p);
+    const h = spendHarness(p); h.c.WizTV.played = played; h.c.WizTV.furthest = furthest; h.c.spend();
+    assert.equal(W.wizHasTicket(ep('ep3'), reload(p)), true, played + '/' + furthest); assert.equal(h.saves(), 0);
+  }
+});
+test('a second pass while a ticket is unused does not stack', () => {
+  const p = {};
+  W.wizUnlockForSession(bronco(), p);
+  const r2 = W.wizUnlockForSession(bronco(), p);
+  assert.equal(r2.ticket, false); assert.deepEqual([...p.wizTvTickets], ['ep3']);
+  const h = spendHarness(p); h.c.WizTV.ended = true; h.c.spend();
+  assert.equal(W.wizHasTicket(ep('ep3'), p), false);                     // one viewing, not two
+});
+test('tickets are per episode and per profile; Ep6 and unpaired stories never get one', () => {
+  const leo = {}, fiona = {};
+  W.wizUnlockForSession(bronco(), leo);
+  assert.equal(W.wizHasTicket(ep('ep3'), fiona), false); assert.equal(W.wizHasTicket(ep('ep2'), leo), false);
+  W.wizUnlockForSession(session("Bonnie's Magical Meadow"), leo); W.wizUnlockForSession(session('The Lost Kite'), leo);
+  assert.deepEqual([...leo.wizTvTickets], ['ep3']);
+  assert.equal(W.wizGrantTicket(ep('ep6'), leo), false);
+  assert.equal(W.wizHasTicket(ep('ep6'), { wizTvUnlocked: ['ep6'], wizTvTickets: ['ep6'] }), false);   // hand-edited save
+  assert.equal(W.wizHasTicket(ep('ep3'), { wizTvTickets: ['ep3'] }), false);                          // ticket without an unlock
+});
+test('no bypass in the UI code: player needs a ticket, no Watch-again, ended blocks play, watched tiles do not open the player', () => {
+  const play = extract('wizPlay');
+  assert.ok(/if \(WizTV\.open \|\| !wizHasTicket\(ep, profile\)\) return;/.test(play), 'wizPlay must refuse without a ticket');
+  assert.ok(!/wizTvAgain|Watch again|currentTime = 0/.test(play), 'no replay from the player');
+  assert.ok(/WizTV\.ended\) \{ try \{ v\.pause\(\)/.test(play), 'play after the end must be blocked');
+  assert.ok(/v\.controls = false/.test(play));
+  const shelf = extract('renderWizTvShelf');
+  assert.ok(/if \(ready\) cell\.onclick = \(\) => \{ Sound\.click\(\); wizPlay\(ep\); \};/.test(shelf));
+  assert.equal((shelf.match(/wizPlay\(/g) || []).length, 1, 'only ready tiles call wizPlay');
+  assert.ok(/Read it again to watch!/.test(shelf));
+});
+test('legacy save (unlocked before this rule, no tickets) shows watched, not playable', () => {
+  const p = reload({ wizTvUnlocked: ['ep3'] });
+  assert.equal(W.wizIsUnlocked(ep('ep3'), p), true); assert.equal(W.wizHasTicket(ep('ep3'), p), false);
+});
+
 // ---- player teardown (pause → removeAttribute src → load → remove) and render-loop resume ----
-function extract(name) { const s = html.indexOf('function ' + name + '('); return html.slice(s, html.indexOf('\n}', s) + 2); }
 test('closing the player fully tears down the video and restarts the render loop', () => {
   const log = []; let raf = 0;
   const vid = { pause() { log.push('pause'); }, removeAttribute(n) { log.push('rm:' + n); }, load() { log.push('load'); }, remove() { log.push('remove'); } };
