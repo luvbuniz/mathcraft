@@ -15985,7 +15985,9 @@ function updatePlayer(dt) {
   // camera
   const headY = player.pos.y + 1.55;
   const inside = underRoofAt(player.pos.x, player.pos.z);
-  const shopFov=(insideFeedStore(player.pos.x,player.pos.z)||inside)&&innerHeight>innerWidth?90:70;
+  const inStore=insideFeedStore(player.pos.x,player.pos.z);
+  const shopFov=(inStore||inside)?(innerHeight>innerWidth?90:82):70;   // Pip QA P0-5: wide view indoors (tablets are landscape)
+  storeEntryCheck(inStore);
   if(camera.fov!==shopFov){camera.fov=shopFov;camera.updateProjectionMatrix();}
   const homeIndex=inside?homeLotAt(player.pos.x,player.pos.z):-1,homeHint=$('hudShelter');
   if(homeHint){homeHint.style.display=homeIndex>=0?'block':'none';if(homeIndex>=0)homeHint.textContent=player.pos.y>=3.5?'🏡 Your home · Upstairs':'🏡 Your home · Ground floor';}
@@ -16013,20 +16015,20 @@ function updatePlayer(dt) {
     // Only pull the camera in a little if a wall/roof sits behind you, so it stays
     // mostly zoomed OUT inside a house instead of snapping right up to your face.
     const head = new THREE.Vector3(player.pos.x, headY, player.pos.z);
-    const dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
+    let dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
     const far = dir.length(); dir.normalize();
-    let allowed = far;
-    for (let d = 0.5; d < far; d += 0.3) {
-      const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
-      // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
-      if (solidAt(fx, fy, fz) || (fy < 5 && inShopZone(fx, fz))) {
-        allowed = Math.max(inside ? 0.45 : 0.6, d - 0.4); break;   // (was 1.7 outdoors, which parked the camera INSIDE the wall)
+    let allowed = camRoomAlong(head, dir, far, inside);
+    // Pip retest rt25–rt29: walls behind you used to park the camera in the hero's hair. Lift it up
+    // over the shoulder instead (looking down at the hero) when that gives clearly more room.
+    if (allowed < 2.2 && !selfie) {
+      for (const lift of [0.8, 1.6]) {
+        const d2 = new THREE.Vector3(dir.x, dir.y + lift, dir.z).normalize();
+        const a2 = camRoomAlong(head, d2, far, inside);
+        if (a2 > allowed + 0.4) { allowed = a2; dir = d2; if (a2 >= 2.2) break; }
       }
     }
-    // Pip QA F4/N3: also stop in front of real building and tree shapes (not just grid blocks)
-    const meshT = camBlockerT(head, dir, allowed);
-    if (meshT < allowed) allowed = Math.max(0.45, meshT - 0.3);
-    if (inside && allowed < 2.6 && !G.birdsEye) {
+    // first-person only as a last resort in a tiny room — and never once you've picked "Behind me"
+    if (inside && allowed < 1.0 && !G.birdsEye && !G.keepThird && !inStore) {
       // Real interior path — first-person — instead of a clipped "fake interior" camera
       if (!G.firstPerson) {
         G.firstPerson = true; G._autoInterior = true;
@@ -16034,7 +16036,11 @@ function updatePlayer(dt) {
       }
       camera.position.set(player.pos.x, headY, player.pos.z);
     } else {
-      camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
+      const target = head.clone().add(dir.multiplyScalar(allowed));
+      // blocked: jump straight to the safe spot in front of the wall (easing would show the wall/hair
+      // for a few frames); open space: ease as before
+      if (allowed < far - 0.05 && camera.position.distanceTo(head) > allowed + 0.05) camera.position.copy(target);
+      else camera.position.lerp(target, 0.35);
     }
   }
   const look = G.birdsEye
@@ -16052,7 +16058,7 @@ function updatePlayer(dt) {
   camera.lookAt(look);
 
   // first time you stand under your own roof, suggest first-person for a look around inside
-  if (!G.firstPerson && !G.roofHintShown) {
+  if (!G.firstPerson && !G.roofHintShown && !inStore) {   // not in a shop (Pip QA: the store said "inside your house!")
     const hx = Math.floor(player.pos.x), hz = Math.floor(player.pos.z);
     for (let y = Math.floor(player.pos.y) + 2; y <= 9; y++) {
       if (blocks.has(key(hx, y, hz))) {
@@ -18778,6 +18784,81 @@ function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in i
 /* 📷 Pip QA N4: on touch, the camera no longer whips around when a kid pulls the stick
    backwards. It follows the hero only while walking forward-ish, and settles in behind
    after they stop for a moment. Desktop, driving and first person still follow exactly. */
+/* 🎥 how far the camera can sit from the head along `dir` before a wall, roof, shop or building
+   shape is in the way (Pip QA F4/N3/P0-4). */
+function camRoomAlong(head, dir, far, inside) {
+  let allowed = far;
+  // Pip retest rt25–rt29/rt43: the round "shop zone" also covers the doorstep and the inside of
+  // Stack Feed, so standing there pinned the camera in the hero's hair. Only use the zone when the
+  // hero is outside it; the real walls (blocks + building shapes) still stop the camera.
+  const zoneOk = !inShopZone(Math.floor(head.x), Math.floor(head.z));
+  // 🌾 inside Stack Feed the camera stays inside the room (its thin walls and roof aren't grid
+  // blocks the ray could hit), so you always see your hero among the shelves
+  const store = insideFeedStore(head.x, head.z) ? { x0: FEED_WALL.x0 + 1.25, x1: FEED_WALL.x1 - 0.25, z0: FEED_WALL.z0 + 1.25, z1: FEED_WALL.z1 - 0.15, y1: 2.75 } : null;
+  for (let d = 0.5; d < far; d += 0.3) {
+    if (store) {
+      const qx = head.x + dir.x * d, qy = head.y + dir.y * d, qz = head.z + dir.z * d;
+      if (qx < store.x0 || qx > store.x1 || qz < store.z0 || qz > store.z1 || qy > store.y1) { allowed = Math.max(0.45, d - 0.3); break; }
+    }
+    const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
+    // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
+    if (solidAt(fx, fy, fz) || (zoneOk && fy < 5 && inShopZone(fx, fz))) {
+      allowed = Math.max(inside ? 0.45 : 0.6, d - 0.4); break;   // (was 1.7 outdoors, which parked the camera INSIDE the wall)
+    }
+  }
+  const meshT = camBlockerT(head, dir, allowed);   // real building and tree shapes too
+  if (meshT < allowed) allowed = Math.max(0.45, meshT - 0.3);
+  return allowed;
+}
+/* 🌾 Stack Feed (Pip QA P0-5): walking in turns you to face the shelves, and a big Exit button
+   stays up the whole time you're inside. */
+function storeEntryCheck(inStore) {
+  if (inStore && !player._inStore) {
+    player._inStore = true;
+    if (!G.firstPerson && !player.driving) { player.yaw = 0; player.camYaw = 0; }   // face in, toward the shelves (north)
+    const b = storeExitBtn(); b.style.display = 'block';
+  } else if (!inStore && player._inStore) {
+    player._inStore = false;
+    const b = $('storeExitBtn'); if (b) b.style.display = 'none';
+  }
+}
+function storeExitBtn() {
+  let b = $('storeExitBtn');
+  if (b) return b;
+  b = document.createElement('button');
+  b.id = 'storeExitBtn'; b.type = 'button'; b.textContent = '🚪 Exit store';
+  b.setAttribute('aria-label', 'Exit the store');
+  b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 76px);' +
+    'z-index:40;display:none;min-width:200px;min-height:64px;padding:10px 26px;border-radius:18px;border:3px solid #fff;' +
+    'background:#2e7d32;color:#fff;font:800 22px Nunito,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35);' +
+    'cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation';
+  b.addEventListener('click', e => { e.preventDefault(); exitFeedStore(); });
+  document.body.appendChild(b);
+  return b;
+}
+function exitFeedStore() {
+  if (!insideFeedStore(player.pos.x, player.pos.z)) return;
+  if (typeof Sound !== 'undefined' && Sound.click) Sound.click();
+  player.walkTo = null; player.vel.set(0, 0, 0);
+  player.pos.set(6, 0, FEED_WALL.z1 + 1.6);      // just outside the south door
+  player.yaw = Math.PI; player.camYaw = Math.PI; // facing out, into the meadow
+  if (G._autoInterior) { G.firstPerson = false; G._autoInterior = false; const cb = $('camBtn'); if (cb) cb.textContent = camIcon(); }
+  storeEntryCheck(false);
+}
+/* 🫥 Pip QA P0-4: if the camera ends up closer than ~1 m to the hero, don't draw the hero for
+   that frame (no screen full of hair or face). Visibility is restored right after the draw,
+   so nothing else that shows/hides the hero is affected. */
+const CAM_HIDE_DIST = 1.0;
+function renderMainView() {
+  const av = player.avatar;
+  let hid = false;
+  if (av && av.visible && !G.firstPerson && !G.birdsEye && !player.driving) {
+    const cp = camera.position, y0 = player.pos.y, y1 = player.pos.y + 1.95;
+    const ny = Math.max(y0, Math.min(y1, cp.y));             // nearest point on the hero's body column
+    if (Math.hypot(cp.x - player.pos.x, cp.y - ny, cp.z - player.pos.z) < CAM_HIDE_DIST) { av.visible = false; hid = true; }
+  }
+  try { renderer.render(scene, camera); } finally { if (hid) av.visible = true; }
+}
 function camFollowYaw(dt) {
   const now = performance.now();
   const jumped = player._camLast && Math.hypot(player.pos.x - player._camLast.x, player.pos.z - player._camLast.z) > 4;
@@ -20384,9 +20465,9 @@ function camIcon() { return G.firstPerson ? '👁️' : (G.birdsEye ? '🦅' : '
 function toggleCamera() {
   // three views, one button: 🧍 see your character → 👁️ their eyes → 🦅 bird's eye (top-down)
   G._autoInterior = false;
-  if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; }
+  if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; G.keepThird = false; }
   else if (G.firstPerson) { G.firstPerson = false; G.birdsEye = true; }
-  else { G.birdsEye = false; }
+  else { G.birdsEye = false; G.keepThird = true; }   // back to 🧍: stay third-person, even indoors
   if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();   // selfie needs the normal camera
   if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }   // found it — stop nudging
   $('camBtn').textContent = camIcon();
@@ -20400,6 +20481,7 @@ function toggleCamera() {
 function setCameraMode(mode) {                 // the three views, by name (the menu uses this)
   G._autoInterior = false;
   G.firstPerson = mode === 'fp';
+  G.keepThird = mode === 'third';                // Pip retest rt44–rt48: "Behind me" is honoured indoors too
   G.birdsEye = mode === 'bird';
   if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();
   if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }
@@ -22790,7 +22872,7 @@ function loop(now) {
   try {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
-  if (!G.running) { renderer.render(scene, camera); return; }
+  if (!G.running) { if (player._inStore) storeEntryCheck(false); renderer.render(scene, camera); return; }   // no Exit button over menus
   if (leoIntro) { renderer.render(scene, camera); drawGuide(dt); return; }
   if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
@@ -23010,7 +23092,7 @@ function loop(now) {
     if (profileDirty) { saveProfile(); profileDirty = false; }
   }
 
-  renderer.render(scene, camera);
+  renderMainView();
   } catch (e) {
     console.error('frame', e);
     try { renderer.render(scene, camera); } catch (e2) {}
