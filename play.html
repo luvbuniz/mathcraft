@@ -249,6 +249,20 @@
     transform-origin:12px 100%; pointer-events:none; }
   #guideCaption[hidden] { display:none; }
   #guideCaption.pop { animation:coachPop .35s ease-out; }
+  /* the caption bubble IS the line now — the panel keeps it only for screen readers (no duplicate text) */
+  #leoBubble.srOnly { position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  #leoStep { display:inline-flex; gap:6px; align-items:center; }
+  #leoStep i { width:10px; height:10px; border-radius:50%; background:#e3dcc4; display:inline-block; }
+  #leoStep i.on { background:#ffb81f; box-shadow:0 0 0 2px #fff3c4; }
+  #leoStep i.done { background:#9cc58d; }
+  /* 👇 after the intro: a bouncing arrow to the nearest ❓ box while the kid hasn't moved yet */
+  #qHintArrow { position:fixed; left:0; top:0; z-index:26; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:4px; will-change:transform; }
+  #qHintArrow[hidden] { display:none; }
+  #qHintArrow .qa { width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ffc83d;
+    filter:drop-shadow(0 3px 0 #e2a21b) drop-shadow(0 4px 8px rgba(0,0,0,.25)); animation:qBounce .8s ease-in-out infinite; }
+  #qHintArrow .ql { background:#fff; color:#24364a; border:3px solid #ffc83d; border-radius:14px; padding:4px 10px; font:800 15px/1.2 'Trebuchet MS',system-ui,sans-serif; white-space:nowrap; box-shadow:0 3px 0 #e2a21b; }
+  @keyframes qBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(9px); } }
+  @media (prefers-reduced-motion:reduce) { #qHintArrow .qa { animation:none; } }
   @keyframes lionTalk { 0%,100% { transform:rotate(0deg); } 25% { transform:rotate(-6deg) translateY(-1px); } 75% { transform:rotate(6deg); } }
   #lionCoachHead.talking { animation:lionTalk .55s ease-in-out infinite; }
   @media (prefers-reduced-motion:reduce) { #lionCoachHead.talking, #guideCaption.pop { animation:none; } }
@@ -1172,6 +1186,22 @@
     #goalRow { display:none!important; }
     #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
   }
+  /* 📱 Phones (body.phoneHud, set by device like the tablet touchHud): 🏠 Leave lives in ☰ → "Save & go home",
+     and the ☰ 🧍 🎒 buttons get room to breathe (Amy's phone: they and the Leave chip were crammed together).
+     The ❓ hint stays left of the button column. Tablets/desktop unchanged. */
+  body.phoneHud #leaveBtn { display:none !important; }
+  @media (orientation:portrait) {
+    body.phoneHud #camBtn { top:64px; } body.phoneHud #invBtn { top:120px; } body.phoneHud #sirenBtn { top:176px; }
+  }
+  @media (orientation:portrait) and (pointer:coarse) and (min-height:640px) {
+    body.phoneHud #camBtn { top:94px; } body.phoneHud #invBtn { top:178px; } body.phoneHud #sirenBtn { top:262px; }
+  }
+  @media (orientation:landscape) and (max-height:520px) and (pointer:coarse) {
+    body.phoneHud #camBtn { right:72px; } body.phoneHud #invBtn { right:136px; } body.phoneHud #sirenBtn { right:200px; }
+  }
+  @media (orientation:portrait) and (max-width:820px) {
+    body.phoneHud #hintBar, body.phoneHud #placingTag { left:10px; right:88px; transform:none; max-width:none; }
+  }
 
 </style>
 </head>
@@ -1813,6 +1843,7 @@
   </div>
 </div>
 
+<div id="qHintArrow" aria-hidden="true" hidden><span class="ql">❓ Go here!</span><span class="qa"></span></div>
 <!-- ================= TOWN GUIDE ================= -->
 <div class="popup" id="leoIntro" role="dialog" aria-modal="true" aria-label="King Lion's building guide">
   <div id="leoCard">
@@ -1820,11 +1851,11 @@
     <div id="guideSpeech">
       <div style="font-weight:800;color:#957128;font-size:13px">KING LION · YOUR TOWN GUIDE</div>
       <h3 id="guideHeading">Welcome, builder</h3>
-      <div id="leoBubble" role="status" aria-live="polite"></div>
+      <div id="leoBubble" class="srOnly" role="status" aria-live="polite"></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap">
         <button type="button" id="guideListen">🔊 Again</button>
         <button type="button" class="libBtn" id="leoSkip" style="background:#eee9db;color:#6a5a3a;padding:10px;font-size:14px">Skip</button>
-        <span id="leoStep" style="font-size:12px;margin-left:auto;color:#7f765d"></span>
+        <span id="leoStep" style="font-size:12px;margin-left:auto;color:#7f765d" aria-hidden="true"></span>
         <button type="button" class="libBtn" id="leoNext" style="background:#4e7546;color:white;padding:10px 15px;font-size:15px">Next →</button>
       </div>
     </div>
@@ -11726,6 +11757,73 @@ const Narrator = {
     catch (e) { return false; }
   }
 };
+/* 🎵 MATH MEADOW MUSIC — a light looping track (audio/music/math-meadow.m4a, ~41 s, crossfaded ends).
+   Web Audio (so the volume + ducking also work on iPhone, where <audio>.volume is ignored), gapless loop.
+   Starts only after the first tap · only in Math Meadow · low by default · ducks to 25% while King Lion
+   or any voice-over talks · pauses on a hidden tab / blur · ☰ "Music on/off" saved per device. */
+const MUSIC_SRC = 'audio/music/math-meadow.m4a?v=1', MUSIC_LOOP_S = 40.7095;
+const Music = {
+  vol: 0.16, duckTo: 0.25,
+  unlocked: false, buf: null, loading: false, failed: false,
+  node: null, gain: null, loopStart: 0, startedAt: 0, offset: 0,
+  wanted() { try { return LS.getItem('mc_music') !== 'off'; } catch (e) { return true; } },
+  toggle() { const on = !this.wanted(); try { LS.setItem('mc_music', on ? 'on' : 'off'); } catch (e) {} this.update(); return on; },
+  shouldPlay() {
+    return this.unlocked && !this.failed && this.wanted() && !Sound.muted && G.running && G.world === 'meadow'
+      && !document.hidden && (!document.hasFocus || document.hasFocus());
+  },
+  talking() { return !!(Narrator.speaking || (typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking)); },
+  async load() {
+    if (this.buf || this.loading || this.failed || !Sound.ctx) return;
+    this.loading = true;
+    try {
+      const r = await fetch(MUSIC_SRC); if (!r.ok) throw new Error(r.status);
+      const ab = await r.arrayBuffer();
+      const buf = await new Promise((ok, no) => { const p = Sound.ctx.decodeAudioData(ab, ok, no); if (p && p.catch) p.catch(no); });
+      // skip any encoder silence at the front so the loop seam lands on the music, not a gap
+      const d = buf.getChannelData(0); let i = 0; while (i < d.length && Math.abs(d[i]) < 1e-4) i++;
+      this.loopStart = Math.min(i / buf.sampleRate, 0.2);
+      this.buf = buf;
+    } catch (e) { this.failed = true; }
+    this.loading = false;
+    this.update();
+  },
+  start() {
+    const ctx = Sound.ctx; if (!ctx || this.node) return;
+    if (!this.buf) { this.load(); return; }
+    if (!this.gain) { this.gain = ctx.createGain(); this.gain.gain.value = 0; this.gain.connect(ctx.destination); }
+    const n = ctx.createBufferSource();
+    n.buffer = this.buf; n.loop = true;
+    n.loopStart = this.loopStart;
+    n.loopEnd = Math.min(this.buf.duration, this.loopStart + MUSIC_LOOP_S);
+    const at = this.loopStart + (this.offset % (n.loopEnd - n.loopStart));
+    n.connect(this.gain); n.start(0, at);
+    this.node = n; this.startedAt = ctx.currentTime - (at - this.loopStart); this._last = this.target();
+    this.gain.gain.cancelScheduledValues(ctx.currentTime);
+    this.gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    this.gain.gain.linearRampToValueAtTime(this.target(), ctx.currentTime + 1.2);   // soft fade-in
+  },
+  stop() {
+    const ctx = Sound.ctx, n = this.node; if (!n) return;
+    this.offset = ctx.currentTime - this.startedAt;          // resume from here later
+    this.node = null; this._last = 0;
+    try { this.gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.08); n.stop(ctx.currentTime + 0.4); } catch (e) {}
+  },
+  target() { return this.vol * (this.talking() ? this.duckTo : 1); },
+  update() {
+    if (!this.shouldPlay()) { this.stop(); return; }
+    if (Sound.ctx && Sound.ctx.state === 'suspended') return;
+    if (!this.node) { this.start(); return; }
+    const g = this.gain.gain, want = this.target();
+    if (Math.abs((this._last || 0) - want) > 1e-3) { g.setTargetAtTime(want, Sound.ctx.currentTime, 0.12); this._last = want; }
+  }
+};
+document.addEventListener('pointerdown', () => { if (Music.unlocked) return; Music.unlocked = true; setTimeout(() => Music.update(), 60); }, true);
+document.addEventListener('keydown', () => { if (Music.unlocked) return; Music.unlocked = true; Sound.init(); setTimeout(() => Music.update(), 60); }, true);
+document.addEventListener('visibilitychange', () => Music.update());
+addEventListener('blur', () => Music.update());
+addEventListener('focus', () => Music.update());
+setInterval(() => { if (Music.unlocked) Music.update(); }, 250);   // world changes, ducking, mute — cheap: a few comparisons
 /* 🦁 KING LION — talking guide (Pip QA §A). He speaks every line out loud on his own
    (no Listen tap needed), keeps on-screen text to one short line, then coaches the
    first real steps: walk to a ❓ box → tap USE → answer → pick a prize → build 5 bricks.
@@ -11884,7 +11982,20 @@ function showGuideCaption(key) {
   c.textContent = lionText(key); c.hidden = false;
   c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
   clearTimeout(guideCaptionT);
-  guideCaptionT = setTimeout(hideGuideCaption, Math.min(9000, Math.max(3200, c.textContent.length * 95)));   // a timer, in case there's no sound
+}
+function guideCaptionMs(key) { return Math.min(9000, Math.max(3200, lionText(key).length * 95)); }   // reading time when there's no sound
+/* ⏭️ auto-advance (Amy): ~1.7 s after Piksel finishes a line the guide moves on by itself;
+   with no audio it goes on the caption's reading timer. Next / Again / Skip still work. */
+function guideAutoNext(ms) {
+  if (!leoIntro) return;
+  clearTimeout(leoIntro.autoT);
+  const intro = leoIntro, i = intro.i;
+  const go = () => {
+    if (leoIntro !== intro || intro.i !== i) return;
+    if (document.hidden) { intro.autoT = setTimeout(go, 1000); return; }   // wait for the kid to come back
+    leoIntroNext();
+  };
+  intro.autoT = setTimeout(go, ms);
 }
 function hideGuideCaption() { clearTimeout(guideCaptionT); const c = $('guideCaption'); if (c) c.hidden = true; }
 function drawGuide(dt) {
@@ -11932,7 +12043,9 @@ function openLeoIntro(first) {
   $('leoNext').focus();
 }
 function closeLeoIntro(skipped) {
-  Narrator.stop(); hideGuideCaption(); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
+  if (leoIntro) clearTimeout(leoIntro.autoT);
+  Narrator.stop(); hideGuideCaption();
+  if (leoIntro) setTimeout(startQHint, 0); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
   const was = leoIntro; leoIntro = null;
   if (was) popupOpen = false;
   if (was && was.first) { markIntroSeen(); if (!skipped) startLionCoach(); }
@@ -11943,7 +12056,7 @@ function renderLeoIntro() {
   const i = leoIntro.i, key = leoIntro.steps[i], last = i + 1 === leoIntro.steps.length;
   $('guideHeading').textContent = leoIntro.first ? (i === 0 ? 'Hello!' : last ? "Let's go!" : 'Your town') : 'Need a hand?';
   $('leoBubble').textContent = lionText(key);
-  $('leoStep').textContent = leoIntro.steps.length > 1 ? (i + 1) + ' of ' + leoIntro.steps.length : '';
+  $('leoStep').innerHTML = leoIntro.steps.length > 1 ? leoIntro.steps.map((_, k) => '<i class="' + (k < i ? 'done' : k === i ? 'on' : '') + '"></i>').join('') : '';
   $('leoNext').textContent = last ? (leoIntro.first ? "Let's go! ▶" : 'Got it! ▶') : 'Next ▶';
   $('leoNext').classList.remove('coachPulse');
   $('guideListen').textContent = '🔊 Again';
@@ -11961,7 +12074,7 @@ async function lionSay(key, opts) {
   if (!l) return;
   const card = !!(opts && opts.card), head = card ? null : $('lionCoachHead');
   if (!card) showCoachLine(key);
-  if (card && leoIntro) { showGuideCaption(key); if (guideView) guideView.nodAt = performance.now(); }
+  if (card && leoIntro) { showGuideCaption(key); if (guideView) guideView.nodAt = performance.now(); guideAutoNext(15000); }   // 15 s: safety if the clip stalls
   if (head) { head.classList.add('talking'); lionSay.talkId = id; }                    // HUD head wiggles (CSS only) while he talks
   let ok = false, played = false;
   try { ok = played = await Narrator.playFile('audio/intro/lion-' + key + '.mp3?v=' + LION_AUDIO_V); }
@@ -11969,7 +12082,7 @@ async function lionSay(key, opts) {
   const h = $('lionCoachHead');
   if (h && lionSay.talkId === id) h.classList.remove('talking');
   if (id !== lionSayId) return;
-  if (card && played) { clearTimeout(guideCaptionT); guideCaptionT = setTimeout(hideGuideCaption, 1200); }   // line done → caption goes
+  if (card && leoIntro) guideAutoNext(played ? 1700 : guideCaptionMs(key));   // line done → next step (caption stays till then)
   if (opts && opts.card && leoIntro) $('leoNext').classList.add('coachPulse');   // done talking → nudge Next
 }
 
@@ -12013,6 +12126,39 @@ function ensureCoachBeacon() {
   ring.rotation.x = Math.PI / 2; ring.position.y = -2.3; g.add(ring);
   g.userData.ring = ring; g.visible = false; scene.add(g);
   coachBeacon = g; return g;
+}
+/* 👇 end of the intro: if the kid just sits there, point at the nearest ❓ box until they move or tap.
+   Costs one null check per frame when it's off. */
+let qHint = null;
+const _qv = new THREE.Vector3();
+function startQHint() {
+  if (!G.running || !player || !player.pos) return;
+  qHint = { since: performance.now(), x: player.pos.x, z: player.pos.z };
+}
+function endQHint() { qHint = null; const a = $('qHintArrow'); if (a) a.hidden = true; }
+addEventListener('pointerdown', () => { if (qHint && !popupOpen) endQHint(); }, true);
+function qHintTick() {
+  if (!qHint) return;
+  const a = $('qHintArrow'), now = performance.now();
+  if (popupOpen || !G.running) { a.hidden = true; qHint.since = now; return; }
+  if (Math.hypot(player.pos.x - qHint.x, player.pos.z - qHint.z) > 0.8) { endQHint(); return; }   // they're on the move
+  if (now - qHint.since < 3500) return;
+  const ns = nearestStation(); if (!ns.st) { endQHint(); return; }
+  _qv.set(ns.st.x + 0.5, (ns.st.y || 0) + 1.9, ns.st.z + 0.5).project(camera);
+  const W = innerWidth, H = innerHeight, mx = 56, top = 120, bot = H - 190;
+  let x = (_qv.x + 1) / 2 * W, y = (1 - _qv.y) / 2 * H, ang = 0;
+  const behind = _qv.z > 1, on = !behind && x > mx && x < W - mx && y > top && y < bot;
+  if (!on) {                                   // off-screen: sit on the edge and point the way
+    const cx = W / 2, cy = (top + bot) / 2;
+    let dx = x - cx, dy = y - cy; if (behind) { dx = -dx; dy = -dy; }
+    if (Math.abs(dx) + Math.abs(dy) < 1) dy = 1;
+    const t = Math.min((W / 2 - mx) / Math.max(1e-3, Math.abs(dx)), ((bot - top) / 2) / Math.max(1e-3, Math.abs(dy)));
+    x = cx + dx * t; y = cy + dy * t;
+    ang = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+  }
+  a.hidden = false;
+  a.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px) translate(-50%,-100%)';
+  a.querySelector('.qa').style.rotate = on ? '' : ang.toFixed(0) + 'deg';
 }
 function lionCoachTick() {
   const c = $('lionCoach');
@@ -20459,6 +20605,7 @@ function openHudMenu() {
     ['classicBtn', profile.classicHeroes ? '🧱' : '🎬', '<b>Hero style</b> <small>' + (profile.classicHeroes ? 'classic blocky' : 'studio models') + '</small>'],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
+    ['musicBtn',  Music.wanted() ? '🎵' : '🔕', '<b>Music</b> <small>' + (Music.wanted() ? 'is on' : 'is off') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
     ['homeBtn',   '🏠', '<b>Save & go home</b>'],
@@ -20468,6 +20615,7 @@ function openHudMenu() {
     m.style.display = 'none';
     if (b.dataset.b === 'mirrorBtn') { Sound.click(); openHeroMirror(); return; }   // 🪞 lives right here (no hidden HUD button)
     if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }   // 🧱 same — a menu-only feature
+    if (b.dataset.b === 'musicBtn') { Sound.click(); Music.toggle(); return; }            // 🎵 menu-only, saved per device
     const t = $(b.dataset.b);
     if (t && t.onclick) t.onclick();
   });
@@ -21135,6 +21283,7 @@ const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
    The touch HUD has a dedicated compact portrait layout instead. updateRotateGate stays
    as a safety no-op so old callers (and a mid-game rotation) just clear the overlay. */
 function isPhone() { return isTouch && Math.min(screen.width, screen.height) < 520; }
+if (isPhone()) document.body.classList.add('phoneHud');   // 📱 phone HUD spacing (Leave → ☰); by device, like touchHud
 function updateRotateGate() {
   G.rotateGate = false;                                 // portrait plays too — never freeze
   const el = $('rotateOverlay'); if (el) el.style.display = 'none';
@@ -22917,7 +23066,7 @@ function loop(now) {
   if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
   $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 
-  lionCoachTick();
+  lionCoachTick(); qHintTick();
   // 🕹️ resting joystick ring (touch): visible while playing, hidden under popups
   if (isTouch) { const jb = $('joyBase'); if (jb && (jb.classList.contains('rest') || jb.style.display === 'none') && !jb._dragging) { jb.classList.add('rest'); const want = (!popupOpen && G.running && !G.over && !player.driving) ? 'block' : 'none'; if (jb.style.display !== want) jb.style.display = want; } }
   // hints
