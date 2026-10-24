@@ -242,6 +242,16 @@
   #leoCard { width:min(650px,96vw); margin-bottom:max(14px,env(safe-area-inset-bottom)); display:flex; gap:12px; align-items:flex-end; padding:0; background:transparent; box-shadow:none; border:0; }
   #guideStage { width:160px; height:240px; flex:0 0 160px; position:relative; pointer-events:none; }
   #guideLoading { position:absolute;bottom:10px;color:#34495e;background:#fff9ed;border-radius:12px;padding:7px;font-size:12px; }
+  /* 🦁 King Lion's auto caption: pops up over his head with the line he is saying, hides when he stops */
+  #guideCaption { position:absolute; left:4px; bottom:calc(100% - 26px); z-index:2; width:max-content; max-width:min(390px,calc(96vw - 12px));
+    background:#fff; color:#24364a; border:3px solid #ffc83d; border-radius:20px 20px 20px 6px; padding:9px 14px;
+    font:800 clamp(16px,4.3vw,21px)/1.25 'Trebuchet MS',system-ui,sans-serif; box-shadow:0 4px 0 #e2a21b,0 10px 18px rgba(0,0,0,.18);
+    transform-origin:12px 100%; pointer-events:none; }
+  #guideCaption[hidden] { display:none; }
+  #guideCaption.pop { animation:coachPop .35s ease-out; }
+  @keyframes lionTalk { 0%,100% { transform:rotate(0deg); } 25% { transform:rotate(-6deg) translateY(-1px); } 75% { transform:rotate(6deg); } }
+  #lionCoachHead.talking { animation:lionTalk .55s ease-in-out infinite; }
+  @media (prefers-reduced-motion:reduce) { #lionCoachHead.talking, #guideCaption.pop { animation:none; } }
   #guideSpeech { flex:1; min-width:0; border-radius:22px; background:#fffdf5; padding:18px; box-shadow:0 5px 0 #b9c6a5; border:2px solid #e3dfc8; }
   #guideHeading { font-size:15px;color:#7b6233;margin:7px 0; }
   #leoBubble { font-size:clamp(17px,2.8vw,21px);font-weight:600;color:#34495e;line-height:1.4; }
@@ -249,8 +259,8 @@
   #feedShelfHud { position:fixed;bottom:92px;left:50%;transform:translateX(-50%);z-index:27;display:flex;gap:8px;max-width:70vw;flex-wrap:wrap;justify-content:center; }
   #feedShelfHud[hidden] { display:none; }
   #feedShelfHud button { min-height:44px;padding:10px 14px;border:2px solid #cfb980;border-radius:14px;background:#fff8e4;color:#3b553d;font:700 15px sans-serif; }
-  @media(max-height:500px) { #guideStage { width:120px;flex-basis:120px;height:190px; } #guideSpeech {padding:12px;} #leoBubble{font-size:17px;} #leoCard{margin-bottom:8px;} }
-  @media(max-width:500px) { #guideStage { width:100px;flex-basis:100px;height:195px; } #leoCard{gap:3px;} #guideSpeech{padding:12px;} }
+  @media(max-height:500px) { #guideStage { width:120px;flex-basis:120px;height:190px; } #guideSpeech {padding:12px;} #leoBubble{font-size:17px;} #leoCard{margin-bottom:8px;} #guideCaption{font-size:17px;padding:6px 11px;bottom:calc(100% - 12px);} }
+  @media(max-width:500px) { #guideStage { width:100px;flex-basis:100px;height:195px; } #leoCard{gap:3px;} #guideSpeech{padding:12px;} #guideCaption{bottom:calc(100% - 16px);padding:7px 11px;} }
   /* 💬 town-friend speech bubbles — pinned over each NPC's head */
   #npcBubbles { position:fixed; inset:0; pointer-events:none; z-index:30; }
   .npcBubble { position:fixed; transform:translate(-50%,-100%) translateY(-10px); display:none;
@@ -1806,7 +1816,7 @@
 <!-- ================= TOWN GUIDE ================= -->
 <div class="popup" id="leoIntro" role="dialog" aria-modal="true" aria-label="King Lion's building guide">
   <div id="leoCard">
-    <div id="guideStage" role="img" aria-label="Animated King Lion"><span id="guideLoading">King Lion is on his way…</span></div>
+    <div id="guideStage" role="img" aria-label="Animated King Lion"><span id="guideLoading">King Lion is on his way…</span><div id="guideCaption" aria-hidden="true" hidden></div></div>
     <div id="guideSpeech">
       <div style="font-weight:800;color:#957128;font-size:13px">KING LION · YOUR TOWN GUIDE</div>
       <h3 id="guideHeading">Welcome, builder</h3>
@@ -11822,8 +11832,10 @@ function prepareGuideView() {
 }
 // 🎉 the lion does his celebrate move (wave / dance / cheer — whatever the model has), then idles again
 function guideCheer() {
+  if (guideView) guideView.waveAt = performance.now();   // King Lion has no idle clip: a short procedural wave (drawGuide)
   const d = guideView && guideView.model;
   if (!d || !d.mixer || !d.celebrateAction || !d.idleAction) return;
+  guideView.waveAt = -1e9;
   const c = d.celebrateAction;
   c.reset(); c.setLoop(THREE.LoopOnce, 1); c.clampWhenFinished = true;
   d.idleAction.fadeOut(0.25); c.fadeIn(0.25).play();
@@ -11831,6 +11843,50 @@ function guideCheer() {
   clearTimeout(guideCheer._t);
   guideCheer._t = setTimeout(() => { try { c.fadeOut(0.3); d.idleAction.reset().fadeIn(0.3).play(); } catch (e) {} }, ms);
 }
+/* 🦁 King Lion's procedural nod + wave: a couple of bone rotations, no clips, no new assets.
+   Only runs for the ~1.8 s after a line starts, then the bones go back to rest and it costs nothing. */
+const GUIDE_NOD_MS = 1100, GUIDE_WAVE_MS = 1800;
+const LION_ARM_AXIS = new THREE.Vector3(0, 0, 1), LION_ARM_UP = 2.0, LION_FORE_AXIS = new THREE.Vector3(0, 0, 1);
+const _gq = new THREE.Quaternion();
+function guideBones(d) {
+  if (d._guideBones) return d._guideBones;
+  const by = n => d.inner && d.inner.getObjectByName(n);
+  const b = { head: by('Head'), neck: by('neck'), arm: by('RightArm'), fore: by('RightForeArm'), base: {} };
+  ['head', 'neck', 'arm', 'fore'].forEach(k => { if (b[k]) b.base[k] = b[k].quaternion.clone(); });
+  return (d._guideBones = b);
+}
+function guideTurn(b, k, axis, ang) {
+  if (b[k]) b[k].quaternion.copy(b.base[k]).multiply(_gq.setFromAxisAngle(axis, ang));
+}
+const _gx = new THREE.Vector3(1, 0, 0);
+function guideMotion(v, d, now) {
+  const b = guideBones(d);
+  const nt = (now - (v.nodAt || -1e9)) / GUIDE_NOD_MS, wt = (now - (v.waveAt || -1e9)) / GUIDE_WAVE_MS;
+  const nod = nt >= 0 && nt < 1, wave = wt >= 0 && wt < 1;
+  if (!nod && !wave) {                       // done: back to the rest pose, and stop running
+    ['head', 'neck', 'arm', 'fore'].forEach(k => { if (b[k]) b[k].quaternion.copy(b.base[k]); });
+    v.posed = false; return;
+  }
+  v.posed = true;
+  const dip = nod ? (1 - Math.cos(nt * Math.PI * 4)) / 2 * Math.sin(nt * Math.PI) : 0;   // two soft nods
+  guideTurn(b, 'head', _gx, dip * 0.22); guideTurn(b, 'neck', _gx, dip * 0.1);
+  if (wave) {
+    const up = Math.min(1, wt / 0.18, (1 - wt) / 0.2);                                   // raise, wave, lower
+    const e = up * up * (3 - 2 * up);
+    guideTurn(b, 'arm', LION_ARM_AXIS, e * LION_ARM_UP);
+    guideTurn(b, 'fore', LION_FORE_AXIS, e * (0.35 + Math.sin(wt * Math.PI * 6) * 0.35));
+  } else { guideTurn(b, 'arm', LION_ARM_AXIS, 0); guideTurn(b, 'fore', LION_FORE_AXIS, 0); }
+}
+// 💬 the caption pops up with the line (and still shows if the audio can't play)
+let guideCaptionT = 0;
+function showGuideCaption(key) {
+  const c = $('guideCaption'); if (!c) return;
+  c.textContent = lionText(key); c.hidden = false;
+  c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+  clearTimeout(guideCaptionT);
+  guideCaptionT = setTimeout(hideGuideCaption, Math.min(9000, Math.max(3200, c.textContent.length * 95)));   // a timer, in case there's no sound
+}
+function hideGuideCaption() { clearTimeout(guideCaptionT); const c = $('guideCaption'); if (c) c.hidden = true; }
 function drawGuide(dt) {
   if (!leoIntro || !guideView) return;
   const el = $('guideStage'), rect = el.getBoundingClientRect(), main = renderer.domElement.getBoundingClientRect();
@@ -11839,6 +11895,7 @@ function drawGuide(dt) {
   if (d && d.mixer) d.mixer.update(dt);
   const talk = Narrator.speaking ? Math.sin(performance.now() / 110) * 0.025 : 0;   // a little bob while he talks
   if (d) { d.group.rotation.y = -0.1 + Math.sin(performance.now() / 2200) * 0.055; d.group.position.y = Math.abs(talk); }
+  if (d && (v.posed || performance.now() - Math.max(v.nodAt || -1e9, v.waveAt || -1e9) < GUIDE_WAVE_MS)) guideMotion(v, d, performance.now());
   v.camera.aspect = rect.width / rect.height; v.camera.updateProjectionMatrix();
   const size = renderer.getSize(new THREE.Vector2()), sx = size.x / main.width, sy = size.y / main.height;
   const oldViewport = renderer.getViewport(new THREE.Vector4()), oldScissor = renderer.getScissor(new THREE.Vector4());
@@ -11875,7 +11932,7 @@ function openLeoIntro(first) {
   $('leoNext').focus();
 }
 function closeLeoIntro(skipped) {
-  Narrator.stop(); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
+  Narrator.stop(); hideGuideCaption(); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
   const was = leoIntro; leoIntro = null;
   if (was) popupOpen = false;
   if (was && was.first) { markIntroSeen(); if (!skipped) startLionCoach(); }
@@ -11902,11 +11959,17 @@ let lionSayId = 0;
 async function lionSay(key, opts) {
   const id = ++lionSayId, l = LION_LINES[key];
   if (!l) return;
-  if (!(opts && opts.card)) showCoachLine(key);
-  let ok = false;
-  try { ok = await Narrator.playFile('audio/intro/lion-' + key + '.mp3?v=' + LION_AUDIO_V); }
+  const card = !!(opts && opts.card), head = card ? null : $('lionCoachHead');
+  if (!card) showCoachLine(key);
+  if (card && leoIntro) { showGuideCaption(key); if (guideView) guideView.nodAt = performance.now(); }
+  if (head) { head.classList.add('talking'); lionSay.talkId = id; }                    // HUD head wiggles (CSS only) while he talks
+  let ok = false, played = false;
+  try { ok = played = await Narrator.playFile('audio/intro/lion-' + key + '.mp3?v=' + LION_AUDIO_V); }
   catch (e) { if (id === lionSayId) ok = speakWord(l.say, { rate: 0.95, pitch: 0.85 }); }
+  const h = $('lionCoachHead');
+  if (h && lionSay.talkId === id) h.classList.remove('talking');
   if (id !== lionSayId) return;
+  if (card && played) { clearTimeout(guideCaptionT); guideCaptionT = setTimeout(hideGuideCaption, 1200); }   // line done → caption goes
   if (opts && opts.card && leoIntro) $('leoNext').classList.add('coachPulse');   // done talking → nudge Next
 }
 
