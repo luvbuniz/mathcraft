@@ -6722,6 +6722,20 @@ const CITY_SOLID = new Set();           // footprints of Reading Town's backgrou
    follow camera pulls in front of them instead of going inside (Pip QA F4/N3).
    Rebuilt on world change and every few seconds; tested as cheap ray-vs-box checks. */
 let camBlockers = [], camBlockersWorld = null, camBlockersAt = 0;
+/* 🧱 Walk blockers (Pip QA P0-6): many shops are hollow shells of thin wall meshes on a small
+   3×3 grid footprint, so a hero could walk straight through a wall into the shop (tablet: Country
+   Homes, Stack Barn) and the camera then filled the screen with one wall colour. Ground-standing
+   building parts ≥1.5 m tall become solid for walking. Walk-in places (Stack Feed, your homes)
+   and the fairground rides are left out. */
+let walkBlockers = [];
+function walkBlockerExcluded(cx, cz) {
+  if (G.world === 'meadow') {
+    if (typeof FEED_WALL !== 'undefined' && cx > FEED_WALL.x0 - 1.5 && cx < FEED_WALL.x1 + 2.5 && cz > FEED_WALL.z0 - 1.5 && cz < FEED_WALL.z1 + 2.5) return true;   // walk-in store
+    if (typeof FAIR_POS !== 'undefined' && Math.hypot(cx - FAIR_POS.x, cz - FAIR_POS.z) < 15.2) return true;   // fairground rides & fences
+  }
+  try { if (typeof homeLotAt === 'function' && homeLotAt(cx, cz) >= 0) return true; } catch (e) {}   // your own houses have doors
+  return false;
+}
 const _camRay = new THREE.Ray(), _camHit = new THREE.Vector3();
 function rebuildCamBlockers() {
   camBlockersWorld = G.world; camBlockersAt = performance.now();
@@ -6731,7 +6745,7 @@ function rebuildCamBlockers() {
   try { (npcs || []).forEach(n => n.group && skip.add(n.group)); } catch (e) {}
   try { pets.forEach(p => p.f && p.f.mesh && skip.add(p.f.mesh)); } catch (e) {}
   const voxel = new Set(); blocks.forEach(b => b.mesh && voxel.add(b.mesh));
-  const out = [];
+  const out = [], walkOut = [];
   const walk = o => {
     if (!o.visible || skip.has(o) || voxel.has(o)) return;
     if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
@@ -6741,14 +6755,32 @@ function rebuildCamBlockers() {
         const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
         const h = box.max.y - box.min.y, w = box.max.x - box.min.x, dz = box.max.z - box.min.z;
         if (h >= 0.9 && box.max.y >= 0.8 && Math.max(w, dz) >= 0.35 && w < 40 && dz < 40) {
-          out.push({ box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 });
+          const ent = { box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 };
+          out.push(ent);
+          if (box.min.y < 0.6 && h >= 1.5 && Math.max(w, dz) >= 0.8 && w < 30 && dz < 30 && !walkBlockerExcluded(ent.cx, ent.cz)) {
+            const hx = Math.max(0.15, w / 2 - 0.05), hz = Math.max(0.15, dz / 2 - 0.05);   // thin walls get ≥30 cm thickness
+            walkOut.push({ x0: ent.cx - hx, x1: ent.cx + hx, z0: ent.cz - hz, z1: ent.cz + hz, y0: box.min.y, y1: box.max.y, cx: ent.cx, cz: ent.cz, r: Math.hypot(hx, hz) });
+          }
         }
       }
     }
     for (const c of o.children) walk(c);
   };
   try { scene.updateMatrixWorld(); walk(scene); } catch (e) {}
-  camBlockers = out;
+  camBlockers = out; walkBlockers = walkOut;
+}
+function ensureBlockers() { if (camBlockersWorld !== G.world || performance.now() - camBlockersAt > 6000) rebuildCamBlockers(); }
+function walkBoxesHit(skip) {                    // building walls the hero's body overlaps (except those in `skip`)
+  const half = player.width / 2, px = player.pos.x, pz = player.pos.z, y0 = player.pos.y, y1 = player.pos.y + player.height;
+  let hit = null;
+  for (const b of walkBlockers) {
+    if (Math.abs(b.cx - px) > b.r + 1 || Math.abs(b.cz - pz) > b.r + 1) continue;
+    if (px + half > b.x0 && px - half < b.x1 && pz + half > b.z0 && pz - half < b.z1 && y1 > b.y0 && y0 < b.y1) {
+      if (skip && skip.indexOf(b) !== -1) continue;
+      (hit = hit || []).push(b);
+    }
+  }
+  return hit;
 }
 function camBlockerT(head, dir, far) {
   const now = performance.now();
@@ -8601,6 +8633,10 @@ function feedCounterDist() {
   if (G.world !== 'meadow') return 999;
   return Math.hypot(player.pos.x - 8.5, player.pos.z - (-12.5));
 }
+function feedExitHushed() {          // just walked out via 🚪 Exit store: hush the door prompt until 4.5 m away
+  if (player._feedExitHush && (G.world !== 'meadow' || feedDoorDist() > 4.5)) player._feedExitHush = false;
+  return !!player._feedExitHush;
+}
 function feedDoorDist() {
   if (G.world !== 'meadow') return 999;
   return Math.hypot(player.pos.x - 6.5, player.pos.z - (-11.2));
@@ -8748,7 +8784,7 @@ function tryFeedUse() {
     toast('📋 Pick the order off the shelves, then take it to the cashier!', 2600);
     return true;
   }
-  if (feedDoorDist() < 2.8) {
+  if (feedDoorDist() < 2.8 && !feedExitHushed()) {
     toast('🌾 Walk in the door — grab the order off the shelves!', 2600);
     return true;
   }
@@ -15109,7 +15145,11 @@ function playerBlocked() {
 }
 function collideAxis(axis, delta) {
   const previousY=player.pos.y;
+  const boxCheck = axis !== 'y' && !player.driving && delta !== 0;
+  let preBoxes = null;
+  if (boxCheck) { ensureBlockers(); preBoxes = walkBoxesHit(null); }   // already overlapping one (spawn/teleport)? it never traps you
   player.pos[axis] += delta;
+  if (boxCheck && walkBoxesHit(preBoxes)) { player.pos[axis] -= delta; return; }   // solid building wall (no auto-step through it)
   const stairY=!player.driving?walkStairSurface(player.pos.x,player.pos.z):null;
   if(stairY!=null&&player.vel.y<=.2&&((axis==='y'&&delta<=0&&previousY>=stairY-.35&&player.pos.y<=stairY)||(axis!=='y'&&Math.abs(previousY-stairY)<.35))){player.pos.y=stairY;player.vel.y=0;player.onGround=true;}
   if (playerBlocked()) {
@@ -15717,7 +15757,7 @@ function updatePlayer(dt) {
   let moving = false;
   const jmag = Math.hypot(touch.joyX, touch.joyY);
   const kbMove = keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-  if (jmag > 0.1 || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
+  if (jmag > JOY_DEAD || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
   if (player.walkTo) {                                                // 🚶 click-to-move: head to the clicked spot
     const tdx = player.walkTo.x - player.pos.x, tdz = player.walkTo.z - player.pos.z;
     const td = Math.hypot(tdx, tdz);
@@ -15729,7 +15769,7 @@ function updatePlayer(dt) {
       player.yaw += Math.max(-0.2, Math.min(0.2, turn));
       player.vel.x = ndx * speed; player.vel.z = ndz * speed;
     }
-  } else if (jmag > 0.1) {                                           // small deadzone (Pip QA N4: was 0.22, felt broken on short drags)
+  } else if (jmag > JOY_DEAD) {                                      // 9% dead zone (Pip QA P0-6; N4 was 0.22, felt broken)
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
     const moveYaw = touch.moveYaw == null ? player.yaw : touch.moveYaw;
@@ -15738,12 +15778,16 @@ function updatePlayer(dt) {
     let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
     let dz = crz * touch.joyX + cfz * (-touch.joyY);
     const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+    // Pip retest rt34–rt35: pulling the stick DOWN backs up — the hero keeps facing forward and
+    // steps backward, so the camera never swings round 180° to look at their face
+    const backing = touch.joyY > 0 && Math.abs(touch.joyX) < touch.joyY * 0.8;
     // turn GENTLY toward the push, and never spin faster than a calm cap (kid-friendly)
-    let turn = shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
+    let turn = shortAngle(player.yaw, backing ? Math.atan2(dx, dz) : Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
     const maxStep = 3.4 * dt;
     player.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
-    // linear and predictable: a small push walks, a full push jogs at ~85% (no overshooting shops)
-    const sp = speed * 0.85 * (0.3 + 0.7 * Math.min(1, (jmag - 0.1) / 0.9));
+    // linear and predictable (Pip QA P0-6): speed grows straight with the push, topping out at
+    // ~60% of the old full-push speed (backing up is a little slower), so no overshooting into walls
+    const sp = speed * JOY_TOP * Math.min(1, (jmag - JOY_DEAD) / (1 - JOY_DEAD)) * (backing ? 0.7 : 1);
     player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
     let mx = 0, mz = 0;
@@ -15920,7 +15964,9 @@ function updatePlayer(dt) {
   // camera
   const headY = player.pos.y + 1.55;
   const inside = underRoofAt(player.pos.x, player.pos.z);
-  const shopFov=(insideFeedStore(player.pos.x,player.pos.z)||inside)&&innerHeight>innerWidth?90:70;
+  const inStore=insideFeedStore(player.pos.x,player.pos.z);
+  const shopFov=(inStore||inside)?(innerHeight>innerWidth?90:82):70;   // Pip QA P0-5: wide view indoors (tablets are landscape)
+  storeEntryCheck(inStore);
   if(camera.fov!==shopFov){camera.fov=shopFov;camera.updateProjectionMatrix();}
   const homeIndex=inside?homeLotAt(player.pos.x,player.pos.z):-1,homeHint=$('hudShelter');
   if(homeHint){homeHint.style.display=homeIndex>=0?'block':'none';if(homeIndex>=0)homeHint.textContent=player.pos.y>=3.5?'🏡 Your home · Upstairs':'🏡 Your home · Ground floor';}
@@ -15929,6 +15975,7 @@ function updatePlayer(dt) {
     G.firstPerson = false; G._autoInterior = false;
     const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
   }
+  player._camSnapped = false;
   if (G.firstPerson) {
     camera.position.set(player.pos.x, headY, player.pos.z);
   } else if (G.birdsEye) {
@@ -15944,24 +15991,40 @@ function updatePlayer(dt) {
     const ang = selfie ? (player.yaw + Math.PI + (G.selfieAngle || 0)) : camFollowYaw(dt);
     const cx = player.pos.x + Math.sin(ang) * dist * Math.cos(player.pitch);
     const cz = player.pos.z + Math.cos(ang) * dist * Math.cos(player.pitch);
-    const cy = headY + dist * Math.sin(-player.pitch) * 0.8 + (selfie ? 0.15 : 0.9);
+    let cy = headY + dist * Math.sin(-player.pitch) * 0.8 + (selfie ? 0.15 : 0.9);
+    // standing in Stack Feed's doorway (r2-495-27): keep the camera outside, low enough to look in
+    // under the lintel, instead of parking it in the hero until they're a step further in
+    if (inStore && !selfie && player.pos.z > FEED_WALL.z1 - 0.45) cy = Math.min(cy, player.pos.y + 1.85);
     // Only pull the camera in a little if a wall/roof sits behind you, so it stays
     // mostly zoomed OUT inside a house instead of snapping right up to your face.
     const head = new THREE.Vector3(player.pos.x, headY, player.pos.z);
-    const dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
+    let dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
     const far = dir.length(); dir.normalize();
-    let allowed = far;
-    for (let d = 0.5; d < far; d += 0.3) {
-      const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
-      // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
-      if (solidAt(fx, fy, fz) || (fy < 5 && inShopZone(fx, fz))) {
-        allowed = Math.max(inside ? 0.45 : 0.6, d - 0.4); break;   // (was 1.7 outdoors, which parked the camera INSIDE the wall)
+    let allowed = camRoomAlong(head, dir, far, inside);
+    // Pip retest rt25–rt29 + PR #495 retest (pr495-02/03/05/09): a wall, shop or sign right behind
+    // you used to park the camera in the hero (hero gone, wall filling the screen), and lifting
+    // straight up went overhead with no hero in view. Now, when blocked, try swinging the camera
+    // around the hero as well as a modest lift, and keep the spot with the most room (a small
+    // bonus for the spot used last frame stops it flickering between two).
+    let swing = { yaw: 0, lift: 0 };
+    if (allowed < 2.2 && !selfie) {
+      const prev = player._camSwing || swing;
+      const score0 = Math.min(allowed, 3.2) + (!prev.yaw && !prev.lift ? 0.35 : 0);
+      let best = { yaw: 0, lift: 0, room: allowed, dir, score: score0 };
+      for (const yawOff of CAM_SWING_YAWS) for (const lift of CAM_SWING_LIFTS) {
+        if (!yawOff && !lift) continue;
+        const c = Math.cos(yawOff), sn = Math.sin(yawOff);
+        const d2 = new THREE.Vector3(dir.x * c + dir.z * sn, dir.y + lift, -dir.x * sn + dir.z * c).normalize();
+        const room = camRoomAlong(head, d2, far, inside);
+        const score = Math.min(room, 3.2) - 0.55 * Math.abs(yawOff) - 0.6 * lift + (prev.yaw === yawOff && prev.lift === lift ? 0.35 : 0);
+        if (score > best.score) best = { yaw: yawOff, lift, room, dir: d2, score };
       }
+      if (best.dir !== dir) { allowed = best.room; dir = best.dir; }
+      swing = { yaw: best.yaw, lift: best.lift };
     }
-    // Pip QA F4/N3: also stop in front of real building and tree shapes (not just grid blocks)
-    const meshT = camBlockerT(head, dir, allowed);
-    if (meshT < allowed) allowed = Math.max(0.45, meshT - 0.3);
-    if (inside && allowed < 2.6 && !G.birdsEye) {
+    player._camSwing = swing;
+    // first-person only as a last resort in a tiny room — and never once you've picked "Behind me"
+    if (inside && allowed < 1.0 && !G.birdsEye && !G.keepThird && !inStore) {
       // Real interior path — first-person — instead of a clipped "fake interior" camera
       if (!G.firstPerson) {
         G.firstPerson = true; G._autoInterior = true;
@@ -15969,7 +16032,12 @@ function updatePlayer(dt) {
       }
       camera.position.set(player.pos.x, headY, player.pos.z);
     } else {
-      camera.position.lerp(head.add(dir.multiplyScalar(allowed)), 0.35);
+      const target = head.clone().add(dir.multiplyScalar(allowed));
+      // blocked: jump straight to the safe spot in front of the wall (easing would show the wall/hair
+      // for a few frames); open space: ease as before
+      player._camSnapped = allowed < far - 0.05 && camera.position.distanceTo(head) > allowed + 0.05;
+      if (player._camSnapped) camera.position.copy(target);
+      else camera.position.lerp(target, 0.35);
     }
   }
   const look = G.birdsEye
@@ -15984,10 +16052,25 @@ function updatePlayer(dt) {
           headY + Math.sin(player.pitch) * 8,
           player.pos.z - Math.cos(_lookYaw()) * Math.cos(player.pitch) * 8
         );
+  // camera lifted over a wall: aim nearer the hero so they stay in the frame (pr495-03)
+  const _swOn = !G.birdsEye && !G.firstPerson && !G.selfie && player._camSwing;
+  const _sw = _swOn ? player._camSwing.lift : 0;
+  if (_sw) look.lerp(new THREE.Vector3(player.pos.x, headY - 0.3, player.pos.z), Math.min(0.7, _sw * 0.75));
+  // camera swung sideways round a wall (PR #495 round 2, r2-495-12/-29/-30): turn the aim round the
+  // hero by the same angle, so the hero stays centred instead of sliding under the joystick. It
+  // follows the swing within ~0.4 s (snaps when the camera snapped), and eases back when the
+  // swing ends. Two sin/cos per frame.
+  const _aimT = _swOn ? player._camSwing.yaw : 0;
+  player._aimYaw = player._camSnapped ? _aimT : (player._aimYaw || 0) + (_aimT - (player._aimYaw || 0)) * Math.min(1, dt * 9);
+  if (Math.abs(player._aimYaw) > 0.002) {
+    const c = Math.cos(player._aimYaw), sn = Math.sin(player._aimYaw);
+    const ox = look.x - player.pos.x, oz = look.z - player.pos.z;
+    look.x = player.pos.x + ox * c + oz * sn; look.z = player.pos.z - ox * sn + oz * c;
+  } else player._aimYaw = 0;
   camera.lookAt(look);
 
   // first time you stand under your own roof, suggest first-person for a look around inside
-  if (!G.firstPerson && !G.roofHintShown) {
+  if (!G.firstPerson && !G.roofHintShown && !inStore) {   // not in a shop (Pip QA: the store said "inside your house!")
     const hx = Math.floor(player.pos.x), hz = Math.floor(player.pos.z);
     for (let y = Math.floor(player.pos.y) + 2; y <= 9; y++) {
       if (blocks.has(key(hx, y, hz))) {
@@ -18713,6 +18796,107 @@ function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in i
 /* 📷 Pip QA N4: on touch, the camera no longer whips around when a kid pulls the stick
    backwards. It follows the hero only while walking forward-ish, and settles in behind
    after they stop for a moment. Desktop, driving and first person still follow exactly. */
+/* 🎥 how far the camera can sit from the head along `dir` before a wall, roof, shop or building
+   shape is in the way (Pip QA F4/N3/P0-4). */
+function camRoomAlong(head, dir, far, inside) {
+  let allowed = far;
+  // Pip retest rt25–rt29/rt43: the round "shop zone" also covers the doorstep and the inside of
+  // Stack Feed, so standing there pinned the camera in the hero's hair. Only use the zone when the
+  // hero is outside it; the real walls (blocks + building shapes) still stop the camera.
+  const zoneOk = !inShopZone(Math.floor(head.x), Math.floor(head.z));
+  // 🌾 inside Stack Feed the camera stays inside the room (its thin walls and roof aren't grid
+  // blocks the ray could hit), so you always see your hero among the shelves
+  // (in the doorway itself the head is still south of the room box, so the camera may stay outside)
+  const store = insideFeedStore(head.x, head.z) && head.z <= FEED_WALL.z1 - 0.45 ? { x0: FEED_WALL.x0 + 1.25, x1: FEED_WALL.x1 - 0.25, z0: FEED_WALL.z0 + 1.25, z1: FEED_WALL.z1 - 0.15, y1: 2.75 } : null;
+  for (let d = 0.5; d < far; d += 0.3) {
+    if (store) {
+      const qx = head.x + dir.x * d, qy = head.y + dir.y * d, qz = head.z + dir.z * d;
+      if (qx < store.x0 || qx > store.x1 || qz < store.z0 || qz > store.z1 || qy > store.y1) { allowed = Math.max(0.45, d - 0.3); break; }
+    }
+    const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
+    // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
+    if (solidAt(fx, fy, fz) || (zoneOk && fy < 5 && inShopZone(fx, fz))) {
+      allowed = Math.max(inside ? 0.45 : 0.6, d - 0.4); break;   // (was 1.7 outdoors, which parked the camera INSIDE the wall)
+    }
+  }
+  const meshT = camBlockerT(head, dir, allowed);   // real building and tree shapes too
+  if (meshT < allowed) allowed = Math.max(0.45, meshT - 0.3);
+  return allowed;
+}
+/* 🌾 Stack Feed (Pip QA P0-5): walking in turns you to face the shelves, and a big Exit button
+   stays up the whole time you're inside. */
+function storeEntryCheck(inStore) {
+  if (inStore && !player._inStore) {
+    player._inStore = true;
+    if (!G.firstPerson && !player.driving) { player.yaw = 0; player.camYaw = 0; }   // face in, toward the shelves (north)
+    const b = storeExitBtn(); b.style.display = 'block';
+  } else if (!inStore && player._inStore) {
+    player._inStore = false;
+    const b = $('storeExitBtn'); if (b) b.style.display = 'none';
+  }
+}
+function storeExitBtn() {
+  let b = $('storeExitBtn');
+  if (b) return b;
+  b = document.createElement('button');
+  b.id = 'storeExitBtn'; b.type = 'button'; b.textContent = '🚪 Exit store';
+  b.setAttribute('aria-label', 'Exit the store');
+  b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 76px);' +
+    'z-index:40;display:none;min-width:200px;min-height:64px;padding:10px 26px;border-radius:18px;border:3px solid #fff;' +
+    'background:#2e7d32;color:#fff;font:800 22px Nunito,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35);' +
+    'cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation';
+  b.addEventListener('click', e => { e.preventDefault(); exitFeedStore(); });
+  document.body.appendChild(b);
+  return b;
+}
+function exitFeedStore() {
+  if (!insideFeedStore(player.pos.x, player.pos.z)) return;
+  if (typeof Sound !== 'undefined' && Sound.click) Sound.click();
+  player.walkTo = null; player.vel.set(0, 0, 0);
+  player.pos.set(6.5, 0, FEED_WALL.z1 + 4.2);    // a few steps out of the south door, so the camera has room behind (PR #495 retest pr495-33)
+  player._feedExitHush = true;                   // no "Walk in the door" again until you've walked away (pr495-27)
+  player.yaw = Math.PI; player.camYaw = Math.PI; // facing out, into the meadow
+  if (G._autoInterior) { G.firstPerson = false; G._autoInterior = false; const cb = $('camBtn'); if (cb) cb.textContent = camIcon(); }
+  storeEntryCheck(false);
+}
+const CAM_SWING_YAWS = [0, 0.45, -0.45, 0.9, -0.9, 1.35, -1.35];   // radians around the hero
+const CAM_SWING_LIFTS = [0, 0.5, 0.9];
+/* 🫥 Pip QA P0-4 + PR #495 retest: if the camera still ends up closer than ~1 m to the hero
+   (a tiny room), draw the hero see-through for that frame instead of not at all, so the hero
+   never vanishes but hair/face can't fill the screen. The hero's own meshes get faded copies of
+   their materials just for this draw (materials can be shared with the world, so the originals
+   are never changed); everything is put back right after. Nothing is left over between frames,
+   so a reload/Continue can't start with a hidden hero. */
+const CAM_HIDE_DIST = 1.0;
+const HERO_FADE_OPACITY = 0.35;
+const _heroFadeMats = new WeakMap();
+function heroFadeMat(m) {
+  let f = _heroFadeMats.get(m);
+  if (!f) { f = m.clone(); f.transparent = true; f.depthWrite = false; _heroFadeMats.set(m, f); }
+  if (f.color && m.color) f.color.copy(m.color);
+  f.opacity = HERO_FADE_OPACITY * (m.opacity == null ? 1 : m.opacity);
+  f.visible = m.visible;
+  return f;
+}
+function renderMainView() {
+  const av = player.avatar;
+  const swapped = [];
+  if (av && av.visible && !G.firstPerson && !G.birdsEye && !player.driving) {
+    const cp = camera.position, y0 = player.pos.y, y1 = player.pos.y + 1.95;
+    const ny = Math.max(y0, Math.min(y1, cp.y));             // nearest point on the hero's body column
+    if (Math.hypot(cp.x - player.pos.x, cp.y - ny, cp.z - player.pos.z) < CAM_HIDE_DIST) {
+      try {
+        av.traverse(o => {
+          if (!o.isMesh || !o.material) return;
+          swapped.push([o, o.material]);
+          o.material = Array.isArray(o.material) ? o.material.map(heroFadeMat) : heroFadeMat(o.material);
+        });
+      } catch (e) {}
+    }
+  }
+  G._heroFaded = swapped.length > 0;
+  try { renderer.render(scene, camera); } finally { for (const [o, m] of swapped) o.material = m; }
+}
 function camFollowYaw(dt) {
   const now = performance.now();
   const jumped = player._camLast && Math.hypot(player.pos.x - player._camLast.x, player.pos.z - player._camLast.z) > 4;
@@ -18720,10 +18904,13 @@ function camFollowYaw(dt) {
   if (player.camYaw == null || !isTouch || player.driving || G.firstPerson || jumped) { player.camYaw = player.yaw; return player.yaw; }
   const diff = shortAngle(player.camYaw, player.yaw);
   const moving = Math.hypot(player.vel.x, player.vel.z) > 0.3;
-  if (moving) {
+  const stickHeld = Math.hypot(touch.joyX || 0, touch.joyY || 0) > 0;
+  if (stickHeld) {
+    player._camMoveAt = now;      // Pip QA P0-6: the camera holds still while the stick steers (no swing)
+  } else if (moving) {
     player._camMoveAt = now;
     if (Math.abs(diff) < 1.75) player.camYaw += diff * Math.min(1, dt * 2.6);
-  } else if (now - (player._camMoveAt || 0) > 1400) {
+  } else if (now - (player._camMoveAt || 0) > 1400 && Math.abs(diff) < 2.3) {   // never swing 180° round to the hero's back
     player.camYaw += diff * Math.min(1, dt * 1.6);
   }
   return player.camYaw;
@@ -19976,7 +20163,7 @@ const USE_SPOTS = [
   { d: () => motorsDist(), r: 4.0, go: () => openMotors(), hint: () => '🚗 ' + _useTxt('— Stack Motors car showroom!', '— Stack Motors car showroom!') },
   { d: () => bakeryDist(), r: 3.6, go: () => openBakery(), hint: () => '🧁 ' + _useTxt('— make a treat at Stack Sweets!', '— make a treat at Stack Sweets!') },
   { d: () => pizzaDist(), r: 3.8, go: () => openPizza(), hint: () => '🍕 ' + _useTxt('— serve fraction pizzas at the Pizzeria!', '— serve fraction pizzas at the Pizzeria!') },
-  { d: () => G.world !== 'meadow' ? 999 : insideFeedStore(player.pos.x, player.pos.z) || nearestFeedSku(2.1) ? 0 : feedDoorDist(), r: 3.2, feed: true,
+  { d: () => G.world !== 'meadow' || feedExitHushed() ? 999 : insideFeedStore(player.pos.x, player.pos.z) || nearestFeedSku(2.1) ? 0 : feedDoorDist(), r: 3.2, feed: true,
     go: () => tryFeedUse(),
     hint: () => {
       const sku = nearestFeedSku(2.1);
@@ -20316,9 +20503,9 @@ function camIcon() { return G.firstPerson ? '👁️' : (G.birdsEye ? '🦅' : '
 function toggleCamera() {
   // three views, one button: 🧍 see your character → 👁️ their eyes → 🦅 bird's eye (top-down)
   G._autoInterior = false;
-  if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; }
+  if (!G.firstPerson && !G.birdsEye) { G.firstPerson = true; G.keepThird = false; }
   else if (G.firstPerson) { G.firstPerson = false; G.birdsEye = true; }
-  else { G.birdsEye = false; }
+  else { G.birdsEye = false; G.keepThird = true; }   // back to 🧍: stay third-person, even indoors
   if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();   // selfie needs the normal camera
   if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }   // found it — stop nudging
   $('camBtn').textContent = camIcon();
@@ -20332,6 +20519,7 @@ function toggleCamera() {
 function setCameraMode(mode) {                 // the three views, by name (the menu uses this)
   G._autoInterior = false;
   G.firstPerson = mode === 'fp';
+  G.keepThird = mode === 'third';                // Pip retest rt44–rt48: "Behind me" is honoured indoors too
   G.birdsEye = mode === 'bird';
   if ((G.firstPerson || G.birdsEye) && G.selfie) toggleSelfie();
   if (G.firstPerson) { G.fpDiscovered = true; const b = $('camBtn'); if (b) b.classList.remove('peek'); }
@@ -21054,6 +21242,8 @@ function updateRotateGate() {
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
 const touch = { joyX: 0, joyY: 0, jump: false, moveYaw: null };
+const JOY_DEAD = 0.09;          // joystick dead zone, as a fraction of the stick radius (Pip QA P0-6: 8–10%)
+const JOY_TOP = 0.85 * 0.6;     // full-push walking speed vs base speed: ~60% of the old 85% top speed
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
@@ -21070,8 +21260,8 @@ if (isTouch) {
     joyStick.style.left = (33 + ux * cl * 0.5) + 'px';
     joyStick.style.top = (33 + uy * cl * 0.5) + 'px';
     const frac = cl / JOY_R;
-    touch.joyX = cl > 4 ? ux * frac : 0;   // Pip QA N4: smaller dead zone
-    touch.joyY = cl > 4 ? uy * frac : 0;
+    touch.joyX = frac > JOY_DEAD ? ux * frac : 0;   // Pip QA P0-6: 9% dead zone (was 4 px ≈ 7%)
+    touch.joyY = frac > JOY_DEAD ? uy * frac : 0;
   }
   // ⛏️ hold your finger still on a block → it breaks — and KEEP holding to dig block
   // after block (the raycast reaches the next one each time). Replaces the old
@@ -21791,6 +21981,7 @@ function startGame() {
     if (typeof player !== 'undefined' && player && player.pos) {
       camera.position.set(player.pos.x, (player.pos.y || 0) + 1.65, player.pos.z);
       camera.rotation.set(0, 0, 0);
+      player._camSwing = null; player._feedExitHush = false;   // fresh camera state on every start / Continue
       camera.rotation.order = 'YXZ';
     } else {
       camera.position.set(8, 9, 14);
@@ -22720,7 +22911,7 @@ function loop(now) {
   try {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
-  if (!G.running) { renderer.render(scene, camera); return; }
+  if (!G.running) { if (player._inStore) storeEntryCheck(false); renderer.render(scene, camera); return; }   // no Exit button over menus
   if (leoIntro) { renderer.render(scene, camera); drawGuide(dt); return; }
   if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
@@ -22940,7 +23131,7 @@ function loop(now) {
     if (profileDirty) { saveProfile(); profileDirty = false; }
   }
 
-  renderer.render(scene, camera);
+  renderMainView();
   } catch (e) {
     console.error('frame', e);
     try { renderer.render(scene, camera); } catch (e2) {}
