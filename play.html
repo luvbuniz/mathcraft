@@ -4643,8 +4643,9 @@ const classicHeroes = () => !!(profile && profile.classicHeroes);
    stayed alive (~11 MB of JS heap + ~6 textures per trip). Geometries in hero builds are
    always per-build; the shared colour materials (mat(), blocky ink, pixel faces) are kept. */
 function sharedAvatarMats() {
-  const keep = new Set(matCacheSet); keep.add(BLK_MAT); keep.add(BLK_LINE_MAT);
-  for (const k in PIXEL_FACE_CACHE) { const e = PIXEL_FACE_CACHE[k]; for (const j in e) if (e[j] && e[j].isMaterial) keep.add(e[j]); }
+  // #503 removed the outline ink (BLK_LINE_MAT) and pixel faces (PIXEL_FACE_CACHE); referencing them threw
+  // a ReferenceError that the try/catch below swallowed, so nothing was ever freed. Keep only what still exists.
+  const keep = new Set(matCacheSet); keep.add(BLK_MAT); keep.add(blushMat); keep.add(eyeShineMat);
   return keep;
 }
 function disposeAvatarObject(obj, data) {
