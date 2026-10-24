@@ -1163,6 +1163,7 @@
     #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
   }
 
+  @keyframes cartoonSpin { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -6748,6 +6749,20 @@ const CITY_SOLID = new Set();           // footprints of Reading Town's backgrou
    follow camera pulls in front of them instead of going inside (Pip QA F4/N3).
    Rebuilt on world change and every few seconds; tested as cheap ray-vs-box checks. */
 let camBlockers = [], camBlockersWorld = null, camBlockersAt = 0;
+/* 🧱 Walk blockers (Pip QA P0-6): many shops are hollow shells of thin wall meshes on a small
+   3×3 grid footprint, so a hero could walk straight through a wall into the shop (tablet: Country
+   Homes, Stack Barn) and the camera then filled the screen with one wall colour. Ground-standing
+   building parts ≥1.5 m tall become solid for walking. Walk-in places (Stack Feed, your homes)
+   and the fairground rides are left out. */
+let walkBlockers = [];
+function walkBlockerExcluded(cx, cz) {
+  if (G.world === 'meadow') {
+    if (typeof FEED_WALL !== 'undefined' && cx > FEED_WALL.x0 - 1.5 && cx < FEED_WALL.x1 + 2.5 && cz > FEED_WALL.z0 - 1.5 && cz < FEED_WALL.z1 + 2.5) return true;   // walk-in store
+    if (typeof FAIR_POS !== 'undefined' && Math.hypot(cx - FAIR_POS.x, cz - FAIR_POS.z) < 15.2) return true;   // fairground rides & fences
+  }
+  try { if (typeof homeLotAt === 'function' && homeLotAt(cx, cz) >= 0) return true; } catch (e) {}   // your own houses have doors
+  return false;
+}
 const _camRay = new THREE.Ray(), _camHit = new THREE.Vector3();
 function rebuildCamBlockers() {
   camBlockersWorld = G.world; camBlockersAt = performance.now();
@@ -6757,7 +6772,7 @@ function rebuildCamBlockers() {
   try { (npcs || []).forEach(n => n.group && skip.add(n.group)); } catch (e) {}
   try { pets.forEach(p => p.f && p.f.mesh && skip.add(p.f.mesh)); } catch (e) {}
   const voxel = new Set(); blocks.forEach(b => b.mesh && voxel.add(b.mesh));
-  const out = [];
+  const out = [], walkOut = [];
   const walk = o => {
     if (!o.visible || skip.has(o) || voxel.has(o)) return;
     if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
@@ -6767,14 +6782,32 @@ function rebuildCamBlockers() {
         const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
         const h = box.max.y - box.min.y, w = box.max.x - box.min.x, dz = box.max.z - box.min.z;
         if (h >= 0.9 && box.max.y >= 0.8 && Math.max(w, dz) >= 0.35 && w < 40 && dz < 40) {
-          out.push({ box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 });
+          const ent = { box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 };
+          out.push(ent);
+          if (box.min.y < 0.6 && h >= 1.5 && Math.max(w, dz) >= 0.8 && w < 30 && dz < 30 && !walkBlockerExcluded(ent.cx, ent.cz)) {
+            const hx = Math.max(0.15, w / 2 - 0.05), hz = Math.max(0.15, dz / 2 - 0.05);   // thin walls get ≥30 cm thickness
+            walkOut.push({ x0: ent.cx - hx, x1: ent.cx + hx, z0: ent.cz - hz, z1: ent.cz + hz, y0: box.min.y, y1: box.max.y, cx: ent.cx, cz: ent.cz, r: Math.hypot(hx, hz) });
+          }
         }
       }
     }
     for (const c of o.children) walk(c);
   };
   try { scene.updateMatrixWorld(); walk(scene); } catch (e) {}
-  camBlockers = out;
+  camBlockers = out; walkBlockers = walkOut;
+}
+function ensureBlockers() { if (camBlockersWorld !== G.world || performance.now() - camBlockersAt > 6000) rebuildCamBlockers(); }
+function walkBoxesHit(skip) {                    // building walls the hero's body overlaps (except those in `skip`)
+  const half = player.width / 2, px = player.pos.x, pz = player.pos.z, y0 = player.pos.y, y1 = player.pos.y + player.height;
+  let hit = null;
+  for (const b of walkBlockers) {
+    if (Math.abs(b.cx - px) > b.r + 1 || Math.abs(b.cz - pz) > b.r + 1) continue;
+    if (px + half > b.x0 && px - half < b.x1 && pz + half > b.z0 && pz - half < b.z1 && y1 > b.y0 && y0 < b.y1) {
+      if (skip && skip.indexOf(b) !== -1) continue;
+      (hit = hit || []).push(b);
+    }
+  }
+  return hit;
 }
 function camBlockerT(head, dir, far) {
   const now = performance.now();
@@ -10775,17 +10808,18 @@ function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
   // each reader has their own reading level that gently adapts (Fiona may run ahead of Leo)
   restoreReadingProgress('read');
+  probeCartoons();
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   lib = { phase: 'pick', story: null, qs: [], qi: 0, right: 0, wrong: 0 };
   renderLib();
   $('libraryPopup').style.display = 'flex';
 }
-function closeLibrary() { try { Narrator.stop(); } catch (e) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
+function closeLibrary() { stopLibVideo(); dropWarmCartoon(); try { Narrator.stop(); } catch (e) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
 // 🎞️ Movie collection — kids UNLOCK a cartoon by finishing a Library book, then rewatch it here
 // anytime. Titled like a SHOW (not a "lesson") so it never feels like a tutorial. Drop each clip
 // in as shots/cartoons/<id>.mp4; until then it shows a "coming soon" card.
 const CARTOONS = [
-  { id: 'icecream',   title: 'Leo and the Ice Cream Man', emoji: '🍦' },
+  { id: 'icecream',   title: 'Leo and the Ice Cream Man', emoji: '🍦', ready: true, poster: true },   // ready = the .mp4 is in shots/cartoons/; poster = <id>.jpg too
   { id: 'waterslide', title: 'The Great Water Slide',     emoji: '🛝' },
   { id: 'firetruck',  title: 'Leo and the Fire Truck',    emoji: '🚒' },
   { id: 'unicorn',    title: 'Fiona and the Unicorns',    emoji: '🦄' },
@@ -10793,24 +10827,80 @@ const CARTOONS = [
   { id: 'coin',       title: 'The Magic Stackadoo Coin',  emoji: '🪙' }
 ];
 function unlockedCartoons() { return (profile.cartoonsUnlocked = profile.cartoonsUnlocked || []); }
-function unlockNextCartoon() {                        // finishing a book lights up the next reel
+// 🎬 Only reels whose clip really exists can be unlocked or shown (Pip QA P0-2: 5 of 6 reels 404'd
+// into a full-screen "COMING SOON" dead end). A reel is ready if it's flagged `ready`, or if a
+// quiet HEAD check finds its .mp4 — so a newly uploaded clip goes live without a code change.
+const CARTOON_FOUND = {};
+function cartoonReady(c) { return !!(c && (c.ready || CARTOON_FOUND[c.id] === true)); }
+function readyCartoons() { return CARTOONS.filter(cartoonReady); }
+function probeCartoons() {
+  if (typeof fetch !== 'function') return;
+  CARTOONS.forEach(c => {
+    if (c.ready || c.id in CARTOON_FOUND) return;
+    CARTOON_FOUND[c.id] = false;                       // probe once per session
+    fetch('shots/cartoons/' + c.id + '.mp4', { method: 'HEAD', cache: 'no-store' }).then(r => {
+      const ct = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
+      CARTOON_FOUND[c.id] = !!(r.ok && /video|octet-stream/i.test(ct));
+    }).catch(() => {});
+  });
+}
+function unlockNextCartoon() {                        // finishing a book lights up the next READY reel
   const u = unlockedCartoons();
-  const next = CARTOONS.find(c => u.indexOf(c.id) === -1);
+  const next = CARTOONS.find(c => cartoonReady(c) && u.indexOf(c.id) === -1);
   if (next) { u.push(next.id); profileDirty = true; saveProfile(); return next; }
-  return null;
+  return null;                                         // nothing new to unlock — callers offer a rewatch instead
+}
+function rewatchCartoon() {                          // every ready reel collected → offer one they already own
+  const u = unlockedCartoons(), own = readyCartoons().filter(c => u.indexOf(c.id) !== -1);
+  return own.length ? own[Math.floor(Math.random() * own.length)] : null;
+}
+function exitVideoFullscreen() {
+  try { const fe = document.fullscreenElement || document.webkitFullscreenElement; if (fe) { const r = (document.exitFullscreen || document.webkitExitFullscreen).call(document); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+}
+function stopLibVideo() {                            // leaving the player: drop fullscreen and silence the clip
+  exitVideoFullscreen();
+  // PR #497 retest: the tab's speaker stayed on in the collection — silence EVERY clip in the
+  // Library (not just #cvid2), so nothing keeps playing behind the grid
+  try {
+    const pop = document.getElementById('libraryPopup');
+    const vids = pop ? [...pop.querySelectorAll('video, audio')] : [];
+    const v = document.getElementById('cvid2'); if (v && vids.indexOf(v) === -1) vids.push(v);
+    vids.forEach(m => { try { m.pause(); m.muted = true; m.removeAttribute('src'); m.load(); } catch (e) {} });
+  } catch (e) {}
+}
+/* 🎬 PR #497 retest: ~4 s of black before the cartoon. The clip is now "fast start" (index at the
+   front), the player shows the poster + a spinner until it really plays, and the clip starts
+   downloading as soon as a Watch button appears. */
+function cartoonSrc(c) { return 'shots/cartoons/' + c.id + '.mp4'; }
+function cartoonPoster(c) { return c && c.poster ? 'shots/cartoons/' + c.id + '.jpg' : ''; }
+let _warmVid = null;
+function dropWarmCartoon() { try { if (_warmVid) { _warmVid.removeAttribute('src'); _warmVid.load(); } } catch (e) {} _warmVid = null; }   // free the buffer when the Library closes
+function warmCartoon(c) {
+  if (!cartoonReady(c)) return;
+  try {
+    const src = cartoonSrc(c);
+    if (_warmVid && _warmVid.dataset.src === src) return;
+    _warmVid = document.createElement('video');
+    _warmVid.muted = true; _warmVid.preload = 'auto'; _warmVid.dataset.src = src; _warmVid.src = src;   // never played or attached: just fills the cache
+    if (c.poster) { const i = new Image(); i.src = cartoonPoster(c); }
+  } catch (e) {}
 }
 function renderCartoonShelf() {
+  stopLibVideo();                                    // nothing plays behind the grid (PR #497 retest)
   $('libTitle').innerHTML = '🎞️ My Movie Collection';
   $('libStory').innerHTML = '';
-  const u = unlockedCartoons();
-  $('libPrompt').innerHTML = '📖 Read books to unlock cartoons! — <b>' + u.length + ' / ' + CARTOONS.length + '</b> collected';
+  const u = unlockedCartoons(), shelf = readyCartoons();     // reels without a clip yet are never shown
+  const got = shelf.filter(c => u.indexOf(c.id) !== -1).length;
+  $('libPrompt').innerHTML = '📖 Read books to unlock cartoons! — <b>' + got + ' / ' + shelf.length + '</b> collected' +
+    (shelf.length < CARTOONS.length ? '<br><span style="font-size:0.85em;color:#8a6d3b">More cartoons are on the way!</span>' : '');
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:9px;width:100%';
-  CARTOONS.forEach(c => {
+  shelf.forEach(c => {
     const got = u.indexOf(c.id) !== -1;
     const cell = document.createElement('button'); cell.className = 'libBtn';
     cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 7px;' + (got ? '' : 'opacity:.65;filter:grayscale(.6)');
+    if (got) warmCartoon(c);
     cell.innerHTML = got
       ? '<div style="font-size:32px">' + c.emoji + '</div><div style="font-size:12px;font-weight:700;line-height:1.15">' + c.title + '</div><div style="font-size:11px;color:#2f8a52;font-weight:800">▶ Watch</div>'
       : '<div style="font-size:32px">🔒</div><div style="font-size:14px;font-weight:800;color:#999">? ? ?</div><div style="font-size:10px;color:#a06a2c;font-weight:700">📖 Read to unlock</div>';
@@ -10819,30 +10909,50 @@ function renderCartoonShelf() {
   });
   wrap.appendChild(grid);
   const back = document.createElement('button'); back.className = 'libBtn'; back.textContent = '⬅ Back'; back.style.marginTop = '4px';
-  back.onclick = () => { Sound.click(); lib.phase = 'pick'; renderLib(); };
+  back.onclick = () => { Sound.click(); stopLibVideo(); lib.phase = 'pick'; renderLib(); };
   wrap.appendChild(back);
 }
 function renderCartoonWatch() {
   const c = lib.watch;
+  if (!cartoonReady(c)) { lib.phase = 'movies'; renderLib(); return; }   // never open a reel with no clip
   $('libTitle').innerHTML = c.emoji + ' ' + c.title;
   $('libPrompt').textContent = '';
-  mountMoviePlayer($('libStory'), 'shots/cartoons/' + c.id + '.mp4', c.title);
-  // Pip QA N8: the kid just tapped "Watch" — start it big and with sound, not tiny and muted
+  mountMoviePlayer($('libStory'), cartoonSrc(c), c.title, { poster: cartoonPoster(c), loading: true });
+  // Pip QA N8: the kid just tapped "Watch" — start it big and with sound, not tiny and muted.
+  // Fullscreen only once the clip is really PLAYING: a failed/missing clip must never leave an
+  // invisible fullscreen layer that swallows every tap (Pip QA P0-2).
   const v = $('cvid2');
   if (v) {
     v.muted = false; v.loop = false;
     try { v.currentTime = 0; } catch (e) {}
+    const goBig = () => {
+      v.removeEventListener('playing', goBig);
+      if (lib !== libAtStart || !v.isConnected || v.error) return;
+      try { const fsf = v.requestFullscreen || v.webkitRequestFullscreen; if (fsf) { const r = fsf.call(v); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+    };
+    const libAtStart = lib;
+    v.addEventListener('playing', goBig);
+    v.addEventListener('error', () => { v.removeEventListener('playing', goBig); exitVideoFullscreen(); });
     const pp = v.play(); if (pp && pp.catch) pp.catch(() => { v.muted = true; v.loop = true; v.play().catch(() => {}); });
-    try { const fsf = v.requestFullscreen || v.webkitRequestFullscreen; if (fsf) { const r = fsf.call(v); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
   }
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   const back = document.createElement('button'); back.className = 'libBtn'; back.textContent = '⬅ Back to collection';
-  back.onclick = () => { Sound.click(); $('libStory').innerHTML = ''; lib.phase = 'movies'; renderLib(); };
+  back.onclick = () => { Sound.click(); stopLibVideo(); $('libStory').innerHTML = ''; lib.phase = 'movies'; renderLib(); };
   wrap.appendChild(back);
 }
 // Self-contained movie player (inline-styled so it works anywhere): autoplays muted + loops,
 // a tap unmutes & restarts with sound, ⛶ goes fullscreen, and a missing clip shows "coming soon."
-function mountMoviePlayer(host, src, title) {
+function mountMoviePlayer(host, src, title, opt) {
+  opt = opt || {};
+  const posterAttr = opt.poster ? ' poster="' + opt.poster + '"' : '';
+  // a ready clip shows its poster + a spinner while it loads (never "COMING SOON", never plain black)
+  const cover = opt.loading
+    ? '<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;' +
+        (opt.poster ? 'background:#000 url(' + opt.poster + ') center/contain no-repeat' : 'background:linear-gradient(#2a1640,#120a1d)') + '">' +
+        '<div class="cartoonSpin" style="width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:cartoonSpin .8s linear infinite"></div>' +
+        '<div style="font-weight:800;font-size:14px;background:rgba(0,0,0,.55);padding:4px 12px;border-radius:14px">🎬 Starting your cartoon…</div>' +
+      '</div>'
+    : null;
   // 📱 The Library cartoons are filmed PORTRAIT (phone-shaped), so we show them inside a phone
   // mock-up — vertical video looks intentional, never stretched across a wide tablet screen.
   host.innerHTML =
@@ -10850,19 +10960,19 @@ function mountMoviePlayer(host, src, title) {
       '<div style="position:relative;height:min(70vh,540px);aspect-ratio:9/17;background:linear-gradient(160deg,#2c2c33,#141417);border-radius:30px;padding:18px 8px;box-sizing:border-box;box-shadow:0 12px 32px rgba(0,0,0,.45),inset 0 0 0 2px #41414a">' +
         '<div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:52px;height:7px;background:#0a0a0c;border-radius:6px;z-index:7"></div>' +     // camera speaker pill
         '<div style="position:relative;width:100%;height:100%;background:#000;border-radius:16px;overflow:hidden">' +
-          '<video id="cvid2" src="' + src + '" muted loop autoplay playsinline preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>' +
+          '<video id="cvid2" src="' + src + '"' + posterAttr + ' muted loop autoplay playsinline preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>' +
           '<button id="cfs2" style="display:none;position:absolute;top:8px;right:8px;z-index:5;cursor:pointer;border:2px solid rgba(255,255,255,.92);background:#7a4ea0;color:#fff;font-size:12px;font-weight:800;padding:5px 9px;border-radius:20px">⛶ Full</button>' +
           '<div id="sndcue2" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;cursor:pointer">🔊 Tap for sound</div>' +
-          '<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#2a1640,#120a1d);color:#fff;text-align:center">' +
+          (cover || ('<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#2a1640,#120a1d);color:#fff;text-align:center">' +
             '<div style="font-size:12px;letter-spacing:2px;color:#b79be0;font-weight:800">🎬 COMING SOON</div><div style="font-size:40px">🎞️</div><div style="font-weight:800;font-size:13px;padding:0 10px">' + title + '</div>' +
-          '</div>' +
+          '</div>')) +
         '</div>' +
         '<div style="position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:32%;height:5px;background:rgba(255,255,255,.55);border-radius:4px;z-index:7"></div>' +   // home indicator
       '</div>' +
     '</div>';
   const vid = document.getElementById('cvid2'), cue = document.getElementById('sndcue2'), fs = document.getElementById('cfs2'), fall = document.getElementById('cfall2');
   if (vid) {
-    vid.addEventListener('error', () => { vid.style.display = 'none'; if (cue) cue.remove(); if (fs) fs.remove(); });   // no clip yet → keep the "coming soon" card
+    vid.addEventListener('error', () => { exitVideoFullscreen(); vid.style.display = 'none'; if (cue) cue.remove(); if (fs) fs.remove(); });   // clip failed → leave fullscreen, keep the card
     vid.addEventListener('playing', () => { if (fall) fall.style.display = 'none'; if (cue && vid.muted) cue.style.display = ''; if (fs) fs.style.display = ''; });
     const unmute = () => { try { vid.loop = false; vid.muted = false; vid.currentTime = 0; vid.play(); } catch (e) {} if (cue) cue.style.display = 'none'; };
     vid.onclick = unmute; if (cue) cue.onclick = unmute;
@@ -10888,7 +10998,10 @@ function renderLib() {
   if (lib.phase === 'pick') {
     $('libTitle').innerHTML = '📚 Library'; $('libStory').innerHTML = '';
     $('libPrompt').textContent = 'Pick a story to read:  •  📖 Reading Level ' + readLevelNow();
-    shuffle(STORIES.slice()).slice(0, 3).forEach(s => {
+    // PR #497 retest ("The Little Seed" opened "Tilly and the Race"): the 3 stories were re-shuffled
+    // on every redraw, so a redraw under a finger could swap the rows. Pick them once per visit.
+    if (!lib.pickList || lib.pickList.some(s => STORIES.indexOf(s) === -1)) lib.pickList = shuffle(STORIES.slice()).slice(0, 3);
+    lib.pickList.forEach(s => {
       const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.innerHTML = s.e + ' ' + s.t;
       b.onclick = () => { Sound.click(); lib.story = s; lib.phase = 'read'; renderLib(); };
       wrap.appendChild(b);
@@ -10896,7 +11009,8 @@ function renderLib() {
     const u = unlockedCartoons();
     const mv = document.createElement('button'); mv.className = 'libBtn';
     mv.style.cssText = 'background:#7a4ea0;color:#fff;font-size:15px;margin-top:4px';
-    mv.innerHTML = '🎞️ My Movie Collection (' + u.length + '/' + CARTOONS.length + ')';
+    const shelf = readyCartoons();
+    mv.innerHTML = '🎞️ My Movie Collection (' + shelf.filter(c => u.indexOf(c.id) !== -1).length + '/' + shelf.length + ')';
     mv.onclick = () => { Sound.click(); lib.phase = 'movies'; renderLib(); };
     wrap.appendChild(mv);
     const booksRead = profile.booksRead || 0, battlesWon = profile.battlesWon || 0;
@@ -11038,19 +11152,24 @@ function finishLib() {
     if (G.readSlip >= 2 && G.readLevel > 1) { G.readLevel--; G.readSlip = 0; levelMsg = '📖 Now at Reading Level ' + G.readLevel + ' — you\'ve got this!'; }
   } else { G.readStreak = 0; }
   profile.readLevel = G.readLevel; profile.readStreak = G.readStreak; profile.readSlip = G.readSlip; profile.booksRead = (profile.booksRead || 0) + 1; profileDirty = true; saveProfile();
-  const unlockedNow = accFr >= Math.ceil(accT * 0.75) ? unlockNextCartoon() : null; // comprehension unlocks the cartoon
+  const earnedReel = accFr >= Math.ceil(accT * 0.75);
+  const unlockedNow = earnedReel ? unlockNextCartoon() : null; // comprehension unlocks the cartoon
+  const rewatch = earnedReel && !unlockedNow ? rewatchCartoon() : null;   // all ready reels collected → watch a favourite again
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
   $('libPrompt').innerHTML = 'You finished <b>' + lib.story.t + '</b>.' + (accFr ? ' Nice work!' : ' Let’s read it together and try again.') +
     '<br><span style="color:#3b5d9e;font-weight:800">📖 First-try score: ' + (lib.firstRight || 0) + '/' + lib.qs.length + '</span>' +
     (hadChallenge && accFr === accT ? '<br><span style="color:#E0A100;font-weight:800">🌟 Challenge bonus included!</span>' : '') +
     (levelMsg ? '<br><span style="color:#2f8a52;font-weight:800">' + levelMsg + '</span>' : '') +
-    (unlockedNow ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 New cartoon unlocked — "' + unlockedNow.title + '"! Watch it in 🎞️ My Movie Collection.</span>' : '');
+    (unlockedNow ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 New cartoon unlocked — "' + unlockedNow.title + '"! Watch it in 🎞️ My Movie Collection.</span>' : '') +
+    (rewatch ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 You\'ve collected every cartoon so far — more are coming soon!</span>' : '');
   $('libChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
     (unlockedNow ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch my new cartoon!</button>' : '') +
+    (rewatch ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch a cartoon again</button>' : '') +
     '<button class="libBtn" id="libDoneBtn">Done</button>';
   $('libMsg').textContent = 'Coins come from first-try answers. Get ' + Math.ceil(accT * 0.75) + ' out of ' + accT + ' right to unlock a cartoon.';
   $('libAgainBtn').onclick = () => { closeLibrary(); openLibrary(); };
-  if (unlockedNow) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow }; $('libStory').innerHTML = ''; renderLib(); };
+  if (unlockedNow || rewatch) warmCartoon(unlockedNow || rewatch);
+  if (unlockedNow || rewatch) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow || rewatch }; $('libStory').innerHTML = ''; renderLib(); };
   $('libDoneBtn').onclick = closeLibrary;
 }
 /* ⚔️ Library Battle — a milestone boss-read: a longer story one level harder, a 5-question
@@ -11078,18 +11197,20 @@ function finishBattle() {
     G.readStreak = G.readSlip = profile.readStreak = profile.readSlip = 0;  // a battle win bumps the reading level
     const reward = 30 + (lib.battleLevel || 2) * 4;
     G.coins += reward; if (Sound.fanfare) Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
-    const prize = unlockNextCartoon();                          // bonus movie prize
+    const prizeNew = unlockNextCartoon();                      // bonus movie prize…
+    const prize = prizeNew || rewatchCartoon();                 // …or a favourite again, once every ready reel is collected
     profileDirty = true; saveProfile();
     $('libTitle').innerHTML = '⚔️ Library Battle — WON!';
     $('libStory').innerHTML = '<div style="font-size:54px">🏆⚔️</div>';
     $('libPrompt').innerHTML = '🎉 You aced the challenge — <b>' + fr + '/' + total + '</b>!  +' + reward + ' 🪙' +
       '<br><span style="color:#2f8a52;font-weight:800">📈 Reading Level up — now Level ' + G.readLevel + '!</span>' +
-      (prize ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 Prize unlocked — "' + prize.title + '"!</span>' : '') +
+      (prizeNew ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 Prize unlocked — "' + prizeNew.title + '"!</span>' : '') +
       '<br><span style="color:#8a6d3b;font-size:0.9em">Keep reading to earn the 🐛 Bookworm &amp; 🦉 Wise Owl badges!</span>';
     $('libChoices').innerHTML =
-      (prize ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch my prize cartoon!</button>' : '') +
+      (prize ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">' + (prizeNew ? '🎬 Watch my prize cartoon!' : '🎬 Watch a cartoon again') + '</button>' : '') +
       '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">📚 Back to the Library</button>' +
       '<button class="libBtn" id="libDoneBtn">Done</button>';
+    if (prize) warmCartoon(prize);
     if (prize) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: prize }; $('libStory').innerHTML = ''; renderLib(); };
     $('libAgainBtn').onclick = () => { Sound.click(); lib = { phase: 'pick' }; $('libStory').innerHTML = ''; renderLib(); };
     $('libDoneBtn').onclick = closeLibrary;
@@ -15134,7 +15255,11 @@ function playerBlocked() {
 }
 function collideAxis(axis, delta) {
   const previousY=player.pos.y;
+  const boxCheck = axis !== 'y' && !player.driving && delta !== 0;
+  let preBoxes = null;
+  if (boxCheck) { ensureBlockers(); preBoxes = walkBoxesHit(null); }   // already overlapping one (spawn/teleport)? it never traps you
   player.pos[axis] += delta;
+  if (boxCheck && walkBoxesHit(preBoxes)) { player.pos[axis] -= delta; return; }   // solid building wall (no auto-step through it)
   const stairY=!player.driving?walkStairSurface(player.pos.x,player.pos.z):null;
   if(stairY!=null&&player.vel.y<=.2&&((axis==='y'&&delta<=0&&previousY>=stairY-.35&&player.pos.y<=stairY)||(axis!=='y'&&Math.abs(previousY-stairY)<.35))){player.pos.y=stairY;player.vel.y=0;player.onGround=true;}
   if (playerBlocked()) {
@@ -15742,7 +15867,7 @@ function updatePlayer(dt) {
   let moving = false;
   const jmag = Math.hypot(touch.joyX, touch.joyY);
   const kbMove = keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-  if (jmag > 0.1 || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
+  if (jmag > JOY_DEAD || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
   if (player.walkTo) {                                                // 🚶 click-to-move: head to the clicked spot
     const tdx = player.walkTo.x - player.pos.x, tdz = player.walkTo.z - player.pos.z;
     const td = Math.hypot(tdx, tdz);
@@ -15754,7 +15879,7 @@ function updatePlayer(dt) {
       player.yaw += Math.max(-0.2, Math.min(0.2, turn));
       player.vel.x = ndx * speed; player.vel.z = ndz * speed;
     }
-  } else if (jmag > 0.1) {                                           // small deadzone (Pip QA N4: was 0.22, felt broken on short drags)
+  } else if (jmag > JOY_DEAD) {                                      // 9% dead zone (Pip QA P0-6; N4 was 0.22, felt broken)
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
     const moveYaw = touch.moveYaw == null ? player.yaw : touch.moveYaw;
@@ -15763,12 +15888,16 @@ function updatePlayer(dt) {
     let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
     let dz = crz * touch.joyX + cfz * (-touch.joyY);
     const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+    // Pip retest rt34–rt35: pulling the stick DOWN backs up — the hero keeps facing forward and
+    // steps backward, so the camera never swings round 180° to look at their face
+    const backing = touch.joyY > 0 && Math.abs(touch.joyX) < touch.joyY * 0.8;
     // turn GENTLY toward the push, and never spin faster than a calm cap (kid-friendly)
-    let turn = shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
+    let turn = shortAngle(player.yaw, backing ? Math.atan2(dx, dz) : Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
     const maxStep = 3.4 * dt;
     player.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
-    // linear and predictable: a small push walks, a full push jogs at ~85% (no overshooting shops)
-    const sp = speed * 0.85 * (0.3 + 0.7 * Math.min(1, (jmag - 0.1) / 0.9));
+    // linear and predictable (Pip QA P0-6): speed grows straight with the push, topping out at
+    // ~60% of the old full-push speed (backing up is a little slower), so no overshooting into walls
+    const sp = speed * JOY_TOP * Math.min(1, (jmag - JOY_DEAD) / (1 - JOY_DEAD)) * (backing ? 0.7 : 1);
     player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
     let mx = 0, mz = 0;
@@ -18745,10 +18874,13 @@ function camFollowYaw(dt) {
   if (player.camYaw == null || !isTouch || player.driving || G.firstPerson || jumped) { player.camYaw = player.yaw; return player.yaw; }
   const diff = shortAngle(player.camYaw, player.yaw);
   const moving = Math.hypot(player.vel.x, player.vel.z) > 0.3;
-  if (moving) {
+  const stickHeld = Math.hypot(touch.joyX || 0, touch.joyY || 0) > 0;
+  if (stickHeld) {
+    player._camMoveAt = now;      // Pip QA P0-6: the camera holds still while the stick steers (no swing)
+  } else if (moving) {
     player._camMoveAt = now;
     if (Math.abs(diff) < 1.75) player.camYaw += diff * Math.min(1, dt * 2.6);
-  } else if (now - (player._camMoveAt || 0) > 1400) {
+  } else if (now - (player._camMoveAt || 0) > 1400 && Math.abs(diff) < 2.3) {   // never swing 180° round to the hero's back
     player.camYaw += diff * Math.min(1, dt * 1.6);
   }
   return player.camYaw;
@@ -21079,6 +21211,8 @@ function updateRotateGate() {
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
 const touch = { joyX: 0, joyY: 0, jump: false, moveYaw: null };
+const JOY_DEAD = 0.09;          // joystick dead zone, as a fraction of the stick radius (Pip QA P0-6: 8–10%)
+const JOY_TOP = 0.85 * 0.6;     // full-push walking speed vs base speed: ~60% of the old 85% top speed
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
@@ -21095,8 +21229,8 @@ if (isTouch) {
     joyStick.style.left = (33 + ux * cl * 0.5) + 'px';
     joyStick.style.top = (33 + uy * cl * 0.5) + 'px';
     const frac = cl / JOY_R;
-    touch.joyX = cl > 4 ? ux * frac : 0;   // Pip QA N4: smaller dead zone
-    touch.joyY = cl > 4 ? uy * frac : 0;
+    touch.joyX = frac > JOY_DEAD ? ux * frac : 0;   // Pip QA P0-6: 9% dead zone (was 4 px ≈ 7%)
+    touch.joyY = frac > JOY_DEAD ? uy * frac : 0;
   }
   // ⛏️ hold your finger still on a block → it breaks — and KEEP holding to dig block
   // after block (the raycast reaches the next one each time). Replaces the old
