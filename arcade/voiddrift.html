@@ -275,7 +275,7 @@
       <div class="msg" id="overlayMsg" style="display:none"></div>
       <div class="score-final" id="overlayScore" style="display:none"></div>
       <div class="prompt" id="overlayPrompt">PRESS SPACE TO LAUNCH</div>
-      <div class="controls" id="overlayControls">
+      <div class="controls" id="overlayControls" data-touch="🕹️ steer &amp; thrust with the circle &nbsp;·&nbsp; 🔴 auto-fire">
         <kbd>←</kbd><kbd>→</kbd> rotate &nbsp;·&nbsp;
         <kbd>↑</kbd> thrust &nbsp;·&nbsp;
         <kbd>SPACE</kbd> fire &nbsp;·&nbsp;
@@ -289,6 +289,10 @@
   <script>
 (() => {
   'use strict';
+  // 👆 touch-first (tablets/phones): tap prompts, no keyboard legend (same rule as play.html)
+  const touchFirst = (() => { try { const mm = q => !!(window.matchMedia && window.matchMedia(q).matches);
+    return mm('(pointer: coarse)') || ((navigator.maxTouchPoints || 0) > 0 && !mm('(hover: hover)')); } catch (e) { return false; } })();
+  const say = (desk, touch) => touchFirst ? touch : desk;
 
   // ─── Config ───────────────────────────────────────────────────────────────
   const W = 960;
@@ -362,6 +366,10 @@
   const overlayScore = document.getElementById('overlayScore');
   const overlayPrompt = document.getElementById('overlayPrompt');
   const overlayControls = document.getElementById('overlayControls');
+  if (touchFirst) {
+    overlayControls.innerHTML = overlayControls.dataset.touch;
+    document.getElementById('overlayPrompt').textContent = 'TAP TO LAUNCH';
+  }
   const waveFlash = document.getElementById('waveFlash');
 
   // ─── Utils ────────────────────────────────────────────────────────────────
@@ -680,7 +688,7 @@
     if (mode === 'title') {
       overlayMsg.style.display = 'none';
       overlayScore.style.display = 'none';
-      overlayPrompt.textContent = 'PRESS SPACE TO LAUNCH';
+      overlayPrompt.textContent = say('PRESS SPACE TO LAUNCH', 'TAP TO LAUNCH');
       overlayControls.style.display = '';
       document.querySelector('.title').style.display = '';
       document.querySelector('.subtitle').style.display = '';
@@ -692,7 +700,7 @@
       overlayScore.style.display = '';
       overlayScore.innerHTML =
         `SCORE  ${score.toLocaleString()}&nbsp;&nbsp;·&nbsp;&nbsp;BEST  ${highScore.toLocaleString()}&nbsp;&nbsp;·&nbsp;&nbsp;WAVE  ${wave}`;
-      overlayPrompt.textContent = 'PRESS SPACE TO REBOOT';
+      overlayPrompt.textContent = say('PRESS SPACE TO REBOOT', 'TAP TO REBOOT');
       overlayControls.style.display = 'none';
     } else if (mode === 'paused') {
       document.querySelector('.title').style.display = 'none';
@@ -700,12 +708,18 @@
       overlayMsg.style.display = '';
       overlayMsg.textContent = 'PAUSED';
       overlayScore.style.display = 'none';
-      overlayPrompt.textContent = 'PRESS P TO RESUME';
+      overlayPrompt.textContent = say('PRESS P TO RESUME', 'TAP TO RESUME');
       overlayControls.style.display = 'none';
     }
   }
 
   // ─── Input ────────────────────────────────────────────────────────────────
+  // 👆 Tap the overlay = Space (launch / reboot) or P (resume) — the game used to be
+  // keyboard-only here, so a lost run on a tablet had no way to restart.
+  overlay.addEventListener('pointerdown', e => {
+    if (state === 'title' || state === 'gameover') { e.preventDefault(); startGame(); }
+    else if (state === 'paused') { e.preventDefault(); state = 'playing'; hideOverlay(); }
+  });
   window.addEventListener('keydown', e => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
       e.preventDefault();
