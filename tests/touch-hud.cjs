@@ -22,12 +22,14 @@ assert(undo.right-(use.right+use.w)>=8,'Undo/USE gap');
 assert(Math.abs((jump.right+jump.w/2)-(use.right+use.w/2))<1,'Jump centred over USE');
 // Leave, camera, badges leave the HUD on tablets … and are all reachable from ☰
 assert(/body\.touchHud #leaveBtn, body\.touchHud #camBtn, body\.touchHud #badgeBtn \{ display:none !important; \}/.test(css));
-assert(/@media \(min-width:560px\) and \(min-height:560px\)/.test(css),'phones keep their compact layout');
+assert(/@media \(min-width:560px\) and \(min-height:380px\)/.test(css),'gate fits tablet Chrome (961×433) and the app (961×529)');
 const om=s.slice(s.indexOf('function openHudMenu('),s.indexOf('\n}',s.indexOf('function openHudMenu('))+2);
-assert(om.includes("['camBtn', '🎥'"),'☰ has Camera view on touch');
-assert(om.includes("['badgeBtn'")&&om.includes("['homeBtn'"),'☰ has badges and Save & go home');
+assert(om.includes("...(!onScreen('camBtn') ? [")&&om.includes("['camBtn', '🎥'"),'☰ has Camera view only when the 🧍 button is hidden');
+assert(om.includes("...(!onScreen('leaveBtn') ? [['homeBtn'"),'☰ has Save & go home only when Leave is hidden (no duplicates)');
+assert(/#hudMenu \.viewOpt \{ flex-shrink:0; \}/.test(s),'☰ rows never squash');
+assert(om.includes("['badgeBtn'"),'☰ has badges');
 assert(s.includes("(_cb.offsetParent ? _cb : $('menuBtn')).getBoundingClientRect()"),'camera menu anchors to ☰ when 🧍 is hidden');
-assert(s.includes("if (isTouch) document.body.classList.add('touchHud');"));
+assert(s.includes("if (isTouch && !isPhone()) document.body.classList.add('touchHud');"),'phones never get the tablet HUD');
 // accessible names survive the icon-only Undo
 assert(s.includes('id="btnUndoTouch" aria-label="Undo"')&&s.includes('id="btnAction" aria-label="Use"'));
 // touch wording: every toast that mentions WASD has a touch branch first

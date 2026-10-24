@@ -1170,7 +1170,7 @@
      ☰ 56×56 top-right with 🎒 56×56 under it. Leave / camera / badges live in ☰ so nothing small
      is left to mis-tap. Gaps are 12–16dp. body.touchHud is set from JS only on touch devices, and the
      size gate keeps phones on their compact layouts. */
-  @media (min-width:560px) and (min-height:560px) {
+  @media (min-width:560px) and (min-height:380px) {   /* Pip retest: tablet Chrome is 961×433, the app 961×529; phones never get touchHud */
     body.touchHud #leaveBtn, body.touchHud #camBtn, body.touchHud #badgeBtn { display:none !important; }
     body.touchHud #menuBtn { box-sizing:border-box; width:56px; height:56px; padding:0; top:12px; right:12px;
       font-size:28px; border-radius:16px; display:flex; align-items:center; justify-content:center; }
@@ -1189,6 +1189,14 @@
     body.touchHud #btnUndoTouch .tbTx { display:none; }
     body.touchHud #btnShoot { width:120px; height:64px; right:148px; bottom:124px; font-size:18px; }
     body.touchHud #npcChat { max-width:calc(100vw - 300px); }
+  }
+
+  /* ☰ rows keep their height (they were squashed and the last one clipped at 433 tall); on short
+     landscape screens the list goes two-up so all of it fits, and it still scrolls if it must */
+  #hudMenu .viewOpt { flex-shrink:0; }
+  @media (orientation:landscape) and (max-height:600px) and (min-width:700px) {
+    #hudMenu { flex-direction:row; flex-wrap:wrap; align-content:flex-start; width:min(560px,62vw); box-sizing:border-box; }
+    #hudMenu .viewOpt { flex:0 0 calc(50% - 3px); box-sizing:border-box; font-size:15px; padding:9px 10px; }
   }
 </style>
 </head>
@@ -20455,11 +20463,12 @@ addEventListener('pointerdown', e => {        // tap anywhere else → the choos
 }, true);
 /* ☰ THE MENU — the extra buttons live here now, each with a label kids can read.
    The original buttons stay in the DOM (hidden): their onclick IS the feature, we just call it. */
+function onScreen(id) { const e = $(id); return !!(e && e.offsetParent && e.getBoundingClientRect().width > 0); }   // ☰ only repeats what the HUD hides
 function openHudMenu() {
   const m = $('hudMenu');
   const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
   const items = [
-    ...(document.body.classList.contains('touchHud') ? [
+    ...(!onScreen('camBtn') ? [
       ['camBtn', '🎥', '<b>Camera view</b> <small>' + (G.firstPerson ? 'through my eyes' : (G.birdsEye ? "bird's eye" : 'behind me')) + '</small>'],
     ] : []),
     ['goalRow', '🎯', '<b>My dream goal</b>'],
@@ -20471,7 +20480,7 @@ function openHudMenu() {
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
-    ['homeBtn',   '🏠', '<b>Save & go home</b>' + (document.body.classList.contains('touchHud') ? ' <small>(Leave)</small>' : '')],
+    ...(!onScreen('leaveBtn') ? [['homeBtn',   '🏠', '<b>Save & go home</b> <small>(Leave)</small>']] : []),
   ];
   m.innerHTML = items.map(([id, ic, html]) => '<button class="viewOpt" data-b="' + id + '">' + ic + ' ' + html + '</button>').join('');
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
@@ -21140,7 +21149,7 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
-if (isTouch) document.body.classList.add('touchHud');   // 👆 tablet touch HUD sizing (CSS gates it by screen size)
+if (isTouch && !isPhone()) document.body.classList.add('touchHud');   // 👆 tablet touch HUD: by device (shorter screen side ≥ 520), not by the browser-bar-shrunk viewport
 /* 🔄 Phones now play in ANY orientation — the "turn your phone" gate and the fullscreen
    landscape lock are retired (portrait is how you film vertical shorts for social!).
    The touch HUD has a dedicated compact portrait layout instead. updateRotateGate stays
