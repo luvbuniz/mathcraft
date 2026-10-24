@@ -3599,13 +3599,24 @@ function bakeBlocky(a) {
   });
   return a;
 }
-/* 🙂 The classic heroes' face, built like Queen Fox's: 3D eyes (addEyes) + the bendy mouth and
-   brows from addFace, so smile / grin / frown animate the same way. The mouth and brows are
-   marked keep so bakeBlocky leaves them movable.
+/* 🙂 The classic heroes' face, built like Queen Fox's: 3D eyes (addEyes) + the brows from addFace,
+   but a small, gentle mouth instead of the wide bendy one (no big grins). softMouth() swaps
+   addFace's mouth for two tiny curves that setFaceExpr toggles through face.kidArcs: the soft
+   smile for smile AND grin, a soft frown for frown. Brows stay movable (keep).
    recipe: iris, brow (hidden if missing), mouth (no mouth → none here, e.g. a beak), nose,
    blush, lashes, patch (panda), mask (superhero), mouthY / mouthZ (a muzzle sticking out). */
-function keepFace(face) {
-  face.mouth.children.forEach(m => { m.userData.keep = true; });
+function softMouth(face, head, k) {
+  const { y, z } = face.mouth.position, col = face.mouth.children[0].material.color.getHex();
+  head.remove(face.mouth);                                          // setFaceExpr keeps posing these detached
+  face.mouth = new THREE.Group(); face.mouth.position.set(0, y, z);  // pieces harmlessly; nothing shows them
+  const curve = up => {                                             // up = 1 smile, -1 frown
+    const g = new THREE.Group(); g.position.set(0, y, z); head.add(g);
+    box(g, 0.06 * k, 0.022 * k, 0.03, col, 0, 0, 0);
+    [-1, 1].forEach(sx => { box(g, 0.032 * k, 0.022 * k, 0.03, col, sx * 0.042 * k, up * 0.01 * k, 0).rotation.z = sx * up * 0.4; });
+    return g;
+  };
+  face.kidArcs = { smile: curve(1), frown: curve(-1) };
+  face.kidArcs.frown.visible = false;
   face.browL.userData.keep = face.browR.userData.keep = true;
   return face;
 }
@@ -3617,7 +3628,7 @@ function addPixelFace(head, size, z, recipe) {
   if (recipe.lashes) for (const sx of [-1, 1]) box(head, 0.032 * s, 0.022 * s, 0.03, recipe.pupil || 0x2A1A14, sx * 0.165 * s, 0.1 * s, z + 0.006);
   if (recipe.nose) box(head, 0.05 * s, 0.035 * s, 0.03, recipe.nose, 0, -0.035 * s, z + 0.008);
   if (recipe.mouth == null) return { pixel: [] };                   // no mouth here (beak) — stops the default face
-  const face = keepFace(addFace(head, recipe.mouthY != null ? recipe.mouthY : -0.25 * size, recipe.mouthZ != null ? recipe.mouthZ : z, recipe.mouth, z + 0.004));
+  const face = softMouth(addFace(head, recipe.mouthY != null ? recipe.mouthY : -0.25 * size, recipe.mouthZ != null ? recipe.mouthZ : z, recipe.mouth, z + 0.004), head, 1.3);
   face.browY = 0.1 * s + 0.03;
   [face.browL, face.browR].forEach((b, i) => {
     b.position.set((i ? 1 : -1) * 0.11 * s, face.browY, z + 0.004);
@@ -3648,10 +3659,10 @@ function pixelFlower(parent, x, y, z, n, petal, mid, tilt) {
     : [box(parent, L, s, d, petal, x, y, z), box(parent, s, L, d, petal, x, y, z), box(parent, s, s, d + 0.006, mid, x, y, z)];
   if (tilt) parts.forEach(m => { if (side) m.rotation.z = tilt; else m.rotation.x = tilt; });   // lie flat on a slanted skirt
 }
-/* Four-legged heroes: exactly Queen Fox's eyes on the head front + the narrow bendy mouth on the muzzle. */
+/* Four-legged heroes: exactly Queen Fox's eyes on the head front + a small soft mouth on the muzzle. */
 function quadPixelFace(a, recipe, mouthY, mouthZ, mouthColor) {
   addEyes(a.head, recipe.iris, 0.22);
-  a.face = keepFace(addFace(a.head, mouthY, mouthZ, mouthColor || 0x5a2b2b, 0.222, true));
+  a.face = softMouth(addFace(a.head, mouthY, mouthZ, mouthColor || 0x5a2b2b, 0.222, true), a.head, 0.9);
   return a.face;
 }
 /* Stripes and bands wrapped around a block-shaped part. */
@@ -4378,8 +4389,9 @@ const AVATARS = [
         const skin = 0xE9AC80, armor = 0xC2C9D2, armorD = 0x8E97A3, tabard = 0x2255CC, gold = 0xF5C542, plume = 0xE53935;
         const a = blockKidBase(skin), H = a.head, g = a.group;
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
-          { iris: 0x5A3A20, pupil: 0x2A1A10, brow: 0x6B4A2A, mouth: 0x8A3A30, nose: 0xCC8558, blush: 0xEE8E8E });
-        // ⛑️ open-faced helmet so you can see who's inside
+          { iris: 0x5A3A20, pupil: 0x2A1A10, brow: 0x6B4A2A, mouth: 0x8A3A30, blush: 0xEE8E8E });
+        // ⛑️ a real knight's helm: eyes peek out of a T-shaped visor gap; a nose guard and a
+        // faceguard with breathing slots cover the nose and mouth
         box(H, 0.72, 0.16, 0.72, armor, 0, 0.34, 0);
         box(H, 0.72, 0.7, 0.12, armor, 0, 0.0, -0.31);
         [-1, 1].forEach(s => {
@@ -4387,6 +4399,10 @@ const AVATARS = [
           box(H, 0.08, 0.36, 0.08, armor, s * 0.28, -0.12, 0.31);          // cheek guards
         });
         box(H, 0.7, 0.09, 0.09, armorD, 0, 0.24, 0.31);                    // brow guard
+        box(H, 0.08, 0.26, 0.08, armorD, 0, 0.06, 0.34);                    // nose guard between the eyes
+        box(H, 0.64, 0.26, 0.1, armor, 0, -0.2, 0.33);                      // faceguard over the mouth and chin
+        [-0.13, 0, 0.13].forEach(x => box(H, 0.07, 0.035, 0.03, armorD, x, -0.17, 0.385));   // breathing slots
+        box(H, 0.66, 0.05, 0.11, armorD, 0, -0.33, 0.33);                   // faceguard rim
         [[0.5, 0.0], [0.56, -0.14], [0.52, -0.28], [0.42, -0.36]].forEach(([y, z]) => box(H, 0.08, 0.14, 0.16, plume, 0, y, z));
         // 🛡️ armour with a blue tabard, belt and sword; shield on the left arm
         box(g, 0.52, 0.46, 0.3, armor, 0, 0.79, 0);
@@ -4467,12 +4483,12 @@ const AVATARS = [
     id: 'leo', name: 'Leo 👦',
     build() {
       return blockyBuild(() => {
-        const skin = 0xE9AC80, hair = 0x6E3F1E, hairHi = 0x7C4822,
+        const skin = 0xE9AC80, hair = 0x6E3F1E,
           tee = 0xF9D23C, teeD = 0xE9BC22, trim = 0xF08A2A, jeans = 0x2F7BD6, jeansD = 0x2465B0,
           cuff = 0x86B9F0, shoe = 0x2F86E0;
         const a = blockKidBase(skin), H = a.head, g = a.group;
         [-1, 1].forEach(s => box(H, 0.07, 0.14, 0.11, skin, s * 0.335, -0.03, 0));   // ears
-        // 💇 spiky brown hair: cap + back + sides, a jagged fringe, tufts sticking up
+        // 💇 brown hair: cap + back + sides and a jagged fringe (smooth on top, no tufts)
         box(H, 0.68, 0.13, 0.68, hair, 0, 0.335, 0);
         box(H, 0.68, 0.5, 0.13, hair, 0, 0.11, -0.29);
         [-1, 1].forEach(s => {
@@ -4482,13 +4498,6 @@ const AVATARS = [
         [[-0.25, 0.14, 0.17], [-0.12, 0.14, 0.125], [0.01, 0.14, 0.16], [0.14, 0.14, 0.12], [0.26, 0.12, 0.18]]
           .forEach(([x, w, bot]) => { box(H, w, 0.36 - bot, 0.1, hair, x, (0.36 + bot) / 2, 0.3).userData.noLine = true; });
         box(H, 0.66, 0.12, 0.1, hair, 0, 0.3, 0.3);                     // fringe base carries the outline
-        const tuft = (x, y, z, rx, rz, c) => { const m = box(H, 0.19, 0.24, 0.19, c, x, y, z); m.rotation.x = rx; m.rotation.z = rz; };
-        tuft(-0.22, 0.45, 0.16, -0.55, 0.5, hair);
-        tuft(0.0, 0.49, 0.17, -0.65, 0.05, hairHi);
-        tuft(0.22, 0.45, 0.13, -0.55, -0.5, hair);
-        tuft(-0.14, 0.48, -0.08, 0.35, 0.4, hair);
-        tuft(0.14, 0.49, -0.1, 0.35, -0.35, hairHi);
-        tuft(0.0, 0.43, -0.28, 0.9, 0, hair);
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
           { iris: 0x6B4226, pupil: 0x2B1A10, brow: 0x5A3218, mouth: 0x8A3A30, nose: 0xCC8558, blush: 0xEE8E8E });
         // 👕 yellow tee with an orange collar, sleeve cuffs and a little placket
@@ -4599,6 +4608,14 @@ const CORE_HERO_IDS = new Set([
   'wizard', 'panda', 'penguin', 'spark'
 ]);
 AVATARS.forEach(av => { av.hidden = !CORE_HERO_IDS.has(av.id); });
+// 🔁 Retired heroes: kept in AVATARS so saved indexes never shift, but anyone who picked one
+// becomes the hero it was merged into (the Astronaut looked too much like the Knight).
+const RETIRED_HEROES = { astronaut: 'knight' };
+function liveHeroIndex(i) {
+  const to = RETIRED_HEROES[(AVATARS[i] || {}).id];
+  const j = to ? AVATARS.findIndex(a => a.id === to) : -1;
+  return j >= 0 ? j : i;
+}
 
 /* ============================ 🎨 REAL 3D CHARACTER MODELS (GLB) ============================
    Drop a professionally-made model at avatars/<id>.glb (e.g. avatars/leo.glb from Meshy,
@@ -6213,7 +6230,7 @@ function restoreGame(s) {
   resetGameState();
   G.playerName = s.name || 'Player';
   G.world = WORLDS[s.world] ? s.world : 'meadow';
-  G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = s.avatarIndex || 0;
+  G.grade = s.grade; G.mode = 'adventure'; G.avatarIndex = liveHeroIndex(s.avatarIndex || 0);
   G.quest = s.quest || { stage: 'none', spot: null, tid: null, found: [] };
   G.homes = s.homes || [];
   G.npcHomes = s.npcHomes || {};               // 🏠 which friend lives in which of the kid's houses
@@ -15006,6 +15023,7 @@ function setAvatar(index) {
   // is undefined, and this function only has a `finally`, so the TypeError escaped into
   // startGame's catch and skipped everything after it — HUD, NPCs, G.running. Fall back.
   if (!AVATARS[index] || typeof AVATARS[index].build !== 'function') index = 0;
+  index = liveHeroIndex(index);                                    // an old Astronaut save loads as the Knight
   G.avatarIndex = index;
   // 📊 tally which hero is being played - swapHero() funnels through here too, so this
   // catches both "started as" and "switched to". Guarded: Analytics is defined further down.
