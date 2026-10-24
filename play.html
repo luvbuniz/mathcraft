@@ -139,6 +139,19 @@
   #blockCount, #powerCount, #coinCount { display:inline-block; }
   .countPop { animation:countPop .5s; color:#2f7d27; }
   .coinFly { position:fixed; z-index:9999; font-size:26px; pointer-events:none; margin:-14px 0 0 -14px; transition:transform .26s ease-out; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+  #loopChip { position:fixed; z-index:22; display:none; align-items:center; gap:8px; padding:6px 12px 6px 8px; border-radius:22px; border:3px solid #e0a82e; background:linear-gradient(180deg,#fff7d6,#ffe08a); box-shadow:0 4px 0 #c08a1e, 0 6px 14px #0003; font-weight:900; color:#6b4a00; font-size:18px; cursor:pointer; pointer-events:auto; animation:lcPop .5s; }
+  #loopChip.ready { border-color:#3f9d34; background:linear-gradient(180deg,#e9ffd9,#a8e88a); box-shadow:0 4px 0 #2f7d27, 0 6px 14px #0003; color:#1f5c17; animation:lcPulse 1.2s infinite; }
+  #loopChip .lcIcon, .loopChipInline .lcIcon { font-size:28px; line-height:1; }
+  .lcBar { display:inline-block; width:78px; height:14px; border-radius:8px; background:#e8d9a8; border:2px solid #c99a2e; overflow:hidden; }
+  .lcBar i { display:block; height:100%; background:linear-gradient(90deg,#f0a830,#ffd54a); }
+  .lcNum { white-space:nowrap; } .lcDone { font-size:24px; }
+  .loopChipInline { display:inline-flex; align-items:center; gap:8px; font-size:18px; }
+  @keyframes lcPop { 0%{transform:scale(.6)} 70%{transform:scale(1.08)} 100%{transform:scale(1)} }
+  @keyframes lcPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+  #loopArrow { position:fixed; left:0; top:0; z-index:21; width:60px; height:60px; pointer-events:none; align-items:center; justify-content:center; }
+  #loopArrow .laIcon { width:46px; height:46px; border-radius:50%; background:#5B3FA8; border:4px solid #FFD54A; color:#fff; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px #0005; }
+  #loopArrow.mart .laIcon { background:#2f7d27; }
+  #loopArrow .laTip { position:absolute; inset:0; display:flex; justify-content:center; align-items:flex-start; color:#FFD54A; font-size:22px; line-height:1; margin-top:-16px; text-shadow:0 2px 3px #0008; }
   #shopGoal { display:none; margin:8px auto 4px; padding:8px 14px; max-width:520px; border-radius:14px; background:linear-gradient(90deg,#fff2c2,#ffe08a); border:2px solid #e0a82e; color:#6b4a00; font-weight:800; font-size:clamp(14px,2.4vw,18px); }
   @keyframes countPop { 0%{transform:scale(1)} 40%{transform:scale(1.7)} 100%{transform:scale(1)} }
   #hudMode { top:calc(env(safe-area-inset-top, 0px) + 14px); left:50%; transform:translateX(-50%); color:#3b5d9e; text-align:center; }
@@ -756,6 +769,8 @@
       white-space:normal; max-width:72vw; text-align:center; }
     #placingTag { bottom:auto; top:146px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
+    body.loopChipOn #hintBar { top:calc(var(--lcBottom, 120px) + 8px); }     /* clear of the 👟 loop chip */
+    body.loopChipOn #placingTag { top:calc(var(--lcBottom, 120px) + 50px); }
     #toast { top:30%; }
     /* joystick tucked into the bottom-left corner */
     #joyBase { bottom:18px; left:14px; width:104px; height:104px; opacity:.8; }
@@ -1415,6 +1430,8 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
+<button id="loopChip" type="button" aria-label="Show me where to go" style="display:none"></button>
+<div id="loopArrow" style="display:none" aria-hidden="true"><span class="laIcon">❓</span><span class="laTip">▲</span></div>
   <div id="feedListHud"></div>
   <div id="npcBubbles"></div>
   <div id="npcChat"></div>
@@ -16737,7 +16754,7 @@ const DREAM_GOALS = [
 function updateGoalBar() {
   const row = $('goalRow'); if (!row) return;
   row.style.display = G.running ? 'block' : 'none';
-  if (!G.goal && starterGoalBar()) return;   // 🧭 first loop: ❓ → 🪙 → 🛒 (Pip top-5 #4)
+  if (starterGoalBar()) return;   // 🧭 first loop: ❓ → 🪙 → 🛒 chip (Pip top-5 #4)
   if (!G.goal) { $('goalText').innerHTML = '🎯 Tap to pick a dream to save for!'; $('goalFill').style.width = '0%'; return; }
   const g = G.goal, pct = Math.max(0, Math.min(100, Math.round(G.coins / g.price * 100))), reached = G.coins >= g.price;
   $('goalText').innerHTML = reached
@@ -16774,27 +16791,81 @@ function starterLoot() {                  // cheapest fun thing (Gear first, the
 }
 function ownsFunThing() { return SHOP_ITEMS.some(it => it.kind === 'own' && G.owned[it.id] && FUN_CATS[ITEM_CAT[it.id]]); }
 function boxesFor(price) { return Math.max(1, Math.ceil((price - G.coins) / boxTagValue())); }
-function shopGoalLine() {                 // the goal line at the top of Stack Mart
+function loopChipHTML(it) {                // 👟 [████░░] 🪙 4/6  — or  👟 ✅ 🛒  (read at a glance, no sentence)
+  const have = G.coins >= it.price, pct = Math.max(0, Math.min(100, Math.round(G.coins / it.price * 100)));
+  return '<span class="lcIcon">' + it.icon + '</span>' + (have
+    ? '<span class="lcDone">✅ 🛒</span>'
+    : '<span class="lcBar"><i style="width:' + pct + '%"></i></span><span class="lcNum">🪙 ' + G.coins + '/' + it.price + '</span>');
+}
+function shopGoalLine() {                 // same chip at the top of Stack Mart
   if (currentStore !== 'mart') return '';
   const it = starterLoot(); if (!it) return '';
-  if (G.coins >= it.price) return '✨ You can buy ' + it.icon + ' <b>' + biName(it.name, it.id) + '</b> right now!';
-  const n = boxesFor(it.price);
-  return '🪙 ' + G.coins + '/' + it.price + ' — solve ' + n + ' more ❓ for ' + it.icon + ' <b>' + biName(it.name, it.id) + '</b>!';
+  return '<span class="loopChipInline">' + loopChipHTML(it) + '</span>';
 }
-function starterGoalBar() {               // no dream picked + no fun buy yet → the HUD goal line shows the first loop
-  if (G.goal || ownsFunThing()) return false;
-  const it = starterLoot(); if (!it) return false;
-  const have = G.coins >= it.price;
-  $('goalText').innerHTML = have
-    ? '✨ Buy ' + it.icon + ' ' + biName(it.name, it.id) + ' at 🛒 Stack Mart!'
-    : '❓ → 🪙 ' + G.coins + '/' + it.price + ' → 🛒 ' + it.icon + ' ' + biName(it.name, it.id);
-  $('goalFill').style.width = Math.max(0, Math.min(100, Math.round(G.coins / it.price * 100))) + '%';
-  $('goalFill').style.background = have ? 'linear-gradient(90deg,#3f9d34,#6cc94f)' : 'linear-gradient(90deg,#f0a830,#f5c451)';
-  if (have && profile && !profile.starterBuyHi && G.running && !popupOpen) {
-    profile.starterBuyHi = true; profileDirty = true;
-    toast('🛒 You have enough for ' + it.icon + ' ' + biName(it.name, it.id) + '! Look for the ❗ over Stack Mart.', 4600);
+let loopGuide = null;                     // { it, have } while the first ❓ → 🪙 → 🛒 loop is on
+function starterGoalBar() {               // no dream picked + no fun buy yet → the chunky loop chip replaces the goal line
+  const chip = $('loopChip');
+  const it = (!G.goal && !ownsFunThing()) ? starterLoot() : null;
+  loopGuide = it && G.running ? { it, have: G.coins >= it.price } : null;
+  if (chip) {
+    chip.style.display = loopGuide ? 'flex' : 'none';
+    document.body.classList.toggle('loopChipOn', !!loopGuide);   // phones: the top hint bar slides below the chip
+    if (loopGuide) { chip.innerHTML = loopChipHTML(it); chip.classList.toggle('ready', loopGuide.have); placeLoopChip(); }
   }
+  if (!it) return false;
+  $('goalRow').style.display = 'none';    // the chip IS the goal for now
   return true;
+}
+function placeLoopChip() {                // tuck it just under the HUD card, whatever size the card is
+  const chip = $('loopChip'), top = $('hudTop'); if (!chip || !top) return;
+  const r = top.getBoundingClientRect();
+  chip.style.left = Math.max(8, r.left) + 'px'; chip.style.top = Math.round(r.bottom + 6) + 'px';
+  document.body.style.setProperty('--lcBottom', Math.round(r.bottom + 6 + (chip.offsetHeight || 46)) + 'px');
+}
+/* 🧭 the loop arrow: tap the chip (or stand idle) → a big arrow points at the nearest ❓ box,
+   or at Stack Mart once the item is affordable. Its own element — independent of the coach. */
+let loopArrowUntil = 0, loopLastInput = performance.now();
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, e => {
+  if (e.target && e.target.closest && e.target.closest('#loopChip')) return;
+  loopLastInput = performance.now(); loopArrowUntil = 0;
+}, { passive: true, capture: true }));
+function loopTarget() {
+  if (!loopGuide) return null;
+  if (loopGuide.have) { const L = WORLD_LAYOUT[G.world] || WORLD_LAYOUT.meadow; return { x: L.shop.x, y: 2.6, z: L.shop.z }; }
+  // nearest ❓ the kid can already SEE wins (a box right in front beats a slightly closer one behind them)
+  let best = null, bd = 1e9, vis = false;
+  for (const st of stations) {
+    const d = Math.hypot(st.x + 0.5 - player.pos.x, st.z + 0.5 - player.pos.z);
+    _lv.set(st.x + 0.5, 1.6, st.z + 0.5).project(camera);
+    const onScr = d < 40 && _lv.z < 1 && Math.abs(_lv.x) < 0.9 && Math.abs(_lv.y) < 0.9;
+    if ((onScr && !vis) || (onScr === vis && d < bd)) { bd = d; best = st; vis = onScr; }
+  }
+  return best ? { x: best.x + 0.5, y: 1.6, z: best.z + 0.5 } : null;
+}
+const _lv = new THREE.Vector3();
+function loopArrowTick(now) {
+  const a = $('loopArrow'); if (!a) return;
+  const idle = now - loopLastInput > 12000;
+  const t = (loopGuide && !popupOpen && !G.over && G.running && (now < loopArrowUntil || idle)) ? loopTarget() : null;
+  if (!t || (G.world !== 'meadow' && !loopGuide.have)) { if (a.style.display !== 'none') a.style.display = 'none'; return; }
+  const W = innerWidth, H = innerHeight;
+  _lv.set(t.x, t.y, t.z).project(camera);
+  let sx = (_lv.x + 1) / 2 * W, sy = (1 - _lv.y) / 2 * H;
+  const behind = _lv.z > 1;
+  if (behind) { sx = W - sx; sy = H - sy; }
+  const mx = 56, myT = Math.min(H * 0.3, 150), myB = Math.min(H * 0.32, 170);
+  const on = !behind && sx > mx && sx < W - mx && sy > myT && sy < H - myB;
+  let x, y, ang;
+  if (on) { x = sx; y = sy - 46 - Math.abs(Math.sin(now / 220)) * 12; ang = 180; }   // hover above it, pointing down
+  else {
+    const cx = W / 2, cy = H / 2, dx = sx - cx, dy = sy - cy;
+    const k = Math.min((W / 2 - mx) / Math.max(1e-3, Math.abs(dx)), (dy < 0 ? (cy - myT) : (H - myB - cy)) / Math.max(1e-3, Math.abs(dy)));
+    x = cx + dx * k; y = cy + dy * k; ang = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+  }
+  a.style.display = 'flex'; a.classList.toggle('mart', loopGuide.have);
+  a.firstChild.textContent = loopGuide.have ? '🛒' : '❓';
+  a.style.transform = 'translate(' + Math.round(x - 30) + 'px,' + Math.round(y - 30) + 'px)';
+  a.lastChild.style.transform = 'rotate(' + Math.round(ang) + 'deg)';
 }
 function coinBurstFrom(fromEl, n) {       // 🪙🪙🪙 coins pop out and fly into the counter
   try {
@@ -16926,6 +16997,8 @@ function openGoalPicker() {
 }
 function closeGoalPicker() { $('goalPopup').style.display = 'none'; popupOpen = false; }
 $w('goalRow').onclick = () => { Sound.click(); openGoalPicker(); };
+$w('loopChip').onclick = () => { Sound.click(); loopArrowUntil = performance.now() + 6000; };
+addEventListener('resize', () => { if (loopGuide) placeLoopChip(); });
 $w('goalClose').onclick = () => { Sound.click(); closeGoalPicker(); };
 function fmtTime(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
@@ -22968,6 +23041,7 @@ function loop(now) {
   powerMat.emissive.setRGB(0.02, 0.22 + pulse * 0.18, 0.28 + pulse * 0.22);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
   pipIdleTick(now);
+  loopArrowTick(now);
 
   // the portal swirls, glows, and twinkles
   if (portalGroup) {
