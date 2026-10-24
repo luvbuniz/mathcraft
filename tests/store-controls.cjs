@@ -13,7 +13,7 @@ c.G.world='city';assert(!c.feedCeilingBlocks({x:6.5,y:1,z:-16},1.7,.6),'other wo
 console.log('PASS store walls, doorway, headroom, roof barrier and freed pantry aisle');
 const start=s.indexOf('const touch = {'),end=s.indexOf('/* ============================ START MENU',start);
 const handlers={},nodes={},canvas={style:{},addEventListener(n,f){handlers[n]=f;}};
-function node(id){return nodes[id]||(nodes[id]={style:{},events:{},addEventListener(n,f){this.events[n]=f;}});}
+function node(id){return nodes[id]||(nodes[id]={style:{},classList:{add(){},remove(){},contains(){return false;}},events:{},addEventListener(n,f){this.events[n]=f;}});}
 let interactions=0;
 const input=vm.createContext({isTouch:true,canvas,$:node,touch:undefined,player:{yaw:.75},G:{running:true},popupOpen:false,performance:{now:()=>100},clearTimeout(){},setTimeout(){return 1;},innerWidth:390,innerHeight:844,interact(){interactions++;},navigator:{},liveRace:false});
 vm.runInContext(s.slice(start,end)+'\nthis.inputState=touch;',input);

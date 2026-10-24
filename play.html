@@ -139,7 +139,7 @@
   #blockCount, #powerCount, #coinCount { display:inline-block; }
   .countPop { animation:countPop .5s; color:#2f7d27; }
   @keyframes countPop { 0%{transform:scale(1)} 40%{transform:scale(1.7)} 100%{transform:scale(1)} }
-  #hudMode { top:10px; left:50%; transform:translateX(-50%); color:#3b5d9e; text-align:center; }
+  #hudMode { top:calc(env(safe-area-inset-top, 0px) + 14px); left:50%; transform:translateX(-50%); color:#3b5d9e; text-align:center; }
   #hudTimer { font-size:clamp(18px,3vw,26px); color:#c0392b; display:none; }
   #timerBar { display:none; width:170px; max-width:60vw; height:12px; margin:4px auto 0; background:rgba(0,0,0,.18);
     border-radius:6px; overflow:hidden; }
@@ -190,6 +190,7 @@
   #hintBar { position:absolute; bottom:104px; left:50%; transform:translateX(-50%);
     background:rgba(0,0,0,.55); color:#fff; padding:7px 16px; border-radius:12px;
     font-size:clamp(14px,2.4vw,18px); display:none; white-space:nowrap; }
+  #toast.overPopup { position:fixed; top:auto; bottom:max(14px,env(safe-area-inset-bottom)); z-index:75; }
   #toast { position:absolute; top:21%; left:50%; transform:translateX(-50%); z-index:60;
     background:rgba(47,125,39,.92); color:#fff; padding:12px 26px; border-radius:16px;
     font-size:clamp(17px,3vw,24px); font-weight:bold; display:none; text-align:center; max-width:90vw;
@@ -209,6 +210,28 @@
     body.feedInside #feedListHud {font-size:13px;padding:8px;line-height:1.45;}
   }
   #leoIntro { align-items:flex-end; background:none; }
+  .shopItem.canAfford { box-shadow:0 0 0 3px rgba(92,194,79,.55); background:#f3fbef; }
+  .shopItem.canAfford .buyBtn:not(.owned)::before { content:'✨ '; }
+  .shopItem .info small { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  #leoNext.coachPulse, .coachPulse { animation:coachPulse 1.1s ease-in-out infinite; }
+  @keyframes coachPulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,210,63,.95); scale:1; } 50% { box-shadow:0 0 0 14px rgba(255,210,63,0); scale:1.08; } }
+  #lionCoach { position:fixed; left:max(12px,env(safe-area-inset-left)); bottom:228px; z-index:46; display:flex; align-items:flex-end; gap:8px; pointer-events:none; max-width:min(420px,60vw); }
+  #lionCoach[hidden] { display:none; }
+  #lionCoachHead { pointer-events:auto; width:72px; height:72px; flex:0 0 72px; border-radius:50%; border:3px solid #fff; background:#ffe9a8; padding:0; overflow:hidden; box-shadow:0 4px 0 #c9a54a; cursor:pointer; }
+  #lionCoachHead img { width:100%; height:100%; object-fit:cover; object-position:50% 18%; transform:scale(1.9); transform-origin:50% 16%; }
+  #lionCoachBubble { pointer-events:none; background:#fffdf5; border:2px solid #e3dfc8; border-radius:18px 18px 18px 4px; padding:10px 14px; font:700 clamp(15px,2.3vw,19px)/1.3 inherit; color:#34495e; box-shadow:0 4px 0 #b9c6a5; margin-bottom:24px; }
+  #lionCoachBubble[hidden] { display:none; }
+  #lionCoachBubble.pop { animation:coachPop .35s ease-out; }
+  #lionCoachProg { display:block; margin-top:4px; color:#2f7d27; font-size:.95em; }
+  #lionCoachProg[hidden] { display:none; }
+  @keyframes coachPop { 0% { transform:scale(.6); opacity:0; } 70% { transform:scale(1.06); } 100% { transform:scale(1); opacity:1; } }
+  #lionCoach.mini { bottom:auto; top:max(10px,env(safe-area-inset-top)); }
+  #lionCoach.mini #lionCoachHead { width:46px; height:46px; flex-basis:46px; }
+  #lionCoach.mini #lionCoachBubble, body.guideOpen #lionCoach { display:none; }
+  @media (max-height:560px) { #lionCoach { bottom:206px; } #lionCoachHead { width:58px; height:58px; flex-basis:58px; } }
+  .confettiWrap { position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden; }
+  .confettiWrap i { position:absolute; top:-20px; width:10px; height:16px; border-radius:2px; animation:confettiFall 2.4s linear forwards; }
+  @keyframes confettiFall { to { top:110vh; translate:0 0; rotate:720deg; } }
   body.guideOpen #npcChat, body.guideOpen #npcBubbles, body.guideOpen #mouseLegend,
   body.guideOpen #feedListHud, body.guideOpen #feedShelfHud,
   body.feedInside #npcChat, body.feedInside #npcBubbles { display:none!important; }
@@ -332,14 +355,20 @@
   #hintBox .ten, #fixBody .ten { display:inline-block; font-size:1.05em; line-height:1; }
   #hintBox .ask, #fixBody .ask { color:#1f7bbf; margin-left:6px; }
   /* ---- "Let's fix it!" teaching banner shown on a wrong answer ---- */
-  #fixIt { position:absolute; inset:0; z-index:6; display:none; flex-direction:column;
-    background:linear-gradient(180deg,#FFF6E6,#FFFDF5); border-radius:24px; padding:18px 20px 16px;
-    text-align:center; overflow:auto; }
+  /* Pip QA F1/N2: the card is its own screen-sized overlay. Header and button never scroll;
+     only the hint in the middle can, so the button is always visible on landscape tablets. */
+  #fixIt { position:fixed; inset:0; z-index:45; display:none; align-items:center; justify-content:center;
+    background:rgba(30,50,90,.35); padding:10px; box-sizing:border-box; text-align:center; }
   #fixIt.show { display:flex; }
+  #fixPanel { display:flex; flex-direction:column; width:min(900px,96vw); max-height:calc(100vh - 20px); max-height:calc(100dvh - 20px);
+    box-sizing:border-box; background:linear-gradient(180deg,#FFF6E6,#FFFDF5); border-radius:24px; padding:16px 20px 14px;
+    box-shadow:0 8px 0 rgba(0,0,0,.2); }
+  #fixPanel > * { flex:none; }
+  #fixIt .fixHead { display:flex; flex-wrap:wrap; justify-content:center; align-items:baseline; column-gap:22px; }
   #fixIt .fixTitle { font-size:clamp(24px,4.4vw,36px); font-weight:900; color:#e07b2a; margin-bottom:6px; }
   #fixIt .fixProblem { font-size:clamp(26px,5vw,44px); font-weight:900; color:#2f4a33; margin:3px 0; line-height:1.15; }
   #fixIt .fixAns { font-size:clamp(24px,4.4vw,38px); font-weight:900; color:#2f7d27; margin:6px 0 12px; }
-  #fixBody { flex:1 1 auto; background:#E9F5FF; color:#22456b; border-radius:16px; padding:14px 18px;
+  #fixBody { flex:1 1 auto !important; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; background:#E9F5FF; color:#22456b; border-radius:16px; padding:14px 18px;
     text-align:left; line-height:1.5; font-weight:bold; font-size:clamp(18px,3vw,26px); }
   #fixBody .fixStep { margin:5px 0; color:#1f6fb2; }
   #fixBody .fixAnsLine { margin-top:8px; font-size:1.15em; color:#176b2a; }
@@ -350,6 +379,16 @@
     background:#3f9d34; box-shadow:0 5px 0 #2c6f24; }
   #fixClose:active { transform:translateY(4px); box-shadow:0 1px 0 #2c6f24; }
   #fixClose.locked { background:#c4b48f; box-shadow:0 5px 0 #a3946f; cursor:default; }
+  @media (max-height:560px) {
+    #fixPanel { padding:8px 16px 10px; }
+    #fixIt .fixTitle { font-size:20px; margin-bottom:0; }
+    #fixIt .fixProblem { font-size:26px; }
+    #fixIt .fixAns { font-size:24px; margin:0; }
+    #fixBody { font-size:17px; padding:8px 14px; line-height:1.35; }
+    #fixNote { font-size:14px; margin-top:4px; }
+    #fixEasier { margin-top:4px !important; padding:4px 10px; }
+    #fixClose { margin-top:6px; padding:10px 22px; font-size:19px; }
+  }
   /* ---- pet "what should they do?" menu ---- */
   #petModes { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
   .petBtn { font-family:inherit; font-size:clamp(15px,2.6vw,18px); font-weight:800; border:none; border-radius:14px;
@@ -470,13 +509,20 @@
     background:rgba(255,255,255,.25); border:3px solid rgba(255,255,255,.5); pointer-events:auto; touch-action:none; }
   #joyStick { position:absolute; width:54px; height:54px; border-radius:50%; background:rgba(255,255,255,.65);
     left:33px; top:33px; }
+  #joyBase.rest { opacity:.45; pointer-events:none; }
+  #joyBase.rest #joyStick { animation:joyNudge 2.4s ease-in-out infinite; }
+  @keyframes joyNudge { 0%,60%,100% { transform:translate(0,0); } 30% { transform:translate(0,-14px); } }
+  body.guideOpen #joyBase.rest, body.popupUp #joyBase.rest { display:none !important; }
   .touchBtn { position:absolute; pointer-events:auto; touch-action:none; background:rgba(255,255,255,.65);
     border-radius:16px; font-size:18px; font-weight:bold; padding:13px 18px; color:#333;
     box-shadow:0 3px 0 rgba(0,0,0,.25); }
   /* Base layout = tidy compact cluster (also the fallback for wide 10" tablets >1250px).
      No Place/Break button anymore: TAP the world to place, HOLD a block to break. */
   #btnAction { right:16px; bottom:148px; background:rgba(255,233,150,.85); }
-  #btnJump { right:16px; bottom:84px; }
+  #btnJump { right:16px; bottom:84px; min-width:64px; min-height:58px; display:flex; align-items:center; justify-content:center; padding-top:4px; padding-bottom:4px; }
+  #btnJump .jumpIcon { font-size:34px; line-height:1; display:inline-block; animation:jumpBob 1.8s ease-in-out infinite; }
+  #btnJump:active .jumpIcon { transform:translateY(-6px) scale(1.15); animation:none; }
+  @keyframes jumpBob { 0%,70%,100% { transform:translateY(0); } 80% { transform:translateY(-5px); } 90% { transform:translateY(1px); } }
   #btnUndoTouch { right:116px; bottom:84px; background:rgba(196,238,201,.92); }
   #btnShoot { right:116px; bottom:148px; background:rgba(255,170,150,.9); }
 
@@ -1181,7 +1227,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v295 — slower, grade-aligned math practice</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v300 — talking King Lion + tablet QA fixes</div>
 
       <p id="leaveSavedNotice" role="status" hidden style="color:#286444;font-weight:bold"></p>
       <div class="panel" id="continuePanel">
@@ -1243,7 +1289,7 @@
       </div>
 
       <div class="field">
-        <span class="fieldLabel">Math practice starting point</span>
+        <span class="fieldLabel" id="gradeFieldLabel">Math practice starting point</span>
         <small style="display:block;color:#8a7444;margin:4px 0 7px">Math stays within this US grade level and includes easier review when it helps.</small>
         <div class="choiceGrid grades" id="gradeRow">
           <button class="choice selected" data-grade="2"><b>🌱 Just starting</b><small>Add &amp; subtract</small></button>
@@ -1392,22 +1438,24 @@
     <div id="paperTip" style="display:none">✏️ Tricky one — grab paper and work it out!</div>
     <div id="mathChoices"></div>
     <button id="hintBtn">🤔 Need a hint?</button>
-    <button id="mathEasier" class="btn btn-ghost" style="margin:8px auto 0;display:block">🌱 Easier question</button>
+    <div id="mathLevelBtns" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+      <button id="mathEasier" class="btn btn-ghost">🌱 Easier question</button>
+      <button id="mathHarder" class="btn btn-ghost">⚡ Harder question</button>
+    </div>
     <div id="hintBox"></div>
     <div id="mathFeedback"></div>
     <div id="rewardChoice" style="display:none"></div>
 
     <!-- Teaching banner: appears on a wrong answer, locked for a few seconds so kids read it -->
-    <div id="fixIt">
+    <div id="fixIt"><div id="fixPanel">
       <div class="fixTitle">🛠️ Oops — let's fix it together!</div>
-      <div id="fixProblem" class="fixProblem"></div>
-      <div id="fixAns" class="fixAns"></div>
-      <div id="fixTapped" class="fixTapped" style="display:none;margin:6px 0 2px;font-weight:800;color:#8a4b1a"></div>
-    <div id="fixBody"></div>
-    <div id="fixNote"></div>
+      <div class="fixHead"><div id="fixProblem" class="fixProblem"></div><div id="fixAns" class="fixAns"></div></div>
+      <div id="fixTapped" class="fixTapped" style="display:none;margin:2px 0;font-weight:800;color:#8a4b1a"></div>
+      <div id="fixBody"></div>
+      <div id="fixNote"></div>
       <button id="fixEasier" class="btn btn-ghost" style="margin:8px auto 0;display:block">🌱 Try an easier question</button>
       <button id="fixClose" class="locked" disabled></button>
-    </div>
+    </div></div>
   </div>
 </div>
 
@@ -1764,7 +1812,7 @@
       <h3 id="guideHeading">Welcome, builder</h3>
       <div id="leoBubble" role="status" aria-live="polite"></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap">
-        <button type="button" id="guideListen">🔊 Listen</button>
+        <button type="button" id="guideListen">🔊 Again</button>
         <button type="button" class="libBtn" id="leoSkip" style="background:#eee9db;color:#6a5a3a;padding:10px;font-size:14px">Skip</button>
         <span id="leoStep" style="font-size:12px;margin-left:auto;color:#7f765d"></span>
         <button type="button" class="libBtn" id="leoNext" style="background:#4e7546;color:white;padding:10px 15px;font-size:15px">Next →</button>
@@ -1773,6 +1821,10 @@
   </div>
 </div>
 <div id="feedShelfHud" hidden aria-label="Items on this shelf"></div>
+<div id="lionCoach" hidden>
+  <button type="button" id="lionCoachHead" aria-label="Talk to King Lion"><img src="avatars/previews/kinglion.webp?v=284" alt=""></button>
+  <div id="lionCoachBubble" hidden role="status" aria-live="polite"><span id="lionCoachText"></span><b id="lionCoachProg" hidden></b></div>
+</div>
 
 <!-- ================= GRAMMAR CINEMA POPUP ================= -->
 <div class="popup" id="cinemaPopup">
@@ -2372,7 +2424,7 @@
 <!-- ================= TOUCH CONTROLS ================= -->
 <div id="touchUI">
   <div id="joyBase"><div id="joyStick"></div></div>
-  <button class="touchBtn" id="btnJump">⬆ JUMP</button>
+  <button class="touchBtn" id="btnJump" aria-label="Jump"><span class="jumpIcon">⬆</span></button>
   <button class="touchBtn" id="btnAction">⭐ USE</button>
   <button class="touchBtn" id="btnUndoTouch">↩️ Undo</button>
   <button class="touchBtn" id="btnShoot" style="display:none">🎯 Shoot</button>
@@ -4936,23 +4988,47 @@ function safeMathGrade(value, fallback) {
   value = Number(value);
   return value >= 1 && value <= 5 && Math.floor(value) === value ? value : fallback;
 }
-function initialMathBands() { return Object.assign({}, CORE_START_BANDS); }
+// Pip QA F3: where each grade STARTS (Grade 2 used to start at sums within 10, which is
+// Kindergarten level). Kids still drop back a band after two misses.
+const CORE_GRADE_START = {
+  1: { add: 1, sub: 1 },
+  2: { add: 2, sub: 2 },
+  3: { add: 4, sub: 4, mul: 1, div: 1, round: 1 },
+  4: { add: 5, sub: 5, mul: 3, div: 3, round: 1, frac: 1 },
+  5: { add: 5, sub: 5, mul: 3, div: 3, round: 2, frac: 1, dec: 1 }
+};
+function coreStartBand(skill, ceiling) {
+  const row = CORE_GRADE_START[ceiling] || {};
+  return Math.max(1, Math.min(maxCoreBand(skill, ceiling) || 1, row[skill] || CORE_START_BANDS[skill] || 1));
+}
+function initialMathBands(ceiling) {
+  const out = Object.assign({}, CORE_START_BANDS);
+  if (ceiling) Object.keys(out).forEach(skill => { out[skill] = coreStartBand(skill, ceiling); });
+  return out;
+}
 function ensureMathLearning() {
   const legacyCeiling = safeMathGrade(G.gradePin, 0) || safeMathGrade(G.mathGradeCeiling, 0) || safeMathGrade(G.grade, 2);
   let learning = profile && profile.mathLearning;
   if (!learning || learning.version !== 1) {
-    learning = { version:1, curriculum:'US-CCSS', gradeCeiling:legacyCeiling, bands:initialMathBands(), evidence:{}, unansweredExits:0 };
+    learning = { version:1, curriculum:'US-CCSS', gradeCeiling:legacyCeiling, bands:initialMathBands(legacyCeiling), evidence:{}, unansweredExits:0, gradeStart:1 };
     if (profile) { profile.mathLearning = learning; profileDirty = true; }
   }
   learning.curriculum = 'US-CCSS';
   learning.gradeCeiling = safeMathGrade(learning.gradeCeiling, legacyCeiling);
-  learning.bands = learning.bands || initialMathBands();
+  learning.bands = learning.bands || initialMathBands(learning.gradeCeiling);
   learning.evidence = learning.evidence || {};
+  if (!learning.gradeStart) {                 // one-time lift for saves made when every grade began at band 1
+    learning.gradeStart = 1;
+    Object.keys(CORE_START_BANDS).forEach(skill => {
+      if (learning.bands[skill] != null) learning.bands[skill] = Math.max(learning.bands[skill], coreStartBand(skill, learning.gradeCeiling));
+    });
+    if (profile) profileDirty = true;
+  }
   learning.unansweredExits = Math.max(0, Number(learning.unansweredExits) || 0);
   Object.keys(CORE_START_BANDS).forEach(skill => {
     const max = maxCoreBand(skill, learning.gradeCeiling);
     if (!max) { delete learning.bands[skill]; return; }
-    learning.bands[skill] = Math.max(1, Math.min(max, Number(learning.bands[skill]) || CORE_START_BANDS[skill]));
+    learning.bands[skill] = Math.max(1, Math.min(max, Number(learning.bands[skill]) || coreStartBand(skill, learning.gradeCeiling)));
   });
   G.mathGradeCeiling = learning.gradeCeiling;
   G.mathLevel = learning.gradeCeiling; // legacy UI/report compatibility; it no longer selects popup difficulty
@@ -4964,7 +5040,7 @@ function setMathGradeCeiling(value) {
   Object.keys(CORE_START_BANDS).forEach(skill => {
     const max = maxCoreBand(skill, learning.gradeCeiling);
     if (!max) delete learning.bands[skill];
-    else learning.bands[skill] = Math.max(1, Math.min(max, learning.bands[skill] || CORE_START_BANDS[skill]));
+    else learning.bands[skill] = Math.max(1, Math.min(max, learning.bands[skill] || coreStartBand(skill, learning.gradeCeiling)));
   });
   learning.evidence = learning.evidence || {};
   G.mathGradeCeiling = learning.gradeCeiling;
@@ -5912,6 +5988,7 @@ function requestLeave() {
   $('leaveSaveBtn').disabled = false; $('leaveStayBtn').disabled = false;
   $('leaveSaveBtn').textContent = '💾 Save & leave';
   $('leavePopup').style.display = 'flex';
+  try { lionSay('bye'); } catch (e) {}
   $('leaveStayBtn').focus();
 }
 function cancelLeave() {
@@ -5945,7 +6022,8 @@ function confirmLeave() {
 }
 function goHome() {
   $('leavePopup').style.display = 'none';
-  try { closeLeoIntro(); } catch (e) { try { Narrator.stop(); } catch (e2) {} }
+  try { closeLeoIntro(true); } catch (e) { try { Narrator.stop(); } catch (e2) {} }
+  try { lionCoach = null; if (coachBeacon) coachBeacon.visible = false; coachPulseUse(false); $('lionCoach').hidden = true; $('lionCoachBubble').hidden = true; } catch (e) {}
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
   if (typeof clearNpcs === 'function') clearNpcs();
   G.running = false; popupOpen = false;
@@ -6194,6 +6272,53 @@ function updateStoreSigns(worldId) {
 const blocks = new Map();              // "x,y,z" -> {mesh, type, removable}
 const key = (x, y, z) => x + ',' + y + ',' + z;
 const CITY_SOLID = new Set();           // footprints of Reading Town's background houses (so cars/players can't drive through them)
+/* 📷 Camera blockers: world-space boxes for static buildings, walls and trees, so the
+   follow camera pulls in front of them instead of going inside (Pip QA F4/N3).
+   Rebuilt on world change and every few seconds; tested as cheap ray-vs-box checks. */
+let camBlockers = [], camBlockersWorld = null, camBlockersAt = 0;
+const _camRay = new THREE.Ray(), _camHit = new THREE.Vector3();
+function rebuildCamBlockers() {
+  camBlockersWorld = G.world; camBlockersAt = performance.now();
+  const skip = new Set();
+  try { if (player.avatar) skip.add(player.avatar); } catch (e) {}
+  try { for (const id in cars) if (cars[id] && cars[id].group) skip.add(cars[id].group); } catch (e) {}
+  try { (npcs || []).forEach(n => n.group && skip.add(n.group)); } catch (e) {}
+  try { pets.forEach(p => p.f && p.f.mesh && skip.add(p.f.mesh)); } catch (e) {}
+  const voxel = new Set(); blocks.forEach(b => b.mesh && voxel.add(b.mesh));
+  const out = [];
+  const walk = o => {
+    if (!o.visible || skip.has(o) || voxel.has(o)) return;
+    if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
+      const m = Array.isArray(o.material) ? o.material[0] : o.material;
+      if (m && !(m.transparent && m.opacity < 0.6) && m.depthWrite !== false) {
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
+        const h = box.max.y - box.min.y, w = box.max.x - box.min.x, dz = box.max.z - box.min.z;
+        if (h >= 0.9 && box.max.y >= 0.8 && Math.max(w, dz) >= 0.35 && w < 40 && dz < 40) {
+          out.push({ box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 });
+        }
+      }
+    }
+    for (const c of o.children) walk(c);
+  };
+  try { scene.updateMatrixWorld(); walk(scene); } catch (e) {}
+  camBlockers = out;
+}
+function camBlockerT(head, dir, far) {
+  const now = performance.now();
+  if (camBlockersWorld !== G.world || now - camBlockersAt > 6000) rebuildCamBlockers();
+  _camRay.origin.copy(head); _camRay.direction.copy(dir);
+  let best = far;
+  for (const b of camBlockers) {
+    if (Math.hypot(b.cx - head.x, b.cz - head.z) > far + b.r + 0.5) continue;
+    if (b.box.containsPoint(head)) continue;            // standing under a canopy / inside a shop box: don't snap
+    if (_camRay.intersectBox(b.box, _camHit)) {
+      const t = _camHit.distanceTo(head);
+      if (t < best) best = t;
+    }
+  }
+  return best;
+}
 function solidAt(x, y, z) {
   if (y < 0) return true;              // the ground itself
   if (typeof feedSolidAt === 'function' && feedSolidAt(x, y, z)) return true;   // 🌾 walkable feed-store walls
@@ -6397,9 +6522,24 @@ function undoLast() {
   if (!G.running || G.over || popupOpen) return;
   let tries = 0;
   while (undoStack.length && tries++ < 25) {
-    if (recreateFromSnap(undoStack.pop())) { Sound.place(); refreshHUD(); toast('↩️ Put it back!', 1200); return; }
+    const s = undoStack.pop();
+    if (s && s.placedKey) { if (undoPlacement(s)) return; continue; }
+    if (recreateFromSnap(s)) { Sound.place(); refreshHUD(); toast('↩️ Put it back!', 1200); return; }
   }
-  toast('↩️ Nothing to put back!', 1600);
+  toast('↩️ Nothing to undo!', 1600);
+}
+// Pip QA N10: Undo also takes back the last thing you PLACED (and refunds it).
+function undoPlacement(s) {
+  const b = blocks.get(s.placedKey);
+  if (!b || b.mesh !== s.mesh) return false;           // already gone or replaced
+  if (b.pool) { removeWholePool(b.pool); return true; }
+  const [x, y, z] = s.placedKey.split(',').map(Number);
+  const partner = b.partner ? blocks.get(b.partner) : null;
+  const baseY = partner ? Math.min(y, Number(b.partner.split(',')[1])) : y;
+  removeBlockAt(x, baseY, z);
+  refundFor(b.type, b);
+  Sound.brk(); refreshHUD(); toast('↩️ Took it back!', 1200);
+  return true;
 }
 function removeBlockAt(x, y, z) {
   const b = blocks.get(key(x, y, z));
@@ -10215,6 +10355,14 @@ function renderCartoonWatch() {
   $('libTitle').innerHTML = c.emoji + ' ' + c.title;
   $('libPrompt').textContent = '';
   mountMoviePlayer($('libStory'), 'shots/cartoons/' + c.id + '.mp4', c.title);
+  // Pip QA N8: the kid just tapped "Watch" — start it big and with sound, not tiny and muted
+  const v = $('cvid2');
+  if (v) {
+    v.muted = false; v.loop = false;
+    try { v.currentTime = 0; } catch (e) {}
+    const pp = v.play(); if (pp && pp.catch) pp.catch(() => { v.muted = true; v.loop = true; v.play().catch(() => {}); });
+    try { const fsf = v.requestFullscreen || v.webkitRequestFullscreen; if (fsf) { const r = fsf.call(v); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+  }
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   const back = document.createElement('button'); back.className = 'libBtn'; back.textContent = '⬅ Back to collection';
   back.onclick = () => { Sound.click(); $('libStory').innerHTML = ''; lib.phase = 'movies'; renderLib(); };
@@ -10379,7 +10527,7 @@ function libAnswer(opt, q, btn) {
   profileDirty = true; saveProfile();
   lib.qi++;
   if (right) {
-    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++; awardToken(1);   // 🎮 reading earns an arcade token
+    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++; awardTokenHalf();   // 🎮 reading earns arcade tokens (1 per 2 right — Pip QA N1)
     $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
     setTimeout(() => { if (lib !== session) return; if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, 750);
   } else {
@@ -10543,15 +10691,31 @@ function arcadeLobby() {
   wrap.appendChild(arcadeBtn('🚀 VOID DRIFT <small style="opacity:.85">— blast asteroids! (' + VOID_SECONDS + 's timed)</small><br><small>' + ARCADE_PLAY_COST + ' 🎮 a game</small>', canPay ? '#7d3cc9' : '#a98fce', () => startVoidDrift()));
   wrap.appendChild(arcadeBtn('🎫 PRIZE COUNTER <small style="opacity:.85">— spend your tickets</small>', '#27ae60', () => arcadePrizes()));
   body.appendChild(wrap);
-  if (!canPay) { $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🎮 tokens — read a story at the 📚 Library or spell at the 🏤 Post Office to earn them!'; }
+  if (canPay && arcadeCapLeft() <= 0) { $('arcadeMsg').style.color = '#7a4ea0'; $('arcadeMsg').textContent = arcadeCapMsg(); }
+  else if (!canPay) { $('arcadeMsg').style.color = '#c0392b'; $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🎮 tokens — read a story at the 📚 Library or spell at the 🏤 Post Office to earn them!'; }
+}
+const ARCADE_CAP = 3, ARCADE_CAP_MIN = 15;     // Pip QA N1: at most 3 games per 15 minutes of play
+function arcadeCapLeft() {
+  const now = Date.now(); G.arcadePlaysAt = (G.arcadePlaysAt || []).filter(t => now - t < ARCADE_CAP_MIN * 60000);
+  return ARCADE_CAP - G.arcadePlaysAt.length;
+}
+function arcadeCapMsg() {
+  const oldest = Math.min.apply(null, G.arcadePlaysAt);
+  const mins = Math.max(1, Math.ceil((oldest + ARCADE_CAP_MIN * 60000 - Date.now()) / 60000));
+  return '🦁 King Lion says: the machines need a rest! Read a story at the 📚 Library to power up. (Back in ' + mins + ' min)';
 }
 function arcadePay() {
+  if (arcadeCapLeft() <= 0) {
+    $('arcadeMsg').style.color = '#7a4ea0'; $('arcadeMsg').textContent = arcadeCapMsg();
+    return false;
+  }
   if ((G.tokens || 0) < ARCADE_PLAY_COST) {
     $('arcadeMsg').style.color = '#c0392b';
     $('arcadeMsg').textContent = '🔒 Games cost ' + ARCADE_PLAY_COST + ' 🎮 tokens — earn them by reading & spelling, then come play!';
     return false;
   }
   G.tokens -= ARCADE_PLAY_COST; Sound.coin(); refreshHUD(); arcadeWallet();
+  G.arcadePlaysAt = (G.arcadePlaysAt || []); G.arcadePlaysAt.push(Date.now());
   profile.arcadePlays = (profile.arcadePlays || 0) + 1; profileDirty = true;    // 🕹️ quest fuel (any machine counts)
   $('arcadeMsg').textContent = '';
   return true;
@@ -10569,13 +10733,22 @@ function voidKey(type, code, key) {
   const W = f.contentWindow, Ctor = W.KeyboardEvent || KeyboardEvent;
   try { W.dispatchEvent(new Ctor(type, { code: code, key: key, bubbles: true })); } catch (e) {}
 }
-/* 🔴 Auto-fire: a gentle repeating Space so little ones just steer (and it auto-restarts
-   the run on a game-over, keeping the timed session going). Toggle it off for manual play. */
-let voidAuto = true, voidFireTimer = null;
+/* 🔴 Auto-fire: a gentle repeating Space so little ones just steer. Pip QA N1: it only fires
+   while the kid is actually steering (stick touched in the last 2.5 s), so an idle ship
+   no longer farms points, and it no longer auto-restarts a lost run. */
+let voidAuto = true, voidFireTimer = null, voidSteerAt = 0;
 function setVoidAuto(on) {
   voidAuto = on;
   if (voidFireTimer) { clearInterval(voidFireTimer); voidFireTimer = null; }
-  if (on) voidFireTimer = setInterval(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 40); }, 220);
+  if (on) voidFireTimer = setInterval(function () {
+    const idle = performance.now() - voidSteerAt > 2500;
+    const hint = $('voidIdle'); if (hint) hint.style.display = idle ? 'block' : 'none';
+    if (idle) return;
+    let playing = true;
+    try { const f = $('voidFrame'), go = f.contentDocument.getElementById('overlayScore'); playing = !(go && go.style.display !== 'none'); } catch (e) {}
+    if (!playing) return;                                    // game over: the kid restarts it themselves
+    voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 40);
+  }, 220);
 }
 function startVoidDrift() {
   if (!arcadePay()) return;
@@ -10591,12 +10764,13 @@ function startVoidDrift() {
   bar.style.cssText = 'position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;pointer-events:none';
   const clock = document.createElement('div');
   clock.id = 'voidClock';
-  clock.style.cssText = 'background:rgba(10,14,30,.82);color:#7ef;font:800 20px ui-monospace,monospace;padding:6px 14px;border-radius:12px;border:1px solid #2a6';
+  clock.style.cssText = 'position:absolute;left:50%;top:8px;transform:translateX(-50%);background:rgba(10,14,30,.82);color:#7ef;font:800 20px ui-monospace,monospace;padding:6px 14px;border-radius:12px;border:1px solid #2a6';   // top-centre: no longer covers the score (Pip QA N9)
   clock.textContent = '⏱ ' + VOID_SECONDS;
   const exit = document.createElement('button');
   exit.textContent = '✕ Exit';
   exit.style.cssText = 'pointer-events:auto;background:rgba(200,50,50,.92);color:#fff;border:0;font-weight:800;font-size:16px;padding:8px 16px;border-radius:12px;cursor:pointer';
-  exit.onclick = function () { endVoidDrift(); };
+  exit.onclick = function () { endVoidDrift(true); };
+  bar.style.justifyContent = 'flex-end';
   bar.appendChild(clock); bar.appendChild(exit); ov.appendChild(bar);
   // 🎮 touch controls: a circle navigator (steer + thrust) on the left, auto-fire on the right.
   // The game is keyboard-only, so the stick maps to rotate/thrust key events into its window.
@@ -10622,6 +10796,7 @@ function startVoidDrift() {
     let dy = (cy - (r.top + r.height / 2)) / (r.height / 2);
     const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
     thumb.style.left = (50 + dx * 38) + '%'; thumb.style.top = (50 + dy * 38) + '%';
+    voidSteerAt = performance.now();
     jApply(dx, dy);
   };
   const jEnd = function () { thumb.style.left = '50%'; thumb.style.top = '50%'; jApply(0, 0); voidState.joyId = null; };
@@ -10639,6 +10814,13 @@ function startVoidDrift() {
   pad.appendChild(joy); pad.appendChild(fire); ov.appendChild(pad);
   document.body.appendChild(ov);
   voidState = { left: VOID_SECONDS, timer: null, joyId: null };
+  voidSteerAt = performance.now();
+  const idleTip = document.createElement('div');
+  idleTip.id = 'voidIdle';
+  idleTip.style.cssText = 'display:none;position:absolute;left:50%;top:42%;transform:translateX(-50%);background:rgba(10,14,30,.85);color:#ffe066;font:800 22px system-ui,sans-serif;padding:10px 18px;border-radius:14px;pointer-events:none';
+  idleTip.textContent = '🕹️ Steer your ship to fire!';
+  ov.appendChild(idleTip);
+  frame.addEventListener('load', function () { try { frame.contentWindow.addEventListener('keydown', function (e) { if (e.isTrusted) voidSteerAt = performance.now(); }); } catch (e) {} });
   frame.addEventListener('load', function () {
     setTimeout(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 70); setVoidAuto(true); }, 300);   // auto-launch + start auto-fire
   });
@@ -10649,18 +10831,18 @@ function startVoidDrift() {
     if (voidState.left <= 0) endVoidDrift();               // ⏰ HARD close — time's up, no matter what
   }, 1000);
 }
-function endVoidDrift() {
+function endVoidDrift(early) {
   const ov = $('voidOverlay'); if (!ov) return;
   if (voidState && voidState.timer) clearInterval(voidState.timer);
   setVoidAuto(false);                                      // stop the auto-fire loop
   let score = 0;
   try { score = parseInt($('voidFrame').contentDocument.getElementById('scoreVal').textContent, 10) || 0; } catch (e) {}
   ov.remove(); voidState = null;
-  const won = Math.min(12, Math.floor(score / 250));       // 🎫 prize tickets from the run
+  const won = early ? 0 : Math.min(12, Math.floor(score / 250));   // 🎫 prize tickets — only for finishing the run (Pip QA N1)
   if (won > 0) { G.prizeTickets = (G.prizeTickets || 0) + won; refreshHUD(); }
   if (Sound.fanfare) Sound.fanfare();
   $('arcadePopup').style.display = 'flex'; arcadeLobby();   // back to the lobby (popupOpen was kept true)
-  toast('🚀 VOID DRIFT — score ' + score + '!' + (won ? '  🎫 +' + won + ' prize tickets!' : '  Read more to earn 🎮 tokens & try again!'), 4200);
+  toast('🚀 VOID DRIFT — score ' + score + '!' + (won ? '  🎫 +' + won + ' prize tickets!' : early ? '  Play to the end to win 🎫 tickets!' : '  Read more to earn 🎮 tokens & try again!'), 4200);
 }
 function pickArcadeWords(n, maxLen) {
   const lvl = arcadeLevel();
@@ -11059,16 +11241,94 @@ const Narrator = {
   },
   async introLine(i) {
     try { await this.playFile('audio/intro/kinglion-' + i + '.mp3?v=279'); return true; }
-    catch (e) { if (leoIntro) toast('The voice could not play. You can still read the speech bubble.', 2200); return false; }
+    catch (e) { return false; }
   }
 };
-/* TOWN GUIDE: reuse one existing avatar and the game's renderer, only while open. */
-const LEO_INTRO = [
-  { say: "Hello, builder! I'm King Lion. Let's make something wonderful together.", text: "I'm King Lion. Let's make something wonderful together!", title: 'Welcome, builder' },
-  { say: 'See the purple question blocks? Walk up to one and press Use. Solve a puzzle to earn bricks and coins.', text: 'Walk to a purple ❓ block. Press USE, then solve a puzzle to earn bricks and coins.', title: 'Your first supplies' },
-  { say: 'Choose a clear patch of ground. Place a few bricks to start your home. You can undo a block if you change your mind.', text: 'Find a clear patch of ground. Place a few bricks to start your home. Undo lets you change your mind.', title: 'Build something yours' },
-  { say: 'Ready? Try one question block, then build your first wall. You can find me in the menu whenever you need a reminder.', text: 'Try one question block, then build your first wall. Find this guide again in the menu.', title: 'Your first little mission' }
-];
+/* 🦁 KING LION — talking guide (Pip QA §A). He speaks every line out loud on his own
+   (no Listen tap needed), keeps on-screen text to one short line, then coaches the
+   first real steps: walk to a ❓ box → tap USE → answer → pick a prize → build 5 bricks.
+   Lines live here; tools/make_lion_voice.py records audio/intro/lion-<key>.mp3 from them. */
+const LION_LINES = /*LION_LINES_START*/{
+ "hello": {
+  "say": "Hi there, friend! I'm King Lion, and I am so happy you're here!",
+  "text": "Hi, friend! I'm King Lion! 👋"
+ },
+ "welcome_meadow": {
+  "say": "Welcome to Math Meadow! This whole town is yours to build. Let's go on an adventure together!",
+  "text": "Welcome to Math Meadow! This town is yours! 🌳"
+ },
+ "welcome_city": {
+  "say": "Welcome to Reading Town! This whole town is yours to build. Let's go on an adventure together!",
+  "text": "Welcome to Reading Town! This town is yours! 🏘️"
+ },
+ "welcome_beach": {
+  "say": "Welcome to Spanish Beach! This whole beach is yours to build. Let's go on an adventure together!",
+  "text": "Welcome to Spanish Beach! It's all yours! 🏖️"
+ },
+ "welcome_west": {
+  "say": "Welcome to Country Western! This whole town is yours to build. Let's go on an adventure together!",
+  "text": "Welcome to Country Western! This town is yours! 🤠"
+ },
+ "go_block": {
+  "say": "See that purple question box? Let's walk over to it! Just follow the sparkly arrow.",
+  "text": "Walk to the purple ❓ box! Follow the ⬇️ arrow."
+ },
+ "at_block": {
+  "say": "You found it! Now tap the big star button!",
+  "text": "You found it! Tap ⭐ USE!"
+ },
+ "question": {
+  "say": "Here's a puzzle! Pick the right answer. You can do it!",
+  "text": "Pick the right answer. You can do it! 💪"
+ },
+ "correct": {
+  "say": "Yes! You did it! Now pick a prize!",
+  "text": "Yes! You did it! Pick a prize! 🎉"
+ },
+ "wrong": {
+  "say": "Oops! That's okay. Mistakes help us learn. Let's look at it together!",
+  "text": "That's okay! Let's look at it together. 🦁"
+ },
+ "build": {
+  "say": "Awesome! Now let's build something. Tap the grass to put down a brick!",
+  "text": "Tap the grass to put down a brick! 🧱"
+ },
+ "brick1": {
+  "say": "Look at that! Your very first brick! Can you put down four more?",
+  "text": "Your first brick! Put down 4 more!"
+ },
+ "brick4": {
+  "say": "One more brick! You're almost there!",
+  "text": "One more brick! Almost there!"
+ },
+ "wall": {
+  "say": "Wow! You built your first wall! You're a real builder! Tap me any time you need help.",
+  "text": "WOW! Your first wall! Tap me if you need help. 🏆"
+ },
+ "help": {
+  "say": "Need a hand? Walk to a purple question box and tap the star button to earn bricks and coins. Then tap the ground to build!",
+  "text": "Find a purple ❓ box, tap ⭐ USE to earn bricks and coins, then tap the ground to build!"
+ },
+ "shop": {
+  "say": "Ooh, a shop! Tap Buy on anything you like. Save your coins for something special!",
+  "text": "Tap Buy on anything you like! 🪙"
+ },
+ "bye": {
+  "say": "Bye bye, friend! Come back tomorrow, and we'll build something even bigger!",
+  "text": "Bye, friend! Come back tomorrow! 👋"
+ }
+}/*LION_LINES_END*/;
+const LION_AUDIO_V = 300;
+function lionText(key) {
+  const l = LION_LINES[key]; if (!l) return '';
+  if (!isTouch) {                                  // desktop wording for the "how do I" lines
+    if (key === 'go_block') return 'Walk to the purple ❓ box (arrow keys / WASD). Follow the ⬇️ arrow.';
+    if (key === 'at_block') return 'You found it! Press ⭐ USE (or E)!';
+    if (key === 'build') return 'Click the grass to put down a brick! 🧱';
+  }
+  return l.text;
+}
+function lionWelcomeKey() { return LION_LINES['welcome_' + G.world] ? 'welcome_' + G.world : 'welcome_meadow'; }
 let leoIntro = null, guideView = null, guideLoad = 0;
 function prepareGuideView() {
   if (guideView) return;
@@ -11085,7 +11345,19 @@ function prepareGuideView() {
     d.group.rotation.y = -0.1;
     if (d.idleAction) d.idleAction.reset().play();
     $('guideLoading').hidden = true;
+    if (leoIntro && leoIntro.i === 0) guideCheer();
   }).catch(() => { $('guideLoading').textContent = 'Your guide is getting ready. You can still read along.'; });
+}
+// 🎉 the lion does his celebrate move (wave / dance / cheer — whatever the model has), then idles again
+function guideCheer() {
+  const d = guideView && guideView.model;
+  if (!d || !d.mixer || !d.celebrateAction || !d.idleAction) return;
+  const c = d.celebrateAction;
+  c.reset(); c.setLoop(THREE.LoopOnce, 1); c.clampWhenFinished = true;
+  d.idleAction.fadeOut(0.25); c.fadeIn(0.25).play();
+  const ms = Math.min(4000, Math.max(1200, (c.getClip().duration || 2) * 1000));
+  clearTimeout(guideCheer._t);
+  guideCheer._t = setTimeout(() => { try { c.fadeOut(0.3); d.idleAction.reset().fadeIn(0.3).play(); } catch (e) {} }, ms);
 }
 function drawGuide(dt) {
   if (!leoIntro || !guideView) return;
@@ -11093,7 +11365,8 @@ function drawGuide(dt) {
   if (!rect.width || !rect.height) return;
   const v = guideView, d = v.model;
   if (d && d.mixer) d.mixer.update(dt);
-  if (d) d.group.rotation.y = -0.1 + Math.sin(performance.now() / 2200) * 0.055;
+  const talk = Narrator.speaking ? Math.sin(performance.now() / 110) * 0.025 : 0;   // a little bob while he talks
+  if (d) { d.group.rotation.y = -0.1 + Math.sin(performance.now() / 2200) * 0.055; d.group.position.y = Math.abs(talk); }
   v.camera.aspect = rect.width / rect.height; v.camera.updateProjectionMatrix();
   const size = renderer.getSize(new THREE.Vector2()), sx = size.x / main.width, sy = size.y / main.height;
   const oldViewport = renderer.getViewport(new THREE.Vector4()), oldScissor = renderer.getScissor(new THREE.Vector4());
@@ -11106,38 +11379,159 @@ function drawGuide(dt) {
     renderer.setViewport(oldViewport); renderer.setScissor(oldScissor); renderer.setScissorTest(oldTest); renderer.autoClear = oldAuto;
   }
 }
+function introSeenHere() {
+  if (!profile) return true;
+  const w = profile.seenIntroWorlds || {};
+  if (w[G.world]) return true;
+  return !profile.seenIntroWorlds && profile.seenIntro && G.world === 'meadow';   // older saves: their intro was Math Meadow
+}
+function markIntroSeen() {
+  if (!profile) return;
+  profile.seenIntro = true;
+  profile.seenIntroWorlds = Object.assign({}, profile.seenIntroWorlds || {}, { [G.world]: true });
+  profileDirty = true; try { saveProfile(); } catch (e) {}
+}
 function openLeoIntro(first) {
   if (!G.running || (popupOpen && !leoIntro)) return;
   if (leoIntro) return;
-  leoIntro = { i: 0, first: !!first };
+  const steps = first ? ['hello', lionWelcomeKey(), 'go_block'] : ['help'];
+  leoIntro = { i: 0, first: !!first, steps };
   popupOpen = true; player.walkTo = null; Object.keys(keys).forEach(k => { keys[k] = false; });
   try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
   document.body.classList.add('guideOpen'); $('leoIntro').style.display = 'flex';
   prepareGuideView(); renderLeoIntro();
   $('leoNext').focus();
 }
-function closeLeoIntro() {
+function closeLeoIntro(skipped) {
   Narrator.stop(); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
-  const wasOpen = !!leoIntro; leoIntro = null;
-  if (wasOpen) popupOpen = false;
-  if (wasOpen && profile && !profile.seenIntro) {
-    profile.seenIntro = true; profileDirty = true; try { saveProfile(); } catch (e) {}
-  }
-  if (wasOpen) $('menuBtn').focus();
+  const was = leoIntro; leoIntro = null;
+  if (was) popupOpen = false;
+  if (was && was.first) { markIntroSeen(); if (!skipped) startLionCoach(); }
+  if (was) $('menuBtn').focus();
 }
 function renderLeoIntro() {
   if (!leoIntro) return;
-  Narrator.stop();
-  const i = leoIntro.i, step = LEO_INTRO[i];
-  $('guideHeading').textContent = step.title;
-  $('leoBubble').textContent = step.text;
-  $('leoStep').textContent = (i + 1) + ' of ' + LEO_INTRO.length;
-  $('leoNext').textContent = i + 1 === LEO_INTRO.length ? "Let's build!" : 'Next →';
-  $('guideListen').textContent = '🔊 Listen';
+  const i = leoIntro.i, key = leoIntro.steps[i], last = i + 1 === leoIntro.steps.length;
+  $('guideHeading').textContent = leoIntro.first ? (i === 0 ? 'Hello!' : last ? "Let's go!" : 'Your town') : 'Need a hand?';
+  $('leoBubble').textContent = lionText(key);
+  $('leoStep').textContent = leoIntro.steps.length > 1 ? (i + 1) + ' of ' + leoIntro.steps.length : '';
+  $('leoNext').textContent = last ? (leoIntro.first ? "Let's go! ▶" : 'Got it! ▶') : 'Next ▶';
+  $('leoNext').classList.remove('coachPulse');
+  $('guideListen').textContent = '🔊 Again';
+  if (i === 0) guideCheer();
+  lionSay(key, { card: true });
 }
 function leoIntroNext() {
   if (!leoIntro) return;
-  if (++leoIntro.i >= LEO_INTRO.length) closeLeoIntro(); else renderLeoIntro();
+  if (++leoIntro.i >= leoIntro.steps.length) closeLeoIntro(false); else renderLeoIntro();
+}
+// 🔊 say one line: the recorded lion clip, or the device voice if the clip can't play
+let lionSayId = 0;
+async function lionSay(key, opts) {
+  const id = ++lionSayId, l = LION_LINES[key];
+  if (!l) return;
+  if (!(opts && opts.card)) showCoachLine(key);
+  let ok = false;
+  try { ok = await Narrator.playFile('audio/intro/lion-' + key + '.mp3?v=' + LION_AUDIO_V); }
+  catch (e) { if (id === lionSayId) ok = speakWord(l.say, { rate: 0.95, pitch: 0.85 }); }
+  if (id !== lionSayId) return;
+  if (opts && opts.card && leoIntro) $('leoNext').classList.add('coachPulse');   // done talking → nudge Next
+}
+
+/* 🦁 coach: the lion shrinks to a corner head with a one-line bubble and walks the kid
+   through the first loop. Each step waits for the kid to DO it. */
+let lionCoach = null, coachBeacon = null;
+function startLionCoach() {
+  lionCoach = { stage: 'go', bricks: 0, answered: false, target: null, retargetAt: 0 };
+  setCoachVisible(true);
+  lionSay('go_block');
+}
+function endLionCoach() {
+  lionCoach = null;
+  if (coachBeacon) coachBeacon.visible = false;
+  coachPulseUse(false);
+  clearTimeout(showCoachLine._t);
+  showCoachLine._t = setTimeout(() => { if (!lionCoach) $('lionCoachBubble').hidden = true; }, 6500);
+}
+function setCoachVisible(on) { const c = $('lionCoach'); if (c) c.hidden = !on; }
+function showCoachLine(key) {
+  const b = $('lionCoachBubble'); if (!b) return;
+  $('lionCoachText').textContent = lionText(key);
+  const prog = $('lionCoachProg');
+  if (lionCoach && lionCoach.stage === 'build') { prog.hidden = false; prog.textContent = '🧱 ' + lionCoach.bricks + ' / 5'; }
+  else prog.hidden = true;
+  b.hidden = false;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  clearTimeout(showCoachLine._t);
+  if (!lionCoach) showCoachLine._t = setTimeout(() => { if (!lionCoach) b.hidden = true; }, 6500);   // one-off lines fade away
+}
+function coachPulseUse(on) {
+  ['btnAction', 'useBtnDesk'].forEach(id => { const el = $(id); if (el) el.classList.toggle('coachPulse', !!on); });
+}
+function ensureCoachBeacon() {
+  if (coachBeacon) return coachBeacon;
+  const g = new THREE.Group();
+  const gold = new THREE.MeshBasicMaterial({ color: 0xFFD23F });
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.8, 4), gold);
+  cone.rotation.x = Math.PI; cone.position.y = 0.4; g.add(cone);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.07, 6, 28), new THREE.MeshBasicMaterial({ color: 0xFFF3A0, transparent: true, opacity: 0.8 }));
+  ring.rotation.x = Math.PI / 2; ring.position.y = -2.3; g.add(ring);
+  g.userData.ring = ring; g.visible = false; scene.add(g);
+  coachBeacon = g; return g;
+}
+function lionCoachTick() {
+  const c = $('lionCoach');
+  if (c) { c.classList.toggle('mini', !!popupOpen); const hide = !G.running || G.over; if (c.hidden !== hide) c.hidden = hide; }   // the lion head stays as a help button (Pip QA §D)
+  if (!lionCoach) return;
+  const now = performance.now(), ns = nearestStation();
+  const st = lionCoach.stage;
+  if (st === 'go' || st === 'use') {
+    if (!lionCoach.target || now > lionCoach.retargetAt) { lionCoach.target = ns.st; lionCoach.retargetAt = now + 1000; }
+    const b = ensureCoachBeacon(), t = lionCoach.target;
+    if (t) {
+      b.visible = !popupOpen;
+      b.position.set(t.x + 0.5, 2.55 + Math.abs(Math.sin(now / 260)) * 0.35, t.z + 0.5);
+      b.rotation.y = now / 500;
+      const r = b.userData.ring; r.scale.setScalar(1 + (now % 1200) / 1200 * 0.5); r.material.opacity = 0.8 * (1 - (now % 1200) / 1200);
+    }
+    if (!popupOpen && st === 'go' && ns.dist < 2.6) { lionCoach.stage = 'use'; coachPulseUse(true); lionSay('at_block'); }
+    else if (!popupOpen && st === 'use' && ns.dist > 3.6) { lionCoach.stage = 'go'; coachPulseUse(false); showCoachLine('go_block'); }
+  } else if (coachBeacon) coachBeacon.visible = false;
+}
+function lionCoachEvent(ev, info) {
+  if (!lionCoach) return;
+  const st = lionCoach.stage;
+  if (ev === 'math_open' && (st === 'go' || st === 'use')) { lionCoach.stage = 'answer'; coachPulseUse(false); lionSay('question'); }
+  else if (ev === 'correct' && st === 'answer') { lionCoach.stage = 'prize'; lionSay('correct'); }
+  else if (ev === 'wrong' && st === 'answer') { lionSay('wrong'); }
+  else if (ev === 'math_close') {
+    if (st === 'prize') { lionCoach.stage = 'build'; setTimeout(() => { if (lionCoach && lionCoach.stage === 'build') lionSay('build'); }, 500); }
+    else if (st === 'answer') { lionCoach.stage = 'go'; showCoachLine('go_block'); }
+  } else if (ev === 'placed' && st === 'build' && info === 'placed') {
+    lionCoach.bricks++;
+    if (lionCoach.bricks === 1) lionSay('brick1');
+    else if (lionCoach.bricks === 4) lionSay('brick4');
+    else if (lionCoach.bricks >= 5) {
+      lionCoach.stage = 'done';
+      try { Sound.fanfare(); } catch (e) {}
+      confettiBurst();
+      lionSay('wall');
+      endLionCoach();
+    } else showCoachLine('build');
+  }
+}
+function confettiBurst() {
+  const wrap = document.createElement('div'); wrap.className = 'confettiWrap';
+  const cols = ['#FFD23F', '#FF6B6B', '#4ECDC4', '#7B61FF', '#5CC24F', '#FF9F1C'];
+  for (let i = 0; i < 46; i++) {
+    const p = document.createElement('i');
+    p.style.left = (Math.random() * 100) + 'vw'; p.style.background = cols[i % cols.length];
+    p.style.animationDelay = (Math.random() * 0.5) + 's'; p.style.animationDuration = (1.8 + Math.random() * 1.2) + 's';
+    p.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+    wrap.appendChild(p);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 3600);
 }
 
 function makeMisspellings(word) {
@@ -11547,7 +11941,7 @@ function spellAnswer(ans, w, btn) {
     const m = profile.spellMastered[spell.level] || [];
     if (m.indexOf(norm(w)) === -1) m.push(norm(w));
     profile.spellMastered[spell.level] = m;
-    Sound.correct(); G.solved++; recordSolve({ skill: 'spelling', level: spell.level }); refreshHUD(); bumpHud('solvedCount'); spell.right++; awardToken(1);   // 🎮 spelling earns an arcade token
+    Sound.correct(); G.solved++; recordSolve({ skill: 'spelling', level: spell.level }); refreshHUD(); bumpHud('solvedCount'); spell.right++; awardTokenHalf();   // 🎮 spelling earns arcade tokens (1 per 2 right — Pip QA N1)
     try { Narrator.stop(); } catch (e) {}
     $('spellMsg').style.color = '#2f8a52'; $('spellMsg').textContent = '✓ Spelled it!';
     setTimeout(() => { if (spell !== session) return; if (spell.qi >= spell.words.length) finishSpell(); else renderSpell(); }, 650);
@@ -14876,7 +15270,7 @@ function updatePlayer(dt) {
   let moving = false;
   const jmag = Math.hypot(touch.joyX, touch.joyY);
   const kbMove = keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-  if (jmag > 0.22 || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
+  if (jmag > 0.1 || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
   if (player.walkTo) {                                                // 🚶 click-to-move: head to the clicked spot
     const tdx = player.walkTo.x - player.pos.x, tdz = player.walkTo.z - player.pos.z;
     const td = Math.hypot(tdx, tdz);
@@ -14888,7 +15282,7 @@ function updatePlayer(dt) {
       player.yaw += Math.max(-0.2, Math.min(0.2, turn));
       player.vel.x = ndx * speed; player.vel.z = ndz * speed;
     }
-  } else if (jmag > 0.22) {                                          // a little deadzone so tiny taps don't turn you
+  } else if (jmag > 0.1) {                                           // small deadzone (Pip QA N4: was 0.22, felt broken on short drags)
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
     const moveYaw = touch.moveYaw == null ? player.yaw : touch.moveYaw;
@@ -14899,9 +15293,10 @@ function updatePlayer(dt) {
     const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
     // turn GENTLY toward the push, and never spin faster than a calm cap (kid-friendly)
     let turn = shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
-    const maxStep = 2.2 * dt;
+    const maxStep = 3.4 * dt;
     player.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
-    const sp = speed * Math.min(1, jmag);
+    // linear and predictable: a small push walks, a full push jogs at ~85% (no overshooting shops)
+    const sp = speed * 0.85 * (0.3 + 0.7 * Math.min(1, (jmag - 0.1) / 0.9));
     player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
     let mx = 0, mz = 0;
@@ -15041,7 +15436,7 @@ function updatePlayer(dt) {
     if (player._fl) {                                                  // a flourish is playing out
       const p = (t - player._flStart) / player._flDur, e = Math.sin(Math.min(1, p) * Math.PI);
       if (player._fl === 'spin') av.rotation.y += p * Math.PI * 2;     // a full twirl
-      else if (player._fl === 'hop') { av.position.y += e * 0.28; d.legs.forEach(l => l.rotation.x = -e * 0.5); }   // a happy little hop, knees tucked
+      else if (player._fl === 'hop') { av.position.y += e * 0.28; (d.legs || []).forEach(l => l.rotation.x = -e * 0.5); }   // a happy little hop, knees tucked
       else if (player._fl === 'look' && d.head) d.head.rotation.y = Math.sin(p * Math.PI * 2) * 0.5;   // glance left & right
       else if (player._fl === 'nod' && d.head) d.head.rotation.x = Math.sin(p * Math.PI * 2) * 0.28;   // bob the head
       else if (player._fl === 'wave' && d.arms && d.arms.length >= 2) { d.arms[1].rotation.x = -0.1; d.arms[1].rotation.z = 1.7 + Math.sin(t * 9) * 0.3; }
@@ -15099,7 +15494,7 @@ function updatePlayer(dt) {
     const selfie = G.selfie;
     const dist = selfie ? (player.driving ? 5.4 : 3.4) : 4.6;   // pull back when driving so the whole car + driver frame nicely
     // selfie: camera swings to the FRONT; G.selfieAngle orbits it around for side profiles
-    const ang = selfie ? (player.yaw + Math.PI + (G.selfieAngle || 0)) : player.yaw;
+    const ang = selfie ? (player.yaw + Math.PI + (G.selfieAngle || 0)) : camFollowYaw(dt);
     const cx = player.pos.x + Math.sin(ang) * dist * Math.cos(player.pitch);
     const cz = player.pos.z + Math.cos(ang) * dist * Math.cos(player.pitch);
     const cy = headY + dist * Math.sin(-player.pitch) * 0.8 + (selfie ? 0.15 : 0.9);
@@ -15113,9 +15508,12 @@ function updatePlayer(dt) {
       const fx = Math.floor(head.x + dir.x * d), fy = Math.floor(head.y + dir.y * d), fz = Math.floor(head.z + dir.z * d);
       // stop the camera at walls/roofs AND at shop buildings (Cinema/Library/etc.) so it never clips inside them
       if (solidAt(fx, fy, fz) || (fy < 5 && inShopZone(fx, fz))) {
-        allowed = Math.max(inside ? 0.45 : 1.7, d - 0.4); break;
+        allowed = Math.max(inside ? 0.45 : 0.6, d - 0.4); break;   // (was 1.7 outdoors, which parked the camera INSIDE the wall)
       }
     }
+    // Pip QA F4/N3: also stop in front of real building and tree shapes (not just grid blocks)
+    const meshT = camBlockerT(head, dir, allowed);
+    if (meshT < allowed) allowed = Math.max(0.45, meshT - 0.3);
     if (inside && allowed < 2.6 && !G.birdsEye) {
       // Real interior path — first-person — instead of a clipped "fake interior" camera
       if (!G.firstPerson) {
@@ -15135,9 +15533,9 @@ function updatePlayer(dt) {
     : (G.selfie && !G.firstPerson)
       ? new THREE.Vector3(player.pos.x, headY, player.pos.z)          // selfie: look straight back at the character's face
       : new THREE.Vector3(
-          player.pos.x - Math.sin(player.yaw) * Math.cos(player.pitch) * 8,
+          player.pos.x - Math.sin(_lookYaw()) * Math.cos(player.pitch) * 8,
           headY + Math.sin(player.pitch) * 8,
-          player.pos.z - Math.cos(player.yaw) * Math.cos(player.pitch) * 8
+          player.pos.z - Math.cos(_lookYaw()) * Math.cos(player.pitch) * 8
         );
   camera.lookAt(look);
 
@@ -15279,6 +15677,18 @@ function inShopZone(cx, cz) {
 /* Place whatever slot is selected at grid cell (x,z). blockY is the height
    for a plain block (stacking); doors/furniture/food sit on the ground. */
 function placeSelectedAt(x, z, blockY) {
+  const before = blocks.size;
+  const ok = placeSelectedAtRaw(x, z, blockY);
+  if (ok && blocks.size > before) {                    // Map keeps insertion order: the newest cell is last
+    let lastKey = null; for (const k of blocks.keys()) lastKey = k;
+    const b = lastKey && blocks.get(lastKey);
+    if (b && b.removable !== false) pushUndo({ placedKey: lastKey, mesh: b.mesh });
+    if (b) lionCoachEvent('placed', b.type);
+    refreshHUD();
+  }
+  return ok;
+}
+function placeSelectedAtRaw(x, z, blockY) {
   if (Math.abs(x) >= WORLD_R || Math.abs(z) >= WORLD_R) { toast('🌍 That\'s the edge of the world!', 1500); return false; }
   if (inShopZone(x, z)) { toast('🏬 That spot belongs to a shop — build a little further away!', 2200); return false; }
   if (Math.hypot(x + 0.5 - PORTAL_POS.x, z + 0.5 - PORTAL_POS.z) < 3) { toast('🌀 Keep the travel portal clear — build a bit further away!', 2200); return false; }
@@ -15720,6 +16130,9 @@ function $w(id) {
 }
 let toastTimer = 0;
 function toast(msg, ms) {
+  const t = $('toast'), host = popupOpen ? document.body : $('hud');     // Pip QA F7: over a store, show it ABOVE the store
+  if (host && t.parentNode !== host) host.appendChild(t);
+  t.classList.toggle('overPopup', !!popupOpen);
   $('toast').textContent = msg;
   $('toast').style.display = 'block';
   clearTimeout(toastTimer);
@@ -15760,7 +16173,7 @@ function refreshHUD() {
   // tap/left-click places, hold/right-click breaks). They pop back with the first block.
   const buildy = (G.blocks || 0) + (G.powerBlocks || 0) > 0 || undoStack.length > 0;
   const mb = $('modeBtn'); if (mb) mb.style.display = (buildy && !isTouch) ? '' : 'none';
-  const ub = $('undoBtn'); if (ub) ub.style.display = buildy ? '' : 'none';
+  const ub = $('undoBtn'); if (ub) ub.style.display = (buildy && !isTouch) ? '' : 'none';   // touch keeps ONE Undo (Pip QA N6)
   const ut = $('btnUndoTouch'); if (ut) ut.style.display = buildy ? '' : 'none';
   updateGoalBar();
 }
@@ -15772,6 +16185,12 @@ function awardToken(n) {
   G.tokens = (G.tokens || 0) + n;
   profile.tokensEarned = (profile.tokensEarned || 0) + n; profileDirty = true;   // 🎮 lifetime count (quest fuel)
   refreshHUD(); if (typeof bumpHud === 'function') bumpHud('tokenCount');
+}
+// Pip QA N1: 1 token per right answer let two easy answers buy 90 s of arcade.
+// Now it takes two first-try right answers per token (a full 4-question story = 1 game).
+function awardTokenHalf() {
+  profile.tokenHalves = (profile.tokenHalves || 0) + 1; profileDirty = true;
+  if (profile.tokenHalves >= 2) { profile.tokenHalves -= 2; awardToken(1); }
 }
 function awardTicket(n) {
   n = n || 1;
@@ -15879,12 +16298,14 @@ function recordCoreMathAttempt(eq, correct) {
       learning.evidence[skill] = {}; // a gentler band starts a fresh evidence window
       note = '🌱 The next ' + (SKILL_LABELS[skill] || 'math') + ' question will be a little easier.';
     }
-  } else if (correct && band === active && evidence.length >= 20) {
-    const recent = evidence.slice(-20), correctN = recent.filter(item => item.correct).length;
-    const lastTenN = recent.slice(-10).filter(item => item.correct).length;
+  } else if (correct && band === active && evidence.length >= 6) {
+    // Pip QA F3: 20 near-perfect answers per step felt like "too easy forever".
+    // Now 5 of the last 6 right (the last 3 in a row) moves one small step up.
+    const recent = evidence.slice(-6), correctN = recent.filter(item => item.correct).length;
+    const lastThree = recent.slice(-3).every(item => item.correct);
     const variety = new Set(recent.map(item => item.text + '|' + item.templateId)).size;
     const max = maxCoreBand(skill, learning.gradeCeiling);
-    if (correctN >= 18 && lastTenN >= 9 && variety >= 10 && active < max) {
+    if (correctN >= 5 && lastThree && variety >= 5 && active < max) {
       learning.bands[skill] = active + 1;
       learning.evidence[skill] = {}; // no cascading promotion from old answers
       note = '🌟 You are ready for one small new ' + (SKILL_LABELS[skill] || 'math') + ' step!';
@@ -15911,6 +16332,22 @@ function requestEasierQuestion() {
   hideFixIt();
   renderMathQuestion();
   const feedback = $('mathFeedback'); if (feedback) feedback.textContent = '🌱 Here is an easier ' + (SKILL_LABELS[(currentEq && currentEq.skill) || skill] || 'math') + ' question.';
+}
+// ⚡ the opposite of "Easier question": a kid who finds it too easy can ask for a step up
+function requestHarderQuestion() {
+  if (!currentEq || !currentEq.coreMath) return;
+  const learning = ensureMathLearning(), skill = currentEq.skill;
+  const max = maxCoreBand(skill, learning.gradeCeiling);
+  const cur = learning.bands[skill] || 1;
+  if (cur >= max) { const f = $('mathFeedback'); if (f) f.textContent = '🏆 You are already at the top ' + (SKILL_LABELS[skill] || 'math') + ' step for this grade!'; return; }
+  learning.bands[skill] = cur + 1;
+  learning.evidence[skill] = {};
+  forcedCoreQuestion = { skill, band:learning.bands[skill] };
+  currentEq.attemptRecorded = true;
+  profileDirty = true;
+  hideFixIt();
+  renderMathQuestion();
+  const feedback = $('mathFeedback'); if (feedback) feedback.textContent = '⚡ Here is a harder ' + (SKILL_LABELS[skill] || 'math') + ' question!';
 }
 /* Per-skill difficulty: each kind of problem (add, mul, frac…) climbs or eases on
    its own. Strong at multiplication? Those get a touch harder. Shaky on fractions?
@@ -16003,7 +16440,8 @@ function renderMathQuestion() {
   eqBox.textContent = curWorld().subject !== 'math' ? qt + '?'
     : (qt.indexOf('=') >= 0 || qt.trim().slice(-1) === '?') ? qt : qt + ' = ?';
   eqBox.classList.toggle('wordy', currentEq.text.length > 20);
-  const easier = $('mathEasier'); if (easier) easier.style.display = currentEq.coreMath ? 'block' : 'none';
+  const lvlBtns = $('mathLevelBtns'); if (lvlBtns) lvlBtns.style.display = currentEq.coreMath ? 'flex' : 'none';
+  const hb = $('hintBtn'); if (hb) hb.style.display = '';
   // nudge kids to use paper — but only on genuinely tricky problems, not easy ones like "8 - 1"
   $('paperTip').style.display = isTrickyQuestion(currentEq) ? 'block' : 'none';
   const learning = curWorld().subject === 'math' ? ensureMathLearning() : null;
@@ -16039,11 +16477,11 @@ function showHint() {
    easiest way to get there (pictures + worked-out numbers), then hold it on screen
    for a few seconds so younger kids actually read it before the next question. ===== */
 let fixLocked = false, fixLockTimer = null;
-// How long the lesson stays locked: a one-off slip while mostly getting them right
-// gets the gentle 10s minimum; several wrong in a row ramps up to 20s to really study it.
+// How long the lesson stays locked. Pip QA: 8–18 s felt like a freeze to a 7-year-old,
+// so a single slip waits 3 s and repeated misses ramp gently to 6 s.
 function fixLockSeconds() {
   const streak = Math.max(1, wrongStreak || 1);
-  return Math.max(10, Math.min(20, 10 + (streak - 1) * 5));
+  return Math.min(6, 3 + (streak - 1));
 }
 
 function eqDisplay(eq) {
@@ -16135,6 +16573,7 @@ function showFixIt(note, tapped) {
   $('fixBody').innerHTML = solveHTML(currentEq);
   $('fixNote').textContent = note || '';
   $('fixIt').classList.add('show');
+  $('fixBody').scrollTop = 0;                                 // always start at the top (Pip QA N2)
   startFixLock();
 }
 function startFixLock() {
@@ -16178,6 +16617,7 @@ function openMath() {
   updateMathNote();
   renderMathQuestion();
   $('mathPopup').style.display = 'flex';
+  lionCoachEvent('math_open');
 }
 /* a friendly reminder in Gloomies mode: math freezes the Gloomies + earns a shield */
 function updateMathNote() {
@@ -16246,6 +16686,8 @@ function answerPicked(btn, opt) {
     const balls = Math.max(2, Math.round(reward * 0.7));
     if (answerUnlockTimer) { clearTimeout(answerUnlockTimer); answerUnlockTimer = null; }
     $('mathPrompt').textContent = '🎉 Correct! Pick your prize:';
+    lionCoachEvent('correct');
+    { const hb = $('hintBtn'), lb = $('mathLevelBtns'), hx = $('hintBox'); if (hb) hb.style.display = 'none'; if (lb) lb.style.display = 'none'; if (hx) hx.style.display = 'none'; }   // Pip QA F10
     $('mathFeedback').textContent = '🎉 Correct! +' + (G.lastStars || 0) + '⭐' + levelNote + ' Pick your reward:';
     const wrap = $('rewardChoice');
     wrap.innerHTML = '';
@@ -16293,10 +16735,12 @@ function answerPicked(btn, opt) {
     // and hold it on screen (locked) so younger kids read it before the next question.
     $('mathFeedback').textContent = '';
     showFixIt(easierNote, (picked != null && picked !== '') ? picked : label);
+    lionCoachEvent('wrong');
   }
 }
 $w('hintBtn').onclick = () => { Sound.click(); showHint(); };
 $w('mathEasier').onclick = () => { Sound.click(); requestEasierQuestion(); };
+$w('mathHarder').onclick = () => { Sound.click(); requestHarderQuestion(); };
 function closeMath() {
   recordMathExit();                  // closing is neutral; it only offers help after repeated exits
   hideFixIt();
@@ -16313,6 +16757,7 @@ function closeMath() {
   $('rewardChoice').style.display = 'none';
   $('mathPopup').style.display = 'none';
   popupOpen = false; currentEq = null;
+  lionCoachEvent('math_close');
 }
 $w('mathClose').onclick = () => { Sound.click(); closeMath(); };
 
@@ -16326,6 +16771,7 @@ function openShop(store) {
   document.exitPointerLock && document.exitPointerLock();
   renderShop();
   $('shopPopup').style.display = 'flex';
+  if (profile && !profile.lionShopHi) { profile.lionShopHi = true; profileDirty = true; try { lionSay('shop'); } catch (e) {} }
 }
 /* little 3D preview pictures of furniture, so kids can see what each item/style looks like */
 const thumbCache = {};
@@ -16395,6 +16841,7 @@ function renderShop() {
     const row = document.createElement('div');
     row.className = 'shopItem';
     const owned = item.kind === 'own' && G.owned[item.id];
+    if (!owned && item.kind !== 'sell' && G.coins >= item.price) row.classList.add('canAfford');   // ✨ you can buy this now (Pip QA F6)
     const priceTxt = item.kind === 'sell' ? (G.berries + ' 🍓 → ' + G.berries + ' 🪙') : item.price + ' 🪙';
     const previewable = FURNITURE_TYPES.includes(item.id) || PET_KINDS[item.id];
     const finishVar = (PET_KINDS[item.id] ? 0 : (G.furnFinish || 0) * FURN_FINISH_MUL);   // show the catalog in the current town's finish
@@ -17816,6 +18263,25 @@ function carBlockedByPet(nx, nz) {       // a driving car STOPS for any pet in i
   }
   return false;
 }
+/* 📷 Pip QA N4: on touch, the camera no longer whips around when a kid pulls the stick
+   backwards. It follows the hero only while walking forward-ish, and settles in behind
+   after they stop for a moment. Desktop, driving and first person still follow exactly. */
+function camFollowYaw(dt) {
+  const now = performance.now();
+  const jumped = player._camLast && Math.hypot(player.pos.x - player._camLast.x, player.pos.z - player._camLast.z) > 4;
+  player._camLast = { x: player.pos.x, z: player.pos.z };
+  if (player.camYaw == null || !isTouch || player.driving || G.firstPerson || jumped) { player.camYaw = player.yaw; return player.yaw; }
+  const diff = shortAngle(player.camYaw, player.yaw);
+  const moving = Math.hypot(player.vel.x, player.vel.z) > 0.3;
+  if (moving) {
+    player._camMoveAt = now;
+    if (Math.abs(diff) < 1.75) player.camYaw += diff * Math.min(1, dt * 2.6);
+  } else if (now - (player._camMoveAt || 0) > 1400) {
+    player.camYaw += diff * Math.min(1, dt * 1.6);
+  }
+  return player.camYaw;
+}
+function _lookYaw() { return (isTouch && !G.firstPerson && !player.driving && player.camYaw != null) ? player.camYaw : player.yaw; }
 function shortAngle(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 function nearestHome(x, z, maxD) {
   let best = null, bd = maxD || 12;
@@ -19051,6 +19517,78 @@ function nearestStation() {
 function shopDist() { return Math.hypot(player.pos.x - SHOP_POS.x, player.pos.z - SHOP_POS.z); }
 function barnDist() { return Math.hypot(player.pos.x - BARN_POS.x, player.pos.z - BARN_POS.z); }
 
+/* ⭐ USE spots: ONE list used by both the hint bar and the USE button, so the
+   place the hint names is always the place USE opens (Pip QA F2). The winner is
+   the spot you are deepest inside (distance ÷ reach), not the first in a list. */
+function _useTxt(tap, key) { return isTouch ? 'Tap ⭐ USE ' + tap : '⭐ USE (or E) ' + key; }
+const USE_SPOTS = [
+  { d: () => nearestStation().dist, r: 2.6, go: () => openMath(),
+    hint: () => { const v = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read'; return '❓ ' + _useTxt('to ' + v + ' and pick a reward!', 'to ' + v + ' and pick a reward!'); } },
+  { d: () => carDist(), r: 2.8, go: () => toggleDrive(),
+    hint: () => { const nm = activeCarObj() ? activeCarObj().def.name : 'car'; return '🚗 ' + _useTxt('to drive your ' + nm + '!', 'to drive your ' + nm + '!'); } },
+  { d: () => motorsDist(), r: 4.0, go: () => openMotors(), hint: () => '🚗 ' + _useTxt('— Stack Motors car showroom!', '— Stack Motors car showroom!') },
+  { d: () => bakeryDist(), r: 3.6, go: () => openBakery(), hint: () => '🧁 ' + _useTxt('— make a treat at Stack Sweets!', '— make a treat at Stack Sweets!') },
+  { d: () => pizzaDist(), r: 3.8, go: () => openPizza(), hint: () => '🍕 ' + _useTxt('— serve fraction pizzas at the Pizzeria!', '— serve fraction pizzas at the Pizzeria!') },
+  { d: () => G.world !== 'meadow' ? 999 : insideFeedStore(player.pos.x, player.pos.z) || nearestFeedSku(2.1) ? 0 : feedDoorDist(), r: 3.2, feed: true,
+    go: () => tryFeedUse(),
+    hint: () => {
+      const sku = nearestFeedSku(2.1);
+      if (sku) return '🧺 ' + _useTxt('— pick up ' + sku.emoji + ' ' + sku.name + '!', '— pick up ' + sku.emoji + ' ' + sku.name + '!');
+      if (feedBasketReady() && feedCounterDist() < 2.6) return '💵 ' + _useTxt('— count the change at the cashier!', '— count the change at the cashier!');
+      if (insideFeedStore(player.pos.x, player.pos.z)) return '📋 Grab the chalkboard order off the shelves, then go to the cashier.';
+      return '🌾 Walk in the door — shop the shelves, then count change!';
+    } },
+  { d: () => gasDist(), r: 3.6, go: () => openGas(), hint: () => '⛽ ' + _useTxt('— fill up at the pit (nitro math)!', '— fill up at the pit (nitro math)!') },
+  { d: () => judgeDist(), r: 4.4, go: () => openFairJudge(), hint: () => '🏁 ' + _useTxt('— County Fair: judge, race, or pit stop!', '— County Fair: judge, race, or pit stop!') },
+  { d: () => trainDist(), r: 4.4, go: () => openTrainRide(), hint: () => G.tickets > 0 ? '🚂 Tap ⭐ USE — ride the steam train! (🎟️ ' + G.tickets + ')' : '🚂 Earn a 🎟️ ride ticket (answer ❓ STEM) then USE to ride!' },
+  { d: () => buggyDist(), r: 3.4, go: () => rentBuggy(), hint: () => '🐴 ' + _useTxt('— rent the horse & buggy (10 🪙)!', '— rent the horse & buggy (10 🪙)!') },
+  { d: () => libraryDist(), r: 4.2, go: () => openLibrary(), hint: () => '📚 ' + _useTxt('— read a story at the Library!', '— read a story at the Library!') },
+  { d: () => postDist(), r: 3.8, go: () => openPost(), hint: () => '🏤 ' + _useTxt('— Spelling Bee at the Post Office!', '— Spelling Bee at the Post Office!') },
+  { d: () => cinemaDist(), r: 4.0, go: () => openCinema(), hint: () => '🎬 ' + _useTxt('— fix the grammar at the Cinema!', '— fix the grammar at the Cinema!') },
+  { d: () => arcadeDist(), r: 4.0, go: () => openArcade(), hint: () => '🕹️ ' + _useTxt('— word games & prizes at the Arcade!', '— word games & prizes at the Arcade!') },
+  { d: () => realtyDist(), r: 3.8, go: () => openRealty(),
+    hint: () => { const rn = G.world === 'meadow' ? 'Country Homes' : 'Stack Realty'; return '🏡 ' + _useTxt('— buy a home at ' + rn + '!', '— buy a home at ' + rn + '!'); } },
+  { d: () => martDist(), r: 3.8, go: () => openMart(), hint: () => '🏪 ' + _useTxt('— order in Spanish at El Mercadito!', '— order in Spanish at El Mercadito!') },
+  { d: () => boatShopDist(), r: 3.8, go: () => openBoatShop(), hint: () => '🚤 ' + _useTxt('— bikes & boats at Stack Barcos!', '— bikes & boats at Stack Barcos!') },
+  { d: () => schoolDist(), r: 3.8, go: () => openSchool(), hint: () => '🏫 ' + _useTxt('— learn Spanish at La Escuela!', '— learn Spanish at La Escuela!') },
+  { d: () => shopDist(), r: 3.5, go: () => openShop('mart'), hint: () => '🛒 ' + _useTxt('to open Stack Mart!', 'to open Stack Mart!') },
+  { d: () => barnDist(), r: 3.7, go: () => openShop('barn'), hint: () => '🏚️ ' + _useTxt('— Stack Barn: doors, blocks & furniture!', '— Stack Barn: doors, blocks & furniture!') },
+  { d: () => portalDist(), r: 4.0, go: () => openTravel(),
+    hint: () => isTouch ? '🌀 The TRAVEL portal! Tap ⭐ USE (or tap the portal) to visit other worlds!' : '🌀 The TRAVEL portal! ⭐ USE (or E, or click the portal) to visit other worlds!' },
+  { d: () => dogParkDist(), r: 3.6, go: () => startFetch(), hint: () => '🐕 ' + _useTxt('— play fetch at the dog park!', '— play fetch at the dog park!') }
+];
+function bestUseSpot() {
+  let best = null, score = 1;
+  for (const sp of USE_SPOTS) {
+    let d = 999; try { d = sp.d(); } catch (e) {}
+    if (!(d < sp.r)) continue;
+    const sc = d / sp.r;
+    if (sc < score) { score = sc; best = sp; }
+  }
+  return best;
+}
+function useBestSpot() {
+  const sp = bestUseSpot();
+  if (!sp) return false;
+  if (sp.feed) { if (!tryFeedUse()) toast('🌾 Walk in the door — grab the order off the shelves!', 2600); return true; }   // feed store plays its own sounds
+  Sound.click(); sp.go(); return true;
+}
+// ❓ USE a few steps from a block walks you over and opens it once you arrive (Pip QA F5)
+function walkToNearbyBlock() {
+  const ns = nearestStation();
+  if (!ns.st || ns.dist >= 6) return false;
+  Sound.click();
+  player.walkTo = { x: ns.st.x + 0.5, z: ns.st.z + 0.5 };
+  player.useOnArrive = { until: performance.now() + 5000 };
+  return true;
+}
+function checkUseOnArrive() {
+  const u = player.useOnArrive;
+  if (!u) return;
+  if (popupOpen || performance.now() > u.until || !player.walkTo) { player.useOnArrive = null; return; }
+  if (nearestStation().dist < 2.2) { player.useOnArrive = null; player.walkTo = null; openMath(); }
+}
+
 /* ============================ INPUT ============================ */
 const keys = {};
 // ⭐ USE — the context action (open shops/buildings, hop in/out vehicles, sit, take the road).
@@ -19066,34 +19604,22 @@ function tryUse() {
   else if (player.restingBed) { Sound.click(); toggleBedRest(); }  // get up FIRST, whatever else is nearby
   else if (player.sittingChair) { Sound.click(); toggleSit(); }
   else if (player.playing) { Sound.click(); endPlay(); }           // 🎠 hop off a playground ride
-  else if (nearestStation().dist < 2.6) { Sound.click(); openMath(); }
-  else if (shopDist() < 3.5) { Sound.click(); openShop('mart'); }
-  else if (barnDist() < 3.7) { Sound.click(); openShop('barn'); }
-  else if (carDist() < 2.8) { Sound.click(); toggleDrive(); }   // hop in your parked car
-  else if (motorsDist() < 4.0) { Sound.click(); openMotors(); }   // dealership (buy or repaint)
-  else if (bakeryDist() < 3.6) { Sound.click(); openBakery(); }   // 🧁 bake a cake (measuring!)
-  else if (pizzaDist() < 3.8) { Sound.click(); openPizza(); }     // 🍕 fractions pizzeria (Math Meadow)
-  else if (tryFeedUse()) { }                                      // 🌾 walk-in feed store — pick shelves, then cashier
-  else if (gasDist() < 3.6) { Sound.click(); openGas(); }         // ⛽ pit / nitro math
-  else if (judgeDist() < 4.4) { Sound.click(); openFairJudge(); }  // 🏁 County Fair judge stand — time math (Math Meadow)
-  else if (trainDist() < 4.4) { Sound.click(); openTrainRide(); } // 🚂 steam train ride (Country Western)
-  else if (buggyDist() < 3.4) { Sound.click(); rentBuggy(); }     // 🐴 rent the horse & buggy (Country Western)
-  else if (libraryDist() < 4.2) { Sound.click(); openLibrary(); } // 📚 read a story (Reading Town)
-  else if (postDist() < 3.8) { Sound.click(); openPost(); }       // 🏤 spelling bee (Reading Town)
-  else if (cinemaDist() < 4.0) { Sound.click(); openCinema(); }   // 🎬 grammar cinema (Reading Town)
-  else if (arcadeDist() < 4.0) { Sound.click(); openArcade(); }   // 🕹️ word-game arcade (Reading Town)
-  else if (realtyDist() < 3.8) { Sound.click(); openRealty(); }   // 🏡 Stack Realty (Reading Town)
-  else if (martDist() < 3.8) { Sound.click(); openMart(); }       // 🏪 El Mercadito (Spanish Beach)
-  else if (boatShopDist() < 3.8) { Sound.click(); openBoatShop(); } // 🚤 Stack Barcos (Spanish Beach)
-  else if (schoolDist() < 3.8) { Sound.click(); openSchool(); }    // 🏫 La Escuela (Spanish Beach)
-  else if (portalDist() < 2.6) { Sound.click(); openTravel(); }
-  else if (dogParkDist() < 3.6) { Sound.click(); startFetch(); }   // 🐕 dog park — play fetch for coins!
+  else if (useBestSpot()) { }                                    // one shared "nearest place" pick, same as the hint bar (Pip QA F2)
+  else if (walkToNearbyBlock()) { }                               // ❓ a few steps away: walk over, then open it (Pip QA F5)
   else if (nearestLift()) { const lf = nearestLift(); Sound.click(); if (lf.type === 'elevator') openLift(lf); else useStairs(lf); }   // 🪜🛗 ride between floors
   else if (nearestSandbox()) { Sound.click(); openSandbox(nearestSandbox()); }   // 🏖️ play in the sandbox — build sandcastles!
   else if (nearestPlay()) { Sound.click(); startPlay(nearestPlay()); }   // 🎠 hop on a swing / see-saw / slide / spring rider / roundabout / climbing frame
   else if (nearestChair()) { Sound.click(); toggleSit(); }
   else if (nearestBed()) { Sound.click(); toggleBedRest(); }
+  else if (nearNeighborHouse()) { toast("🏠 Knock knock! Nobody's home right now. Get your own house at 🏡 " + (G.world === 'meadow' ? 'Country Homes' : 'Stack Realty') + '!', 2800); }
   else { toast('⭐ Walk up to a shop, car, or chair, then tap USE!', 1800); }
+}
+// Pip QA N12: kids try every door — a neighbor's house answers instead of doing nothing
+function nearNeighborHouse() {
+  if (G.world !== 'city' || typeof CITY_SOLID === 'undefined') return false;
+  const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) if (CITY_SOLID.has((px + dx) + ',' + (pz + dz))) return true;
+  return false;
 }
 addEventListener('keydown', e => {
   if (e.code === 'Escape' || e.key === 'Escape') {
@@ -19968,17 +20494,18 @@ function freeMouse() {
     : '🖱️ Drag to look • left-click to build • right-click (or X) to remove. Want mouse movement? Tap 🚶 Click-to-move (bottom-left) — no keyboard needed!', 4200);
 }
 $w('cursorBtn').onclick = () => { Sound.click(); try { openLeoIntro(false); } catch (e) { freeMouse(); } };
-$w('leoSkip').onclick = () => { Sound.click(); closeLeoIntro(); };
+$w('leoSkip').onclick = () => { Sound.click(); closeLeoIntro(true); };
 $w('leoNext').onclick = () => { Sound.click(); leoIntroNext(); };
-$w('guideListen').onclick = async () => {
+$w('guideListen').onclick = () => {
   if (!leoIntro) return;
-  Sound.click();
-  if (Narrator.speaking) { Narrator.stop(); $('guideListen').textContent = '🔊 Listen'; return; }
-  $('guideListen').textContent = '◼ Stop voice';
-  await Narrator.introLine(leoIntro.i);
-  if (!Narrator.speaking) $('guideListen').textContent = '🔊 Listen';
+  Sound.click(); lionSay(leoIntro.steps[leoIntro.i], { card: true });
 };
-$('leoIntro').addEventListener('keydown', e => { if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeLeoIntro();} });
+$w('lionCoachHead').onclick = () => {
+  Sound.click();
+  if (lionCoach) { const k = { go: 'go_block', use: 'at_block', answer: 'question', prize: 'correct', build: 'build' }[lionCoach.stage]; if (k) { lionSay(k); return; } }
+  try { openLeoIntro(false); } catch (e) {}
+};
+$('leoIntro').addEventListener('keydown', e => { if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeLeoIntro(true);} });
 ['pointerdown','mousedown','touchstart','click'].forEach(type => $('feedShelfHud').addEventListener(type,e=>e.stopPropagation()));
 // 🧱 Build / ⛏️ Remove toggle (desktop): so a plain left-click can remove blocks too
 function setRemoveMode(on) {
@@ -20084,7 +20611,9 @@ let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
   const joyBase = $('joyBase'), joyStick = $('joyStick');
-  joyBase.style.display = 'none';                       // dynamic move-circle: appears under your thumb (hole.io style)
+  // Pip QA N4: a faint resting ring bottom-left shows kids where to drag; it jumps under the thumb when they touch
+  const joyRest = () => { joyBase.style.left = ''; joyBase.style.top = ''; joyBase.style.bottom = ''; joyBase.classList.add('rest'); joyBase.style.display = G.running ? 'block' : 'none'; };
+  joyBase.style.display = 'none';
   joyBase.style.pointerEvents = 'none';
   canvas.style.touchAction = 'none';
   const JOY_R = 60;
@@ -20094,8 +20623,8 @@ if (isTouch) {
     joyStick.style.left = (33 + ux * cl * 0.5) + 'px';
     joyStick.style.top = (33 + uy * cl * 0.5) + 'px';
     const frac = cl / JOY_R;
-    touch.joyX = cl > 6 ? ux * frac : 0;
-    touch.joyY = cl > 6 ? uy * frac : 0;
+    touch.joyX = cl > 4 ? ux * frac : 0;   // Pip QA N4: smaller dead zone
+    touch.joyY = cl > 4 ? uy * frac : 0;
   }
   // ⛏️ hold your finger still on a block → it breaks — and KEEP holding to dig block
   // after block (the raycast reaches the next one each time). Replaces the old
@@ -20113,7 +20642,7 @@ if (isTouch) {
     if (moveId !== null) return;
     const t = e.changedTouches[0];
     moveId = t.identifier; oX = t.clientX; oY = t.clientY; moved = 0; t0 = performance.now(); shown = false;
-    breakFired = false; touch.moveYaw = player.yaw;
+    breakFired = false; touch.moveYaw = player.camYaw != null ? player.camYaw : player.yaw;
     clearTimeout(breakT);
     breakT = setTimeout(fireBreak, 430);
     e.preventDefault();
@@ -20123,9 +20652,9 @@ if (isTouch) {
       if (t.identifier !== moveId) continue;
       const dx = t.clientX - oX, dy = t.clientY - oY;
       moved = Math.max(moved, Math.hypot(dx, dy));
-      if (!shown && moved > 6) {                         // reveal the circle once you start dragging
+      if (!shown && moved > 5) {                         // reveal the circle once you start dragging
         joyBase.style.left = (oX - 60) + 'px'; joyBase.style.top = (oY - 60) + 'px';
-        joyBase.style.bottom = 'auto'; joyBase.style.display = 'block'; shown = true; movedHintDone = true;
+        joyBase.style.bottom = 'auto'; joyBase.classList.remove('rest'); joyBase._dragging = true; joyBase.style.display = 'block'; shown = true; movedHintDone = true;
       }
       if (shown) setStick(dx, dy);
       e.preventDefault();
@@ -20159,7 +20688,7 @@ if (isTouch) {
         interact(ndcX, ndcY, 'place');
       }
       moveId = null; touch.joyX = 0; touch.joyY = 0; touch.moveYaw = null;
-      joyBase.style.display = 'none'; joyStick.style.left = '33px'; joyStick.style.top = '33px';
+      joyStick.style.left = ''; joyStick.style.top = ''; joyBase._dragging = false; joyRest();
     }
   }
   canvas.addEventListener('touchend', endMove);
@@ -20178,8 +20707,11 @@ const GRADE_DESCS = {
   beach:  { 2: 'First words & greetings', 3: 'Colors, numbers & animals', 4: 'Simple sentences', 5: 'Everyday conversation' },
   west:   { 2: 'Shapes & simple machines', 3: 'Forces, ramps & materials', 4: 'Bridges, levers & measuring', 5: 'Trusses, loads & balance' }
 };
+const GRADE_FIELD_LABELS = { meadow: 'Math practice starting point', city: 'Reading practice starting point', beach: 'Spanish starting point', west: 'Science & building starting point' };
 function updateGradeDescs(world) {
   const map = GRADE_DESCS[world] || GRADE_DESCS.meadow;
+  const lab = $('gradeFieldLabel'); if (lab) lab.textContent = GRADE_FIELD_LABELS[world] || GRADE_FIELD_LABELS.meadow;   // Pip QA F9
+  const note = lab && lab.nextElementSibling; if (note && note.tagName === 'SMALL') note.textContent = (world === 'meadow' || !world) ? 'Math stays within this US grade level and includes easier review when it helps.' : 'Questions start here and grow with your reader, with easier review when it helps.';
   $('gradeRow').querySelectorAll('button').forEach(b => {
     const small = b.querySelector('small');
     if (small && map[b.dataset.grade]) small.textContent = map[b.dataset.grade];
@@ -20409,7 +20941,7 @@ if ($('startBtn')) $('startBtn').onclick = () => {
   G.blocks = Math.max(G.blocks || 0, 16); // starter blocks — no Build-walls dead end
   G.mouseWalk = false;                 // Keep OFF: click places blocks. WASD / 🚶 toggle to walk (see spawn toast).
   loadProfileFor(nm);
-  G.wantIntro = !profile.seenIntro;
+  G.wantIntro = !introSeenHere();   // per world, so a new Reading Town game gets its own welcome (Pip QA F11)
   startGame();
   try { saveGame(); } catch (e) {}     // persist calm mode immediately
 };
@@ -21850,6 +22382,9 @@ function loop(now) {
   if (_showPaints && !$('blockPaints')._built) refreshPaintStrip();
   $('blockPaints').style.display = _showPaints ? 'flex' : 'none';
 
+  lionCoachTick();
+  // 🕹️ resting joystick ring (touch): visible while playing, hidden under popups
+  if (isTouch) { const jb = $('joyBase'); if (jb && (jb.classList.contains('rest') || jb.style.display === 'none') && !jb._dragging) { jb.classList.add('rest'); const want = (!popupOpen && G.running && !G.over && !player.driving) ? 'block' : 'none'; if (jb.style.display !== want) jb.style.display = want; } }
   // hints
   if (!popupOpen && !G.over) {
     const hint = $('hintBar');
@@ -21861,6 +22396,8 @@ function loop(now) {
     if (_ba && _ba.textContent !== _useLbl) _ba.textContent = _useLbl;
     if (_bd && _bd.textContent !== _useLbl) _bd.textContent = _useLbl;
     const ns = nearestStation();
+    const _spot = bestUseSpot();
+    checkUseOnArrive();
     if (roadExitDist() < 3.2) {
       const dest = WORLDS[ROAD_DEST[G.world]];
       hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ ⭐ USE (or E) — take the road to ') + (dest ? dest.name : 'the next town') + '!';
@@ -21873,75 +22410,11 @@ function loop(now) {
     } else if (!isTouch && G.buildMode && !G.removeMode && !player.driving && (G.blocks || 0) > 0) {
       hint.textContent = '🧱 Click places a block • WASD / arrows to move' + (G.mouseWalk ? ' (click-to-move paused while building)' : '');
       hint.style.display = 'block';
-    } else if (ns.dist < 2.6) {
-      const verb = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read';
-      hint.textContent = (isTouch ? '❓ Tap ⭐ USE to ' + verb + ' and pick a reward!' : '❓ ⭐ USE (or E) to ' + verb + ' and pick a reward!');
+    } else if (_spot) {
+      hint.textContent = _spot.hint();
       hint.style.display = 'block';
-    } else if (carDist() < 2.8) {
-      const nm = activeCarObj() ? activeCarObj().def.name : 'car';
-      hint.textContent = isTouch ? '🚗 Tap ⭐ USE to drive your ' + nm + '!' : '🚗 ⭐ USE (or E) to drive your ' + nm + '!';
-      hint.style.display = 'block';
-    } else if (motorsDist() < 4.0) {
-      hint.textContent = isTouch ? '🚗 Tap ⭐ USE — Stack Motors car showroom!' : '🚗 ⭐ USE (or E) — Stack Motors car showroom!';
-      hint.style.display = 'block';
-    } else if (bakeryDist() < 3.6) {
-      hint.textContent = isTouch ? '🧁 Tap ⭐ USE — make a treat at Stack Sweets!' : '🧁 ⭐ USE (or E) — make a treat at Stack Sweets!';
-      hint.style.display = 'block';
-    } else if (pizzaDist() < 3.8) {
-      hint.textContent = isTouch ? '🍕 Tap ⭐ USE — serve fraction pizzas at the Pizzeria!' : '🍕 ⭐ USE (or E) — serve fraction pizzas at the Pizzeria!';
-      hint.style.display = 'block';
-    } else if (G.world === 'meadow' && (insideFeedStore(player.pos.x, player.pos.z) || feedDoorDist() < 3.2 || nearestFeedSku(2.1))) {
-      const sku = nearestFeedSku(2.1);
-      if (sku) hint.textContent = isTouch ? '🧺 Tap ⭐ USE — pick up ' + sku.emoji + ' ' + sku.name + '!' : '🧺 ⭐ USE (or E) — pick up ' + sku.emoji + ' ' + sku.name + '!';
-      else if (feedBasketReady() && feedCounterDist() < 2.6) hint.textContent = isTouch ? '💵 Tap ⭐ USE — count the change at the cashier!' : '💵 ⭐ USE (or E) — count the change at the cashier!';
-      else if (insideFeedStore(player.pos.x, player.pos.z)) hint.textContent = '📋 Grab the chalkboard order off the shelves, then go to the cashier.';
-      else hint.textContent = isTouch ? '🌾 Walk in the door — shop the shelves, then count change!' : '🌾 Walk in the door — shop the shelves, then count change!';
-      hint.style.display = 'block';
-    } else if (G.world === 'meadow' && gasDist() < 3.6) {
-      hint.textContent = isTouch ? '⛽ Tap ⭐ USE — fill up at the pit (nitro math)!' : '⛽ ⭐ USE (or E) — fill up at the pit (nitro math)!';
-      hint.style.display = 'block';
-    } else if (judgeDist() < 4.4) {
-      hint.textContent = isTouch ? '🏁 Tap ⭐ USE — County Fair: judge, race, or pit stop!' : '🏁 ⭐ USE (or E) — County Fair: judge, race, or pit stop!';
-      hint.style.display = 'block';
-    } else if (trainDist() < 4.4) {
-      hint.textContent = (G.tickets > 0 ? '🚂 Tap ⭐ USE — ride the steam train! (🎟️ ' + G.tickets + ')' : '🚂 Earn a 🎟️ ride ticket (answer ❓ STEM) then USE to ride!');
-      hint.style.display = 'block';
-    } else if (buggyDist() < 3.4) {
-      hint.textContent = isTouch ? '🐴 Tap ⭐ USE — rent the horse & buggy (10 🪙)!' : '🐴 ⭐ USE (or E) — rent the horse & buggy (10 🪙)!';
-      hint.style.display = 'block';
-    } else if (libraryDist() < 4.2) {
-      hint.textContent = isTouch ? '📚 Tap ⭐ USE — read a story at the Library!' : '📚 ⭐ USE (or E) — read a story at the Library!';
-      hint.style.display = 'block';
-    } else if (postDist() < 3.8) {
-      hint.textContent = isTouch ? '🏤 Tap ⭐ USE — Spelling Bee at the Post Office!' : '🏤 ⭐ USE (or E) — Spelling Bee at the Post Office!';
-      hint.style.display = 'block';
-    } else if (cinemaDist() < 4.0) {
-      hint.textContent = isTouch ? '🎬 Tap ⭐ USE — fix the grammar at the Cinema!' : '🎬 ⭐ USE (or E) — fix the grammar at the Cinema!';
-      hint.style.display = 'block';
-    } else if (arcadeDist() < 4.0) {
-      hint.textContent = isTouch ? '🕹️ Tap ⭐ USE — word games & prizes at the Arcade!' : '🕹️ ⭐ USE (or E) — word games & prizes at the Arcade!';
-      hint.style.display = 'block';
-    } else if (realtyDist() < 3.8) {
-      const rn = G.world === 'meadow' ? 'Country Homes' : 'Stack Realty';
-      hint.textContent = isTouch ? '🏡 Tap ⭐ USE — buy a home at ' + rn + '!' : '🏡 ⭐ USE (or E) — buy a home at ' + rn + '!';
-      hint.style.display = 'block';
-    } else if (martDist() < 3.8) {
-      hint.textContent = isTouch ? '🏪 Tap ⭐ USE — order in Spanish at El Mercadito!' : '🏪 ⭐ USE (or E) — order in Spanish at El Mercadito!';
-      hint.style.display = 'block';
-    } else if (boatShopDist() < 3.8) {
-      hint.textContent = isTouch ? '🚤 Tap ⭐ USE — bikes & boats at Stack Barcos!' : '🚤 ⭐ USE (or E) — bikes & boats at Stack Barcos!';
-      hint.style.display = 'block';
-    } else if (schoolDist() < 3.8) {
-      hint.textContent = isTouch ? '🏫 Tap ⭐ USE — learn Spanish at La Escuela!' : '🏫 ⭐ USE (or E) — learn Spanish at La Escuela!';
-      hint.style.display = 'block';
-    } else if (shopDist() < 3.5) {
-      hint.textContent = isTouch ? '🛒 Tap ⭐ USE to open Stack Mart!' : '🛒 ⭐ USE (or E) to open Stack Mart!';
-      hint.style.display = 'block';
-    } else if (barnDist() < 3.7) {
-      hint.textContent = isTouch ? '🏚️ Tap ⭐ USE — Stack Barn: doors, blocks & furniture!' : '🏚️ ⭐ USE (or E) — Stack Barn: doors, blocks & furniture!';
-      hint.style.display = 'block';
-    } else if (portalDist() < 5.5) {
-      hint.textContent = isTouch ? '🌀 The TRAVEL portal! Tap ⭐ USE (or tap the portal) to visit Reading Town & other worlds!' : '🌀 The TRAVEL portal! ⭐ USE (or E, or click the portal) to visit Reading Town & other worlds!';
+    } else if (ns.dist < 6) {
+      hint.textContent = isTouch ? '❓ Walk closer to the ❓ block, or tap ⭐ USE to go there!' : '❓ Walk closer to the ❓ block, or press ⭐ USE (E) to go there!';
       hint.style.display = 'block';
     } else if (player.sittingChair || nearestChair()) {
       hint.textContent = isTouch ? '🪑 Tap ⭐ USE to ' + (player.sittingChair ? 'get up' : 'sit down') + '!' : '🪑 ⭐ USE (or E) to ' + (player.sittingChair ? 'get up' : 'sit down') + '!';

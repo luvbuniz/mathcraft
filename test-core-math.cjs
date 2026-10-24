@@ -41,7 +41,7 @@ vm.runInContext(`
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = ri(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   ${between('/*\n   Core Math Meadow questions', '/* ===================== READING CITY')}
   ${fn('safeMathGrade')}
-  ${fn('initialMathBands')}
+  ${between('const CORE_GRADE_START', 'function ensureMathLearning')}
   ${fn('ensureMathLearning')}
   ${fn('setMathGradeCeiling')}
   ${fn('coreEvidence')}
@@ -86,18 +86,34 @@ assert(grade3.every(q => !(/×/.test(q.text) && /\d{2}/.test(q.text))), 'Grade 3
 validateSet(4, 5000);
 validateSet(5, 5000);
 
+// Pip QA F3: Grade 2 starts past "within 10" and steps up after a short streak.
 reset(2);
 run(`
   var learning = ensureMathLearning();
-  for (let i = 0; i < 19; i++) recordCoreMathAttempt({coreMath:true,skill:'add',difficultyBand:1,templateId:'ccss-1oa-add-10',text:'1 + ' + (i + 1)}, true);
-  globalThis.afterNineteen = learning.bands.add;
-  recordCoreMathAttempt({coreMath:true,skill:'add',difficultyBand:1,templateId:'ccss-1oa-add-10',text:'2 + 20'}, true);
-  globalThis.afterTwenty = learning.bands.add;
+  globalThis.startAdd = learning.bands.add; globalThis.startSub = learning.bands.sub;
+  for (let i = 0; i < 5; i++) recordCoreMathAttempt({coreMath:true,skill:'add',difficultyBand:2,templateId:'ccss-1oa-add-20-no-regroup',text:'11 + ' + (i + 1)}, true);
+  globalThis.afterFive = learning.bands.add;
+  recordCoreMathAttempt({coreMath:true,skill:'add',difficultyBand:2,templateId:'ccss-1oa-add-20-no-regroup',text:'12 + 6'}, true);
+  globalThis.afterSix = learning.bands.add;
   globalThis.mulBand = learning.bands.mul;
 `);
-assert(run('afterNineteen') === 1, 'promoted before 20 qualifying answers');
-assert(run('afterTwenty') === 2, 'did not promote one add band after 20 qualifying answers');
+assert(run('startAdd') === 2 && run('startSub') === 2, 'Grade 2 did not start at within-20 add/sub');
+assert(run('afterFive') === 2, 'promoted before 6 qualifying answers');
+assert(run('afterSix') === 3, 'did not promote one add band after a 6-answer streak');
 assert(run('mulBand') === undefined, 'addition changed multiplication evidence for Grade 2');
+reset(2);
+run(`
+  learning = ensureMathLearning();
+  [true,true,true,true,false,true].forEach((ok,i) => recordCoreMathAttempt({coreMath:true,skill:'sub',difficultyBand:2,templateId:'t',text:'19 − ' + (i + 1)}, ok));
+  globalThis.mixedSub = learning.bands.sub;
+`);
+assert(run('mixedSub') === 2, 'a recent miss should not promote (or demote on one miss)');
+reset(2);
+run(`
+  profile={mathLearning:{version:1,gradeCeiling:2,bands:{add:1,sub:1},evidence:{}}};
+  globalThis.liftedAdd = ensureMathLearning().bands.add;
+`);
+assert(run('liftedAdd') === 2, 'old Grade 2 saves were not lifted to the new starting band');
 
 reset(3);
 run(`
@@ -126,7 +142,7 @@ run(`
   globalThis.spellAfterMathOnly=profile.spellLevel;
 `);
 assert(run('migratedCeiling') === 2, 'legacy math level raised the migrated grade ceiling');
-assert(run('migratedAddBand') === 1, 'legacy save did not start math at the beginner band');
+assert(run('migratedAddBand') === 2, 'legacy save did not start math at the Grade 2 band');
 assert(run('readAfterMathOnly') === 4 && run('spellAfterMathOnly') === 5, 'math-only setting changed another subject');
 
 console.log(JSON.stringify({ passed:true, generated:{ grade2:grade2.length, grade3:grade3.length, grade4:5000, grade5:5000 } }));
