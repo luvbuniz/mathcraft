@@ -4678,6 +4678,8 @@ function fetchAvatarBytes(id) {
 /* Parse a fresh instance (each use gets its own copy — skinned meshes don't share safely). */
 function parseAvatarModel(id) {
   if (typeof THREE.GLTFLoader === 'undefined') return Promise.resolve(null);
+  const spare = heroSpares.get(id);
+  if (spare) { heroSpares.delete(id); return Promise.resolve(spare); }   // 🔥 warmed at idle — no parse hitch
   return fetchAvatarBytes(id).then(buf => new Promise(resolve => {
     if (!buf) return resolve(null);
     try {
@@ -4686,6 +4688,49 @@ function parseAvatarModel(id) {
       }, err => { console.warn('avatar model parse failed', id, err); resolve(null); });
     } catch (e) { console.warn('avatar model load failed', id, e); resolve(null); }
   }));
+}
+/* 🔥 Ticket B — warm studio heroes at idle so the first Hero Mirror swap doesn't hitch.
+   Never during startup: it waits for the game to be running and a few seconds of idle after first paint.
+   Data-light on phones: only the hero just before and just after yours in the picker are warmed (fetch + parse
+   one ready-to-use copy each, shaders compiled), and only once the Hero Mirror is unlocked — nobody can swap
+   before that. Save-Data / 2G / 3G connections skip the downloads. Spares that stop being neighbours are freed. */
+const heroSpares = new Map();                  // id → one parsed, ready model instance
+let heroWarmTimer = 0, heroWarmBusy = false;
+function heroWarmAllowed() {
+  const c = navigator.connection;
+  return !(c && (c.saveData || /(^|slow-)2g|3g/.test(c.effectiveType || '')));
+}
+function heroWarmTargets() {
+  if (classicHeroes() || typeof heroMirrorUnlocked !== 'function' || !heroMirrorUnlocked()) return [];
+  const vis = AVATARS.map((a, i) => i).filter(i => !AVATARS[i].hidden || i === G.avatarIndex);
+  const k = vis.indexOf(G.avatarIndex); if (k < 0 || vis.length < 2) return [];
+  const ids = [vis[(k + 1) % vis.length], vis[(k - 1 + vis.length) % vis.length]].map(i => AVATARS[i].id);
+  return [...new Set(ids)].filter(id => id !== AVATARS[G.avatarIndex].id);
+}
+function scheduleHeroWarm(delay) {
+  clearTimeout(heroWarmTimer);
+  heroWarmTimer = setTimeout(() => {
+    const idle = window.requestIdleCallback || (f => setTimeout(f, 1));
+    idle(heroWarmStep, { timeout: 4000 });
+  }, delay == null ? 4000 : delay);
+}
+function heroWarmStep() {
+  if (heroWarmBusy || !G.running || typeof THREE.GLTFLoader === 'undefined') return;
+  const want = heroWarmTargets();
+  heroSpares.forEach((d, id) => { if (!want.includes(id)) { heroSpares.delete(id); disposeAvatarObject(d.group, d); } });
+  if (!heroWarmAllowed() || popupOpen) { if (want.length && popupOpen) scheduleHeroWarm(3000); return; }
+  const id = want.find(x => !heroSpares.has(x)); if (!id) return;
+  heroWarmBusy = true;
+  parseAvatarModel(id).then(d => {
+    heroWarmBusy = false;
+    if (!d) return;
+    if (!heroWarmTargets().includes(id) || heroSpares.has(id)) { disposeAvatarObject(d.group, d); return; }
+    try {                                       // compile its shaders now (offstage, invisible), not on the swap frame
+      d.group.visible = false; scene.add(d.group); renderer.compile(scene, camera);
+    } catch (e) {} finally { scene.remove(d.group); }
+    heroSpares.set(id, d);
+    scheduleHeroWarm(1500);                     // next neighbour, one at a time
+  });
 }
 /* Normalize a loaded model: game-friendly materials, sunlight shadows, hero size, feet at 0. */
 function prepareAvatarModel(id, gltf) {
@@ -19430,6 +19475,7 @@ function checkQuests() {
     let ok = false; try { ok = q.check(); } catch (e) {}
     if (ok) {
       profile.questsDone[q.id] = true;
+      if (q.id === 'mirror') scheduleHeroWarm(10000);  // 🔥 Hero Mirror just unlocked → warm its neighbours at idle
       if (baseline) continue;                         // silent grandfather — no payout
       G.coins += q.reward; any = true;
       if (Sound.fanfare) Sound.fanfare();
@@ -19496,7 +19542,10 @@ function renderHeroMirror() {
   });
   html += '</div>';
   body.innerHTML = html;
-  body.querySelectorAll('.mirrorHero').forEach(b => { if (!b.disabled) b.onclick = () => swapHero(+b.dataset.i); });
+  body.querySelectorAll('.mirrorHero').forEach(b => { if (!b.disabled) {
+    b.onclick = () => swapHero(+b.dataset.i);
+    b.addEventListener('pointerdown', () => { if (!classicHeroes()) fetchAvatarBytes(AVATARS[+b.dataset.i].id); }, { once: true });   // head start on the download
+  } });
 }
 function openHeroMirror() {
   if (popupOpen || G.over || !G.running) return;
@@ -19523,6 +19572,7 @@ function swapHero(i) {
   Sound.click();
   G.avatarIndex = i;
   setAvatar(i);                                   // rebuild on the spot — the real model streams in behind
+  scheduleHeroWarm(6000);                         // 🔥 re-aim the idle warm-up at the new neighbours
   respawnNpcs();                                  // friends reshuffle: nobody twins the new you
   saveGame();                                     // nothing else changes — the save just remembers the new hero
   closeHeroMirror();
@@ -21857,6 +21907,7 @@ function startGame() {
   respawnNpcs();                                // 🧑‍🤝‍🧑 town friends stroll near spawn (restore & travel come through here too)
   refreshHUD();
   G.running = true;
+  scheduleHeroWarm(8000);                 // 🔥 idle warm-up of picker-neighbour heroes, well after first paint
   updateRotateGate();                             // 🔄 clears any leftover rotate overlay (portrait plays now!)
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
