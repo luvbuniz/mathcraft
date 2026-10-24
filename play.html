@@ -1163,6 +1163,7 @@
     #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
   }
 
+  @keyframes cartoonSpin { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -10813,12 +10814,12 @@ function openLibrary() {
   renderLib();
   $('libraryPopup').style.display = 'flex';
 }
-function closeLibrary() { stopLibVideo(); try { Narrator.stop(); } catch (e) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
+function closeLibrary() { stopLibVideo(); dropWarmCartoon(); try { Narrator.stop(); } catch (e) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
 // 🎞️ Movie collection — kids UNLOCK a cartoon by finishing a Library book, then rewatch it here
 // anytime. Titled like a SHOW (not a "lesson") so it never feels like a tutorial. Drop each clip
 // in as shots/cartoons/<id>.mp4; until then it shows a "coming soon" card.
 const CARTOONS = [
-  { id: 'icecream',   title: 'Leo and the Ice Cream Man', emoji: '🍦', ready: true },   // ready = the .mp4 is in shots/cartoons/
+  { id: 'icecream',   title: 'Leo and the Ice Cream Man', emoji: '🍦', ready: true, poster: true },   // ready = the .mp4 is in shots/cartoons/; poster = <id>.jpg too
   { id: 'waterslide', title: 'The Great Water Slide',     emoji: '🛝' },
   { id: 'firetruck',  title: 'Leo and the Fire Truck',    emoji: '🚒' },
   { id: 'unicorn',    title: 'Fiona and the Unicorns',    emoji: '🦄' },
@@ -10858,9 +10859,34 @@ function exitVideoFullscreen() {
 }
 function stopLibVideo() {                            // leaving the player: drop fullscreen and silence the clip
   exitVideoFullscreen();
-  try { const v = document.getElementById('cvid2'); if (v) { v.pause(); v.removeAttribute('src'); v.load(); } } catch (e) {}
+  // PR #497 retest: the tab's speaker stayed on in the collection — silence EVERY clip in the
+  // Library (not just #cvid2), so nothing keeps playing behind the grid
+  try {
+    const pop = document.getElementById('libraryPopup');
+    const vids = pop ? [...pop.querySelectorAll('video, audio')] : [];
+    const v = document.getElementById('cvid2'); if (v && vids.indexOf(v) === -1) vids.push(v);
+    vids.forEach(m => { try { m.pause(); m.muted = true; m.removeAttribute('src'); m.load(); } catch (e) {} });
+  } catch (e) {}
+}
+/* 🎬 PR #497 retest: ~4 s of black before the cartoon. The clip is now "fast start" (index at the
+   front), the player shows the poster + a spinner until it really plays, and the clip starts
+   downloading as soon as a Watch button appears. */
+function cartoonSrc(c) { return 'shots/cartoons/' + c.id + '.mp4'; }
+function cartoonPoster(c) { return c && c.poster ? 'shots/cartoons/' + c.id + '.jpg' : ''; }
+let _warmVid = null;
+function dropWarmCartoon() { try { if (_warmVid) { _warmVid.removeAttribute('src'); _warmVid.load(); } } catch (e) {} _warmVid = null; }   // free the buffer when the Library closes
+function warmCartoon(c) {
+  if (!cartoonReady(c)) return;
+  try {
+    const src = cartoonSrc(c);
+    if (_warmVid && _warmVid.dataset.src === src) return;
+    _warmVid = document.createElement('video');
+    _warmVid.muted = true; _warmVid.preload = 'auto'; _warmVid.dataset.src = src; _warmVid.src = src;   // never played or attached: just fills the cache
+    if (c.poster) { const i = new Image(); i.src = cartoonPoster(c); }
+  } catch (e) {}
 }
 function renderCartoonShelf() {
+  stopLibVideo();                                    // nothing plays behind the grid (PR #497 retest)
   $('libTitle').innerHTML = '🎞️ My Movie Collection';
   $('libStory').innerHTML = '';
   const u = unlockedCartoons(), shelf = readyCartoons();     // reels without a clip yet are never shown
@@ -10874,6 +10900,7 @@ function renderCartoonShelf() {
     const got = u.indexOf(c.id) !== -1;
     const cell = document.createElement('button'); cell.className = 'libBtn';
     cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 7px;' + (got ? '' : 'opacity:.65;filter:grayscale(.6)');
+    if (got) warmCartoon(c);
     cell.innerHTML = got
       ? '<div style="font-size:32px">' + c.emoji + '</div><div style="font-size:12px;font-weight:700;line-height:1.15">' + c.title + '</div><div style="font-size:11px;color:#2f8a52;font-weight:800">▶ Watch</div>'
       : '<div style="font-size:32px">🔒</div><div style="font-size:14px;font-weight:800;color:#999">? ? ?</div><div style="font-size:10px;color:#a06a2c;font-weight:700">📖 Read to unlock</div>';
@@ -10882,7 +10909,7 @@ function renderCartoonShelf() {
   });
   wrap.appendChild(grid);
   const back = document.createElement('button'); back.className = 'libBtn'; back.textContent = '⬅ Back'; back.style.marginTop = '4px';
-  back.onclick = () => { Sound.click(); lib.phase = 'pick'; renderLib(); };
+  back.onclick = () => { Sound.click(); stopLibVideo(); lib.phase = 'pick'; renderLib(); };
   wrap.appendChild(back);
 }
 function renderCartoonWatch() {
@@ -10890,7 +10917,7 @@ function renderCartoonWatch() {
   if (!cartoonReady(c)) { lib.phase = 'movies'; renderLib(); return; }   // never open a reel with no clip
   $('libTitle').innerHTML = c.emoji + ' ' + c.title;
   $('libPrompt').textContent = '';
-  mountMoviePlayer($('libStory'), 'shots/cartoons/' + c.id + '.mp4', c.title);
+  mountMoviePlayer($('libStory'), cartoonSrc(c), c.title, { poster: cartoonPoster(c), loading: true });
   // Pip QA N8: the kid just tapped "Watch" — start it big and with sound, not tiny and muted.
   // Fullscreen only once the clip is really PLAYING: a failed/missing clip must never leave an
   // invisible fullscreen layer that swallows every tap (Pip QA P0-2).
@@ -10915,7 +10942,17 @@ function renderCartoonWatch() {
 }
 // Self-contained movie player (inline-styled so it works anywhere): autoplays muted + loops,
 // a tap unmutes & restarts with sound, ⛶ goes fullscreen, and a missing clip shows "coming soon."
-function mountMoviePlayer(host, src, title) {
+function mountMoviePlayer(host, src, title, opt) {
+  opt = opt || {};
+  const posterAttr = opt.poster ? ' poster="' + opt.poster + '"' : '';
+  // a ready clip shows its poster + a spinner while it loads (never "COMING SOON", never plain black)
+  const cover = opt.loading
+    ? '<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;' +
+        (opt.poster ? 'background:#000 url(' + opt.poster + ') center/contain no-repeat' : 'background:linear-gradient(#2a1640,#120a1d)') + '">' +
+        '<div class="cartoonSpin" style="width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:cartoonSpin .8s linear infinite"></div>' +
+        '<div style="font-weight:800;font-size:14px;background:rgba(0,0,0,.55);padding:4px 12px;border-radius:14px">🎬 Starting your cartoon…</div>' +
+      '</div>'
+    : null;
   // 📱 The Library cartoons are filmed PORTRAIT (phone-shaped), so we show them inside a phone
   // mock-up — vertical video looks intentional, never stretched across a wide tablet screen.
   host.innerHTML =
@@ -10923,12 +10960,12 @@ function mountMoviePlayer(host, src, title) {
       '<div style="position:relative;height:min(70vh,540px);aspect-ratio:9/17;background:linear-gradient(160deg,#2c2c33,#141417);border-radius:30px;padding:18px 8px;box-sizing:border-box;box-shadow:0 12px 32px rgba(0,0,0,.45),inset 0 0 0 2px #41414a">' +
         '<div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:52px;height:7px;background:#0a0a0c;border-radius:6px;z-index:7"></div>' +     // camera speaker pill
         '<div style="position:relative;width:100%;height:100%;background:#000;border-radius:16px;overflow:hidden">' +
-          '<video id="cvid2" src="' + src + '" muted loop autoplay playsinline preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>' +
+          '<video id="cvid2" src="' + src + '"' + posterAttr + ' muted loop autoplay playsinline preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>' +
           '<button id="cfs2" style="display:none;position:absolute;top:8px;right:8px;z-index:5;cursor:pointer;border:2px solid rgba(255,255,255,.92);background:#7a4ea0;color:#fff;font-size:12px;font-weight:800;padding:5px 9px;border-radius:20px">⛶ Full</button>' +
           '<div id="sndcue2" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;cursor:pointer">🔊 Tap for sound</div>' +
-          '<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#2a1640,#120a1d);color:#fff;text-align:center">' +
+          (cover || ('<div id="cfall2" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:linear-gradient(#2a1640,#120a1d);color:#fff;text-align:center">' +
             '<div style="font-size:12px;letter-spacing:2px;color:#b79be0;font-weight:800">🎬 COMING SOON</div><div style="font-size:40px">🎞️</div><div style="font-weight:800;font-size:13px;padding:0 10px">' + title + '</div>' +
-          '</div>' +
+          '</div>')) +
         '</div>' +
         '<div style="position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:32%;height:5px;background:rgba(255,255,255,.55);border-radius:4px;z-index:7"></div>' +   // home indicator
       '</div>' +
@@ -10961,7 +10998,10 @@ function renderLib() {
   if (lib.phase === 'pick') {
     $('libTitle').innerHTML = '📚 Library'; $('libStory').innerHTML = '';
     $('libPrompt').textContent = 'Pick a story to read:  •  📖 Reading Level ' + readLevelNow();
-    shuffle(STORIES.slice()).slice(0, 3).forEach(s => {
+    // PR #497 retest ("The Little Seed" opened "Tilly and the Race"): the 3 stories were re-shuffled
+    // on every redraw, so a redraw under a finger could swap the rows. Pick them once per visit.
+    if (!lib.pickList || lib.pickList.some(s => STORIES.indexOf(s) === -1)) lib.pickList = shuffle(STORIES.slice()).slice(0, 3);
+    lib.pickList.forEach(s => {
       const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.innerHTML = s.e + ' ' + s.t;
       b.onclick = () => { Sound.click(); lib.story = s; lib.phase = 'read'; renderLib(); };
       wrap.appendChild(b);
@@ -11128,6 +11168,7 @@ function finishLib() {
     '<button class="libBtn" id="libDoneBtn">Done</button>';
   $('libMsg').textContent = 'Coins come from first-try answers. Get ' + Math.ceil(accT * 0.75) + ' out of ' + accT + ' right to unlock a cartoon.';
   $('libAgainBtn').onclick = () => { closeLibrary(); openLibrary(); };
+  if (unlockedNow || rewatch) warmCartoon(unlockedNow || rewatch);
   if (unlockedNow || rewatch) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow || rewatch }; $('libStory').innerHTML = ''; renderLib(); };
   $('libDoneBtn').onclick = closeLibrary;
 }
@@ -11169,6 +11210,7 @@ function finishBattle() {
       (prize ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">' + (prizeNew ? '🎬 Watch my prize cartoon!' : '🎬 Watch a cartoon again') + '</button>' : '') +
       '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">📚 Back to the Library</button>' +
       '<button class="libBtn" id="libDoneBtn">Done</button>';
+    if (prize) warmCartoon(prize);
     if (prize) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: prize }; $('libStory').innerHTML = ''; renderLib(); };
     $('libAgainBtn').onclick = () => { Sound.click(); lib = { phase: 'pick' }; $('libStory').innerHTML = ''; renderLib(); };
     $('libDoneBtn').onclick = closeLibrary;

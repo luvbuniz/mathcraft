@@ -25,3 +25,8 @@ Cloudflare rejects any single file over 25 MB. Compress with HandBrake (the
 
 To add more cartoons to the collection, add them to the `CARTOONS` list in
 play.html (id + title + emoji) and drop the matching `<id>.mp4` here.
+
+**Encoding (PR #497 retest):** export clips "fast start" so they begin playing before the whole
+file downloads — `ffmpeg -i in.mp4 -c copy -movflags +faststart <id>.mp4` (lossless). Add a
+poster frame as `<id>.jpg` (e.g. `ffmpeg -ss 0.6 -i <id>.mp4 -frames:v 1 -vf scale=360:-2 <id>.jpg`)
+and set `poster: true` on the reel in `CARTOONS`.
