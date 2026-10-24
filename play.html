@@ -1174,6 +1174,10 @@
   #setupCard #screenHero .stepNav .btn-secondary { min-width:96px; }
   #setupCard #screenHero #startBtn { min-width:240px; font-size:20px; }
   #setupCard #screenHero .avatarCard { scroll-margin-top:12px; scroll-margin-bottom:128px; }
+  /* PR #502 retest (pr502-05): sticky stops at the scroll box's padding, so the 24px #startScreen
+     padding left a strip of the next row's cards peeking under the bar. No bottom padding while
+     the hero picker is up: the bar now sits flush on the screen's bottom edge. */
+  #startScreen:has(#screenHero:not([hidden])) { padding-bottom:0; }
   /* touch screens: the keyboard keys and mouse tips are hidden; the tablet tip stays */
   #setupCard .howtoBody span.deskOnly { display:contents; }   /* keeps the key chips in the flex row on desktop */
   @media (hover:none) and (pointer:coarse) {

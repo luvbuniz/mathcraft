@@ -14,4 +14,5 @@ assert(s.includes("card.scrollIntoView({ block: 'nearest' })"),'tapped card scro
 assert(/@media \(hover:none\) and \(pointer:coarse\) \{\s*#setupCard \.howtoBody \.deskOnly/.test(css));
 assert(s.includes('<span class="deskOnly"><span class="kbd">Arrows</span>'));
 assert(/<p><b>Phone or tablet:<\/b>/.test(s),'tablet tip not hidden');
+assert(s.includes('#startScreen:has(#screenHero:not([hidden])) { padding-bottom:0; }'),'no gap under the Start bar (pr502-05)');
 console.log('hero-start-strip: ok');
