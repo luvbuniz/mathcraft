@@ -8,10 +8,12 @@ function test(name, fn) { try { fn(); console.log('PASS ' + name); passed++; } c
 const a = html.indexOf('/* WIZTV-LOGIC-START */'), b = html.indexOf('/* WIZTV-LOGIC-END */');
 assert.ok(a > 0 && b > a, 'Wizlings TV logic block markers missing from play.html');
 const ctx = vm.createContext({ URLSearchParams, location: { search: '' }, console });
-vm.runInContext(html.slice(a, b) + '\nthis.WIZ_TV = WIZ_TV;', ctx);
+const qa = html.indexOf('/* LIBQ-LOGIC-START */'), qb = html.indexOf('/* LIBQ-LOGIC-END */');
+assert.ok(qa > 0 && qb > qa, 'LIBQ logic markers missing');
+vm.runInContext(html.slice(qa, qb) + '\n' + html.slice(a, b) + '\nthis.WIZ_TV = WIZ_TV;', ctx);
 const W = ctx;
 const STORY_TITLES = [...html.matchAll(/\{ e: '[^']*', t: ("|')(.*?)\1/g)].map(m => m[2].replace(/\\'/g, "'"));
-function session(title, opts) { return Object.assign({ story: { t: title }, qs: [{}, {}, {}, {}], qi: 4, firstRight: 4, lastRight: true }, opts || {}); }
+function session(title, opts) { return Object.assign({ story: { t: title }, qs: [{}, {}, {}, {}], qi: 4, firstRight: 4 }, opts || {}); }
 
 test('every paired episode points at a real Library story title', () => {
   for (const ep of W.WIZ_TV.episodes) assert.ok(STORY_TITLES.includes(ep.story), ep.id + ' story "' + ep.story + '" not in STORIES');
@@ -42,15 +44,17 @@ test('passing the last question with 4/4 unlocks the story’s own episode, once
   const again = W.wizUnlockForSession(session("Bronco's Icy Escape"), p);
   assert.equal(again.isNew, false); assert.deepEqual([...p.wizTvUnlocked], ['ep3']);
 });
-test('3 of 4 with the last one right still unlocks', () => {
-  const p = {}; assert.equal(W.wizUnlockForSession(session('The Dragon Who Wanted to Shine', { firstRight: 3 }), p).ep.id, 'ep7');
-});
-test('missing the LAST question does not unlock', () => {
-  const p = {}; assert.equal(W.wizUnlockForSession(session("Popcorn's Magical Journey", { firstRight: 3, lastRight: false }), p), null);
+test('first-try rule: 3 of 4 unlocks, 2 of 4 does not', () => {
+  assert.equal(W.wizUnlockForSession(session('The Dragon Who Wanted to Shine', { firstRight: 3 }), {}).ep.id, 'ep7');
+  const p = {}; assert.equal(W.wizUnlockForSession(session("Popcorn's Magical Journey", { firstRight: 2 }), p), null);
   assert.equal((p.wizTvUnlocked || []).length, 0);
 });
-test('skimming (under 3 of 4 first-try) does not unlock even if the last is right', () => {
-  assert.equal(W.wizUnlockForSession(session("RobotCat's Big Adventure", { firstRight: 2 }), {}), null);
+test('first-try rule: 2 of 3 unlocks, 1 of 3 does not; 3 of 5 unlocks, 2 of 5 does not', () => {
+  const three = { qs: [{}, {}, {}], qi: 3 }, five = { qs: [{}, {}, {}, {}, {}], qi: 5 };
+  assert.ok(W.wizUnlockForSession(session("RobotCat's Big Adventure", Object.assign({ firstRight: 2 }, three)), {}));
+  assert.equal(W.wizUnlockForSession(session("RobotCat's Big Adventure", Object.assign({ firstRight: 1 }, three)), {}), null);
+  assert.ok(W.wizUnlockForSession(session("RobotCat's Big Adventure", Object.assign({ firstRight: 3 }, five)), {}));
+  assert.equal(W.wizUnlockForSession(session("RobotCat's Big Adventure", Object.assign({ firstRight: 2 }, five)), {}), null);
 });
 test('an unfinished quiz or a Library Battle does not unlock', () => {
   assert.equal(W.wizUnlockForSession(session("RobotCat's Big Adventure", { qi: 3 }), {}), null);
