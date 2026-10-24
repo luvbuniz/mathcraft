@@ -8659,6 +8659,10 @@ function feedCounterDist() {
   if (G.world !== 'meadow') return 999;
   return Math.hypot(player.pos.x - 8.5, player.pos.z - (-12.5));
 }
+function feedExitHushed() {          // just walked out via 🚪 Exit store: hush the door prompt until 4.5 m away
+  if (player._feedExitHush && (G.world !== 'meadow' || feedDoorDist() > 4.5)) player._feedExitHush = false;
+  return !!player._feedExitHush;
+}
 function feedDoorDist() {
   if (G.world !== 'meadow') return 999;
   return Math.hypot(player.pos.x - 6.5, player.pos.z - (-11.2));
@@ -8806,7 +8810,7 @@ function tryFeedUse() {
     toast('📋 Pick the order off the shelves, then take it to the cashier!', 2600);
     return true;
   }
-  if (feedDoorDist() < 2.8) {
+  if (feedDoorDist() < 2.8 && !feedExitHushed()) {
     toast('🌾 Walk in the door — grab the order off the shelves!', 2600);
     return true;
   }
@@ -16018,15 +16022,28 @@ function updatePlayer(dt) {
     let dir = new THREE.Vector3(cx, Math.max(0.4, cy), cz).sub(head);
     const far = dir.length(); dir.normalize();
     let allowed = camRoomAlong(head, dir, far, inside);
-    // Pip retest rt25–rt29: walls behind you used to park the camera in the hero's hair. Lift it up
-    // over the shoulder instead (looking down at the hero) when that gives clearly more room.
+    // Pip retest rt25–rt29 + PR #495 retest (pr495-02/03/05/09): a wall, shop or sign right behind
+    // you used to park the camera in the hero (hero gone, wall filling the screen), and lifting
+    // straight up went overhead with no hero in view. Now, when blocked, try swinging the camera
+    // around the hero as well as a modest lift, and keep the spot with the most room (a small
+    // bonus for the spot used last frame stops it flickering between two).
+    let swing = { yaw: 0, lift: 0 };
     if (allowed < 2.2 && !selfie) {
-      for (const lift of [0.8, 1.6]) {
-        const d2 = new THREE.Vector3(dir.x, dir.y + lift, dir.z).normalize();
-        const a2 = camRoomAlong(head, d2, far, inside);
-        if (a2 > allowed + 0.4) { allowed = a2; dir = d2; if (a2 >= 2.2) break; }
+      const prev = player._camSwing || swing;
+      const score0 = Math.min(allowed, 3.2) + (!prev.yaw && !prev.lift ? 0.35 : 0);
+      let best = { yaw: 0, lift: 0, room: allowed, dir, score: score0 };
+      for (const yawOff of CAM_SWING_YAWS) for (const lift of CAM_SWING_LIFTS) {
+        if (!yawOff && !lift) continue;
+        const c = Math.cos(yawOff), sn = Math.sin(yawOff);
+        const d2 = new THREE.Vector3(dir.x * c + dir.z * sn, dir.y + lift, -dir.x * sn + dir.z * c).normalize();
+        const room = camRoomAlong(head, d2, far, inside);
+        const score = Math.min(room, 3.2) - 0.55 * Math.abs(yawOff) - 0.6 * lift + (prev.yaw === yawOff && prev.lift === lift ? 0.35 : 0);
+        if (score > best.score) best = { yaw: yawOff, lift, room, dir: d2, score };
       }
+      if (best.dir !== dir) { allowed = best.room; dir = best.dir; }
+      swing = { yaw: best.yaw, lift: best.lift };
     }
+    player._camSwing = swing;
     // first-person only as a last resort in a tiny room — and never once you've picked "Behind me"
     if (inside && allowed < 1.0 && !G.birdsEye && !G.keepThird && !inStore) {
       // Real interior path — first-person — instead of a clipped "fake interior" camera
@@ -16055,6 +16072,9 @@ function updatePlayer(dt) {
           headY + Math.sin(player.pitch) * 8,
           player.pos.z - Math.cos(_lookYaw()) * Math.cos(player.pitch) * 8
         );
+  // camera lifted over a wall: aim nearer the hero so they stay in the frame (pr495-03)
+  const _sw = (!G.birdsEye && !G.firstPerson && !G.selfie && player._camSwing) ? player._camSwing.lift : 0;
+  if (_sw) look.lerp(new THREE.Vector3(player.pos.x, headY - 0.3, player.pos.z), Math.min(0.7, _sw * 0.75));
   camera.lookAt(look);
 
   // first time you stand under your own roof, suggest first-person for a look around inside
@@ -18840,24 +18860,49 @@ function exitFeedStore() {
   if (!insideFeedStore(player.pos.x, player.pos.z)) return;
   if (typeof Sound !== 'undefined' && Sound.click) Sound.click();
   player.walkTo = null; player.vel.set(0, 0, 0);
-  player.pos.set(6, 0, FEED_WALL.z1 + 1.6);      // just outside the south door
+  player.pos.set(6.5, 0, FEED_WALL.z1 + 4.2);    // a few steps out of the south door, so the camera has room behind (PR #495 retest pr495-33)
+  player._feedExitHush = true;                   // no "Walk in the door" again until you've walked away (pr495-27)
   player.yaw = Math.PI; player.camYaw = Math.PI; // facing out, into the meadow
   if (G._autoInterior) { G.firstPerson = false; G._autoInterior = false; const cb = $('camBtn'); if (cb) cb.textContent = camIcon(); }
   storeEntryCheck(false);
 }
-/* 🫥 Pip QA P0-4: if the camera ends up closer than ~1 m to the hero, don't draw the hero for
-   that frame (no screen full of hair or face). Visibility is restored right after the draw,
-   so nothing else that shows/hides the hero is affected. */
+const CAM_SWING_YAWS = [0, 0.45, -0.45, 0.9, -0.9, 1.35, -1.35];   // radians around the hero
+const CAM_SWING_LIFTS = [0, 0.5, 0.9];
+/* 🫥 Pip QA P0-4 + PR #495 retest: if the camera still ends up closer than ~1 m to the hero
+   (a tiny room), draw the hero see-through for that frame instead of not at all, so the hero
+   never vanishes but hair/face can't fill the screen. The hero's own meshes get faded copies of
+   their materials just for this draw (materials can be shared with the world, so the originals
+   are never changed); everything is put back right after. Nothing is left over between frames,
+   so a reload/Continue can't start with a hidden hero. */
 const CAM_HIDE_DIST = 1.0;
+const HERO_FADE_OPACITY = 0.35;
+const _heroFadeMats = new WeakMap();
+function heroFadeMat(m) {
+  let f = _heroFadeMats.get(m);
+  if (!f) { f = m.clone(); f.transparent = true; f.depthWrite = false; _heroFadeMats.set(m, f); }
+  if (f.color && m.color) f.color.copy(m.color);
+  f.opacity = HERO_FADE_OPACITY * (m.opacity == null ? 1 : m.opacity);
+  f.visible = m.visible;
+  return f;
+}
 function renderMainView() {
   const av = player.avatar;
-  let hid = false;
+  const swapped = [];
   if (av && av.visible && !G.firstPerson && !G.birdsEye && !player.driving) {
     const cp = camera.position, y0 = player.pos.y, y1 = player.pos.y + 1.95;
     const ny = Math.max(y0, Math.min(y1, cp.y));             // nearest point on the hero's body column
-    if (Math.hypot(cp.x - player.pos.x, cp.y - ny, cp.z - player.pos.z) < CAM_HIDE_DIST) { av.visible = false; hid = true; }
+    if (Math.hypot(cp.x - player.pos.x, cp.y - ny, cp.z - player.pos.z) < CAM_HIDE_DIST) {
+      try {
+        av.traverse(o => {
+          if (!o.isMesh || !o.material) return;
+          swapped.push([o, o.material]);
+          o.material = Array.isArray(o.material) ? o.material.map(heroFadeMat) : heroFadeMat(o.material);
+        });
+      } catch (e) {}
+    }
   }
-  try { renderer.render(scene, camera); } finally { if (hid) av.visible = true; }
+  G._heroFaded = swapped.length > 0;
+  try { renderer.render(scene, camera); } finally { for (const [o, m] of swapped) o.material = m; }
 }
 function camFollowYaw(dt) {
   const now = performance.now();
@@ -20125,7 +20170,7 @@ const USE_SPOTS = [
   { d: () => motorsDist(), r: 4.0, go: () => openMotors(), hint: () => '🚗 ' + _useTxt('— Stack Motors car showroom!', '— Stack Motors car showroom!') },
   { d: () => bakeryDist(), r: 3.6, go: () => openBakery(), hint: () => '🧁 ' + _useTxt('— make a treat at Stack Sweets!', '— make a treat at Stack Sweets!') },
   { d: () => pizzaDist(), r: 3.8, go: () => openPizza(), hint: () => '🍕 ' + _useTxt('— serve fraction pizzas at the Pizzeria!', '— serve fraction pizzas at the Pizzeria!') },
-  { d: () => G.world !== 'meadow' ? 999 : insideFeedStore(player.pos.x, player.pos.z) || nearestFeedSku(2.1) ? 0 : feedDoorDist(), r: 3.2, feed: true,
+  { d: () => G.world !== 'meadow' || feedExitHushed() ? 999 : insideFeedStore(player.pos.x, player.pos.z) || nearestFeedSku(2.1) ? 0 : feedDoorDist(), r: 3.2, feed: true,
     go: () => tryFeedUse(),
     hint: () => {
       const sku = nearestFeedSku(2.1);
@@ -21943,6 +21988,7 @@ function startGame() {
     if (typeof player !== 'undefined' && player && player.pos) {
       camera.position.set(player.pos.x, (player.pos.y || 0) + 1.65, player.pos.z);
       camera.rotation.set(0, 0, 0);
+      player._camSwing = null; player._feedExitHush = false;   // fresh camera state on every start / Continue
       camera.rotation.order = 'YXZ';
     } else {
       camera.position.set(8, 9, 14);
