@@ -1227,7 +1227,7 @@
       <button id="authEntryHome" class="btn btn-ghost btn-block" style="margin:0 0 6px; background:#e8f0fb; color:#2E5E8C; font-weight:bold; border:2px solid #c5d8f0">
         Sign in with email
       </button>
-      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v300 — talking King Lion + tablet QA fixes</div>
+      <div id="authBuildTag" style="font-size:11px; color:#8aa3c0; margin:0 0 12px">v301 — new blocky heroes + relaxed shoulders</div>
 
       <p id="leaveSavedNotice" role="status" hidden style="color:#286444;font-weight:bold"></p>
       <div class="panel" id="continuePanel">
@@ -3352,8 +3352,9 @@ function generateOnce(grade) {
 
 /* ============================ AVATARS ============================ */
 const matCache = {};
+const matCacheSet = new Set();   // 🧱 the plain shared colours — bakeBlocky() may glue meshes using these
 function mat(color) {
-  if (!matCache[color]) matCache[color] = new THREE.MeshLambertMaterial({ color });
+  if (!matCache[color]) { matCache[color] = new THREE.MeshLambertMaterial({ color }); matCacheSet.add(matCache[color]); }
   return matCache[color];
 }
 // 🟢 Avatars (ONLY) get soft rounded edges so the characters read less blocky than the voxel world.
@@ -3361,8 +3362,9 @@ function mat(color) {
 // world / shops / furniture call box() with ROUND_AV off, so they stay crisp and blocky.
 let ROUND_AV = false;
 const AV_ROUND = 0.40;           // corner softness = fraction of a part's smallest side (0.15 subtle … 0.45 very round)
+let avRoundK = null;             // 🧱 a builder can ask for crisper corners (the blocky kids use BLK_ROUND)
 function roundedBoxGeo(w, h, d) {
-  const r = Math.min(w, h, d) * AV_ROUND;
+  const r = Math.min(w, h, d) * (avRoundK != null ? avRoundK : AV_ROUND);
   const g = new THREE.BoxGeometry(w, h, d, 2, 2, 2);
   const p = g.attributes.position, v = new THREE.Vector3();
   const hw = w / 2 - r, hh = h / 2 - r, hd = d / 2 - r;
@@ -3463,20 +3465,26 @@ function addEyes(head, color, z, noBlush, big) {
 }
 /* A bendy mouth + brows on the head front, so the avatar can smile, grin or frown.
    Returns the pieces so the animation loop can switch expressions (great for selfies). */
-function addFace(head, y, z, color) {
+function addFace(head, y, z, color, browZ, narrow) {
   const col = color || 0x7a2b2b;
   const mouth = new THREE.Group(); mouth.position.set(0, y, z);
-  box(mouth, 0.16, 0.04, 0.03, col, 0, 0, 0);                 // mouth centre bar
-  const lc = box(mouth, 0.055, 0.04, 0.03, col, -0.105, 0, 0); // left corner
-  const rc = box(mouth, 0.055, 0.04, 0.03, col, 0.105, 0, 0);  // right corner
+  const mw = narrow ? 0.6 : 1;                                 // four-legged heroes: a small mouth that fits the muzzle
+  box(mouth, 0.16 * mw, 0.04, 0.03, col, 0, 0, 0);                 // mouth centre bar
+  const lc = box(mouth, 0.055 * mw, 0.04, 0.03, col, -0.105 * mw, 0, 0); // left corner
+  const rc = box(mouth, 0.055 * mw, 0.04, 0.03, col, 0.105 * mw, 0, 0);  // right corner
   head.add(mouth);
-  const browL = box(head, 0.105, 0.03, 0.03, BROW_COLOR, -0.11, BROW_Y, z + 0.002); // soft, always-on brows (forward of the catch-lights)
-  const browR = box(head, 0.105, 0.03, 0.03, BROW_COLOR, 0.11, BROW_Y, z + 0.002);
+  const bz = browZ != null ? browZ : z + 0.002;                // brows sit ON the forehead (a muzzle sticks out further)
+  const browL = box(head, 0.105, 0.03, 0.03, BROW_COLOR, -0.11, BROW_Y, bz); // soft, always-on brows (forward of the catch-lights)
+  const browR = box(head, 0.105, 0.03, 0.03, BROW_COLOR, 0.11, BROW_Y, bz);
   browL.visible = browR.visible = true;                       // brows now expressive every frame, not frown-only
   return { mouth, lc, rc, browL, browR, y, browY: BROW_Y, blush: head.userData.blush || null };
 }
 function setFaceExpr(face, kind) {
   if (!face) return;
+  if (face.pixel) {                                           // 🧱 pixel-art face: swap the painted picture(s)
+    (Array.isArray(face.pixel) ? face.pixel : [face.pixel]).forEach(px => { px.mesh.material = px.mats[kind] || px.mats.smile; });
+    return;
+  }
   const f = face;
   const by = (f.browY != null) ? f.browY : 0.16;
   const setBlush = s => { if (f.blush) { f.blush[0].scale.setScalar(s); f.blush[1].scale.setScalar(s); } };
@@ -3507,21 +3515,225 @@ function setFaceExpr(face, kind) {
 
 /* Each builder returns {group, legs, arms, head} — feet at y=0, faces +Z. */
 /* Four-legged base: horizontal body, head up front, legs at the corners. */
-function buildQuad(bodyColor, headColor, legColor) {
+function buildQuad(bodyColor, headColor, legColor, pawColor) {
   const g = new THREE.Group();
-  const legs = [
-    limb(g, 0.2, 0.5, 0.2, legColor, -0.17, 0.5, 0.3),   // front left
-    limb(g, 0.2, 0.5, 0.2, legColor, 0.17, 0.5, 0.3),    // front right
-    limb(g, 0.2, 0.5, 0.2, legColor, -0.17, 0.5, -0.3),  // back left
-    limb(g, 0.2, 0.5, 0.2, legColor, 0.17, 0.5, -0.3)    // back right
-  ];
-  box(g, 0.58, 0.48, 0.96, bodyColor, 0, 0.72, 0);          // chunkier body — proportionate to the legs (lion-like)
-  box(g, 0.34, 0.32, 0.26, bodyColor, 0, 0.96, 0.42);        // neck
+  // 🦵 legs hinge INSIDE the body (above the belly line), so their tops stay tucked in while
+  // they swing — no gap, no floating sticks. A body-coloured thigh blends into the torso,
+  // the lower leg is slimmer, and a paw plants on the ground.
+  const leg = (x, z) => {
+    const L = new THREE.Group(); L.position.set(x, 0.64, z); g.add(L);
+    box(L, 0.24, 0.36, 0.26, bodyColor, 0, -0.16, 0);         // thigh / shoulder
+    box(L, 0.18, 0.34, 0.19, legColor, 0, -0.42, 0);          // lower leg
+    box(L, 0.21, 0.1, 0.25, pawColor || legColor, 0, -0.59, 0.03);   // paw / hoof
+    return L;
+  };
+  const legs = [leg(-0.17, 0.3), leg(0.17, 0.3), leg(-0.17, -0.3), leg(0.17, -0.3)];   // FL, FR, BL, BR
+  box(g, 0.58, 0.48, 0.96, bodyColor, 0, 0.72, 0);          // chunky body
+  box(g, 0.48, 0.16, 0.8, bodyColor, 0, 0.52, 0);           // soft belly — joins the legs to the body
+  const chest = box(g, 0.5, 0.5, 0.36, bodyColor, 0, 0.84, 0.34);   // chest rises toward the neck
+  const neck = box(g, 0.34, 0.32, 0.26, bodyColor, 0, 0.96, 0.42);  // neck
   const head = new THREE.Group();
   head.position.set(0, 1.22, 0.56);
   box(head, 0.42, 0.4, 0.42, headColor, 0, 0, 0);
   g.add(head);
-  return { group: g, legs, arms: [], head, quad: true };
+  return { group: g, legs, arms: [], head, quad: true, chest, neck };
+}
+
+/* ============================ 🧱 BLOCKY CLASSIC STYLE ============================
+   The classic heroes' shared look: crisp chunky blocks, a pixel-art face, and a dark cartoon
+   outline so every hero reads at a glance on a busy screen. Kept cheap for low-end tablets:
+   bakeBlocky() glues each moving part's little boxes into ONE mesh (+ one outline mesh), so a
+   hero is ~15 draw calls instead of ~60, with no textures to download. */
+const BLK_ROUND = 0.10;                       // corner softness for blocky builders (AV_ROUND is the old pillowy 0.40)
+const BLK_HEAD = 0.62;                        // chunky kid head (cube side)
+const BLK_LINE = 0.022;                       // outline thickness (in blocks)
+const BLK_MAT = new THREE.MeshLambertMaterial({ vertexColors: true });
+const BLK_LINE_MAT = new THREE.MeshBasicMaterial({ color: 0x2A2130, side: THREE.BackSide });
+function blockyBuild(fn) {                    // run a builder with crisp corners, then restore
+  const prev = avRoundK; avRoundK = BLK_ROUND;
+  try { return fn(); } finally { avRoundK = prev; }
+}
+/* Glue every plain-coloured box/orb under each part (body, head, each limb, tail…) into one
+   vertex-coloured mesh, and give it an "inverted hull" outline: the same shape grown by
+   BLK_LINE on every side, drawn back-faces-only in dark ink. Hidden parts are dropped.
+   Paper-thin decals (< 0.03 thick: pockets, flowers, stripes) get no outline of their own. */
+function bakeBlocky(a, line) {
+  const t = line == null ? BLK_LINE : line;
+  const parts = [];
+  a.group.traverse(o => { if (o.isGroup || o === a.group) parts.push(o); });
+  const tmpBox = new THREE.Box3(), size = new THREE.Vector3(), ctr = new THREE.Vector3(), col = new THREE.Color();
+  const merge = (list, withColor) => {
+    let nv = 0, ni = 0;
+    list.forEach(e => { nv += e.g.attributes.position.count; ni += e.g.index ? e.g.index.count : e.g.attributes.position.count; });
+    const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), clr = withColor ? new Float32Array(nv * 3) : null;
+    const idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+    let vo = 0, io = 0;
+    list.forEach(e => {
+      const P = e.g.attributes.position, N = e.g.attributes.normal, n = P.count;
+      pos.set(P.array.subarray(0, n * 3), vo * 3);
+      if (N) nrm.set(N.array.subarray(0, n * 3), vo * 3);
+      if (clr) for (let i = 0; i < n; i++) { clr[(vo + i) * 3] = e.c.r; clr[(vo + i) * 3 + 1] = e.c.g; clr[(vo + i) * 3 + 2] = e.c.b; }
+      if (e.g.index) { const I = e.g.index.array; for (let i = 0; i < I.length; i++) idx[io + i] = I[i] + vo; io += I.length; }
+      else { for (let i = 0; i < n; i++) idx[io + i] = vo + i; io += n; }
+      vo += n;
+      e.g.dispose();
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+    if (clr) g.setAttribute('color', new THREE.BufferAttribute(clr, 3));
+    g.setIndex(new THREE.BufferAttribute(idx, 1));
+    return g;
+  };
+  parts.forEach(p => {
+    const fills = [], lines = [];
+    p.children.slice().forEach(c => {
+      if (!c.isMesh || c.children.length || c.userData.keep || !matCacheSet.has(c.material)) return;
+      p.remove(c);
+      if (!c.visible) { c.geometry.dispose(); return; }
+      c.updateMatrix();
+      const g0 = c.geometry;
+      fills.push({ g: g0.clone().applyMatrix4(c.matrix), c: col.copy(c.material.color).clone() });
+      g0.computeBoundingBox(); tmpBox.copy(g0.boundingBox); tmpBox.getSize(size); tmpBox.getCenter(ctr);
+      const sx = size.x * Math.abs(c.scale.x), sy = size.y * Math.abs(c.scale.y), sz = size.z * Math.abs(c.scale.z);
+      if (t > 0 && !c.userData.noLine && Math.min(sx, sy, sz) >= 0.03) {
+        const k = v => (v > 1e-4 ? 1 + 2 * t / v : 1);
+        const og = g0.clone();
+        og.translate(-ctr.x, -ctr.y, -ctr.z);
+        og.scale(k(sx), k(sy), k(sz));
+        og.translate(ctr.x, ctr.y, ctr.z);
+        lines.push({ g: og.applyMatrix4(c.matrix) });
+      }
+      g0.dispose();
+    });
+    if (fills.length) {
+      const m = new THREE.Mesh(merge(fills, true), BLK_MAT);
+      m.castShadow = true; m.receiveShadow = true; m.userData.baked = true;
+      p.add(m);
+    }
+    if (lines.length) {
+      const o = new THREE.Mesh(merge(lines, false), BLK_LINE_MAT);
+      o.userData.baked = true; o.userData.outline = true;
+      p.add(o);
+    }
+  });
+  return a;
+}
+/* 🙂 A pixel-art face: a 16×16 picture painted on a see-through square on the head's front.
+   The head's own skin shows through, so only eyes / brows / nose / cheeks / mouth are pixels.
+   Three pictures per face (smile, grin, frown) — setFaceExpr just swaps which one shows.
+   Faces are cached by recipe, so the hero and any town friend share the same tiny textures. */
+const PIXEL_FACE_CACHE = {};
+function paintPixelFace(f, kind) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 16;
+  const c = cv.getContext('2d');
+  const hx = n => '#' + (n >>> 0).toString(16).padStart(6, '0');
+  const px = (x, y, color) => { c.fillStyle = hx(color); c.fillRect(x, y, 1, 1); c.fillRect(15 - x, y, 1, 1); };  // mirrored pair
+  const W = f.sclera != null ? f.sclera : 0xFFFFFF, ey = f.eyeY != null ? f.eyeY : 7, by = f.browY != null ? f.browY : ey - 2;
+  if (f.mask) for (let y = ey - 1; y <= ey + 3; y++) for (let x = 1; x <= 7; x++) px(x, y, f.mask);   // 🦸 hero mask band
+  if (f.patch) for (let y = ey - 1; y <= ey + 3; y++) for (let x = 2; x <= 6; x++) if (!((y === ey - 1 || y === ey + 3) && (x === 2 || x === 6))) px(x, y, f.patch);   // 🐼 eye patches
+  // brows (sad = inner ends lifted)
+  if (f.brow != null) {
+    if (kind === 'frown') { px(3, by + 1, f.brow); px(4, by, f.brow); px(5, by, f.brow); }
+    else { px(3, by, f.brow); px(4, by, f.brow); px(5, by, f.brow); }
+  }
+  // eyes: 4 wide × 3 tall — white edges, iris in the middle, a sparkle up top
+  for (let y = ey; y < ey + 3; y++) { px(3, y, W); px(6, y, W); }
+  px(4, ey, f.shine != null ? f.shine : 0xFFFFFF); px(5, ey, f.iris);
+  px(4, ey + 1, f.iris); px(5, ey + 1, f.pupil);
+  px(4, ey + 2, f.iris); px(5, ey + 2, f.pupil);
+  if (f.lashes) { px(2, ey, f.pupil); px(3, ey - 1, f.pupil); }
+  // nose + cheeks
+  if (f.nose) px(7, ey + 3, f.nose);
+  if (f.blush) { px(2, ey + 3, f.blush); px(3, ey + 3, f.blush); }
+  if (f.mouth == null) return pixelMat(cv);                 // animals: the mouth lives on the muzzle (addPixelMouth)
+  // mouth
+  const my = ey + 4, m = f.mouth;
+  if (kind === 'grin') {
+    px(5, my, m); px(6, my, W); px(7, my, W);
+    px(6, my + 1, m); px(7, my + 1, f.tongue || 0xE8707E);
+    px(7, my + 2, m);
+  } else if (kind === 'frown') {
+    px(6, my + 1, m); px(7, my + 1, m); px(5, my + 2, m);
+  } else {
+    px(5, my, m); px(6, my + 1, m); px(7, my + 1, m);
+  }
+  return pixelMat(cv);
+}
+function pixelMat(cv) {
+  const tex = new THREE.CanvasTexture(cv);
+  tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
+  return new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 });
+}
+/* A little 6×3 pixel mouth for a muzzle / beak front (smile, grin, frown). */
+function paintPixelMouth(m, kind) {
+  const cv = document.createElement('canvas'); cv.width = 6; cv.height = 3;
+  const c = cv.getContext('2d');
+  const px = (x, y, color) => { c.fillStyle = '#' + (color >>> 0).toString(16).padStart(6, '0'); c.fillRect(x, y, 1, 1); c.fillRect(5 - x, y, 1, 1); };
+  if (kind === 'grin') { px(0, 0, m); px(1, 0, 0xFFFFFF); px(2, 0, 0xFFFFFF); px(1, 1, m); px(2, 1, 0xE8707E); px(2, 2, m); }
+  else if (kind === 'frown') { px(1, 1, m); px(2, 1, m); px(0, 2, m); }
+  else { px(0, 0, m); px(1, 1, m); px(2, 1, m); }
+  return pixelMat(cv);
+}
+function addPixelMouth(face, head, w, x, y, z, color) {
+  const key = 'mouth:' + color;
+  const mats = PIXEL_FACE_CACHE[key] || (PIXEL_FACE_CACHE[key] = {
+    smile: paintPixelMouth(color, 'smile'), grin: paintPixelMouth(color, 'grin'), frown: paintPixelMouth(color, 'frown')
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), mats.smile);
+  m.position.set(x, y, z); head.add(m);
+  face.pixel = [].concat(face.pixel, { mesh: m, mats });
+  return face;
+}
+function addPixelFace(head, size, z, recipe) {
+  const key = JSON.stringify(recipe);
+  const mats = PIXEL_FACE_CACHE[key] || (PIXEL_FACE_CACHE[key] = {
+    smile: paintPixelFace(recipe, 'smile'), grin: paintPixelFace(recipe, 'grin'), frown: paintPixelFace(recipe, 'frown')
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mats.smile);
+  m.position.set(0, 0, z);
+  head.add(m);
+  return { pixel: { mesh: m, mats } };
+}
+/* A chunky blocky kid: short legs, boxy body, big cube head. Builders dress it up.
+   Legs hinge right under the hips and arms at the shoulders, so nothing gaps when they swing. */
+function blockKidBase(skin) {
+  const g = new THREE.Group();
+  const hinge = (x, y) => { const L = new THREE.Group(); L.position.set(x, y, 0); g.add(L); return L; };
+  const legs = [hinge(-0.125, 0.5), hinge(0.125, 0.5)];
+  const arms = [hinge(-0.345, 1.0), hinge(0.345, 1.0)];
+  box(g, 0.17, 0.12, 0.17, skin, 0, 1.06, 0);                        // neck
+  const head = new THREE.Group(); head.position.set(0, 1.39, 0); g.add(head);
+  box(head, BLK_HEAD, BLK_HEAD, BLK_HEAD, skin, 0, 0, 0);
+  return { group: g, legs, arms, head };
+}
+/* A tiny pixel flower decal on a flat face of a part: n = 'f' front, 'b' back, 'l'/'r' sides. */
+function pixelFlower(parent, x, y, z, n, petal, mid, tilt) {
+  const side = n === 'l' || n === 'r';
+  const d = 0.012, L = 0.078, s = 0.026;
+  const parts = side
+    ? [box(parent, d, s, L, petal, x, y, z), box(parent, d, L, s, petal, x, y, z), box(parent, d + 0.006, s, s, mid, x, y, z)]
+    : [box(parent, L, s, d, petal, x, y, z), box(parent, s, L, d, petal, x, y, z), box(parent, s, s, d + 0.006, mid, x, y, z)];
+  if (tilt) parts.forEach(m => { if (side) m.rotation.z = tilt; else m.rotation.x = tilt; });   // lie flat on a slanted skirt
+}
+/* Four-legged heroes: pixel eyes on the head front + a small pixel mouth on the muzzle front. */
+function quadPixelFace(a, recipe, mouthY, mouthZ, mouthColor, mouthW) {
+  a.face = addPixelFace(a.head, 0.42, 0.213, Object.assign({ eyeY: 4 }, recipe));
+  addPixelMouth(a.face, a.head, mouthW || 0.1, 0, mouthY, mouthZ, mouthColor || 0x4A2A22);
+  return a.face;
+}
+/* A ring of decals around a block-shaped part (stripes, bands): thin, so no outline of their own. */
+function decal(parent, w, h, d, color, x, y, z) { const m = box(parent, w, h, d, color, x, y, z); m.userData.noLine = true; return m; }
+const GLASS_MAT = new THREE.MeshLambertMaterial({ color: 0x9AD8FF, transparent: true, opacity: 0.32, depthWrite: false });
+/* A flat-shaded square "frustum" (wider at the bottom) — an A-line skirt or gown in one block. */
+function blockFrustum(parent, wTop, wBot, h, depthRatio, color, x, y, z) {
+  let geo = new THREE.CylinderGeometry(wTop / Math.SQRT2, wBot / Math.SQRT2, h, 4, 1);
+  geo.rotateY(Math.PI / 4); geo.scale(1, 1, depthRatio);
+  geo = geo.toNonIndexed(); geo.computeVertexNormals();          // crisp flat faces, not a rounded look
+  const m = new THREE.Mesh(geo, mat(color));
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
 }
 
 function buildBiped(bodyColor, headColor, legColor, armColor) {
@@ -3552,19 +3764,26 @@ const AVATARS = [
   {
     id: 'queenfox', name: 'Queen Fox 🦊👑',
     build() {
-      const a = buildQuad(0xE8762C, 0xE8762C, 0xC95F1B);
+      const fur = 0xE8762C, cream = 0xFFF4E0, sock = 0x5A3422;
+      const a = buildQuad(fur, fur, sock);                              // 🧦 dark fox "socks" below orange thighs
       addEyes(a.head, 0x222222, 0.22);
-      box(a.head, 0.2, 0.16, 0.18, 0xFFF4E0, 0, -0.1, 0.24);            // white muzzle
+      box(a.head, 0.2, 0.16, 0.18, cream, 0, -0.1, 0.24);               // white muzzle
       box(a.head, 0.08, 0.08, 0.08, 0x222222, 0, -0.08, 0.34);          // black nose
-      box(a.head, 0.12, 0.22, 0.06, 0xE8762C, -0.13, 0.28, -0.02);      // pointy ears
-      box(a.head, 0.12, 0.22, 0.06, 0xE8762C, 0.13, 0.28, -0.02);
-      box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, -0.13, 0.26, 0.02);
-      box(a.head, 0.06, 0.11, 0.05, 0xFFF4E0, 0.13, 0.26, 0.02);
+      [-1, 1].forEach(s => {
+        box(a.head, 0.1, 0.16, 0.14, cream, s * 0.22, -0.1, 0.1);       // fluffy white cheeks
+        box(a.head, 0.12, 0.22, 0.06, fur, s * 0.13, 0.28, -0.02);      // pointy ears
+        box(a.head, 0.06, 0.11, 0.05, cream, s * 0.13, 0.26, 0.02);
+        box(a.head, 0.12, 0.07, 0.065, sock, s * 0.13, 0.37, -0.02);    // dark ear tips
+      });
       addCrown(a.head, 0.25, 0xFFD23E);
-      box(a.group, 0.32, 0.24, 0.2, 0xFFF4E0, 0, 0.78, 0.45);           // white chest
-      const tail = new THREE.Group(); tail.position.set(0, 0.85, -0.45); a.group.add(tail);   // 🦊 swishing bushy tail
-      const tfx = box(tail, 0.22, 0.22, 0.6, 0xE8762C, 0, 0, -0.2); tfx.rotation.x = 0.5;
-      box(tail, 0.18, 0.18, 0.2, 0xFFF4E0, 0, 0.15, -0.47);             // white tail tip
+      box(a.group, 0.32, 0.24, 0.2, cream, 0, 0.78, 0.45);              // white chest
+      box(a.group, 0.3, 0.12, 0.6, cream, 0, 0.46, 0.04);               // pale belly underneath
+      // 🦊 big bushy tail that curves up: it fattens toward the white tip (swishes as one piece)
+      const tail = new THREE.Group(); tail.position.set(0, 0.86, -0.44); a.group.add(tail);
+      box(tail, 0.2, 0.2, 0.3, fur, 0, 0.02, -0.1).rotation.x = 0.45;
+      box(tail, 0.27, 0.27, 0.3, fur, 0, 0.15, -0.28).rotation.x = 0.75;
+      box(tail, 0.29, 0.29, 0.26, fur, 0, 0.32, -0.4).rotation.x = 1.05;
+      box(tail, 0.25, 0.25, 0.2, cream, 0, 0.5, -0.45).rotation.x = 1.25;    // white tail tip
       a.tail = tail;
       return a;
     }
@@ -3572,99 +3791,167 @@ const AVATARS = [
   {
     id: 'princess', name: 'Princess 👸',
     build() {
-      const gown = 0xEC5BA6, gownD = 0xCC3F8A, skin = 0xFFD9B3, hair = 0x7A4A24;   // rich pink gown, chestnut hair
-      const a = buildBiped(gown, skin, gownD, skin);
-      // 😊 sweet face — soft eyes (blush comes from addEyes), a small cute smile
-      addEyes(a.head, 0x35506e, 0.26);
-      box(a.head, 0.08, 0.03, 0.03, 0xD06A92, 0, -0.15, 0.26);         // small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, -0.052, -0.135, 0.26);  // tiny upturned corners
-      box(a.head, 0.035, 0.03, 0.03, 0xD06A92, 0.052, -0.135, 0.26);
-      // 💇 flowing hair: crown + soft bangs + long princess locks
-      box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // crown of hair
-      box(a.head, 0.52, 0.12, 0.08, hair, 0, 0.16, 0.24);             // soft bangs
-      box(a.head, 0.16, 0.68, 0.16, hair, -0.31, -0.15, -0.02);        // long locks
-      box(a.head, 0.16, 0.68, 0.16, hair, 0.31, -0.15, -0.02);
-      box(a.head, 0.5, 0.6, 0.14, hair, 0, -0.12, -0.26);            // back hair
-      // 👑 tiara — gold crown with a pink jewel
-      addCrown(a.head, 0.33, 0xFFD23E);
-      box(a.head, 0.06, 0.06, 0.05, 0xFF5BA0, 0, 0.4, 0.16);
-      // 👗 fuller gown with a gold sash + jewel brooch
-      box(a.group, 0.66, 0.4, 0.46, gown, 0, 0.44, 0);               // skirt
-      box(a.group, 0.82, 0.16, 0.56, gownD, 0, 0.22, 0);             // hem
-      box(a.group, 0.56, 0.06, 0.32, 0xFFE07A, 0, 0.6, 0.01);         // gold sash
-      box(a.group, 0.1, 0.1, 0.06, 0xFFE680, 0, 0.95, 0.16);         // jewel brooch
-      box(a.group, 0.05, 0.05, 0.04, 0xFF5BA0, 0, 0.95, 0.19);       // pink gem
-      return a;
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, hair = 0xF2C94C, hairD = 0xD9A930, gown = 0xF7A8CF, gownD = 0xEC86B8,
+          gold = 0xFFD23E, gem = 0xE0457B;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        // 💛 long golden hair: cap, bangs, side curtains, a long fall down the back
+        box(H, 0.68, 0.12, 0.68, hair, 0, 0.34, 0);
+        box(H, 0.68, 1.0, 0.13, hair, 0, -0.16, -0.29);
+        box(H, 0.66, 0.15, 0.09, hair, 0, 0.27, 0.3);
+        decal(H, 0.18, 0.06, 0.09, hair, -0.16, 0.17, 0.3);
+        decal(H, 0.12, 0.05, 0.09, hair, 0.16, 0.175, 0.3);
+        [-1, 1].forEach(s => {
+          box(H, 0.09, 0.82, 0.5, hair, s * 0.33, -0.09, -0.04);
+          box(H, 0.08, 0.5, 0.07, hair, s * 0.28, 0.03, 0.3);           // locks framing the face
+          box(H, 0.12, 0.16, 0.26, hairD, s * 0.35, -0.42, 0.0);        // curls at the ends
+          box(H, 0.12, 0.14, 0.2, hair, s * 0.34, -0.56, -0.12);
+        });
+        box(H, 0.5, 0.14, 0.14, hairD, 0, -0.7, -0.3);                  // curled tips at the back
+        // 👑 tiara
+        box(H, 0.42, 0.06, 0.06, gold, 0, 0.37, 0.24);
+        [-0.13, 0, 0.13].forEach((x, i) => box(H, 0.07, i === 1 ? 0.14 : 0.1, 0.05, gold, x, i === 1 ? 0.44 : 0.42, 0.24));
+        decal(H, 0.05, 0.05, 0.02, gem, 0, 0.44, 0.27);
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x3A7BD5, pupil: 0x1E3A6E, brow: 0xB88A2A, mouth: 0xC0506A, nose: 0xCC8558, blush: 0xF08FA8, lashes: true });
+        // 👗 pale pink ball gown: bodice, gold necklace, puff sleeves, a big A-line skirt with frills
+        box(g, 0.46, 0.38, 0.26, gown, 0, 0.84, 0);
+        decal(g, 0.3, 0.025, 0.02, gold, 0, 1.0, 0.132);
+        decal(g, 0.06, 0.06, 0.02, gem, 0, 0.96, 0.136);
+        box(g, 0.48, 0.06, 0.28, gold, 0, 0.66, 0);                     // golden sash
+        blockFrustum(g, 0.5, 0.92, 0.64, 0.66, gown, 0, 0.35, 0);
+        blockFrustum(g, 0.79, 0.86, 0.05, 0.66, gownD, 0, 0.27, 0);       // frill
+        blockFrustum(g, 0.92, 0.94, 0.05, 0.66, gownD, 0, 0.055, 0);      // hem frill
+        a.arms.forEach(A => {
+          box(A, 0.23, 0.2, 0.24, gown, 0, -0.07, 0);
+          box(A, 0.2, 0.04, 0.21, gownD, 0, -0.18, 0);
+          box(A, 0.15, 0.32, 0.16, skin, 0, -0.34, 0);
+        });
+        a.legs.forEach(L => {
+          box(L, 0.17, 0.42, 0.18, skin, 0, -0.2, 0);
+          box(L, 0.2, 0.09, 0.27, 0xF06AAE, 0, -0.45, 0.03);            // pink slippers
+        });
+        a.hatY = 0.5;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'peacock', name: 'Peacock 🦚',
     build() {
-      const a = buildBiped(0x1F77C4, 0x1F77C4, 0xE8A33D, 0x1F77C4);
-      addEyes(a.head, 0x111111, 0.26);
-      box(a.head, 0.12, 0.08, 0.14, 0xE8A33D, 0, -0.08, 0.3);           // beak
-      box(a.head, 0.05, 0.16, 0.05, 0x18B27A, -0.08, 0.32, 0);          // crest feathers
-      box(a.head, 0.05, 0.2, 0.05, 0x18B27A, 0, 0.35, 0);
-      box(a.head, 0.05, 0.16, 0.05, 0x18B27A, 0.08, 0.32, 0);
-      const fan = new THREE.Group();                                    // tail fan
-      fan.position.set(0, 0.95, -0.2);
-      for (let i = -3; i <= 3; i++) {
-        const f = new THREE.Group();
-        f.rotation.z = i * 0.38;
-        const feather = box(f, 0.16, 0.85, 0.05, i % 2 ? 0x18B27A : 0x2BC4E8, 0, 0.42, 0);
-        box(f, 0.1, 0.12, 0.06, 0xF5C242, 0, 0.72, 0.01);               // feather "eye"
-        fan.add(f);
-        void feather;
-      }
-      a.group.add(fan);
-      return a;
+      return blockyBuild(() => {
+        const blue = 0x1F6FD1, blueL = 0x3C93EE, teal = 0x18B29A, green = 0x2E9E4A, gold = 0xF5C242, eye = 0x1A3FA8, orange = 0xF0A030;
+        const g = new THREE.Group();
+        const hinge = (x, y, z) => { const L = new THREE.Group(); L.position.set(x, y, z || 0); g.add(L); return L; };
+        const legs = [hinge(-0.11, 0.46), hinge(0.11, 0.46)];
+        legs.forEach(L => {
+          box(L, 0.17, 0.14, 0.17, blue, 0, -0.02, 0);                 // feathery thigh
+          box(L, 0.06, 0.36, 0.06, orange, 0, -0.24, 0);               // thin bird leg
+          box(L, 0.17, 0.04, 0.22, orange, 0, -0.44, 0.05);            // toes
+        });
+        box(g, 0.5, 0.52, 0.46, blue, 0, 0.72, 0);                     // round body
+        decal(g, 0.36, 0.38, 0.02, blueL, 0, 0.7, 0.235);               // bright chest
+        box(g, 0.24, 0.32, 0.24, blue, 0, 1.08, 0.06);                 // long neck
+        const arms = [hinge(-0.28, 0.98), hinge(0.28, 0.98)];          // wings
+        arms.forEach(A => {
+          box(A, 0.08, 0.42, 0.32, blue, 0, -0.2, -0.03);
+          box(A, 0.085, 0.16, 0.26, teal, 0, -0.38, -0.05);
+        });
+        const head = new THREE.Group(); head.position.set(0, 1.38, 0.1); g.add(head);
+        box(head, 0.4, 0.4, 0.4, blue, 0, 0, 0);
+        box(head, 0.1, 0.07, 0.14, orange, 0, -0.06, 0.25);            // beak
+        [-0.08, 0, 0.08].forEach((x, i) => {                           // crest
+          box(head, 0.03, i === 1 ? 0.22 : 0.17, 0.03, teal, x, i === 1 ? 0.3 : 0.28, -0.02);
+          box(head, 0.07, 0.07, 0.04, i === 1 ? gold : teal, x, i === 1 ? 0.43 : 0.39, -0.02);
+        });
+        // 🪶 the big fan: feathers spread in a half-circle, each with a gold-and-blue eye
+        const fan = new THREE.Group(); fan.position.set(0, 0.62, -0.27); g.add(fan);
+        const N = 11;
+        for (let i = 0; i < N; i++) {
+          const th = -1.25 + 2.5 * i / (N - 1), sn = Math.sin(th), cs = Math.cos(th);
+          const at = (r, w, h, d, c, z) => { const m = box(fan, w, h, d, c, sn * r, cs * r, z); m.rotation.z = -th; return m; };
+          at(0.46, 0.17, 0.92, 0.03, i % 2 ? green : teal, 0);
+          at(0.8, 0.16, 0.16, 0.04, gold, 0.01);
+          at(0.8, 0.08, 0.08, 0.05, eye, 0.015).userData.noLine = true;
+        }
+        const a = { group: g, legs, arms, head };
+        a.face = addPixelFace(head, 0.4, 0.203, { iris: 0x1A1A1A, pupil: 0x000000, eyeY: 5 });
+        a.hatY = 0.4;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'unicorn', name: 'Unicorn Dancer 🦄',
     build() {
-      const a = buildQuad(0xFFFFFF, 0xFFFFFF, 0xFFFFFF);
-      addEyes(a.head, 0x7e57c2, 0.22);
-      box(a.head, 0.2, 0.18, 0.16, 0xF6EFFB, 0, -0.12, 0.24);           // soft muzzle
-      box(a.head, 0.07, 0.05, 0.04, 0xD9B3FF, -0.05, -0.12, 0.33);      // nostrils
-      box(a.head, 0.07, 0.05, 0.04, 0xD9B3FF, 0.05, -0.12, 0.33);
-      const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.0, 0.06, 0.32, 6), mat(0xFFD8F0));
-      horn.position.set(0, 0.34, 0.06);
-      a.head.add(horn);
-      box(a.head, 0.08, 0.14, 0.06, 0xFFFFFF, -0.12, 0.24, -0.06);      // ears
-      box(a.head, 0.08, 0.14, 0.06, 0xFFFFFF, 0.12, 0.24, -0.06);
-      const maneColors = [0xFFB3D9, 0xB3D9FF, 0xD9B3FF, 0xB3FFD1];      // pastel mane down the neck
-      maneColors.forEach((c, i) => box(a.group, 0.14, 0.16, 0.15, c, 0, 1.22 - i * 0.08, 0.36 - i * 0.16));
-      box(a.group, 0.62, 0.1, 0.62, 0xFFE1F2, 0, 0.62, -0.02);          // a little tutu
-      const utail = new THREE.Group(); utail.position.set(0, 0.82, -0.4); a.group.add(utail);   // 🦄 swishing tail
-      box(utail, 0.14, 0.16, 0.14, 0xFFB3D9, 0, 0, -0.16);              // pastel tail
-      a.tail = utail;
-      box(a.group, 0.13, 0.16, 0.13, 0xD9B3FF, 0, 0.68, -0.62);
-      box(a.group, 0.12, 0.16, 0.12, 0xB3D9FF, 0, 0.54, -0.66);
-      a.dancer = true;                                                  // prances & twirls when idle
-      return a;
+      return blockyBuild(() => {
+        const wht = 0xFBF8FF, hoof = 0xF6A6CF, gold = 0xFFD86B, mane = [0xFF9ECF, 0xFFD27A, 0x9EE6B8, 0x9ECBFF, 0xC9A6FF];
+        const a = buildQuad(wht, wht, wht, hoof);
+        box(a.head, 0.24, 0.2, 0.18, 0xF7EEFB, 0, -0.1, 0.27);           // soft horse muzzle
+        [-1, 1].forEach(s => {
+          decal(a.head, 0.04, 0.03, 0.02, 0xE6A3C8, s * 0.05, -0.06, 0.365);   // nostrils
+          box(a.head, 0.08, 0.15, 0.06, wht, s * 0.13, 0.27, -0.06);      // ears
+          decal(a.head, 0.04, 0.09, 0.02, 0xF9C6DE, s * 0.13, 0.26, -0.025);
+        });
+        // 🌟 golden spiral horn (stacked, getting thinner)
+        [[0.1, 0.27], [0.075, 0.36], [0.05, 0.44], [0.028, 0.51]].forEach(([w, y]) => box(a.head, w, 0.1, w, gold, 0, y, 0.07));
+        box(a.head, 0.16, 0.1, 0.12, mane[0], 0, 0.22, 0.14);            // forelock
+        // 🌈 pastel rainbow mane down the neck (two rows for fullness) + rainbow tail
+        mane.forEach((c, i) => {
+          box(a.group, 0.16, 0.18, 0.15, c, 0, 1.36 - i * 0.1, 0.42 - i * 0.13);
+          box(a.group, 0.12, 0.15, 0.13, mane[(i + 2) % 5], 0, 1.26 - i * 0.1, 0.36 - i * 0.13);
+        });
+        // 🩰 a two-layer tutu around the middle
+        blockFrustum(a.group, 0.66, 0.92, 0.12, 1.15, 0xFFC4E6, 0, 0.6, -0.02);
+        blockFrustum(a.group, 0.9, 1.02, 0.06, 1.15, 0xE2C6FF, 0, 0.52, -0.02);
+        const tail = new THREE.Group(); tail.position.set(0, 0.86, -0.46); a.group.add(tail);
+        box(tail, 0.16, 0.16, 0.18, mane[0], 0, 0.02, -0.06);
+        box(tail, 0.15, 0.16, 0.16, mane[1], 0, -0.08, -0.18);
+        box(tail, 0.14, 0.16, 0.14, mane[2], 0, -0.2, -0.24);
+        box(tail, 0.13, 0.15, 0.13, mane[3], 0, -0.32, -0.27);
+        box(tail, 0.12, 0.13, 0.12, mane[4], 0, -0.43, -0.27);
+        a.tail = tail;
+        quadPixelFace(a, { iris: 0x8A5CD0, pupil: 0x3A1E6A, lashes: true, blush: 0xF7B0D0 }, -0.15, 0.362, 0x9A4A7A);
+        a.dancer = true;                                                  // prances & twirls when idle
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'tiger', name: 'Tiger 🐯',
     build() {
-      const a = buildQuad(0xF28C28, 0xF28C28, 0xE07B1A);
-      addEyes(a.head, 0x222222, 0.22);
-      box(a.head, 0.2, 0.14, 0.14, 0xFFF4E0, 0, -0.12, 0.24);           // white muzzle
-      box(a.head, 0.08, 0.06, 0.05, 0x222222, 0, -0.09, 0.32);          // nose
-      box(a.head, 0.12, 0.12, 0.08, 0xE07B1A, -0.15, 0.25, -0.02);      // round ears
-      box(a.head, 0.12, 0.12, 0.08, 0xE07B1A, 0.15, 0.25, -0.02);
-      box(a.head, 0.05, 0.12, 0.04, 0x222222, -0.13, 0.13, 0.21);       // forehead stripes
-      box(a.head, 0.05, 0.15, 0.04, 0x222222, 0, 0.15, 0.21);
-      box(a.head, 0.05, 0.12, 0.04, 0x222222, 0.13, 0.13, 0.21);
-      for (let i = 0; i < 4; i++)                                       // stripes across the back (raised to avoid flicker)
-        box(a.group, 0.52, 0.14, 0.1, 0x222222, 0, 0.9, 0.33 - i * 0.22);
-      box(a.group, 0.5, 0.18, 0.52, 0xFFF4E0, 0, 0.5, 0.08);            // white belly underneath
-      const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.42); a.group.add(tail);   // 🐯 swishing tail
-      const ttg = box(tail, 0.12, 0.12, 0.55, 0xF28C28, 0, -0.04, -0.26); ttg.rotation.x = 0.35;
-      box(tail, 0.13, 0.13, 0.13, 0x222222, 0, 0.06, -0.52);            // black tail tip
-      a.tail = tail;
-      return a;
+      return blockyBuild(() => {
+        const org = 0xF5841F, blk = 0x231C1A, wht = 0xFFF6E8;
+        const a = buildQuad(org, org, org, wht);
+        // ⬛ bold stripes everywhere: over the back, down both sides, round the legs
+        for (let i = 0; i < 5; i++) {
+          const z = 0.4 - i * 0.2;
+          decal(a.group, 0.36, 0.014, 0.07, blk, 0, 0.966, z);
+          [-1, 1].forEach(s => decal(a.group, 0.014, 0.26, 0.07, blk, s * 0.296, 0.83, z));
+        }
+        a.legs.forEach(L => { decal(L, 0.252, 0.05, 0.272, blk, 0, -0.24, 0); decal(L, 0.192, 0.045, 0.202, blk, 0, -0.42, 0); });
+        decal(a.group, 0.3, 0.3, 0.02, wht, 0, 0.82, 0.525);            // white chest
+        box(a.group, 0.42, 0.06, 0.7, wht, 0, 0.43, 0.04);              // white belly
+        // 🐯 face: white cheeks + muzzle, forehead stripes, round ears with black backs
+        box(a.head, 0.22, 0.15, 0.15, wht, 0, -0.11, 0.25);
+        box(a.head, 0.08, 0.05, 0.04, 0x3A2420, 0, -0.06, 0.335);         // nose
+        [-1, 1].forEach(s => {
+          box(a.head, 0.08, 0.13, 0.15, wht, s * 0.21, -0.12, 0.1);       // fluffy cheeks
+          decal(a.head, 0.014, 0.03, 0.12, blk, s * 0.213, 0.02, 0.06);   // cheek stripe
+          box(a.head, 0.13, 0.13, 0.07, org, s * 0.15, 0.26, -0.02);      // round ears
+          decal(a.head, 0.13, 0.13, 0.02, blk, s * 0.15, 0.26, -0.06);
+          decal(a.head, 0.06, 0.06, 0.02, wht, s * 0.15, 0.25, 0.018);
+        });
+        [-0.09, 0, 0.09].forEach((x, i) => decal(a.head, 0.035, i === 1 ? 0.1 : 0.07, 0.02, blk, x, i === 1 ? 0.16 : 0.17, 0.218));
+        const tail = new THREE.Group(); tail.position.set(0, 0.84, -0.44); a.group.add(tail);
+        box(tail, 0.12, 0.12, 0.26, org, 0, 0.0, -0.1).rotation.x = 0.35;
+        box(tail, 0.11, 0.11, 0.24, org, 0, 0.1, -0.3).rotation.x = 0.6;
+        decal(tail, 0.13, 0.13, 0.04, blk, 0, 0.04, -0.17).rotation.x = 0.45;
+        box(tail, 0.13, 0.13, 0.13, blk, 0, 0.2, -0.43).rotation.x = 0.8;   // black tail tip
+        a.tail = tail;
+        quadPixelFace(a, { iris: 0x8A6A10, pupil: 0x231C1A, brow: 0x231C1A, eyeY: 5, browY: 3 }, -0.15, 0.332, 0x3A2420);
+        return bakeBlocky(a);
+      });
     }
   },
   {
@@ -3699,10 +3986,14 @@ const AVATARS = [
       wingL.position.set(-0.12, 0.98, -0.12); wingL.rotation.y = -0.6; wingL.rotation.z = 0.12;
       const wingR = makeWing(1); a.group.add(wingR);
       wingR.position.set(0.12, 0.98, -0.12); wingR.rotation.y = 0.6; wingR.rotation.z = -0.12;
-      const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.45); a.group.add(tail);    // 🐉 swishing tail
-      const dtg = box(tail, 0.15, 0.15, 0.7, 0x3CA13C, 0, 0, -0.33); dtg.rotation.x = 0.5;
-      box(tail, 0.09, 0.14, 0.09, 0xD8342C, 0, 0.1, -0.4);              // spike along the tail
-      const tailTip = box(tail, 0.22, 0.22, 0.22, 0xD8342C, 0, 0.2, -0.65); tailTip.rotation.x = Math.PI / 4;  // red arrow tip
+      // 🐉 swishing tail — tapering segments that curve smoothly up to the red arrow tip
+      const tail = new THREE.Group(); tail.position.set(0, 0.8, -0.44); a.group.add(tail);
+      box(tail, 0.24, 0.22, 0.3, 0x3CA13C, 0, 0.0, -0.1).rotation.x = 0.25;
+      box(tail, 0.19, 0.18, 0.3, 0x3CA13C, 0, 0.1, -0.34).rotation.x = 0.45;
+      box(tail, 0.14, 0.13, 0.28, 0x3CA13C, 0, 0.24, -0.54).rotation.x = 0.65;
+      box(tail, 0.07, 0.12, 0.08, 0xD8342C, 0, 0.18, -0.3);             // spikes along the tail
+      box(tail, 0.06, 0.1, 0.07, 0xD8342C, 0, 0.32, -0.5);
+      const tailTip = box(tail, 0.2, 0.2, 0.2, 0xD8342C, 0, 0.38, -0.68); tailTip.rotation.x = Math.PI / 4;  // red arrow tip
       a.tail = tail;
       return a;
     }
@@ -3710,503 +4001,657 @@ const AVATARS = [
   {
     id: 'deer', name: 'Deer (Sporty!) 🦌🏅',
     build() {
-      const a = buildQuad(0x9C6B3F, 0x9C6B3F, 0x8a5c33);
-      addEyes(a.head, 0x222222, 0.22);
-      box(a.head, 0.16, 0.13, 0.12, 0xEEDDC8, 0, -0.12, 0.24);          // muzzle
-      box(a.head, 0.07, 0.06, 0.05, 0x332211, 0, -0.1, 0.32);           // nose
-      box(a.head, 0.09, 0.16, 0.06, 0x8a5c33, -0.15, 0.24, -0.06);      // ears
-      box(a.head, 0.09, 0.16, 0.06, 0x8a5c33, 0.15, 0.24, -0.06);
-      [-1, 1].forEach(s => {                                            // antlers
-        box(a.head, 0.05, 0.28, 0.05, 0x6B4A2B, s * 0.13, 0.36, -0.1);
-        box(a.head, 0.15, 0.05, 0.05, 0x6B4A2B, s * 0.19, 0.46, -0.1);
-        box(a.head, 0.05, 0.13, 0.05, 0x6B4A2B, s * 0.25, 0.53, -0.1);
+      return blockyBuild(() => {
+        const brown = 0xA8703F, brownD = 0x8A5A30, cream = 0xF5E6CF, antler = 0x6E4A2A, red = 0xE53935;
+        const a = buildQuad(brown, brown, brownD, 0x3A2A1E);             // dark hooves
+        box(a.head, 0.18, 0.13, 0.14, cream, 0, -0.12, 0.25);            // muzzle
+        box(a.head, 0.08, 0.06, 0.04, 0x2A1E16, 0, -0.08, 0.335);         // nose
+        [-1, 1].forEach(s => {
+          const e = box(a.head, 0.2, 0.1, 0.06, brown, s * 0.27, 0.16, -0.04); e.rotation.z = s * 0.3;   // big deer ears
+          const ei = decal(a.head, 0.12, 0.05, 0.02, cream, s * 0.27, 0.16, -0.005); ei.rotation.z = s * 0.3;
+          box(a.head, 0.05, 0.24, 0.05, antler, s * 0.12, 0.33, -0.06);   // antlers with clear branches
+          box(a.head, 0.15, 0.05, 0.05, antler, s * 0.18, 0.42, -0.06);
+          box(a.head, 0.05, 0.13, 0.05, antler, s * 0.24, 0.5, -0.06);
+          box(a.head, 0.05, 0.1, 0.05, antler, s * 0.12, 0.49, -0.06);
+        });
+        box(a.head, 0.45, 0.06, 0.45, 0xFFFFFF, 0, 0.15, 0);             // sporty sweatband
+        decal(a.head, 0.46, 0.02, 0.46, red, 0, 0.15, 0);
+        // 🏅 red team jersey with a white number 1 on each side
+        box(a.group, 0.62, 0.28, 0.66, red, 0, 0.86, 0.06);
+        decal(a.group, 0.63, 0.03, 0.67, 0xFFFFFF, 0, 0.73, 0.06);
+        [-1, 1].forEach(s => {
+          decal(a.group, 0.02, 0.15, 0.04, 0xFFFFFF, s * 0.31, 0.87, 0.06);
+          decal(a.group, 0.02, 0.03, 0.04, 0xFFFFFF, s * 0.31, 0.93, 0.06 + s * 0.04);
+          [[0.68, -0.28], [0.6, -0.36], [0.62, -0.18]].forEach(([y, z]) => decal(a.group, 0.02, 0.05, 0.05, cream, s * 0.292, y, z));   // fawn spots
+        });
+        const tail = new THREE.Group(); tail.position.set(0, 0.86, -0.48); a.group.add(tail);
+        box(tail, 0.13, 0.17, 0.08, cream, 0, 0, -0.03).rotation.x = -0.3;   // white flicky tail
+        a.tail = tail;
+        quadPixelFace(a, { iris: 0x3A2414, pupil: 0x1A100A, lashes: true }, -0.155, 0.322, 0x3A2414, 0.08);
+        return bakeBlocky(a);
       });
-      box(a.head, 0.46, 0.09, 0.46, 0xFFFFFF, 0, 0.14, 0);              // sporty headband
-      box(a.head, 0.1, 0.06, 0.05, 0xE53935, 0, 0.14, 0.23);            // headband star spot
-      box(a.group, 0.5, 0.12, 0.5, 0xE53935, 0, 0.92, -0.06);           // team jersey on the back
-      box(a.group, 0.52, 0.06, 0.14, 0xFFFFFF, 0, 0.94, -0.06);         // jersey stripe
-      box(a.group, 0.06, 0.1, 0.16, 0xFFFFFF, -0.27, 0.86, -0.06);      // number "1" on the side
-      [[-0.25, 0.78, -0.28], [0.25, 0.74, -0.32], [-0.25, 0.7, 0.18], [0.25, 0.8, 0.1]].forEach(p =>
-        box(a.group, 0.06, 0.06, 0.06, 0xFFF4E0, p[0], p[1], p[2]));    // white fawn spots
-      const dtail = new THREE.Group(); dtail.position.set(0, 0.8, -0.4); a.group.add(dtail);   // 🦌 flicking tail
-      box(dtail, 0.13, 0.18, 0.12, 0xFFF4E0, 0, 0, -0.12);              // white stubby tail
-      a.tail = dtail;
-      return a;
     }
   },
   {
     id: 'kinglion', name: 'King Lion 🦁👑',
     build() {
-      const a = buildQuad(0xE3A93C, 0xE9B84A, 0xC98E2E);
-      const mane = 0x9C5A22;
-      box(a.head, 0.62, 0.62, 0.22, mane, 0, 0.02, -0.14);              // full mane behind the face
-      [[-0.3, 0.04], [0.3, 0.04], [-0.24, 0.3], [0.24, 0.3], [0, 0.34], [-0.3, -0.2], [0.3, -0.2], [0, -0.3]]
-        .forEach(p => box(a.head, 0.17, 0.17, 0.17, mane, p[0], p[1], -0.05));  // ring of mane tufts
-      addEyes(a.head, 0x222222, 0.22);
-      box(a.head, 0.2, 0.15, 0.16, 0xF3E0B0, 0, -0.11, 0.24);           // muzzle
-      box(a.head, 0.09, 0.07, 0.05, 0x3a2a1a, 0, -0.09, 0.33);          // nose
-      box(a.head, 0.1, 0.1, 0.07, 0xE9B84A, -0.15, 0.24, -0.02);        // round ears
-      box(a.head, 0.1, 0.1, 0.07, 0xE9B84A, 0.15, 0.24, -0.02);
-      addCrown(a.head, 0.3, 0xFFD23E);
-      const tail = new THREE.Group(); tail.position.set(0, 0.8, -0.42); a.group.add(tail);   // 🦁 swishing tail
-      const ltg = box(tail, 0.1, 0.1, 0.5, 0xE3A93C, 0, 0, -0.24); ltg.rotation.x = 0.4;
-      box(tail, 0.17, 0.17, 0.17, mane, 0, 0.12, -0.5);                 // tufted tail tip
-      a.tail = tail;
-      return a;
+      return blockyBuild(() => {
+        const gold = 0xF0C35A, mane = 0x9A4E1E, maneD = 0x7A3814, cream = 0xFFF0C8, red = 0xC8302C;
+        const a = buildQuad(gold, gold, gold, cream);
+        // 🦁 a big square mane framing the face (not covering it) + a mane bib down the chest
+        box(a.head, 0.7, 0.7, 0.2, mane, 0, 0.0, -0.15);
+        box(a.head, 0.62, 0.13, 0.2, mane, 0, 0.27, -0.02);
+        box(a.head, 0.52, 0.13, 0.18, mane, 0, -0.28, 0.03);
+        [-1, 1].forEach(s => {
+          box(a.head, 0.13, 0.56, 0.2, mane, s * 0.28, -0.01, -0.02);
+          box(a.head, 0.16, 0.16, 0.16, maneD, s * 0.33, 0.3, -0.06);
+          box(a.head, 0.16, 0.16, 0.16, maneD, s * 0.33, -0.3, -0.04);
+          box(a.head, 0.1, 0.1, 0.07, gold, s * 0.3, 0.38, 0.04);         // little round ears
+        });
+        box(a.group, 0.52, 0.42, 0.3, mane, 0, 1.0, 0.42);              // mane down the neck & chest
+        box(a.head, 0.24, 0.16, 0.16, cream, 0, -0.1, 0.25);             // muzzle
+        box(a.head, 0.1, 0.06, 0.04, 0x5A3020, 0, -0.05, 0.335);          // nose
+        addCrown(a.head, 0.42, 0xFFD23E);
+        // 🟥 royal red cape over the back, with a white ermine trim
+        box(a.group, 0.66, 0.06, 0.66, red, 0, 0.99, -0.12);
+        [-1, 1].forEach(s => box(a.group, 0.04, 0.3, 0.66, red, s * 0.31, 0.85, -0.12));
+        box(a.group, 0.68, 0.08, 0.08, 0xFFFFFF, 0, 1.0, 0.22);
+        [-0.22, 0, 0.22].forEach(x => decal(a.group, 0.03, 0.04, 0.02, 0x222222, x, 1.0, 0.262));
+        const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.44); a.group.add(tail);
+        box(tail, 0.1, 0.1, 0.3, gold, 0, 0.0, -0.12).rotation.x = 0.4;
+        box(tail, 0.09, 0.09, 0.22, gold, 0, 0.12, -0.3).rotation.x = 0.7;
+        box(tail, 0.17, 0.17, 0.17, mane, 0, 0.22, -0.42);               // tufted tail tip
+        a.tail = tail;
+        quadPixelFace(a, { iris: 0x8A5A10, pupil: 0x2A1A0A, brow: 0x7A3814, eyeY: 5, browY: 3 }, -0.15, 0.332, 0x5A3020);
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'piratecat', name: 'Pirate Cat 🐱🏴‍☠️',
     build() {
-      const gin = 0xD98B3A, dk = 0xA5661B, cream = 0xF5E6C8;
-      const a = buildQuad(gin, gin, dk);
-      for (let i = 0; i < 4; i++) box(a.group, 0.5, 0.13, 0.08, dk, 0, 0.92, 0.33 - i * 0.22);  // tabby stripes
-      box(a.group, 0.5, 0.18, 0.5, cream, 0, 0.5, 0.08);               // cream belly
-      addEyes(a.head, 0x4A2E18, 0.22);                                 // dark brown eyes
-      box(a.head, 0.2, 0.14, 0.14, cream, 0, -0.12, 0.24);            // muzzle
-      box(a.head, 0.07, 0.06, 0.05, 0xE8A0B0, 0, -0.09, 0.32);        // pink nose
-      box(a.head, 0.12, 0.14, 0.07, gin, -0.15, 0.24, -0.02);         // pointy ears
-      box(a.head, 0.12, 0.14, 0.07, gin, 0.15, 0.24, -0.02);
-      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, -0.15, 0.22, 0.02);     // inner ears
-      box(a.head, 0.06, 0.08, 0.05, 0xE8A0B0, 0.15, 0.22, 0.02);
-      box(a.head, 0.15, 0.15, 0.04, 0x111111, 0.12, 0.05, 0.27);      // black eye patch (over the eye)
-      box(a.head, 0.46, 0.04, 0.04, 0x111111, 0, 0.12, 0.05);         // patch strap
-      box(a.head, 0.05, 0.05, 0.03, 0xFFD23E, -0.23, -0.04, 0.1);     // gold hoop earring
-      box(a.head, 0.58, 0.07, 0.48, 0x161616, 0, 0.21, 0);            // tricorn brim (lowered onto the head)
-      box(a.head, 0.32, 0.18, 0.32, 0x161616, 0, 0.32, 0);            // tricorn crown
-      box(a.head, 0.12, 0.13, 0.48, 0x161616, 0, 0.29, 0);            // up-turned front/back peaks
-      box(a.head, 0.58, 0.13, 0.1, 0x161616, 0, 0.29, 0);             // up-turned side peaks
-      box(a.head, 0.13, 0.11, 0.04, 0xF0F0F0, 0, 0.32, 0.17);         // white skull badge
-      box(a.head, 0.04, 0.04, 0.03, 0x161616, -0.03, 0.34, 0.19);     // skull eyes
-      box(a.head, 0.04, 0.04, 0.03, 0x161616, 0.03, 0.34, 0.19);
-      // 🐈 swishing tail (grouped so it can wag)
-      const tail = new THREE.Group(); tail.position.set(0, 0.82, -0.42); a.group.add(tail);
-      const t1 = box(tail, 0.12, 0.12, 0.55, gin, 0, -0.04, -0.26); t1.rotation.x = 0.35;
-      box(tail, 0.13, 0.13, 0.13, cream, 0, 0.06, -0.52);             // cream tail tip
-      a.tail = tail;
-      return a;
+      return blockyBuild(() => {
+        const gin = 0xE0913E, ginD = 0xB86A22, cream = 0xFFF1D6, navy = 0x24305E, gold = 0xF5C542, blk = 0x1A1A1E, red = 0xC0302A, pink = 0xF0A0B4;
+        const a = buildQuad(gin, gin, gin, cream);                       // white paws
+        a.legs.forEach(L => decal(L, 0.192, 0.045, 0.202, ginD, 0, -0.36, 0));   // tabby leg stripe
+        // 🧥 navy pirate coat with gold buttons and trim, red sash
+        box(a.group, 0.62, 0.42, 0.88, navy, 0, 0.77, -0.02);
+        box(a.group, 0.54, 0.42, 0.38, navy, 0, 0.86, 0.34);
+        decal(a.group, 0.63, 0.035, 0.89, gold, 0, 0.575, -0.02);
+        box(a.group, 0.63, 0.07, 0.89, red, 0, 0.66, -0.02);
+        [0.96, 0.84, 0.74].forEach(y => [-1, 1].forEach(s => decal(a.group, 0.05, 0.05, 0.02, gold, s * 0.09, y, 0.535)));
+        // 🐱 face: cream muzzle, pink nose, eye patch + strap, gold earring
+        box(a.head, 0.22, 0.14, 0.14, cream, 0, -0.12, 0.25);
+        box(a.head, 0.07, 0.05, 0.04, pink, 0, -0.065, 0.33);
+        decal(a.head, 0.13, 0.12, 0.02, blk, -0.075, 0.06, 0.224);       // eye patch over his right eye
+        const strap = decal(a.head, 0.44, 0.025, 0.44, blk, 0, 0.15, 0); strap.rotation.z = -0.35;
+        box(a.head, 0.04, 0.07, 0.04, gold, 0.225, -0.05, 0.05);         // gold hoop
+        [-1, 1].forEach(s => {                                          // pointy ears poking out by the hat
+          box(a.head, 0.11, 0.13, 0.07, gin, s * 0.22, 0.33, -0.02);
+          box(a.head, 0.06, 0.06, 0.07, gin, s * 0.22, 0.42, -0.02);
+          decal(a.head, 0.05, 0.08, 0.02, pink, s * 0.22, 0.34, 0.018);
+        });
+        // 🏴‍☠️ black tricorn hat with gold trim and a skull badge
+        box(a.head, 0.54, 0.06, 0.48, blk, 0, 0.24, 0);
+        box(a.head, 0.32, 0.16, 0.3, blk, 0, 0.34, 0);
+        box(a.head, 0.54, 0.12, 0.07, blk, 0, 0.3, 0.215);
+        box(a.head, 0.54, 0.12, 0.07, blk, 0, 0.3, -0.215);
+        decal(a.head, 0.55, 0.02, 0.49, gold, 0, 0.27, 0);
+        decal(a.head, 0.1, 0.09, 0.02, 0xF2F2F2, 0, 0.32, 0.256);
+        [-1, 1].forEach(s => decal(a.head, 0.025, 0.025, 0.02, blk, s * 0.025, 0.33, 0.268));
+        // 🐈 curly tabby tail with a cream tip
+        const tail = new THREE.Group(); tail.position.set(0, 0.84, -0.44); a.group.add(tail);
+        box(tail, 0.12, 0.12, 0.26, gin, 0, 0.0, -0.1).rotation.x = 0.4;
+        box(tail, 0.11, 0.11, 0.24, gin, 0, 0.14, -0.27).rotation.x = 0.9;
+        decal(tail, 0.13, 0.13, 0.04, ginD, 0, 0.05, -0.18).rotation.x = 0.55;
+        box(tail, 0.12, 0.12, 0.14, cream, 0, 0.3, -0.33).rotation.x = 1.3;
+        a.tail = tail;
+        quadPixelFace(a, { iris: 0x4A8A2A, pupil: 0x1A2A10, brow: 0x8A4A16, eyeY: 5, browY: 3 }, -0.155, 0.322, 0x5A3020);
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'ninjadog', name: 'Ninja Dog 🐶🥷',
     build() {
-      const a = buildQuad(0x2b2f35, 0x2b2f35, 0x202428);
-      box(a.head, 0.44, 0.2, 0.44, 0x121418, 0, -0.13, 0);             // black ninja mask
-      addEyes(a.head, 0xFFFFFF, 0.22);                                 // fierce white eyes (sclera + pupils, no flicker)
-      box(a.head, 0.1, 0.16, 0.06, 0x202428, -0.16, 0.2, 0);           // floppy ears
-      box(a.head, 0.1, 0.16, 0.06, 0x202428, 0.16, 0.2, 0);
-      box(a.head, 0.47, 0.1, 0.47, 0xD8342C, 0, 0.12, 0);              // red headband
-      box(a.head, 0.1, 0.1, 0.1, 0xB02a22, -0.26, 0.12, -0.05);        // headband knot
-      const t1 = box(a.head, 0.04, 0.2, 0.04, 0xD8342C, -0.3, 0.03, -0.08); t1.rotation.z = 0.5;
-      const t2 = box(a.head, 0.04, 0.15, 0.04, 0xB02a22, -0.24, 0.0, -0.1); t2.rotation.z = 0.7;
-      box(a.group, 0.5, 0.13, 0.5, 0xB02a22, 0, 0.72, 0.02);           // red ninja belt
-      box(a.group, 0.14, 0.16, 0.06, 0x8e211a, 0, 0.66, 0.27);         // belt knot
-      const kat = new THREE.Group();                                   // katana sheathed across the back
-      kat.position.set(0.04, 1.04, -0.18); kat.rotation.z = -0.7; kat.rotation.x = 0.25; a.group.add(kat);
-      box(kat, 0.045, 0.62, 0.045, 0x2a2f36, 0, 0.16, 0);             // sheath
-      box(kat, 0.05, 0.16, 0.05, 0x5a3a1e, 0, -0.18, 0);             // handle
-      box(kat, 0.12, 0.04, 0.06, 0xFFD23E, 0, -0.07, 0);            // gold guard
-      const tail = new THREE.Group(); tail.position.set(0, 0.8, -0.42); a.group.add(tail);   // 🐶 swishing tail
-      const ndg = box(tail, 0.12, 0.12, 0.5, 0x2b2f35, 0, -0.02, -0.24); ndg.rotation.x = 0.4;
-      a.tail = tail;
-      return a;
+      return blockyBuild(() => {
+        const tan = 0xE3A15E, cream = 0xFFF2DC, blk = 0x2A2D34, red = 0xD8342C, redD = 0xA8241E;
+        const a = buildQuad(blk, tan, blk, tan);                          // ninja suit, tan face & paws
+        // 🐶 a friendly tan face that's easy to see, under a black ninja hood
+        box(a.head, 0.22, 0.14, 0.15, cream, 0, -0.12, 0.25);
+        box(a.head, 0.08, 0.06, 0.05, 0x1A1A1A, 0, -0.07, 0.335);
+        [-1, 1].forEach(s => box(a.head, 0.06, 0.12, 0.14, cream, s * 0.2, -0.12, 0.1));
+        box(a.head, 0.46, 0.13, 0.46, blk, 0, 0.18, 0);                   // hood top
+        box(a.head, 0.46, 0.42, 0.1, blk, 0, 0.0, -0.18);                // hood back
+        [-1, 1].forEach(s => {
+          box(a.head, 0.11, 0.14, 0.07, tan, s * 0.15, 0.31, -0.02);      // pointy ears poke out
+          decal(a.head, 0.05, 0.08, 0.02, cream, s * 0.15, 0.3, 0.015);
+        });
+        box(a.head, 0.48, 0.06, 0.48, red, 0, 0.145, 0);                  // red headband
+        [-1, 1].forEach(s => { const t = box(a.head, 0.05, 0.18, 0.04, red, s * 0.06, 0.04, -0.27); t.rotation.z = s * 0.3; });
+        // 🥷 red belt sash and a katana across the back
+        box(a.group, 0.62, 0.52, 0.08, red, 0, 0.72, 0.06);
+        box(a.group, 0.1, 0.12, 0.1, redD, 0.32, 0.7, 0.06);
+        const kat = new THREE.Group(); kat.position.set(0.05, 1.01, -0.04); kat.rotation.y = 0.35; a.group.add(kat);
+        box(kat, 0.05, 0.05, 0.62, 0x3A3F48, 0, 0, -0.08);
+        box(kat, 0.05, 0.05, 0.18, 0x6B4A2A, 0, 0, 0.32);
+        box(kat, 0.13, 0.04, 0.05, 0xFFD23E, 0, 0, 0.22);
+        // 🌀 curly tail that curls up over the back
+        const tail = new THREE.Group(); tail.position.set(0, 0.88, -0.44); a.group.add(tail);
+        box(tail, 0.12, 0.12, 0.2, tan, 0, 0.04, -0.06).rotation.x = 1.0;
+        box(tail, 0.12, 0.12, 0.18, tan, 0, 0.18, -0.06).rotation.x = 1.9;
+        box(tail, 0.1, 0.1, 0.1, cream, 0, 0.22, 0.06);
+        a.tail = tail;
+        quadPixelFace(a, { iris: 0x3A2414, pupil: 0x111111 }, -0.155, 0.332, 0x3A2420);
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'robot', name: 'Robot 🤖',
     build() {
-      const a = buildBiped(0x9aa7b4, 0xB8C2CC, 0x7c8794, 0x9aa7b4);
-      box(a.head, 0.4, 0.16, 0.04, 0x222a33, 0, 0.06, 0.255);          // dark visor band
-      addEyes(a.head, 0x33d6ff, 0.27);                                 // glowing cyan eyes on the visor
-      box(a.head, 0.12, 0.04, 0.04, 0x33d6ff, 0, -0.14, 0.26);         // friendly cyan smile
-      box(a.head, 0.05, 0.04, 0.04, 0x33d6ff, -0.1, -0.115, 0.26); box(a.head, 0.05, 0.04, 0.04, 0x33d6ff, 0.1, -0.115, 0.26);  // upturned corners
-      box(a.head, 0.04, 0.16, 0.04, 0x7c8794, 0, 0.34, 0);             // antenna
-      box(a.head, 0.08, 0.08, 0.08, 0xE53935, 0, 0.45, 0);            // antenna light
-      box(a.head, 0.07, 0.14, 0.06, 0xB8C2CC, -0.28, 0, 0);            // ear bolts
-      box(a.head, 0.07, 0.14, 0.06, 0xB8C2CC, 0.28, 0, 0);
-      box(a.group, 0.3, 0.18, 0.06, 0x33d6ff, 0, 0.9, 0.15);           // chest panel
-      box(a.group, 0.08, 0.08, 0.06, 0xFFD23E, -0.08, 0.86, 0.16);     // buttons
-      box(a.group, 0.08, 0.08, 0.06, 0xE53935, 0.08, 0.86, 0.16);
-      return a;
+      return blockyBuild(() => {
+        const metal = 0xA9B4C0, metalD = 0x7C8794, dark = 0x222A33, cyan = 0x33D6FF, red = 0xE53935;
+        const a = blockKidBase(metal), H = a.head, g = a.group;
+        decal(H, 0.52, 0.22, 0.02, dark, 0, -0.02, 0.312);               // dark visor
+        decal(H, 0.3, 0.1, 0.02, dark, 0, -0.2, 0.312);                  // speaker grille behind the smile
+        box(H, 0.05, 0.2, 0.05, metalD, 0, 0.4, 0);                       // antenna
+        box(H, 0.11, 0.11, 0.11, red, 0, 0.54, 0);
+        [-1, 1].forEach(s => box(H, 0.08, 0.18, 0.18, metalD, s * 0.34, 0, 0));   // ear bolts
+        [[-0.25, 0.25], [0.25, 0.25]].forEach(([x, y]) => decal(H, 0.04, 0.04, 0.02, metalD, x, y, 0.312));   // rivets
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.014,
+          { iris: cyan, pupil: 0xBFF4FF, sclera: dark, mouth: cyan, tongue: 0x7FE8FF });
+        box(g, 0.54, 0.48, 0.32, metal, 0, 0.8, 0);                       // chest
+        decal(g, 0.28, 0.16, 0.02, cyan, 0, 0.88, 0.162);                 // chest screen
+        [[-0.08, 0xFFD23E], [0.08, red]].forEach(([x, c]) => decal(g, 0.07, 0.07, 0.02, c, x, 0.7, 0.162));   // buttons
+        box(g, 0.5, 0.12, 0.3, metalD, 0, 0.52, 0);                       // hips
+        a.arms.forEach(A => {
+          box(A, 0.2, 0.2, 0.2, metalD, 0, -0.06, 0);                      // shoulder joint
+          box(A, 0.15, 0.24, 0.15, metal, 0, -0.26, 0);
+          box(A, 0.18, 0.12, 0.18, metalD, 0, -0.44, 0);                   // chunky hand
+        });
+        a.legs.forEach(L => {
+          box(L, 0.2, 0.36, 0.2, metal, 0, -0.17, 0);
+          decal(L, 0.21, 0.04, 0.21, metalD, 0, -0.2, 0);                  // knee ring
+          box(L, 0.24, 0.13, 0.3, dark, 0, -0.435, 0.03);                  // boots
+        });
+        a.hatY = 0.45;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'astronaut', name: 'Astronaut 🚀',
     build() {
-      const a = buildBiped(0xF2F4F7, 0xF2F4F7, 0xE3E7EC, 0xF2F4F7);
-      box(a.head, 0.56, 0.56, 0.56, 0xDDE3EA, 0, 0.02, -0.02);         // helmet shell
-      box(a.head, 0.42, 0.27, 0.06, 0x1b2a3a, 0, 0.02, 0.27);          // dark visor
-      box(a.head, 0.12, 0.06, 0.05, 0x66e0ff, -0.09, 0.09, 0.29);      // visor glint
-      box(a.group, 0.22, 0.2, 0.08, 0xC0C6CD, 0, 0.9, 0.16);           // chest control box
-      box(a.group, 0.06, 0.06, 0.06, 0xE53935, -0.05, 0.93, 0.2);
-      box(a.group, 0.06, 0.06, 0.06, 0x2f8a52, 0.05, 0.93, 0.2);
-      box(a.group, 0.3, 0.36, 0.18, 0xCED4DB, 0, 0.85, -0.2);          // oxygen backpack
-      box(a.group, 0.12, 0.06, 0.05, 0x2255cc, 0, 0.62, 0.15);         // mission badge
-      return a;
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, suit = 0xF2F4F7, suitD = 0xC9D0D8, orange = 0xF08A2A, blue = 0x2255CC, hair = 0x5A3418;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        box(H, 0.66, 0.12, 0.66, hair, 0, 0.32, 0);                       // short hair under the helmet
+        box(H, 0.66, 0.1, 0.09, hair, 0, 0.26, 0.29);
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x6B4226, pupil: 0x2B1A10, brow: 0x4A2A14, mouth: 0x8A3A30, nose: 0xCC8558, blush: 0xEE8E8E });
+        // 🪐 roomy helmet: a white frame you can see the face through
+        avRoundK = 0.35;                                                  // the helmet is extra round
+        box(H, 0.76, 0.12, 0.76, suit, 0, 0.4, 0);
+        box(H, 0.76, 0.8, 0.12, suit, 0, 0.0, -0.33);
+        [-1, 1].forEach(s => box(H, 0.12, 0.8, 0.7, suit, s * 0.33, 0.0, 0.0));
+        box(H, 0.76, 0.1, 0.1, suit, 0, 0.33, 0.34);
+        box(H, 0.76, 0.12, 0.1, suit, 0, -0.34, 0.34);
+        avRoundK = BLK_ROUND;
+        box(H, 0.8, 0.08, 0.8, suitD, 0, -0.42, 0);                        // neck ring
+        decal(H, 0.1, 0.06, 0.02, 0xFFFFFF, -0.18, 0.2, 0.375);           // visor glint
+        [-1, 1].forEach(s => box(H, 0.06, 0.12, 0.12, orange, s * 0.4, 0.05, 0));   // orange ear lights
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.56, 0.02), GLASS_MAT);
+        glass.position.set(0, 0.0, 0.36); H.add(glass);
+        // 🚀 suit with a chest control box, mission patch, orange shoulder stripes, a backpack
+        box(g, 0.54, 0.48, 0.32, suit, 0, 0.8, 0);
+        decal(g, 0.22, 0.18, 0.04, suitD, 0, 0.86, 0.17);
+        [[-0.05, 0xE53935], [0.05, 0x2F8A52]].forEach(([x, c]) => decal(g, 0.05, 0.05, 0.02, c, x, 0.88, 0.195));
+        decal(g, 0.1, 0.1, 0.02, blue, -0.16, 0.95, 0.162);
+        decal(g, 0.04, 0.1, 0.02, orange, 0.17, 0.95, 0.162);
+        box(g, 0.42, 0.52, 0.18, suitD, 0, 0.84, -0.24);                  // oxygen pack
+        box(g, 0.52, 0.1, 0.32, suitD, 0, 0.55, 0);                        // belt
+        a.arms.forEach(A => {
+          box(A, 0.2, 0.36, 0.21, suit, 0, -0.18, 0);
+          decal(A, 0.21, 0.05, 0.22, orange, 0, -0.06, 0);
+          box(A, 0.18, 0.14, 0.19, suitD, 0, -0.43, 0);                    // gloves
+        });
+        a.legs.forEach(L => {
+          box(L, 0.22, 0.38, 0.24, suit, 0, -0.18, 0);
+          box(L, 0.25, 0.14, 0.3, suitD, 0, -0.43, 0.03);                  // moon boots
+        });
+        a.hatY = 0.55;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'wizard', name: 'Wizard 🧙',
     build() {
-      const a = buildBiped(0x5e3aa6, 0xF0C9A0, 0x4a2e82, 0x5e3aa6);
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.3, 0.24, 0.08, 0xEDEDED, 0, -0.2, 0.22);           // beard
-      box(a.head, 0.18, 0.16, 0.06, 0xEDEDED, 0, -0.34, 0.2);          // beard point
-      box(a.head, 0.58, 0.1, 0.58, 0x3b2470, 0, 0.2, 0);               // hat brim
-      const hat = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.32, 0.55, 8), mat(0x3b2470));
-      hat.position.set(0, 0.52, 0); a.head.add(hat);                   // tall pointy hat
-      box(a.head, 0.08, 0.08, 0.05, 0xFFD23E, 0, 0.26, 0.27);          // star on the brim
-      box(a.group, 0.08, 0.08, 0.04, 0xFFD23E, -0.13, 0.78, 0.15);     // robe stars
-      box(a.group, 0.06, 0.06, 0.04, 0xFFE680, 0.14, 0.58, 0.15);
-      return a;
+      return blockyBuild(() => {
+        const skin = 0xEDB48C, robe = 0x2A3A7A, robeD = 0x1E2A5E, gold = 0xF5C542, beard = 0xF2F2F2, wood = 0x7A4A22;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x3A6AB0, pupil: 0x1A2A50, brow: 0xD8D8D8, blush: 0xF2A0A0 });
+        box(H, 0.68, 0.42, 0.12, beard, 0, -0.04, -0.29);                  // white hair at the back
+        [-1, 1].forEach(s => box(H, 0.08, 0.36, 0.5, beard, s * 0.33, -0.06, -0.02));
+        box(H, 0.08, 0.09, 0.06, 0xD8996C, 0, -0.06, 0.33);                // big friendly nose
+        box(H, 0.34, 0.06, 0.05, beard, 0, -0.12, 0.33);                   // moustache
+        box(H, 0.5, 0.26, 0.1, beard, 0, -0.3, 0.3);                       // long white beard
+        box(H, 0.34, 0.22, 0.1, beard, 0, -0.52, 0.28);
+        box(H, 0.16, 0.16, 0.08, beard, 0, -0.68, 0.26);
+        // 🎩 tall stepped pointy hat that bends back
+        box(H, 0.88, 0.06, 0.88, robe, 0, 0.35, 0);
+        [[0.58, 0.16, 0.46, 0], [0.46, 0.15, 0.6, -0.03], [0.34, 0.14, 0.73, -0.07], [0.22, 0.12, 0.84, -0.12], [0.11, 0.1, 0.93, -0.18]]
+          .forEach(([w, h, y, z]) => box(H, w, h, w, robe, 0, y, z));
+        decal(H, 0.59, 0.05, 0.59, gold, 0, 0.42, 0);
+        decal(H, 0.07, 0.07, 0.02, gold, 0, 0.62, 0.236);
+        // 🧙 long navy robe to the floor, gold trim and little stars
+        box(g, 0.54, 0.46, 0.3, robe, 0, 0.8, 0);
+        blockFrustum(g, 0.56, 0.78, 0.6, 0.62, robe, 0, 0.33, 0);
+        blockFrustum(g, 0.785, 0.8, 0.04, 0.62, gold, 0, 0.05, 0);
+        box(g, 0.56, 0.07, 0.32, 0x6B4A2A, 0, 0.62, 0);                    // belt
+        decal(g, 0.08, 0.08, 0.02, gold, 0, 0.62, 0.165);
+        decal(g, 0.06, 0.38, 0.02, gold, 0, 0.84, 0.152);
+        [[-0.15, 0.9], [0.16, 0.76], [-0.2, 0.4], [0.18, 0.24], [0.02, 0.32]].forEach(([x, y]) => {
+          const z = y > 0.62 ? 0.152 : 0.62 * (0.28 + (0.78 - 0.56) / 2 * (0.63 - y) / 0.6) + 0.006;
+          decal(g, 0.07, 0.022, 0.012, gold, x, y, z); decal(g, 0.022, 0.07, 0.012, gold, x, y, z);
+        });
+        a.arms.forEach((A, i) => {
+          box(A, 0.24, 0.42, 0.25, robe, 0, -0.22, 0);                     // wide sleeves
+          decal(A, 0.25, 0.04, 0.26, gold, 0, -0.41, 0);
+          box(A, 0.14, 0.1, 0.14, skin, 0, -0.47, 0);
+          if (i === 0) {                                                  // 🪄 staff with a glowing crystal
+            box(A, 0.05, 1.2, 0.05, wood, 0, -0.35, 0.12);
+            box(A, 0.15, 0.15, 0.15, 0x7FE3FF, 0, 0.3, 0.12).rotation.y = Math.PI / 4;
+          }
+        });
+        a.legs.forEach(L => box(L, 0.2, 0.42, 0.2, robeD, 0, -0.27, 0));
+        a.hatY = 0.55;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'panda', name: 'Panda 🐼',
     build() {
-      const wht = 0xF4F4F4, blk = 0x262626;
-      const a = buildBiped(wht, wht, blk, blk);                        // upright bear: white body/head, black arms & legs
-      addEyes(a.head, 0x222222, 0.26);
-      box(a.head, 0.15, 0.17, 0.05, blk, -0.12, 0.05, 0.24);           // black eye patches
-      box(a.head, 0.15, 0.17, 0.05, blk, 0.12, 0.05, 0.24);
-      box(a.head, 0.18, 0.13, 0.12, wht, 0, -0.13, 0.22);             // white muzzle
-      box(a.head, 0.09, 0.07, 0.05, blk, 0, -0.11, 0.3);              // black nose
-      box(a.head, 0.17, 0.17, 0.1, blk, -0.18, 0.26, -0.02);          // big round black ears
-      box(a.head, 0.17, 0.17, 0.1, blk, 0.18, 0.26, -0.02);
-      box(a.group, 0.58, 0.34, 0.36, blk, 0, 1.0, 0);                 // black shoulder band (panda's bear chest)
-      box(a.group, 0.46, 0.36, 0.16, wht, 0, 0.74, 0.14);            // round white belly
-      a.bear = true;                                                  // unlocks the "rear up like a bear" idle
-      return a;
+      return blockyBuild(() => {
+        const wht = 0xF6F6F4, blk = 0x26262A;
+        const a = blockKidBase(wht), H = a.head, g = a.group;             // upright bear
+        [-1, 1].forEach(s => box(H, 0.18, 0.18, 0.1, blk, s * 0.25, 0.36, -0.02));   // round black ears
+        box(H, 0.28, 0.17, 0.12, wht, 0, -0.15, 0.33);                    // muzzle
+        box(H, 0.1, 0.06, 0.04, blk, 0, -0.09, 0.39);                      // nose
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x4A3A30, pupil: 0x0A0A0A, sclera: 0x111114, patch: blk, blush: 0xF7B0C4, eyeY: 6 });
+        addPixelMouth(a.face, H, 0.12, 0, -0.19, 0.392, 0x3A2A2A);
+        box(g, 0.56, 0.5, 0.34, wht, 0, 0.8, 0);                           // white tummy
+        box(g, 0.58, 0.18, 0.36, blk, 0, 0.97, 0);                         // black shoulder band
+        box(g, 0.5, 0.12, 0.3, wht, 0, 0.52, 0);
+        a.arms.forEach(A => box(A, 0.2, 0.5, 0.21, blk, 0, -0.24, 0));
+        a.legs.forEach(L => {
+          box(L, 0.23, 0.44, 0.25, blk, 0, -0.22, 0);
+          box(L, 0.25, 0.1, 0.3, blk, 0, -0.45, 0.03);
+        });
+        box(g, 0.14, 0.12, 0.1, wht, 0, 0.6, -0.2);                        // tiny tail
+        a.bear = true;                                                     // unlocks the "rear up like a bear" idle
+        a.hatY = 0.48;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'penguin', name: 'Penguin 🐧',
     build() {
-      const blk = 0x23272e, org = 0xF5A623, white = 0xF7F4EE;
-      const a = buildBiped(blk, blk, blk, blk);
-      box(a.group, 0.46, 0.6, 0.14, white, 0, 0.78, 0.11);            // big white belly
-      box(a.group, 0.34, 0.22, 0.16, blk, 0, 1.08, -0.03);           // black shoulders/back
-      a.arms.forEach(A => { const fl = box(A, 0.07, 0.52, 0.26, blk, 0, -0.44, -0.02); fl.rotation.x = 0.18; });  // flat flippers
-      const tl = box(a.group, 0.3, 0.1, 0.22, blk, 0, 0.52, -0.18); tl.rotation.x = 0.7;  // stubby tail
-      box(a.head, 0.42, 0.36, 0.08, white, 0, -0.03, 0.22);          // white face
-      box(a.head, 0.18, 0.16, 0.06, blk, 0, 0.16, 0.235);           // black cap over the brow
-      addEyes(a.head, 0x111111, 0.27);
-      box(a.head, 0.05, 0.05, 0.02, 0xFFFFFF, -0.105, 0.06, 0.275);  // eye shine
-      box(a.head, 0.05, 0.05, 0.02, 0xFFFFFF, 0.115, 0.06, 0.275);
-      box(a.head, 0.16, 0.11, 0.15, org, 0, -0.09, 0.3);             // beak upper
-      box(a.head, 0.12, 0.06, 0.11, 0xCB7E12, 0, -0.15, 0.31);       // beak lower
-      [0, 1].forEach(i => box(a.legs[i], 0.24, 0.07, 0.36, org, 0, -0.55, 0.16));   // webbed feet
-      return a;
+      return blockyBuild(() => {
+        const blk = 0x23272E, wht = 0xF7F4EE, org = 0xF5A623, orgD = 0xD9861A;
+        const a = blockKidBase(blk), H = a.head, g = a.group;
+        decal(H, 0.5, 0.34, 0.02, wht, 0, -0.07, 0.312);                    // white face
+        [-1, 1].forEach(s => decal(H, 0.2, 0.12, 0.02, wht, s * 0.14, 0.13, 0.312));
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.014, { iris: 0x1A1A1A, pupil: 0x000000, blush: 0xF7B0C4 });
+        box(H, 0.18, 0.08, 0.14, org, 0, -0.1, 0.37);                       // beak
+        box(H, 0.14, 0.04, 0.11, orgD, 0, -0.15, 0.36);
+        box(g, 0.58, 0.78, 0.38, blk, 0, 0.69, 0);                         // round tall body
+        decal(g, 0.44, 0.62, 0.02, wht, 0, 0.66, 0.192);                   // white belly
+        const tl = box(g, 0.26, 0.08, 0.18, blk, 0, 0.33, -0.22); tl.rotation.x = 0.6;   // stubby tail
+        a.arms.forEach(A => { A.position.y = 0.98; box(A, 0.08, 0.5, 0.26, blk, 0, -0.24, -0.02); });   // flat flippers
+        a.legs.forEach(L => {
+          box(L, 0.18, 0.4, 0.2, blk, 0, -0.25, 0);
+          box(L, 0.26, 0.06, 0.34, org, 0, -0.47, 0.08);                    // webbed feet
+        });
+        a.hatY = 0.45;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'bunny', name: 'Bunny 🐰',
     build() {
-      const fur = 0xF2E8DE, furSh = 0xE0D2C4, pink = 0xE89BB0;
-      const a = buildQuad(fur, fur, furSh);
-      box(a.group, 0.5, 0.46, 0.66, fur, 0, 0.7, -0.06);             // plump rounded body
-      box(a.group, 0.42, 0.32, 0.3, 0xFDF8F2, 0, 0.58, 0.34);        // soft chest
-      box(a.group, 0.18, 0.3, 0.34, fur, -0.2, 0.42, -0.26);         // big hind haunches
-      box(a.group, 0.18, 0.3, 0.34, fur, 0.2, 0.42, -0.26);
-      box(a.group, 0.22, 0.22, 0.2, 0xFFFFFF, 0, 0.72, -0.5);        // fluffy cottontail
-      // face
-      addEyes(a.head, 0x3a2a2a, 0.22);
-      box(a.head, 0.04, 0.04, 0.02, 0xFFFFFF, -0.12, 0.05, 0.225);   // eye sparkles
-      box(a.head, 0.04, 0.04, 0.02, 0xFFFFFF, 0.08, 0.05, 0.225);
-      box(a.head, 0.2, 0.16, 0.16, fur, 0, -0.1, 0.22);              // muzzle
-      box(a.head, 0.09, 0.06, 0.05, pink, 0, -0.06, 0.31);           // pink nose
-      box(a.head, 0.025, 0.06, 0.03, 0x9a6b6b, 0, -0.13, 0.31);      // mouth split
-      box(a.head, 0.05, 0.06, 0.03, 0xFFFFFF, -0.035, -0.18, 0.31);  // buck teeth
-      box(a.head, 0.05, 0.06, 0.03, 0xFFFFFF, 0.035, -0.18, 0.31);
-      [-1, 1].forEach(s => {                                         // whiskers
-        const w = box(a.head, 0.22, 0.012, 0.012, 0xCDBBA8, s * 0.2, -0.05, 0.24); w.rotation.z = s * 0.1;
+      return blockyBuild(() => {
+        const fur = 0xF4EDE4, wht = 0xFFFFFF, pink = 0xF4A0B8, inner = 0xF9C6D4;
+        const a = buildQuad(fur, fur, fur, wht);
+        a.head.position.set(0, 0.98, 0.48);                               // head snug on the body (bunnies have no long neck)
+        a.neck.visible = false; a.chest.visible = false;
+        box(a.group, 0.62, 0.52, 0.74, fur, 0, 0.74, -0.08);             // plump round body
+        [-1, 1].forEach(s => box(a.group, 0.2, 0.34, 0.38, fur, s * 0.24, 0.52, -0.24));   // big hind haunches
+        decal(a.group, 0.36, 0.3, 0.02, wht, 0, 0.8, 0.525);              // soft white chest
+        box(a.group, 0.24, 0.24, 0.18, wht, 0, 0.8, -0.52);               // fluffy cottontail
+        box(a.head, 0.22, 0.15, 0.12, wht, 0, -0.12, 0.24);               // muzzle
+        box(a.head, 0.07, 0.05, 0.04, pink, 0, -0.065, 0.31);             // pink nose
+        box(a.head, 0.07, 0.05, 0.03, wht, 0, -0.215, 0.27);              // buck teeth
+        [-1, 1].forEach(s => {
+          decal(a.head, 0.14, 0.012, 0.012, 0xC9B8A6, s * 0.2, -0.09, 0.27);   // whiskers
+          const e = box(a.head, 0.12, 0.46, 0.08, fur, s * 0.11, 0.42, -0.03); e.rotation.z = -s * 0.12;   // tall ears
+          const ei = decal(a.head, 0.06, 0.34, 0.02, inner, s * 0.11, 0.42, 0.012); ei.rotation.z = -s * 0.12;
+        });
+        quadPixelFace(a, { iris: 0x6A3A3A, pupil: 0x2A1A1A, blush: 0xF7B0C4 }, -0.16, 0.302, 0x9A5A5A, 0.08);
+        return bakeBlocky(a);
       });
-      [-1, 1].forEach(s => {                                         // tall upright ears, pink inside
-        const ear = new THREE.Group(); ear.position.set(s * 0.12, 0.2, -0.04); ear.rotation.z = -s * 0.1; a.head.add(ear);
-        box(ear, 0.13, 0.54, 0.08, fur, 0, 0.27, 0);
-        box(ear, 0.07, 0.42, 0.05, pink, 0, 0.26, 0.03);
-        box(ear, 0.13, 0.06, 0.08, furSh, 0, 0.53, 0);               // rounded tip
-      });
-      return a;
     }
   },
   {
     id: 'superhero', name: 'Superhero 🦸',
     build() {
-      const suit = 0x2255cc, skin = 0xF0C9A0, accent = 0xE53935, gold = 0xFFD23E;
-      const a = buildBiped(suit, skin, 0x1b3fa0, suit);
-      // face
-      addEyes(a.head, 0x1a1a1a, 0.27);
-      box(a.head, 0.12, 0.04, 0.03, 0x9a3b2a, 0, -0.14, 0.26);         // confident smile
-      box(a.head, 0.18, 0.04, 0.03, 0x8a5a3a, 0, 0.0, 0.255);          // strong jaw shading
-      // swept hair — sized PROUD of the 0.5 head (0.54) so faces never sit coplanar (no flicker)
-      box(a.head, 0.54, 0.16, 0.54, 0x2b2b2b, 0, 0.23, 0);            // hair cap, top only
-      box(a.head, 0.54, 0.24, 0.12, 0x232323, 0, 0.06, -0.25);        // hair down the back of the head
-      const curl = box(a.head, 0.1, 0.1, 0.07, 0x1f1f1f, -0.06, 0.16, 0.27); // heroic forehead curl
-      curl.rotation.z = 0.4;
-      // domino mask across the eyes — hero accent with white eye-shine
-      box(a.head, 0.46, 0.15, 0.05, accent, 0, 0.06, 0.245);          // mask band
-      box(a.head, 0.07, 0.1, 0.05, accent, -0.2, 0.06, 0.18);         // mask wraps to the temples
-      box(a.head, 0.07, 0.1, 0.05, accent, 0.2, 0.06, 0.18);
-      // eye shine now comes from the shared addEyes catch-light (no double sparkle)
-      // cape — collar on the shoulders + a long flowing back
-      box(a.group, 0.34, 0.16, 0.1, accent, 0, 1.16, -0.16);          // upturned collar (behind the neck)
-      const cape = box(a.group, 0.56, 0.82, 0.05, accent, 0, 0.76, -0.21); // cape
-      cape.rotation.x = -0.13;
-      box(a.group, 0.56, 0.1, 0.05, 0x9c1f17, 0, 0.36, -0.27);        // darker cape hem
-      // chest emblem — gold shield with an accent badge
-      box(a.group, 0.24, 0.26, 0.05, gold, 0, 0.92, 0.145);          // shield
-      box(a.group, 0.13, 0.15, 0.07, accent, 0, 0.92, 0.16);         // inner badge
-      box(a.group, 0.05, 0.05, 0.04, 0xffffff, 0, 0.92, 0.2);        // badge spark
-      // utility belt + buckle
-      box(a.group, 0.52, 0.1, 0.31, gold, 0, 0.6, 0);                // yellow belt (proud of torso)
-      box(a.group, 0.1, 0.1, 0.05, accent, 0, 0.6, 0.16);           // belt buckle
-      // red boots over the feet + lower shins
-      a.legs.forEach(L => {
-        box(L, 0.24, 0.28, 0.24, accent, 0, -0.4, 0);                // boot shaft
-        box(L, 0.27, 0.14, 0.36, accent, 0, -0.5, 0.06);            // boot foot
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, suit = 0x2255CC, red = 0xE53935, redD = 0xB72A26, gold = 0xFFD23E, hair = 0x2B2B2B;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        box(H, 0.68, 0.13, 0.68, hair, 0, 0.335, 0);
+        box(H, 0.68, 0.46, 0.13, hair, 0, 0.13, -0.29);
+        [-1, 1].forEach(s => box(H, 0.1, 0.24, 0.6, hair, s * 0.315, 0.2, -0.03));
+        box(H, 0.66, 0.1, 0.1, hair, 0, 0.3, 0.3);
+        const curl = box(H, 0.13, 0.13, 0.08, hair, -0.08, 0.22, 0.33); curl.rotation.z = 0.5;   // heroic curl
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x2A2A2A, pupil: 0x000000, brow: 0x2B2B2B, mask: red, mouth: 0x8A3A30, nose: 0xCC8558 });
+        box(g, 0.52, 0.46, 0.28, suit, 0, 0.79, 0);
+        decal(g, 0.2, 0.2, 0.02, gold, 0, 0.88, 0.142);                     // gold badge with a red star
+        decal(g, 0.11, 0.11, 0.02, red, 0, 0.88, 0.152).rotation.z = Math.PI / 4;   // red diamond
+        decal(g, 0.04, 0.04, 0.02, 0xFFFFFF, -0.015, 0.895, 0.162).rotation.z = Math.PI / 4;   // shine
+        box(g, 0.54, 0.08, 0.3, gold, 0, 0.6, 0);                           // belt
+        box(g, 0.5, 0.12, 0.27, suit, 0, 0.52, 0);
+        box(g, 0.36, 0.14, 0.1, red, 0, 1.06, -0.15);                       // cape collar
+        const cape = box(g, 0.54, 0.82, 0.04, red, 0, 0.66, -0.18); cape.rotation.x = -0.12;
+        decal(g, 0.54, 0.05, 0.05, redD, 0, 0.26, -0.23).rotation.x = -0.12;
+        a.arms.forEach(A => {
+          box(A, 0.18, 0.32, 0.19, suit, 0, -0.16, 0);
+          box(A, 0.2, 0.18, 0.21, red, 0, -0.41, 0);                         // gloves
+        });
+        a.legs.forEach(L => {
+          box(L, 0.22, 0.3, 0.24, suit, 0, -0.14, 0);
+          box(L, 0.24, 0.22, 0.26, red, 0, -0.36, 0);                        // boots
+          box(L, 0.24, 0.07, 0.31, redD, 0, -0.465, 0.03);
+        });
+        a.hatY = 0.45;
+        return bakeBlocky(a);
       });
-      // red gloves over the hands + cuffs
-      a.arms.forEach(A => box(A, 0.19, 0.22, 0.19, accent, 0, -0.44, 0));
-      return a;
     }
   },
   {
     id: 'spark', name: 'Spark the Fairy ✨',
     build() {
-      // ✨ Spark — the cartoons' kind fairy guide, matched to her character sheet (lavender hair +
-      // pastel petal skirt + sparkly wings + wand). Took over the old Fairy slot so indices don't shift.
-      const top = 0xB89AE0, topD = 0x9B7BD0, skin = 0xFFD9B3, hair = 0xCBA8EC;   // lavender top + lavender hair
-      const a = buildBiped(top, skin, skin, skin);                    // lavender top, bare legs (petal skirt below)
-      addEyes(a.head, 0x3a5f8a, 0.26);
-      box(a.head, 0.08, 0.03, 0.03, 0xD24A7E, 0, -0.15, 0.26);         // small smile
-      box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, -0.052, -0.135, 0.26);
-      box(a.head, 0.035, 0.03, 0.03, 0xD24A7E, 0.052, -0.135, 0.26);
-      box(a.head, 0.56, 0.22, 0.56, hair, 0, 0.2, 0);                  // lavender hair cap
-      // light side-swept fringe — RAISED above the brow line so her eyebrows show on her face, not her hair
-      box(a.head, 0.13, 0.13, 0.13, hair, -0.23, 0.21, 0.255);
-      box(a.head, 0.21, 0.13, 0.14, hair, 0.05, 0.20, 0.265);
-      box(a.head, 0.16, 0.14, 0.13, hair, 0.28, 0.18, 0.25);
-      // soft wavy side locks (clumps, not flat slabs)
-      [-0.32, 0.32].forEach(sx => {
-        box(a.head, 0.18, 0.20, 0.18, hair, sx, 0.02, -0.01);
-        box(a.head, 0.16, 0.20, 0.16, hair, sx - Math.sign(sx) * 0.02, -0.16, -0.03);
+      // ✨ Spark — the cartoons' kind fairy guide (character-sheets/Spark.png): lavender hair, pastel
+      // petal skirt, sparkly wings and a star wand. Took over the old Fairy slot so indices don't shift.
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, hair = 0xC6A3EE, hairD = 0xA884DA, top = 0xB89AE0,
+          petals = [0xA8E6C8, 0xF6B8D8, 0xFFD1B0, 0xC9B8F0];
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        box(H, 0.68, 0.13, 0.68, hair, 0, 0.335, 0);
+        box(H, 0.68, 0.62, 0.13, hair, 0, 0.05, -0.29);
+        [[-0.25, 0.14, 0.17], [-0.12, 0.14, 0.13], [0.01, 0.14, 0.18], [0.14, 0.14, 0.13], [0.26, 0.12, 0.16]]
+          .forEach(([x, w, bot]) => decal(H, w, 0.36 - bot, 0.1, hair, x, (0.36 + bot) / 2, 0.3));
+        box(H, 0.66, 0.1, 0.1, hair, 0, 0.31, 0.3);
+        [-1, 1].forEach(s => {
+          box(H, 0.09, 0.56, 0.5, hair, s * 0.33, 0.02, -0.04);
+          box(H, 0.12, 0.16, 0.3, hairD, s * 0.35, -0.24, -0.02);        // soft wavy ends
+        });
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x7A4A20, pupil: 0x2B1A10, brow: 0x8A6AB8, mouth: 0xC24A6A, nose: 0xCC8558, blush: 0xF08FA8, lashes: true });
+        box(g, 0.46, 0.4, 0.26, top, 0, 0.83, 0);
+        box(g, 0.48, 0.06, 0.28, hairD, 0, 0.64, 0);                       // waistband
+        // 🌸 petal skirt: pastel petals all round, flaring out
+        const ring = [[-0.16, 0.16, 'f'], [0, 0.17, 'f'], [0.16, 0.16, 'f'], [-0.16, -0.16, 'b'], [0, -0.17, 'b'], [0.16, -0.16, 'b'], [-0.26, 0, 'l'], [0.26, 0, 'r']];
+        ring.forEach(([x, z, n], i) => {
+          const side = n === 'l' || n === 'r';
+          const m = box(g, side ? 0.05 : 0.18, 0.28, side ? 0.24 : 0.05, petals[i % 4], x, 0.5, z);
+          if (side) m.rotation.z = (n === 'r' ? 0.35 : -0.35); else m.rotation.x = (n === 'f' ? 0.35 : -0.35);
+        });
+        a.arms.forEach((A, i) => {
+          box(A, 0.18, 0.12, 0.19, top, 0, -0.04, 0);
+          box(A, 0.15, 0.4, 0.16, skin, 0, -0.3, 0);
+          if (i === 0) {                                                  // 🪄 star wand in her hand
+            box(A, 0.035, 0.32, 0.035, 0xF7E27A, 0, -0.44, 0.14).rotation.x = -0.9;
+            const st = box(A, 0.13, 0.13, 0.05, 0xFFF27A, 0, -0.33, 0.28); st.rotation.z = Math.PI / 4;
+          }
+        });
+        a.legs.forEach(L => {
+          box(L, 0.17, 0.42, 0.18, skin, 0, -0.2, 0);
+          box(L, 0.2, 0.09, 0.27, hairD, 0, -0.45, 0.03);                  // lavender shoes
+        });
+        // 🦋 sparkly see-through wings (flutter via a.wings)
+        a.wings = [];
+        const wingMat = c => new THREE.MeshLambertMaterial({ color: c, transparent: true, opacity: 0.85 });
+        const wing = (x, y, w, h, col, ry, rz) => {
+          const m = new THREE.Mesh(roundedBoxGeo(w, h, 0.03), wingMat(col));
+          m.position.set(x, y, -0.2); m.rotation.y = ry; m.rotation.z = rz; m.userData.baseRY = ry; g.add(m); a.wings.push(m); return m;
+        };
+        wing(-0.32, 1.02, 0.44, 0.54, 0x8CCFF2, 0.32, 0.32);
+        wing(0.32, 1.02, 0.44, 0.54, 0x8CCFF2, -0.32, -0.32);
+        wing(-0.32, 0.62, 0.32, 0.4, 0xD79BF0, 0.32, 0.52);
+        wing(0.32, 0.62, 0.32, 0.4, 0xD79BF0, -0.32, -0.52);
+        a.hatY = 0.45;
+        return bakeBlocky(a);
       });
-      box(a.head, 0.5, 0.5, 0.14, hair, 0, -0.05, -0.26);             // back hair
-      // 🌸 pastel petal skirt — a ring of mint / pink / lilac petals
-      const petals = [0xA8E6C8, 0xF6B8D8, 0xC9B8F0, 0xA8E6C8, 0xF6B8D8, 0xC9B8F0];
-      petals.forEach((col, i) => { const ang = (i / petals.length) * Math.PI * 2; box(a.group, 0.2, 0.3, 0.12, col, Math.sin(ang) * 0.27, 0.42, Math.cos(ang) * 0.27); });
-      box(a.group, 0.5, 0.08, 0.3, topD, 0, 0.58, 0);                  // waistband
-      a.legs.forEach(L => box(L, 0.24, 0.13, 0.34, topD, 0, -0.5, 0.08));   // lavender shoes
-      // 🪄 little glowing wand by her right hand
-      const wand = new THREE.Group(); wand.position.set(0.46, 0.55, 0.14); a.group.add(wand);
-      box(wand, 0.04, 0.34, 0.04, 0xF7E27A, 0, 0.12, 0);              // gold stick
-      box(wand, 0.14, 0.14, 0.05, 0xFFF6C0, 0, 0.32, 0);             // sparkle star
-      // 🦋 sparkly fairy wings (reuse the flutter system)
-      a.wings = [];
-      const wing = (x, y, w, h, col, ry, rz) => {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.82 }));
-        m.position.set(x, y, -0.2); m.rotation.y = ry; m.rotation.z = rz; m.userData.baseRY = ry; a.group.add(m); a.wings.push(m); return m;
-      };
-      wing(-0.3, 1.04, 0.42, 0.56, 0xB8E0F5, 0.32, 0.32);             // upper wings (light blue)
-      wing(0.3, 1.04, 0.42, 0.56, 0xB8E0F5, -0.32, -0.32);
-      wing(-0.32, 0.58, 0.32, 0.42, 0xE6BEF2, 0.32, 0.52);            // lower wings (lavender)
-      wing(0.32, 0.58, 0.32, 0.42, 0xE6BEF2, -0.32, -0.52);
-      return a;
     }
   },
   {
     id: 'knight', name: 'Knight 🛡️',
     build() {
-      const a = buildBiped(0xB8BCC2, 0xC9CED4, 0x9aa0a8, 0xB8BCC2);    // silver armor
-      box(a.head, 0.52, 0.32, 0.52, 0xA9AEB5, 0, 0.05, 0);            // helmet
-      box(a.head, 0.42, 0.08, 0.06, 0x1b2330, 0, 0.02, 0.25);         // visor slit
-      box(a.head, 0.08, 0.24, 0.08, 0xE53935, 0, 0.36, -0.04);        // red plume
-      box(a.group, 0.3, 0.3, 0.06, 0xE0E3E8, 0, 0.88, 0.15);          // breastplate shine
-      box(a.group, 0.07, 0.36, 0.28, 0x2255cc, -0.42, 0.95, 0.05);    // shield
-      box(a.group, 0.04, 0.18, 0.06, 0xFFD23E, -0.45, 0.95, 0.05);    // shield cross (vertical)
-      box(a.group, 0.04, 0.06, 0.16, 0xFFD23E, -0.45, 0.95, 0.05);    // shield cross (horizontal)
-      return a;
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, armor = 0xC2C9D2, armorD = 0x8E97A3, tabard = 0x2255CC, gold = 0xF5C542, plume = 0xE53935;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x5A3A20, pupil: 0x2A1A10, brow: 0x6B4A2A, mouth: 0x8A3A30, nose: 0xCC8558, blush: 0xEE8E8E });
+        // ⛑️ open-faced helmet so you can see who's inside
+        box(H, 0.72, 0.16, 0.72, armor, 0, 0.34, 0);
+        box(H, 0.72, 0.7, 0.12, armor, 0, 0.0, -0.31);
+        [-1, 1].forEach(s => {
+          box(H, 0.1, 0.7, 0.64, armor, s * 0.32, 0.0, -0.02);
+          box(H, 0.08, 0.36, 0.08, armor, s * 0.28, -0.12, 0.31);          // cheek guards
+        });
+        box(H, 0.7, 0.09, 0.09, armorD, 0, 0.24, 0.31);                    // brow guard
+        [[0.5, 0.0], [0.56, -0.14], [0.52, -0.28], [0.42, -0.36]].forEach(([y, z]) => box(H, 0.08, 0.14, 0.16, plume, 0, y, z));
+        // 🛡️ armour with a blue tabard, belt and sword; shield on the left arm
+        box(g, 0.52, 0.46, 0.3, armor, 0, 0.79, 0);
+        box(g, 0.38, 0.5, 0.32, tabard, 0, 0.76, 0);
+        decal(g, 0.06, 0.26, 0.02, gold, 0, 0.8, 0.162);
+        decal(g, 0.2, 0.06, 0.02, gold, 0, 0.84, 0.162);
+        box(g, 0.54, 0.07, 0.33, 0x6B4A2A, 0, 0.58, 0);
+        box(g, 0.5, 0.12, 0.28, armorD, 0, 0.52, 0);
+        const sc = box(g, 0.06, 0.42, 0.09, 0x5A3A22, -0.3, 0.38, 0.1); sc.rotation.z = -0.15;   // sword in its scabbard
+        box(g, 0.16, 0.04, 0.06, gold, -0.33, 0.6, 0.1);
+        box(g, 0.05, 0.12, 0.05, 0x5A3A22, -0.335, 0.68, 0.1);
+        a.arms.forEach((A, i) => {
+          box(A, 0.24, 0.14, 0.26, armorD, 0, -0.02, 0);                    // shoulder plate
+          box(A, 0.17, 0.3, 0.18, armor, 0, -0.24, 0);
+          box(A, 0.19, 0.14, 0.2, armorD, 0, -0.43, 0);                     // gauntlet
+          if (i === 1) {
+            box(A, 0.06, 0.42, 0.36, tabard, 0.13, -0.3, 0.02);              // shield
+            decal(A, 0.02, 0.3, 0.06, gold, 0.165, -0.3, 0.02);
+            decal(A, 0.02, 0.06, 0.24, gold, 0.165, -0.26, 0.02);
+          }
+        });
+        a.legs.forEach(L => {
+          box(L, 0.21, 0.36, 0.23, armor, 0, -0.17, 0);
+          decal(L, 0.22, 0.05, 0.24, armorD, 0, -0.18, 0);
+          box(L, 0.24, 0.14, 0.3, armorD, 0, -0.43, 0.03);
+        });
+        a.hatY = 0.55;
+        return bakeBlocky(a);
+      });
     }
   },
   {
     id: 'trex', name: 'T-Rex 🦖',
     build() {
-      const g = new THREE.Group();
-      const grn = 0x5BA84F, grnD = 0x3d8b41, grnL = 0x76c06a, belly = 0xCBE0A0;
-      const legs = [                                                   // thick hind legs
-        limb(g, 0.26, 0.5, 0.3, grnD, -0.17, 0.5, 0.02),
-        limb(g, 0.26, 0.5, 0.3, grnD, 0.17, 0.5, 0.02)
-      ];
-      legs.forEach(L => {
-        box(L, 0.3, 0.12, 0.42, grnD, 0, -0.46, 0.12);                // big foot
-        [-0.09, 0, 0.09].forEach(cx => box(L, 0.05, 0.06, 0.09, 0xF0F0F0, cx, -0.5, 0.31));  // claws
+      return blockyBuild(() => {
+        const g = new THREE.Group();
+        const grn = 0x5BA84F, grnD = 0x3d8b41, grnL = 0x76c06a, belly = 0xCBE0A0;
+        // 🦵 thick hind legs hinge INSIDE the body, so the thighs stay joined while he stomps
+        const leg = x => {
+          const L = new THREE.Group(); L.position.set(x, 0.64, 0.02); g.add(L);
+          box(L, 0.3, 0.36, 0.38, grn, 0, -0.12, 0);
+          box(L, 0.22, 0.32, 0.24, grnD, 0, -0.4, 0);
+          box(L, 0.3, 0.1, 0.42, grnD, 0, -0.59, 0.1);
+          [-0.09, 0, 0.09].forEach(cx => box(L, 0.05, 0.06, 0.09, 0xF0F0F0, cx, -0.61, 0.33));
+          return L;
+        };
+        const legs = [leg(-0.17), leg(0.17)];
+        box(g, 0.5, 0.52, 0.72, grn, 0, 0.78, 0.05);
+        decal(g, 0.36, 0.34, 0.02, belly, 0, 0.72, 0.42);
+        box(g, 0.4, 0.12, 0.5, belly, 0, 0.5, 0.12);
+        for (let i = 0; i < 4; i++) box(g, 0.1, 0.13, 0.1, grnD, 0, 1.06 - i * 0.015, 0.22 - i * 0.18);   // spine ridges
+        const arms = [-0.29, 0.29].map(x => { const A = new THREE.Group(); A.position.set(x, 0.96, 0.27); g.add(A); return A; });
+        arms.forEach(A => { box(A, 0.14, 0.14, 0.14, grn, 0, -0.02, 0); box(A, 0.11, 0.32, 0.11, grnL, 0, -0.18, 0); box(A, 0.09, 0.09, 0.15, 0xF0F0F0, 0, -0.34, 0.07); });
+        const head = new THREE.Group(); head.position.set(0, 1.14, 0.5); g.add(head);
+        box(head, 0.44, 0.42, 0.46, grn, 0, 0, 0);
+        box(head, 0.38, 0.26, 0.4, grn, 0, -0.04, 0.34);                     // long snout
+        box(head, 0.38, 0.16, 0.32, grnD, 0, -0.18, 0.26);                    // jaw
+        for (let i = -1; i <= 1; i++) { box(head, 0.05, 0.08, 0.04, 0xFFFFFF, i * 0.12, -0.06, 0.53); box(head, 0.05, 0.06, 0.04, 0xFFFFFF, i * 0.12, -0.21, 0.42); }
+        [-1, 1].forEach(s => {
+          box(head, 0.03, 0.12, 0.12, 0xFFFFFF, s * 0.22, 0.12, 0.14);        // big eyes on the sides of the head
+          box(head, 0.035, 0.08, 0.06, 0x1A1A1A, s * 0.225, 0.11, 0.16);
+          decal(head, 0.04, 0.03, 0.03, 0xFFFFFF, s * 0.23, 0.14, 0.15);
+          box(head, 0.1, 0.07, 0.12, grnD, s * 0.16, 0.24, 0.12);             // brow bumps
+          decal(head, 0.06, 0.04, 0.02, grnD, s * 0.07, 0.06, 0.545);         // nostrils
+        });
+        const tail = new THREE.Group(); tail.position.set(0, 0.76, -0.3); g.add(tail);
+        box(tail, 0.34, 0.32, 0.4, grn, 0, 0, -0.12);
+        box(tail, 0.24, 0.22, 0.38, grn, 0, -0.06, -0.42);
+        box(tail, 0.14, 0.14, 0.36, grnD, 0, -0.12, -0.68);
+        const a = { group: g, legs, arms, head, tail };
+        return bakeBlocky(a);
       });
-      box(g, 0.5, 0.5, 0.72, grn, 0, 0.78, 0.05);                     // bulky body leaning forward
-      box(g, 0.42, 0.32, 0.5, belly, 0, 0.66, 0.2);                  // pale belly
-      for (let i = 0; i < 4; i++) box(g, 0.1, 0.13, 0.1, grnD, 0, 1.02 - i * 0.015, 0.22 - i * 0.18);  // spine ridges
-      const arms = [                                                   // short T-Rex arms — bigger so they actually read
-        limb(g, 0.11, 0.34, 0.11, grnL, -0.29, 0.96, 0.27),
-        limb(g, 0.11, 0.34, 0.11, grnL, 0.29, 0.96, 0.27)
-      ];
-      arms.forEach(A => { box(A, 0.14, 0.14, 0.14, grn, 0, -0.02, 0); box(A, 0.09, 0.09, 0.15, 0xF0F0F0, 0, -0.34, 0.07); });   // shoulder + 2-claw hand
-      const head = new THREE.Group(); head.position.set(0, 1.12, 0.5); g.add(head);   // big head, forward
-      box(head, 0.42, 0.42, 0.46, grn, 0, 0, 0);                      // skull
-      box(head, 0.36, 0.26, 0.4, grn, 0, -0.04, 0.34);               // long protruding muzzle (more dino)
-      box(head, 0.38, 0.18, 0.32, grn, 0, -0.17, 0.26);              // lower snout/jaw
-      for (let i = -1; i <= 1; i++) {                                  // teeth, upper & lower
-        box(head, 0.05, 0.09, 0.04, 0xFFFFFF, i * 0.12, -0.05, 0.49);
-        box(head, 0.05, 0.07, 0.04, 0xFFFFFF, i * 0.12, -0.2, 0.41);
-      }
-      box(head, 0.1, 0.1, 0.08, 0xFFC400, -0.16, 0.13, 0.18);         // yellow eyes
-      box(head, 0.1, 0.1, 0.08, 0xFFC400, 0.16, 0.13, 0.18);
-      box(head, 0.05, 0.05, 0.04, 0x111111, -0.16, 0.13, 0.24);       // pupils
-      box(head, 0.05, 0.05, 0.04, 0x111111, 0.16, 0.13, 0.24);
-      box(head, 0.09, 0.08, 0.07, grnD, -0.15, 0.23, 0.02);           // brow bumps
-      box(head, 0.09, 0.08, 0.07, grnD, 0.15, 0.23, 0.02);
-      box(head, 0.06, 0.05, 0.05, grnD, -0.07, 0.07, 0.49);           // nostrils
-      box(head, 0.06, 0.05, 0.05, grnD, 0.07, 0.07, 0.49);
-      const tail = new THREE.Group(); tail.position.set(0, 0.72, -0.3); g.add(tail);   // pivot near the body so it can swish
-      box(tail, 0.32, 0.3, 0.4, grn, 0, 0, -0.12);                    // heavy tail base
-      box(tail, 0.22, 0.22, 0.4, grn, 0, -0.1, -0.42);               // tail mid
-      box(tail, 0.12, 0.14, 0.4, grnD, 0, -0.2, -0.68);              // tail tip
-      return { group: g, legs, arms, head, tail };
     }
   },
   {
-    // ⭐ The cartoon stars — play AS Leo or Fiona. Looks match the Stackadoo World cartoons so a
-    // kid who loves the shows can be their favourite character (the cartoon→game bridge).
-    id: 'leo', name: 'Leo 👦',   // ⭐ back in the picker — the real 3D model lives at avatars/leo.glb (Meshy)
+    // ⭐ The cartoon stars — play AS Leo or Fiona. Classic look = blocky versions of the
+    // show designs (avatars/leo.glb & fiona.glb are the studio models).
+    id: 'leo', name: 'Leo 👦',
     build() {
-      const tee = 0xF6C744, trim = 0xE8862E, jeans = 0x3579C8, cuff = 0x6FA8E8, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x7A4A28, hairHi = 0x8F5C33;
-      const a = buildBiped(tee, skin, jeans, skin);                  // yellow tee, blue jeans, bare arms
-      // 🙂 big smooth cartoon head (chibi!) — the rig's box head hides, everything else scales with the group
-      a.head.children[0].visible = false;
-      a.head.scale.setScalar(1.22);
-      orb(a.head, 0.34, skin, 0, 0.02, 0, 1, 0.98, 0.96);            // round noggin
-      orb(a.head, 0.05, skin, 0, -0.04, 0.315, 1, 0.8, 0.7);         // button nose
-      [-1, 1].forEach(s => orb(a.head, 0.05, skinD, s * 0.325, -0.01, 0.02, 0.55, 0.85, 0.8));   // little ears
-      addEyes(a.head, 0x4a3423, 0.315, true, 1.38);                  // BIG warm brown eyes, no blush
-      a.face = addFace(a.head, -0.16, 0.318, 0x8E4A3E);
-      a.face.browL.scale.set(1.25, 1.5, 1); a.face.browR.scale.set(1.25, 1.5, 1);   // thick friendly brows
-      // 😄 open happy smile (dark mouth + a flash of teeth), with a hidden frown for sad moments
-      a.face.mouth.children[0].visible = false; a.face.lc.visible = false; a.face.rc.visible = false;
-      const grinL = new THREE.Group();
-      const moL = new THREE.Mesh(new THREE.SphereGeometry(0.078, 16, 12), mat(0x7A3B44));
-      moL.scale.set(1.2, 0.55, 0.35); grinL.add(moL);
-      box(grinL, 0.115, 0.038, 0.02, 0xFFFFFF, 0, 0.028, 0.048);     // teeth
-      grinL.position.set(0, 0.005, 0.006);
-      a.face.mouth.add(grinL);
-      const frownL = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.019, 8, 16, Math.PI * 0.85), mat(0x8E4A3E));
-      frownL.rotation.z = 0.24; frownL.scale.y = 0.55; frownL.position.set(0, -0.055, 0.004);
-      a.face.mouth.add(frownL);
-      a.face.kidArcs = { smile: grinL, frown: frownL };
-      // 💇 spiky tousled hair — a snug hood with smooth swept tufts (cones), like the show
-      orb(a.head, 0.35, hair, 0, 0.125, -0.045, 1.02, 0.88, 1.0);    // snug hood, forehead open
-      orb(a.head, 0.30, hair, 0, 0.02, -0.19, 1.05, 1.0, 0.7);       // full back of head
-      spike(a.head, 0.115, 0.30, hair, -0.20, 0.36, 0.12, -0.55, 0.35);   // front tufts sweeping up & right
-      spike(a.head, 0.125, 0.34, hair, 0.0, 0.40, 0.10, -0.45, -0.10);
-      spike(a.head, 0.11, 0.28, hair, 0.19, 0.36, 0.10, -0.5, -0.45);
-      spike(a.head, 0.115, 0.30, hairHi, -0.10, 0.40, -0.04, 0.15, 0.5);  // crown tufts (sun-kissed)
-      spike(a.head, 0.12, 0.32, hair, 0.10, 0.40, -0.08, 0.3, -0.4);
-      spike(a.head, 0.11, 0.28, hair, -0.02, 0.36, -0.20, 0.75, 0.1);     // back tufts tipping backwards
-      spike(a.head, 0.10, 0.24, hair, 0.16, 0.33, -0.20, 0.7, -0.5);
-      spike(a.head, 0.09, 0.20, hair, -0.19, 0.33, -0.18, 0.65, 0.55);
-      orb(a.head, 0.09, hair, -0.275, 0.15, 0.04, 0.7, 0.9, 0.9);    // sideburn wisps (tucked back)
-      orb(a.head, 0.09, hair, 0.275, 0.15, 0.04, 0.7, 0.9, 0.9);
-      a.hatY = 0.50;                                                 // badge hats perch on the spikes
-      // 👕 tee details — orange collar ring, sleeve cuffs, hem
-      const col = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.028, 10, 20), mat(trim));
-      col.rotation.x = Math.PI / 2; col.position.set(0, 1.15, 0); col.castShadow = col.receiveShadow = true;
-      a.group.add(col);
-      a.arms.forEach(A => {
-        box(A, 0.21, 0.18, 0.21, tee, 0, -0.05, 0);                  // sleeve
-        box(A, 0.215, 0.05, 0.215, trim, 0, -0.15, 0);               // orange cuff
-        A.children[1].visible = false;                               // box hands → soft mitts
-        orb(A, 0.105, skin, 0, -0.5, 0);
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, hair = 0x6E3F1E, hairHi = 0x7C4822,
+          tee = 0xF9D23C, teeD = 0xE9BC22, trim = 0xF08A2A, jeans = 0x2F7BD6, jeansD = 0x2465B0,
+          cuff = 0x86B9F0, shoe = 0x2F86E0;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        [-1, 1].forEach(s => box(H, 0.07, 0.14, 0.11, skin, s * 0.335, -0.03, 0));   // ears
+        // 💇 spiky brown hair: cap + back + sides, a jagged fringe, tufts sticking up
+        box(H, 0.68, 0.13, 0.68, hair, 0, 0.335, 0);
+        box(H, 0.68, 0.5, 0.13, hair, 0, 0.11, -0.29);
+        [-1, 1].forEach(s => {
+          box(H, 0.1, 0.22, 0.6, hair, s * 0.315, 0.2, -0.03);
+          box(H, 0.1, 0.12, 0.09, hair, s * 0.315, 0.06, 0.2);          // sideburns
+        });
+        [[-0.25, 0.14, 0.17], [-0.12, 0.14, 0.125], [0.01, 0.14, 0.16], [0.14, 0.14, 0.12], [0.26, 0.12, 0.18]]
+          .forEach(([x, w, bot]) => { box(H, w, 0.36 - bot, 0.1, hair, x, (0.36 + bot) / 2, 0.3).userData.noLine = true; });
+        box(H, 0.66, 0.12, 0.1, hair, 0, 0.3, 0.3);                     // fringe base carries the outline
+        const tuft = (x, y, z, rx, rz, c) => { const m = box(H, 0.19, 0.24, 0.19, c, x, y, z); m.rotation.x = rx; m.rotation.z = rz; };
+        tuft(-0.22, 0.45, 0.16, -0.55, 0.5, hair);
+        tuft(0.0, 0.49, 0.17, -0.65, 0.05, hairHi);
+        tuft(0.22, 0.45, 0.13, -0.55, -0.5, hair);
+        tuft(-0.14, 0.48, -0.08, 0.35, 0.4, hair);
+        tuft(0.14, 0.49, -0.1, 0.35, -0.35, hairHi);
+        tuft(0.0, 0.43, -0.28, 0.9, 0, hair);
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x6B4226, pupil: 0x2B1A10, brow: 0x5A3218, mouth: 0x8A3A30, nose: 0xCC8558, blush: 0xEE8E8E });
+        // 👕 yellow tee with an orange collar, sleeve cuffs and a little placket
+        box(g, 0.52, 0.46, 0.28, tee, 0, 0.79, 0);
+        box(g, 0.53, 0.06, 0.29, teeD, 0, 0.585, 0);                    // hem
+        box(g, 0.27, 0.05, 0.21, trim, 0, 1.03, 0);                     // collar ring
+        box(g, 0.22, 0.05, 0.02, trim, 0, 0.995, 0.142);                // collar front
+        box(g, 0.06, 0.07, 0.02, trim, 0, 0.94, 0.142);                 // placket
+        box(g, 0.5, 0.12, 0.27, jeans, 0, 0.52, 0);                     // jeans hips (legs hinge under here)
+        a.arms.forEach(A => {
+          box(A, 0.2, 0.2, 0.22, tee, 0, -0.08, 0);                     // short sleeve
+          box(A, 0.205, 0.045, 0.225, trim, 0, -0.18, 0);               // orange cuff
+          box(A, 0.16, 0.32, 0.17, skin, 0, -0.34, 0);                  // arm + hand
+        });
+        // 👖 blue jeans with cargo pockets, rolled light cuffs, blue sneakers with white toes
+        a.legs.forEach((L, i) => {
+          const s = i ? 1 : -1;
+          box(L, 0.22, 0.35, 0.24, jeans, 0, -0.165, 0);
+          box(L, 0.02, 0.1, 0.12, jeansD, s * 0.115, -0.2, 0);          // cargo pocket
+          box(L, 0.25, 0.08, 0.27, cuff, 0, -0.37, 0);                  // rolled cuff
+          box(L, 0.23, 0.1, 0.3, shoe, 0, -0.445, 0.03);                // sneaker
+          box(L, 0.235, 0.075, 0.09, 0xFFFFFF, 0, -0.455, 0.15);        // white toe cap
+          box(L, 0.24, 0.035, 0.31, 0xF2F2F2, 0, -0.4825, 0.03);        // white sole
+          box(L, 0.12, 0.012, 0.08, 0xFFFFFF, 0, -0.39, 0.05);          // laces
+        });
+        a.hatY = 0.45;
+        return bakeBlocky(a);
       });
-      box(a.group, 0.56, 0.07, 0.36, shade(tee, 0.92), 0, 0.585, 0); // tee hem
-      // 👖 rolled light-denim cuffs + blue sneakers with white toes
-      a.legs.forEach(L => {
-        L.children[1].visible = false;
-        box(L, 0.27, 0.10, 0.27, cuff, 0, -0.385, 0);                // rolled cuff
-        box(L, 0.24, 0.13, 0.28, 0x2F7FD0, 0, -0.5, 0.03);           // sneaker body
-        orb(L, 0.115, 0xFFFFFF, 0, -0.5, 0.15, 1, 0.75, 1);          // white toe cap
-        box(L, 0.25, 0.05, 0.30, 0xFFFFFF, 0, -0.545, 0.03);         // white sole
-      });
-      return a;
     }
   },
   {
-    id: 'fiona', name: 'Fiona 👧',   // ⭐ back in the picker — drop avatars/fiona.glb (Meshy) and she upgrades too
+    id: 'fiona', name: 'Fiona 👧',
     build() {
-      const dress = 0xB07CD6, dressD = 0x7D3C98, band = 0x6C3391, skin = 0xFFD9B3, skinD = 0xF2C29C, hair = 0x7A4E28, hairHi = 0x8F5C33;
-      const a = buildBiped(dress, skin, skin, skin);                 // lilac bodice; bare legs — the skirt is below
-      // 🙂 big smooth cartoon head (chibi!), button nose, BIG sweet eyes with lashes — no blush marks
-      a.head.children[0].visible = false;
-      a.head.scale.setScalar(1.22);
-      orb(a.head, 0.34, skin, 0, 0.02, 0, 1, 0.98, 0.96);
-      orb(a.head, 0.05, skin, 0, -0.04, 0.315, 1, 0.8, 0.7);
-      [-1, 1].forEach(s => orb(a.head, 0.05, skinD, s * 0.325, -0.01, 0.02, 0.55, 0.85, 0.8));
-      addEyes(a.head, 0x43301f, 0.315, true, 1.38);
-      [-1, 1].forEach(s => {                                         // ✨ little lashes at the outer corners
-        const l = box(a.head, 0.05, 0.016, 0.02, 0x3A2A1A, s * 0.20, 0.135, 0.325);
-        l.rotation.z = s * 0.45;
+      return blockyBuild(() => {
+        const skin = 0xE9AC80, hair = 0x7B4424, hairD = 0x66371C, hairHi = 0x95592F,
+          dress = 0xF27DB9, dressD = 0xE0619F, purple = 0x8E44D0, purpleD = 0x6A2EA6,
+          fA = 0xD62E9A, fB = 0x9C5FE0, fC = 0xFFC9E2, mid = 0xFFD39A;
+        const a = blockKidBase(skin), H = a.head, g = a.group;
+        // 💇 wavy shoulder-length brown hair with soft bangs
+        box(H, 0.68, 0.12, 0.68, hair, 0, 0.34, 0);                      // cap
+        box(H, 0.68, 0.78, 0.13, hair, 0, -0.05, -0.29);                // back, down to the shoulders
+        box(H, 0.6, 0.16, 0.09, hair, 0, 0.27, 0.3);                    // bangs
+        box(H, 0.17, 0.06, 0.09, hair, -0.15, 0.17, 0.3).userData.noLine = true;   // side-swept bang steps
+        box(H, 0.13, 0.05, 0.09, hair, 0.13, 0.175, 0.3).userData.noLine = true;
+        box(H, 0.26, 0.025, 0.03, hairHi, -0.1, 0.31, 0.35);            // shine
+        [-1, 1].forEach(s => {
+          box(H, 0.09, 0.66, 0.5, hair, s * 0.33, -0.01, -0.04);        // side curtains
+          box(H, 0.08, 0.4, 0.07, hair, s * 0.28, 0.08, 0.3);           // locks framing the face
+          box(H, 0.06, 0.13, 0.2, hairD, s * 0.38, -0.14, 0.02);        // wave
+          box(H, 0.12, 0.14, 0.3, hair, s * 0.35, -0.36, -0.02);        // curled ends
+          box(H, 0.16, 0.1, 0.13, hair, s * 0.24, -0.44, -0.27);        // back flicks
+        });
+        a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
+          { iris: 0x6B4226, pupil: 0x2B1A10, brow: 0x5A3218, browY: 5, mouth: 0xB04A5E, nose: 0xCC8558, blush: 0xF08FA8, lashes: true });
+        // 👗 pink flower dress: bodice, purple belt, white collar, puff sleeves, flared skirt
+        box(g, 0.48, 0.4, 0.27, dress, 0, 0.83, 0);
+        box(g, 0.5, 0.06, 0.29, purple, 0, 0.64, 0);
+        const SK = { top: 0.64, bot: 0.27, wT: 0.52, wB: 0.74, r: 0.62 };   // A-line skirt
+        blockFrustum(g, SK.wT, SK.wB, SK.top - SK.bot, SK.r, dress, 0, (SK.top + SK.bot) / 2, 0);
+        blockFrustum(g, SK.wB + 0.005, SK.wB + 0.01, 0.035, SK.r, dressD, 0, SK.bot + 0.0175, 0);   // hem band
+        const skW = y => SK.wT + (SK.wB - SK.wT) * (SK.top - y) / (SK.top - SK.bot);   // skirt width at height y
+        const skTilt = Math.atan((SK.wB - SK.wT) / 2 / (SK.top - SK.bot));
+        [-1, 1].forEach(s => box(g, 0.14, 0.06, 0.03, 0xFFFFFF, s * 0.07, 1.0, 0.14));   // collar
+        box(g, 0.3, 0.018, 0.02, purple, 0, 0.965, 0.142);              // collar trim
+        const fl = [fA, fB, fC];
+        let k = 0;
+        const F = (x, y, z, n) => pixelFlower(g, x, y, z, n, fl[k++ % 3], mid);
+        [[-0.13, 0.9], [0.13, 0.78], [-0.05, 0.72]].forEach(([x, y]) => { F(x, y, 0.137, 'f'); F(-x, y, -0.137, 'b'); });
+        const FS = (x, y, n) => {                                         // a flower lying on the slanted skirt
+          const half = skW(y) / 2 + 0.006, zt = skTilt * SK.r, ft = Math.atan(Math.tan(skTilt) * SK.r);
+          if (n === 'f') pixelFlower(g, x, y, half * SK.r, 'f', fl[k++ % 3], mid, -ft);
+          else if (n === 'b') pixelFlower(g, x, y, -half * SK.r, 'b', fl[k++ % 3], mid, ft);
+          else pixelFlower(g, (n === 'r' ? 1 : -1) * half, y, x, 'r', fl[k++ % 3], mid, n === 'r' ? skTilt : -skTilt);
+          void zt;
+        };
+        [[-0.15, 0.55], [0.12, 0.5], [-0.24, 0.36], [0.02, 0.38], [0.23, 0.33]].forEach(([x, y]) => { FS(x, y, 'f'); FS(-x, y, 'b'); });
+        [[0.08, 0.36], [-0.1, 0.5]].forEach(([zz, y]) => { FS(zz, y, 'r'); FS(-zz, y, 'l'); });
+        [-1, 1].forEach(s => F(s * 0.242, 0.86, 0, 'r'));
+        a.arms.forEach(A => {
+          box(A, 0.22, 0.18, 0.23, dress, 0, -0.07, 0);                 // puff sleeve
+          box(A, 0.2, 0.04, 0.21, purple, 0, -0.17, 0);                 // purple cuff
+          box(A, 0.15, 0.32, 0.16, skin, 0, -0.34, 0);
+        });
+        // 👟 purple mary-janes
+        a.legs.forEach(L => {
+          box(L, 0.17, 0.42, 0.18, skin, 0, -0.2, 0);
+          box(L, 0.2, 0.09, 0.27, purple, 0, -0.45, 0.03);
+          box(L, 0.21, 0.03, 0.28, purpleD, 0, -0.485, 0.03);
+          box(L, 0.205, 0.025, 0.05, purpleD, 0, -0.405, 0.02);         // strap
+        });
+        a.hatY = 0.45;
+        return bakeBlocky(a);
       });
-      a.face = addFace(a.head, -0.16, 0.318, 0xA8555F);
-      a.face.browL.scale.set(1.15, 1.4, 1); a.face.browR.scale.set(1.15, 1.4, 1);
-      // 😄 open happy smile + hidden frown (kept animated through setFaceExpr)
-      a.face.mouth.children[0].visible = false; a.face.lc.visible = false; a.face.rc.visible = false;
-      const grinF = new THREE.Group();
-      const moF = new THREE.Mesh(new THREE.SphereGeometry(0.072, 16, 12), mat(0x7A3B44));
-      moF.scale.set(1.15, 0.55, 0.35); grinF.add(moF);
-      box(grinF, 0.105, 0.036, 0.02, 0xFFFFFF, 0, 0.026, 0.045);     // teeth
-      grinF.position.set(0, 0.005, 0.006);
-      a.face.mouth.add(grinF);
-      const frownF = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.019, 8, 16, Math.PI * 0.85), mat(0xA8555F));
-      frownF.rotation.z = 0.24; frownF.scale.y = 0.55; frownF.position.set(0, -0.055, 0.004);
-      a.face.mouth.add(frownF);
-      a.face.kidArcs = { smile: grinF, frown: frownF };
-      // 💇 sleek shoulder bob with BLUNT-CUT bangs, curtains framing the face, ends curving in
-      orb(a.head, 0.375, hair, 0, 0.075, -0.04, 1.03, 0.96, 1.05);   // smooth hood
-      box(a.head, 0.54, 0.19, 0.16, hair, 0, 0.29, 0.195);           // blunt fringe (rounded box = clean soft edge)
-      box(a.head, 0.10, 0.15, 0.14, hair, -0.255, 0.255, 0.185);     // fringe corners step down
-      box(a.head, 0.10, 0.15, 0.14, hair, 0.255, 0.255, 0.185);
-      [-1, 1].forEach(s => {                                         // smooth curtain panels past the chin
-        const p = box(a.head, 0.15, 0.55, 0.30, hair, s * 0.285, -0.06, 0.0);
-        p.rotation.z = s * -0.04;
-        orb(a.head, 0.085, hair, s * 0.26, -0.345, 0.05, 1, 0.8, 0.9);   // ends curve in at the jaw
-      });
-      orb(a.head, 0.33, hair, 0, -0.06, -0.16, 1.05, 1.08, 0.8);     // full falling back
-      [-0.20, 0, 0.20].forEach(cx => orb(a.head, 0.115, hair, cx, -0.32, -0.16, 1, 0.85, 0.9));  // soft ends at the nape
-      orb(a.head, 0.10, hairHi, -0.10, 0.335, 0.09, 1, 0.65, 1);     // shine strand
-      a.hatY = 0.46;
-      // 👗 the show dress — lilac with a white Peter-Pan collar, buttons, waistband, twirly skirt
-      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.47, 0.44, 18), mat(dress));
-      skirt.position.set(0, 0.47, 0); skirt.castShadow = skirt.receiveShadow = true; a.group.add(skirt);
-      const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.49, 0.07, 18), mat(dress));
-      hem.position.set(0, 0.245, 0); hem.castShadow = hem.receiveShadow = true; a.group.add(hem);
-      const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.315, 0.06, 18), mat(band));
-      waist.position.set(0, 0.665, 0); waist.castShadow = waist.receiveShadow = true; a.group.add(waist);
-      orb(a.group, 0.155, 0xFFFFFF, 0, 1.165, 0.03, 1.5, 0.33, 1.05);   // rounded collar
-      orb(a.group, 0.033, band, 0, 1.02, 0.185);                     // two purple buttons
-      orb(a.group, 0.033, band, 0, 0.90, 0.185);
-      a.arms.forEach(A => {
-        orb(A, 0.135, dress, 0, -0.04, 0);                           // puff sleeves
-        box(A, 0.20, 0.05, 0.20, 0xFFFFFF, 0, -0.155, 0);            // white sleeve cuffs
-        A.children[1].visible = false;
-        orb(A, 0.105, skin, 0, -0.5, 0);                             // soft mitts
-      });
-      // 👟 purple mary-janes with straps + folded socks
-      a.legs.forEach(L => {
-        L.children[1].visible = false;
-        box(L, 0.21, 0.09, 0.21, 0xFFFFFF, 0, -0.40, 0);             // folded sock
-        box(L, 0.22, 0.12, 0.26, dressD, 0, -0.51, 0.02);            // shoe
-        orb(L, 0.115, dressD, 0, -0.51, 0.13, 1, 0.7, 1);            // round toe
-        box(L, 0.23, 0.04, 0.28, 0x4A2360, 0, -0.555, 0.02);         // sole
-        box(L, 0.23, 0.045, 0.05, dressD, 0, -0.445, 0.09);          // strap
-      });
-      return a;
     }
   }
 ];
@@ -4351,6 +4796,33 @@ function prepareAvatarModel(id, gltf) {
         return true;
       });
     });
+    // 🤷 relaxed shoulders: the studio models' Idle clip (and their raw rest pose, which the
+    // game stands in when there's no Idle) hold the collarbones shrugged up by the ears,
+    // while the Walking clip carries them relaxed — so every time a hero stopped walking
+    // the shoulders popped up. Standing poses now borrow the walk's average collarbone angle.
+    const walkClip = clips.find(c => /walk/i.test(c.name) && !/swim/i.test(c.name));
+    if (walkClip) {
+      walkClip.tracks.forEach(wt => {
+        const dot = wt.name.lastIndexOf('.');
+        if (wt.name.slice(dot) !== '.quaternion' || !/shoulder|clavicle/i.test(wt.name.slice(0, dot))) return;
+        const bone = inner.getObjectByName(wt.name.slice(0, dot));
+        if (!bone || !bone.isBone) return;
+        const v = wt.values, q = new THREE.Quaternion(), acc = new THREE.Quaternion(0, 0, 0, 0);
+        for (let i = 0; i < v.length; i += 4) {           // average the walk's keyframes (same hemisphere)
+          q.fromArray(v, i);
+          const sgn = (acc.x * q.x + acc.y * q.y + acc.z * q.z + acc.w * q.w) < 0 ? -1 : 1;
+          acc.set(acc.x + sgn * q.x, acc.y + sgn * q.y, acc.z + sgn * q.z, acc.w + sgn * q.w);
+        }
+        if (acc.lengthSq() < 1e-8) return;
+        acc.normalize();
+        bone.quaternion.copy(acc);                          // the rest pose (models with no Idle clip)
+        clips.forEach(c => {                                // …and every standing idle clip
+          if (c === walkClip || !/idle|breath|\bstand/i.test(c.name) || /swim|sit|sleep|lay|lie/i.test(c.name)) return;
+          const t = c.tracks.find(k => k.name === wt.name);
+          if (t) for (let i = 0; i < t.values.length; i += 4) acc.toArray(t.values, i);
+        });
+      });
+    }
     mixer = new THREE.AnimationMixer(inner);
     // "Sitting Idle" / "Lying Down" style clips must NOT become the main standing idle —
     // posture qualifiers push a clip into the special-move pool instead.
@@ -14616,7 +15088,7 @@ function setAvatar(index) {
     const data = AVATARS[index].build();
     // give the avatar an expressive face on its front (best seen in selfie mode).
     // bipeds have a flat face + arms; quads get a smaller mouth on the muzzle.
-    if (!data.face) data.face = data.quad ? addFace(data.head, -0.14, 0.32, 0x5a2b2b) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
+    if (!data.face) data.face = data.quad ? addFace(data.head, -0.15, 0.335, 0x5a2b2b, 0.222, true) : addFace(data.head, -0.16, 0.26, 0x7a2b2b);
     setFaceExpr(data.face, 'smile');           // (builders may pre-make their own softer face — don't double the mouth!)
     // remember each arm's resting pose so we can return to it after a wave
     if (data.arms) data.armRest = data.arms.map(a => ({ x: a.rotation.x, z: a.rotation.z }));
@@ -20735,9 +21207,9 @@ function refreshAvatarPreviews() {
   const suffix = classicHeroes() ? '-classic' : '';
   document.querySelectorAll('#avatarGrid img[data-avatar-id]').forEach(img => {
     const base = 'avatars/previews/' + img.dataset.avatarId;
-    const src = base + suffix + '.webp?v=284';
+    const src = base + suffix + '.webp?v=301';
     if (img.getAttribute('src') === src) return;
-    img.onerror = () => { img.onerror = null; img.src = base + '-classic.webp?v=284'; };
+    img.onerror = () => { img.onerror = null; img.src = base + '-classic.webp?v=301'; };
     img.src = src;
   });
 }
