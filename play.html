@@ -1163,6 +1163,22 @@
     #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
   }
 
+
+  /* 🦸 Hero picker Start strip (UI step 7b, tablet QA av01): a solid strip pinned to the bottom,
+     so hero names scroll cleanly under it instead of showing half-hidden through a fade.
+     Start ≥ 240×64, Back 64 tall, 12dp apart. A tapped card scrolls itself clear of the strip. */
+  #setupCard #screenHero .stepNav { position:sticky; bottom:0; z-index:7; background:#fff;
+    margin-top:8px; padding:12px 0; border-top:1px solid var(--line);
+    box-shadow:0 -10px 14px -12px rgba(16,24,40,.35); }
+  #setupCard #screenHero .stepNav .btn { min-height:64px; }
+  #setupCard #screenHero .stepNav .btn-secondary { min-width:96px; }
+  #setupCard #screenHero #startBtn { min-width:240px; font-size:20px; }
+  #setupCard #screenHero .avatarCard { scroll-margin-top:12px; scroll-margin-bottom:128px; }
+  /* touch screens: the keyboard keys and mouse tips are hidden; the tablet tip stays */
+  #setupCard .howtoBody span.deskOnly { display:contents; }   /* keeps the key chips in the flex row on desktop */
+  @media (hover:none) and (pointer:coarse) {
+    #setupCard .howtoBody .deskOnly, #setupCard .howtoBody span.deskOnly { display:none; }
+  }
 </style>
 </head>
 <body>
@@ -1327,13 +1343,13 @@
       <details class="howto">
         <summary>How to play</summary>
         <div class="howtoBody">
-          <span class="kbd">Arrows</span>/<span class="kbd">WASD</span> move <span class="kbd">Space</span> jump
+          <span class="deskOnly"><span class="kbd">Arrows</span>/<span class="kbd">WASD</span> move <span class="kbd">Space</span> jump
           <span class="kbd">E</span> use / sit <span class="kbd">D</span> drop / place
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
-          <span class="kbd">L</span> lie down <span class="kbd">F</span> throw
-          <p><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
-          <p>🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. <b>Driving?</b> Just click the road ahead and your vehicle steers there. Drag to look around.</p>
-          <p>🔨 <b>Build mode</b> (default): <b>left-click builds</b>, <b>right-click removes</b>, drag to look. Move with the arrow keys / WASD.</p>
+          <span class="kbd">L</span> lie down <span class="kbd">F</span> throw</span>
+          <p class="deskOnly"><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
+          <p class="deskOnly">🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. <b>Driving?</b> Just click the road ahead and your vehicle steers there. Drag to look around.</p>
+          <p class="deskOnly">🔨 <b>Build mode</b> (default): <b>left-click builds</b>, <b>right-click removes</b>, drag to look. Move with the arrow keys / WASD.</p>
           <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb). <b>Tap</b> the world to build a block, <b>hold your finger on a block</b> to break it (keep holding to dig!), and <b>flick up on your hero</b> to jump. ⭐ Use starts math & everything nearby.</p>
           <p>Solve math to earn bricks and coins for your next creation!</p>
           <p>✅ <b>Works best in Chrome</b> — on phones, tablets, <b>and desktop</b>. Other browsers (like Brave) can be janky or block features; if anything looks or feels off, switch to Chrome.</p>
@@ -21305,6 +21321,7 @@ function buildMenu() {
       Sound.click();
       grid.querySelectorAll('.avatarCard').forEach(x => x.classList.remove('selected'));
       card.classList.add('selected'); G.avatarIndex = i;
+      try { card.scrollIntoView({ block: 'nearest' }); } catch (e) {}   // av01: never left under the Start strip
     };
   });
   refreshAvatarPreviews();
