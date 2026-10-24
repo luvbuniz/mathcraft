@@ -10762,6 +10762,94 @@ function storyText(s) {
   for (const v of s.text) { if (lvl >= v[0]) chosen = v[1]; }
   return chosen;
 }
+/* 📖 Questions must match the text variant the reader was SHOWN (Pip QA P0-3): a Level-2 reader
+   sees the grade-1 text, so grade tags alone let it ask about facts that only the richer text has.
+   STORY_Q_MIN_VARIANT pins hand-checked questions to the smallest variant (1/3/5) containing the
+   answer; everything else goes through questionFitsText's automatic check (the question's words,
+   names and any quoted line must appear in the text shown, and the answer must be supported). */
+const STORY_Q_MIN_VARIANT = {
+  "What did the villain Dracomax want from Arty?": 1,
+  "How did Arty feel when his family was taken?": 1,
+  "What color were Arty's scales painted to disguise him?": 1,
+  "What kind of creature is Bronco?": 1,
+  "Where did Bronco live at the start of the story?": 1,
+  "How did Bronco feel while trapped in the castle?": 1,
+  "Who came to rescue Bronco?": 1,
+  "What lesson did Bronco learn by the end?": 1,
+  "What color were Bronco's scales?": 1,
+  "What did Bronco make to help himself escape?": 1,
+  "What was Bronco missing at the start of the story?": 1,
+  "What did Leo invent to help find the Ice Dragons?": 1,
+  "How did Bronco feel when he saw his mom and dad again?": 1,
+  "What lesson does the story teach about home?": 1,
+  "What did Bronco do to stop Dracomax?": 1,
+  "Who did Dracomax bring with him to ruin the day?": 3,
+  "At the end, who did Bronco choose to stay with?": 1,
+  "What came to town overnight?": 1,
+  "What name did the bad guy use as the fair owner?": 1,
+  "What did the bad guy want to use to trap everyone?": 1,
+  "What was Cassie covered in when she caught the gem?": 1,
+  "What did the spell make Dracomax do instead of breathing fire?": 1,
+  "What happened right after Dracomax read the spell?": 1,
+  "What did Dracomax find that started the trouble?": 1,
+  "Who did Dracomax call to help fix the spell?": 1,
+  "What did Dracomax send his guards to steal?": 1,
+  "Who did Santa call for help?": 1,
+  "What did the guards choose to do after Santa was kind to them?": 1,
+  "What did Dracomax find when he awoke?": 1,
+  "What did Dracomax become curious about?": 1,
+  "How did Santa treat the guards he caught?": 1,
+  "What did Fiona and Leo invite Dracomax to do?": 1,
+  "Where did the Wiz Kids go on Saturday?": 1,
+  "How did the Wiz Kids get the dinosaurs to a safe new home?": 1,
+  "What did Fiona use to make the dinosaurs sleepy?": 1,
+  "Where did the Wiz Kids send the dinosaurs to live safely?": 1,
+  "What did Bronco do to help catch the dinosaurs?": 3,
+  "How did Dracomax feel at the start of the story?": 1,
+  "What happened when Dracomax lit his fireworks?": 1,
+  "What were the names of Dracomax's brothers?": 1,
+  "On what special day did Dracomax build his fireworks show?": 1,
+  "Who turned out to be able to talk?": 1,
+  "How did Fiona feel after catching the dragons?": 1,
+  "What was Fiona dressed as on Halloween?": 1,
+  "What did the candy do after the dragons grabbed it?": 1,
+  "What did Leo invent to explore the ocean?": 1,
+  "What gift did the mermaid queen give Fiona at the end?": 1,
+  "Who made the shrinking potion for the eels?": 1,
+  "What happened to the eels when the potion worked?": 1,
+  "Who chased Scooter into the new world?": 3,
+  "Where did Arty the dragon live?": 3
+};
+const STOP_WORDS = new Set('a an the and or but of to in on at by for with from into onto up out over under about after before when while where what who whom whose which why how did does do was were is are be been being has have had he she it they them his her its their this that these those there here then than so as if not no very too just also all any some one two each every our your you we i me my us more most much many such own story author main lesson kind sort thing things something someone feel felt think thought happen happened happens first last finally end ending beginning begin doing done make made get got go went come came say said tell told use used way ways like really good great become word called calls example'.split(' '));
+function storyStem(w) { w = w.toLowerCase().replace(/[^a-z]/g, ''); return w.length > 4 ? w.slice(0, 4) : w; }
+function storyContentWords(str) {
+  return String(str).replace(/'s\b/g, '').split(/[^A-Za-z']+/).filter(w => w.length >= 3 && !STOP_WORDS.has(w.toLowerCase())).map(storyStem);
+}
+function questionFitsText(q, text, variant) {
+  if (!q || !text) return false;
+  if (variant != null && STORY_Q_MIN_VARIANT[q.q] != null) return variant >= STORY_Q_MIN_VARIANT[q.q];   // hand-checked
+  const plain = String(text).replace(/\s+/g, ' ').toLowerCase();
+  const quotes = (q.q.match(/"([^"]{4,})"/g) || []).map(x => x.slice(1, -1).toLowerCase().replace(/[.,!?]$/, ''));
+  if (quotes.some(x => plain.indexOf(x) < 0)) return false;           // a quoted line must be in the text shown
+  const have = new Set(storyContentWords(text));
+  const frac = ws => ws.length ? ws.filter(w => have.has(w)).length / ws.length : 1;
+  const names = (q.q.replace(/^\W*\w+/, '') + ' ' + q.a.replace(/^\W*\w+/, '')).match(/\b[A-Z][a-z]{2,}\b/g) || [];
+  if (names.some(n => !have.has(storyStem(n)) && !STOP_WORDS.has(n.toLowerCase()))) return false;   // every named character/place must appear
+  const qText = q.q.replace(/"[^"]*"/g, ' ');
+  if (quotes.length) return true;                                      // e.g. simile / metaphor about a quoted line
+  if (frac(storyContentWords(qText)) < 0.67) return false;            // the question is about something in this text
+  return frac(storyContentWords(q.a)) >= 0.5;                          // the answer is supported by the text
+}
+function storyVariantGrade(s) {                // which text variant storyText(s) is showing right now (1 for single-text stories)
+  if (typeof s.text === 'string') return 1;
+  const lvl = readLevelNow(); let g = s.text[0][0];
+  for (const v of s.text) { if (lvl >= v[0]) g = v[0]; }
+  return g;
+}
+function storyFitQs(s) {                        // the questions answerable from the text this reader sees
+  const text = storyText(s), vg = storyVariantGrade(s);
+  return s.qs.filter(q => questionFitsText(q, text, vg));
+}
 function libStoryHTML(small) {                    // screenplays render in monospace, keeping their script layout
   const body = storyText(lib.story);
   if (lib.story.script) return '<div class="libText scriptText' + (small ? ' small' : '') + '">' + body + '</div>';
@@ -10963,22 +11051,24 @@ function renderLib() {
       lib.completed = false;
       if (lib.battle) {                                        // ⚔️ Battle = a longer, harder 5-question gauntlet
         const lvl = lib.battleLevel;
-        let qs = pickRotated(lib.story.qs.filter(q => q.g <= lvl), 5);
-        if (qs.length < 5) qs = qs.concat(pickRotated(lib.story.qs.filter(q => qs.indexOf(q) < 0), 5 - qs.length));
+        const fitB = storyFitQs(lib.story);                   // only questions the shown text can answer
+        let qs = pickRotated(fitB.filter(q => q.g <= lvl), 5);
+        if (qs.length < 5) qs = qs.concat(pickRotated(fitB.filter(q => qs.indexOf(q) < 0), 5 - qs.length));
         lib.level = lvl; lib.qs = qs;
         lib.qi = 0; lib.right = 0; lib.wrong = 0; lib.firstRight = 0; lib.attempted = false; lib.phase = 'quiz'; renderLib();
         return;
       }
       const rl = readLevelNow();
-      // the story text the reader just saw supports facts up to this tier max, so a
-      // "challenge" question can stretch UP to it (and pay bonus coins) without asking
-      // about something that wasn't in the text they read.
-      const tmax = rl <= 2 ? 2 : rl <= 4 ? 4 : 5;
-      let qs = pickRotated(lib.story.qs.filter(q => q.g <= rl), 3);          // 3 at-level questions, least-asked first
-      const stretch = pickRotated(lib.story.qs.filter(q => q.g > rl && q.g <= tmax), 1);
+      // Only ask what the text the reader just saw can answer (Pip QA P0-3) — grade tags alone
+      // let a Level-2 reader (shown the grade-1 text) get questions about the richer text.
+      // A "challenge" question can still stretch one grade up, but only within that text.
+      const fit = storyFitQs(lib.story);
+      let qs = pickRotated(fit.filter(q => q.g <= rl), 3);                   // 3 at-level questions, least-asked first
+      const stretch = pickRotated(fit.filter(q => q.g > rl && q.g <= rl + 2), 1);
       if (stretch.length) qs = qs.concat(stretch);      // one harder bonus question
-      else qs = qs.concat(pickRotated(lib.story.qs.filter(q => q.g <= rl && qs.indexOf(q) < 0), 1));   // …or one more at-level
-      if (qs.length < 2) qs = lib.story.qs.filter(q => q.g <= rl + 1).slice(0, 4);
+      else qs = qs.concat(pickRotated(fit.filter(q => q.g <= rl && qs.indexOf(q) < 0), 1));   // …or one more at-level
+      if (qs.length < 3) qs = qs.concat(pickRotated(fit.filter(q => qs.indexOf(q) < 0), 3 - qs.length));   // thin text: any answerable question
+      if (qs.length < 2) qs = lib.story.qs.filter(q => q.g <= rl + 1).slice(0, 4);   // last resort (no story hits this today — see tests)
       lib.level = rl; lib.qs = shuffle(qs);
       lib.qi = 0; lib.right = 0; lib.wrong = 0; lib.firstRight = 0; lib.attempted = false; lib.phase = 'quiz'; renderLib();
     };
