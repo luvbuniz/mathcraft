@@ -11,8 +11,10 @@ async function renderAvatarPreviews() {
   pvFill.position.set(-3, 2.2, -2);
   pvScene.add(pvFill);
   const pvCam = new THREE.PerspectiveCamera(37, 1, 0.1, 20);
-  pvCam.position.set(0, 1.18, 3.0);                  // a touch closer → heroes read larger
-  pvCam.lookAt(0, 0.84, 0);
+  // studio models: a touch closer → heroes read larger. Classic blocky heroes have big cube
+  // heads + spiky hair, so their camera sits a little higher and further back (no cropped tops).
+  const aimStudio = () => { pvCam.position.set(0, 1.18, 3.0); pvCam.lookAt(0, 0.84, 0); };
+  const aimClassic = () => { pvCam.position.set(0, 1.3, 3.2); pvCam.lookAt(0, 1.0, 0); };
   // dedicated transparent renderer so each card gets a gradient backdrop + a grounding shadow,
   // which makes both pale (unicorn) and dark (dragon) heroes pop instead of washing out.
   const pvRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -20,7 +22,8 @@ async function renderAvatarPreviews() {
   pvRenderer.setSize(PV, PV);
 
   for (const [i, av] of AVATARS.entries()) {
-    if (av.hidden) continue;                 // ⏸️ hidden heroes keep working in old saves, just can't be picked
+    // ⏸️ hidden heroes can't be picked, but old saves and town friends still show them,
+    // so they keep a classic picture (their studio picture is only redrawn if a model exists)
     const card = document.createElement('div');
     card.className = 'avatarCard' + (i === 0 ? ' selected' : '');
     const cv = document.createElement('canvas');
@@ -50,6 +53,8 @@ async function renderAvatarPreviews() {
     ROUND_AV = true;
     let data;
     try { data = av.build(); } finally { ROUND_AV = false; }
+    if (data.face) setFaceExpr(data.face, 'smile');
+    aimClassic();
     drawThumb(data.group, data.quad);
     const addOutput = suffix => {
       const img = document.createElement('img');
@@ -60,8 +65,8 @@ async function renderAvatarPreviews() {
     };
     addOutput('-classic');
     const mdl = await parseAvatarModel(av.id);
-    if (mdl) drawThumb(mdl.group, false);
-    addOutput('');
+    aimStudio();
+    if (mdl) { drawThumb(mdl.group, false); addOutput(''); }
     cv.remove();
     document.getElementById('previewStatus').textContent = 'Rendered ' + av.name;
   }
