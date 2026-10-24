@@ -69,6 +69,10 @@
   :root { color-scheme: light; }   /* keep the bright kid palette — opt out of browser auto-dark-mode */
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { width:100%; height:100%; overflow:hidden; font-family:'Comic Sans MS','Chalkboard SE','Segoe UI',sans-serif; background:#87CEEB; }
+  /* Pip QA P1-3: a held finger on game UI must never select text or open Chrome's
+     "Tap to see search results" sheet / long-press menu. Typing boxes stay selectable. */
+  body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  input, textarea, [contenteditable="true"] { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
   canvas { display:block; }
   button { font-family:inherit; cursor:pointer; border:none; }
 
@@ -6748,6 +6752,20 @@ const CITY_SOLID = new Set();           // footprints of Reading Town's backgrou
    follow camera pulls in front of them instead of going inside (Pip QA F4/N3).
    Rebuilt on world change and every few seconds; tested as cheap ray-vs-box checks. */
 let camBlockers = [], camBlockersWorld = null, camBlockersAt = 0;
+/* 🧱 Walk blockers (Pip QA P0-6): many shops are hollow shells of thin wall meshes on a small
+   3×3 grid footprint, so a hero could walk straight through a wall into the shop (tablet: Country
+   Homes, Stack Barn) and the camera then filled the screen with one wall colour. Ground-standing
+   building parts ≥1.5 m tall become solid for walking. Walk-in places (Stack Feed, your homes)
+   and the fairground rides are left out. */
+let walkBlockers = [];
+function walkBlockerExcluded(cx, cz) {
+  if (G.world === 'meadow') {
+    if (typeof FEED_WALL !== 'undefined' && cx > FEED_WALL.x0 - 1.5 && cx < FEED_WALL.x1 + 2.5 && cz > FEED_WALL.z0 - 1.5 && cz < FEED_WALL.z1 + 2.5) return true;   // walk-in store
+    if (typeof FAIR_POS !== 'undefined' && Math.hypot(cx - FAIR_POS.x, cz - FAIR_POS.z) < 15.2) return true;   // fairground rides & fences
+  }
+  try { if (typeof homeLotAt === 'function' && homeLotAt(cx, cz) >= 0) return true; } catch (e) {}   // your own houses have doors
+  return false;
+}
 const _camRay = new THREE.Ray(), _camHit = new THREE.Vector3();
 function rebuildCamBlockers() {
   camBlockersWorld = G.world; camBlockersAt = performance.now();
@@ -6757,7 +6775,7 @@ function rebuildCamBlockers() {
   try { (npcs || []).forEach(n => n.group && skip.add(n.group)); } catch (e) {}
   try { pets.forEach(p => p.f && p.f.mesh && skip.add(p.f.mesh)); } catch (e) {}
   const voxel = new Set(); blocks.forEach(b => b.mesh && voxel.add(b.mesh));
-  const out = [];
+  const out = [], walkOut = [];
   const walk = o => {
     if (!o.visible || skip.has(o) || voxel.has(o)) return;
     if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
@@ -6767,14 +6785,32 @@ function rebuildCamBlockers() {
         const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
         const h = box.max.y - box.min.y, w = box.max.x - box.min.x, dz = box.max.z - box.min.z;
         if (h >= 0.9 && box.max.y >= 0.8 && Math.max(w, dz) >= 0.35 && w < 40 && dz < 40) {
-          out.push({ box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 });
+          const ent = { box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 };
+          out.push(ent);
+          if (box.min.y < 0.6 && h >= 1.5 && Math.max(w, dz) >= 0.8 && w < 30 && dz < 30 && !walkBlockerExcluded(ent.cx, ent.cz)) {
+            const hx = Math.max(0.15, w / 2 - 0.05), hz = Math.max(0.15, dz / 2 - 0.05);   // thin walls get ≥30 cm thickness
+            walkOut.push({ x0: ent.cx - hx, x1: ent.cx + hx, z0: ent.cz - hz, z1: ent.cz + hz, y0: box.min.y, y1: box.max.y, cx: ent.cx, cz: ent.cz, r: Math.hypot(hx, hz) });
+          }
         }
       }
     }
     for (const c of o.children) walk(c);
   };
   try { scene.updateMatrixWorld(); walk(scene); } catch (e) {}
-  camBlockers = out;
+  camBlockers = out; walkBlockers = walkOut;
+}
+function ensureBlockers() { if (camBlockersWorld !== G.world || performance.now() - camBlockersAt > 6000) rebuildCamBlockers(); }
+function walkBoxesHit(skip) {                    // building walls the hero's body overlaps (except those in `skip`)
+  const half = player.width / 2, px = player.pos.x, pz = player.pos.z, y0 = player.pos.y, y1 = player.pos.y + player.height;
+  let hit = null;
+  for (const b of walkBlockers) {
+    if (Math.abs(b.cx - px) > b.r + 1 || Math.abs(b.cz - pz) > b.r + 1) continue;
+    if (px + half > b.x0 && px - half < b.x1 && pz + half > b.z0 && pz - half < b.z1 && y1 > b.y0 && y0 < b.y1) {
+      if (skip && skip.indexOf(b) !== -1) continue;
+      (hit = hit || []).push(b);
+    }
+  }
+  return hit;
 }
 function camBlockerT(head, dir, far) {
   const now = performance.now();
@@ -11208,9 +11244,10 @@ function voidKey(type, code, key) {
 /* 🔴 Auto-fire: a gentle repeating Space so little ones just steer. Pip QA N1: it only fires
    while the kid is actually steering (stick touched in the last 2.5 s), so an idle ship
    no longer farms points, and it no longer auto-restarts a lost run. */
-let voidAuto = true, voidFireTimer = null, voidSteerAt = 0;
+let voidAuto = true, voidFireTimer = null, voidSteerAt = 0, voidFireUI = null;
 function setVoidAuto(on) {
   voidAuto = on;
+  if (voidFireUI) voidFireUI();             // Pip QA P1-2: the label always shows the real state (2nd game said "manual")
   if (voidFireTimer) { clearInterval(voidFireTimer); voidFireTimer = null; }
   if (on) voidFireTimer = setInterval(function () {
     const idle = performance.now() - voidSteerAt > 2500;
@@ -11227,7 +11264,7 @@ function startVoidDrift() {
   $('arcadePopup').style.display = 'none';                 // tuck the lobby away; popupOpen stays true (freezes the 3D world)
   const ov = document.createElement('div');
   ov.id = 'voidOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:#05060d;display:flex;flex-direction:column';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:#05060d;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none';
   const frame = document.createElement('iframe');
   frame.id = 'voidFrame'; frame.src = 'arcade/voiddrift.html';
   frame.style.cssText = 'flex:1;width:100%;border:0;display:block';
@@ -11281,8 +11318,9 @@ function startVoidDrift() {
   const fire = document.createElement('button');
   fire.style.cssText = 'pointer-events:auto;width:118px;height:118px;border-radius:50%;border:2px solid rgba(255,120,120,.6);color:#fff;font-size:17px;font-weight:800;touch-action:none;line-height:1.2';
   const setFireUI = function () { fire.innerHTML = voidAuto ? '🔴<br>AUTO' : '⚪<br>manual'; fire.style.background = voidAuto ? 'rgba(200,45,55,.88)' : 'rgba(55,65,95,.72)'; };
-  fire.onclick = function () { setVoidAuto(!voidAuto); setFireUI(); };
-  setFireUI();
+  fire.onclick = function () { setVoidAuto(!voidAuto); };
+  voidFireUI = setFireUI;
+  voidAuto = true; setFireUI();             // every run starts on auto-fire (it switches on once the game loads)
   pad.appendChild(joy); pad.appendChild(fire); ov.appendChild(pad);
   document.body.appendChild(ov);
   voidState = { left: VOID_SECONDS, timer: null, joyId: null };
@@ -11293,6 +11331,9 @@ function startVoidDrift() {
   idleTip.textContent = '🕹️ Steer your ship to fire!';
   ov.appendChild(idleTip);
   frame.addEventListener('load', function () { try { frame.contentWindow.addEventListener('keydown', function (e) { if (e.isTrusted) voidSteerAt = performance.now(); }); } catch (e) {} });
+  frame.addEventListener('load', function () {   // Pip QA P1-3: no text selection / search sheet inside the game either
+    try { const st = frame.contentDocument.createElement('style'); st.textContent = '*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}'; frame.contentDocument.head.appendChild(st); } catch (e) {}
+  });
   frame.addEventListener('load', function () {
     setTimeout(function () { voidKey('keydown', 'Space', ' '); setTimeout(function () { voidKey('keyup', 'Space', ' '); }, 70); setVoidAuto(true); }, 300);   // auto-launch + start auto-fire
   });
@@ -11303,13 +11344,26 @@ function startVoidDrift() {
     if (voidState.left <= 0) endVoidDrift();               // ⏰ HARD close — time's up, no matter what
   }, 1000);
 }
+/* 🛡️ swallow taps for a moment after a full-screen game closes, so a held or late finger
+   doesn't land on whatever is underneath (Pip QA P1-3). */
+function tapGuard(ms) {
+  const g = document.createElement('div');
+  g.className = 'tapGuard';
+  g.style.cssText = 'position:fixed;inset:0;z-index:260;background:transparent;touch-action:none';
+  const eat = function (e) { e.preventDefault(); e.stopPropagation(); };
+  ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup', 'contextmenu'].forEach(function (t) { g.addEventListener(t, eat, { passive: false }); });
+  document.body.appendChild(g);
+  setTimeout(function () { g.remove(); }, ms || 600);
+  return g;
+}
 function endVoidDrift(early) {
   const ov = $('voidOverlay'); if (!ov) return;
   if (voidState && voidState.timer) clearInterval(voidState.timer);
   setVoidAuto(false);                                      // stop the auto-fire loop
   let score = 0;
   try { score = parseInt($('voidFrame').contentDocument.getElementById('scoreVal').textContent, 10) || 0; } catch (e) {}
-  ov.remove(); voidState = null;
+  ov.remove(); voidState = null; voidFireUI = null;
+  tapGuard(600);                                           // Pip QA P1-3: a finger still held when the timer ends can't tap the lobby
   const won = early ? 0 : Math.min(12, Math.floor(score / 250));   // 🎫 prize tickets — only for finishing the run (Pip QA N1)
   if (won > 0) { G.prizeTickets = (G.prizeTickets || 0) + won; refreshHUD(); }
   if (Sound.fanfare) Sound.fanfare();
@@ -15134,7 +15188,11 @@ function playerBlocked() {
 }
 function collideAxis(axis, delta) {
   const previousY=player.pos.y;
+  const boxCheck = axis !== 'y' && !player.driving && delta !== 0;
+  let preBoxes = null;
+  if (boxCheck) { ensureBlockers(); preBoxes = walkBoxesHit(null); }   // already overlapping one (spawn/teleport)? it never traps you
   player.pos[axis] += delta;
+  if (boxCheck && walkBoxesHit(preBoxes)) { player.pos[axis] -= delta; return; }   // solid building wall (no auto-step through it)
   const stairY=!player.driving?walkStairSurface(player.pos.x,player.pos.z):null;
   if(stairY!=null&&player.vel.y<=.2&&((axis==='y'&&delta<=0&&previousY>=stairY-.35&&player.pos.y<=stairY)||(axis!=='y'&&Math.abs(previousY-stairY)<.35))){player.pos.y=stairY;player.vel.y=0;player.onGround=true;}
   if (playerBlocked()) {
@@ -15742,7 +15800,7 @@ function updatePlayer(dt) {
   let moving = false;
   const jmag = Math.hypot(touch.joyX, touch.joyY);
   const kbMove = keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-  if (jmag > 0.1 || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
+  if (jmag > JOY_DEAD || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
   if (player.walkTo) {                                                // 🚶 click-to-move: head to the clicked spot
     const tdx = player.walkTo.x - player.pos.x, tdz = player.walkTo.z - player.pos.z;
     const td = Math.hypot(tdx, tdz);
@@ -15754,7 +15812,7 @@ function updatePlayer(dt) {
       player.yaw += Math.max(-0.2, Math.min(0.2, turn));
       player.vel.x = ndx * speed; player.vel.z = ndz * speed;
     }
-  } else if (jmag > 0.1) {                                           // small deadzone (Pip QA N4: was 0.22, felt broken on short drags)
+  } else if (jmag > JOY_DEAD) {                                      // 9% dead zone (Pip QA P0-6; N4 was 0.22, felt broken)
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
     const moveYaw = touch.moveYaw == null ? player.yaw : touch.moveYaw;
@@ -15763,12 +15821,16 @@ function updatePlayer(dt) {
     let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
     let dz = crz * touch.joyX + cfz * (-touch.joyY);
     const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+    // Pip retest rt34–rt35: pulling the stick DOWN backs up — the hero keeps facing forward and
+    // steps backward, so the camera never swings round 180° to look at their face
+    const backing = touch.joyY > 0 && Math.abs(touch.joyX) < touch.joyY * 0.8;
     // turn GENTLY toward the push, and never spin faster than a calm cap (kid-friendly)
-    let turn = shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
+    let turn = shortAngle(player.yaw, backing ? Math.atan2(dx, dz) : Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
     const maxStep = 3.4 * dt;
     player.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
-    // linear and predictable: a small push walks, a full push jogs at ~85% (no overshooting shops)
-    const sp = speed * 0.85 * (0.3 + 0.7 * Math.min(1, (jmag - 0.1) / 0.9));
+    // linear and predictable (Pip QA P0-6): speed grows straight with the push, topping out at
+    // ~60% of the old full-push speed (backing up is a little slower), so no overshooting into walls
+    const sp = speed * JOY_TOP * Math.min(1, (jmag - JOY_DEAD) / (1 - JOY_DEAD)) * (backing ? 0.7 : 1);
     player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
     let mx = 0, mz = 0;
@@ -18745,10 +18807,13 @@ function camFollowYaw(dt) {
   if (player.camYaw == null || !isTouch || player.driving || G.firstPerson || jumped) { player.camYaw = player.yaw; return player.yaw; }
   const diff = shortAngle(player.camYaw, player.yaw);
   const moving = Math.hypot(player.vel.x, player.vel.z) > 0.3;
-  if (moving) {
+  const stickHeld = Math.hypot(touch.joyX || 0, touch.joyY || 0) > 0;
+  if (stickHeld) {
+    player._camMoveAt = now;      // Pip QA P0-6: the camera holds still while the stick steers (no swing)
+  } else if (moving) {
     player._camMoveAt = now;
     if (Math.abs(diff) < 1.75) player.camYaw += diff * Math.min(1, dt * 2.6);
-  } else if (now - (player._camMoveAt || 0) > 1400) {
+  } else if (now - (player._camMoveAt || 0) > 1400 && Math.abs(diff) < 2.3) {   // never swing 180° round to the hero's back
     player.camYaw += diff * Math.min(1, dt * 1.6);
   }
   return player.camYaw;
@@ -21079,6 +21144,8 @@ function updateRotateGate() {
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
 const touch = { joyX: 0, joyY: 0, jump: false, moveYaw: null };
+const JOY_DEAD = 0.09;          // joystick dead zone, as a fraction of the stick radius (Pip QA P0-6: 8–10%)
+const JOY_TOP = 0.85 * 0.6;     // full-push walking speed vs base speed: ~60% of the old 85% top speed
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
@@ -21095,8 +21162,8 @@ if (isTouch) {
     joyStick.style.left = (33 + ux * cl * 0.5) + 'px';
     joyStick.style.top = (33 + uy * cl * 0.5) + 'px';
     const frac = cl / JOY_R;
-    touch.joyX = cl > 4 ? ux * frac : 0;   // Pip QA N4: smaller dead zone
-    touch.joyY = cl > 4 ? uy * frac : 0;
+    touch.joyX = frac > JOY_DEAD ? ux * frac : 0;   // Pip QA P0-6: 9% dead zone (was 4 px ≈ 7%)
+    touch.joyY = frac > JOY_DEAD ? uy * frac : 0;
   }
   // ⛏️ hold your finger still on a block → it breaks — and KEEP holding to dig block
   // after block (the raycast reaches the next one each time). Replaces the old
