@@ -11070,6 +11070,7 @@ function finishLib() {
     if (G.readSlip >= 2 && G.readLevel > 1) { G.readLevel--; G.readSlip = 0; levelMsg = '📖 Now at Reading Level ' + G.readLevel + ' — you\'ve got this!'; }
   } else { G.readStreak = 0; }
   profile.readLevel = G.readLevel; profile.readStreak = G.readStreak; profile.readSlip = G.readSlip; profile.booksRead = (profile.booksRead || 0) + 1; profileDirty = true; saveProfile();
+  if (levelMsg) { refreshHUD(); bumpHud('modeLabel'); }             // 🏷️ the HUD pill shows the new reading level right away (rt16/rt24)
   const unlockedNow = accFr >= Math.ceil(accT * 0.75) ? unlockNextCartoon() : null; // comprehension unlocks the cartoon
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
   $('libPrompt').innerHTML = 'You finished <b>' + lib.story.t + '</b>.' + (accFr ? ' Nice work!' : ' Let’s read it together and try again.') +
@@ -11109,7 +11110,7 @@ function finishBattle() {
     if (G.readLevel < 5) { G.readLevel++; profile.readLevel = G.readLevel; }
     G.readStreak = G.readSlip = profile.readStreak = profile.readSlip = 0;  // a battle win bumps the reading level
     const reward = 30 + (lib.battleLevel || 2) * 4;
-    G.coins += reward; if (Sound.fanfare) Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
+    G.coins += reward; if (Sound.fanfare) Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') { bumpHud('coinCount'); bumpHud('modeLabel'); }
     const prize = unlockNextCartoon();                          // bonus movie prize
     profileDirty = true; saveProfile();
     $('libTitle').innerHTML = '⚔️ Library Battle — WON!';
@@ -16655,10 +16656,22 @@ function bumpHud(id) {                    // a happy little pop when a counter g
   if (!el) return;
   el.classList.remove('countPop'); void el.offsetWidth; el.classList.add('countPop');
 }
+/* 🏷️ The level on the HUD pill (Pip retest rt16/rt24): Reading Town's results screen says
+   "Reading Level up — now Level 3", but the pill showed the math ⭐ Level (stars from math
+   solves), so it looked stuck on Level 2. In Reading Town the pill shows the reading level the
+   kid just earned; other worlds keep the ⭐ Level. */
+function hudLevelText() {
+  const w = curWorld();
+  if (w && w.subject === 'reading') {
+    const rl = G.readLevel != null ? G.readLevel : Math.max(1, Math.min(5, (profile && profile.readLevel) || G.grade || 2));
+    return '📖 Reading Level ' + rl;
+  }
+  return '⭐ Level ' + levelFromScore(profile.stars || 0);
+}
 function refreshHUD() {
   if (G.running && $('modeLabel')) {
     try {
-      $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
+      $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + hudLevelText();
     } catch (e) {}
   }
 
@@ -21930,7 +21943,7 @@ function startGame() {
   updateRotateGate();                             // 🔄 clears any leftover rotate overlay (portrait plays now!)
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
-  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ⭐ Level ' + levelFromScore(profile.stars || 0);
+  $('modeLabel').textContent = curWorld().emoji + ' ' + curWorld().name + ' • ' + hudLevelText();
   const showLeoIntro = !!G.wantIntro;
   G.wantIntro = false;
   if (showLeoIntro) {
