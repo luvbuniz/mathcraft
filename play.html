@@ -524,6 +524,7 @@
   #btnJump:active .jumpIcon { transform:translateY(-6px) scale(1.15); animation:none; }
   @keyframes jumpBob { 0%,70%,100% { transform:translateY(0); } 80% { transform:translateY(-5px); } 90% { transform:translateY(1px); } }
   #btnUndoTouch { right:116px; bottom:84px; background:rgba(196,238,201,.92); }
+  #btnUndoTouch .tbIc { margin-right:.3em; }   /* icon + word on phones / desktop; icon-only on the tablet HUD */
   #btnShoot { right:116px; bottom:148px; background:rgba(255,170,150,.9); }
 
   /* ---------- Names + saved games ---------- */
@@ -1163,6 +1164,40 @@
     #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
   }
 
+
+  /* 👆 Tablet touch HUD (Amy UI step 7, ages 7–10): four big actions only.
+     ⭐ USE 120×96 bottom-right (primary), ⬆ Jump 80×80 above it, ↩️ Undo 64×64 to its left,
+     ☰ 56×56 top-right with 🎒 56×56 under it. Leave / camera / badges live in ☰ so nothing small
+     is left to mis-tap. Gaps are 12–16dp. body.touchHud is set from JS only on touch devices, and the
+     size gate keeps phones on their compact layouts. */
+  @media (min-width:560px) and (min-height:380px) {   /* Pip retest: tablet Chrome is 961×433, the app 961×529; phones never get touchHud */
+    body.touchHud #leaveBtn, body.touchHud #camBtn, body.touchHud #badgeBtn { display:none !important; }
+    body.touchHud #menuBtn { box-sizing:border-box; width:56px; height:56px; padding:0; top:12px; right:12px;
+      font-size:28px; border-radius:16px; display:flex; align-items:center; justify-content:center; }
+    body.touchHud #invBtn, body.touchHud #sirenBtn { box-sizing:border-box; width:56px; height:56px; padding:0; right:12px;
+      font-size:26px; border-radius:16px; text-align:center; }
+    body.touchHud #invBtn { top:80px; }   /* 🎒 stays on screen: shops and tips say "in your 🎒 backpack" */
+    body.touchHud #sirenBtn { top:148px; }   /* shown/hidden inline by JS while driving */
+    body.touchHud .touchBtn { box-sizing:border-box; display:flex; align-items:center; justify-content:center;
+      padding:0 8px; border-radius:20px; text-align:center; }
+    body.touchHud #btnAction { width:120px; height:96px; right:16px; bottom:16px; font-size:21px; line-height:1.15;
+      white-space:normal; box-shadow:0 4px 0 rgba(0,0,0,.25); }
+    body.touchHud #btnJump { width:80px; height:80px; min-width:0; min-height:0; right:36px; bottom:124px; border-radius:50%; }
+    body.touchHud #btnJump .jumpIcon { font-size:38px; }
+    body.touchHud #btnUndoTouch { width:64px; height:64px; right:148px; bottom:32px; padding:0; }
+    body.touchHud #btnUndoTouch .tbIc { font-size:30px; line-height:1; margin-right:0; }
+    body.touchHud #btnUndoTouch .tbTx { display:none; }
+    body.touchHud #btnShoot { width:120px; height:64px; right:148px; bottom:124px; font-size:18px; }
+    body.touchHud #npcChat { max-width:calc(100vw - 300px); }
+  }
+
+  /* ☰ rows keep their height (they were squashed and the last one clipped at 433 tall); on short
+     landscape screens the list goes two-up so all of it fits, and it still scrolls if it must */
+  #hudMenu .viewOpt { flex-shrink:0; }
+  @media (orientation:landscape) and (max-height:600px) and (min-width:700px) {
+    #hudMenu { flex-direction:row; flex-wrap:wrap; align-content:flex-start; width:min(560px,62vw); box-sizing:border-box; }
+    #hudMenu .viewOpt { flex:0 0 calc(50% - 3px); box-sizing:border-box; font-size:15px; padding:9px 10px; }
+  }
 </style>
 </head>
 <body>
@@ -2425,8 +2460,8 @@
 <div id="touchUI">
   <div id="joyBase"><div id="joyStick"></div></div>
   <button class="touchBtn" id="btnJump" aria-label="Jump"><span class="jumpIcon">⬆</span></button>
-  <button class="touchBtn" id="btnAction">⭐ USE</button>
-  <button class="touchBtn" id="btnUndoTouch">↩️ Undo</button>
+  <button class="touchBtn" id="btnAction" aria-label="Use">⭐ USE</button>
+  <button class="touchBtn" id="btnUndoTouch" aria-label="Undo"><span class="tbIc">↩️</span><span class="tbTx">Undo</span></button>
   <button class="touchBtn" id="btnShoot" style="display:none">🎯 Shoot</button>
 </div>
 
@@ -6748,6 +6783,20 @@ const CITY_SOLID = new Set();           // footprints of Reading Town's backgrou
    follow camera pulls in front of them instead of going inside (Pip QA F4/N3).
    Rebuilt on world change and every few seconds; tested as cheap ray-vs-box checks. */
 let camBlockers = [], camBlockersWorld = null, camBlockersAt = 0;
+/* 🧱 Walk blockers (Pip QA P0-6): many shops are hollow shells of thin wall meshes on a small
+   3×3 grid footprint, so a hero could walk straight through a wall into the shop (tablet: Country
+   Homes, Stack Barn) and the camera then filled the screen with one wall colour. Ground-standing
+   building parts ≥1.5 m tall become solid for walking. Walk-in places (Stack Feed, your homes)
+   and the fairground rides are left out. */
+let walkBlockers = [];
+function walkBlockerExcluded(cx, cz) {
+  if (G.world === 'meadow') {
+    if (typeof FEED_WALL !== 'undefined' && cx > FEED_WALL.x0 - 1.5 && cx < FEED_WALL.x1 + 2.5 && cz > FEED_WALL.z0 - 1.5 && cz < FEED_WALL.z1 + 2.5) return true;   // walk-in store
+    if (typeof FAIR_POS !== 'undefined' && Math.hypot(cx - FAIR_POS.x, cz - FAIR_POS.z) < 15.2) return true;   // fairground rides & fences
+  }
+  try { if (typeof homeLotAt === 'function' && homeLotAt(cx, cz) >= 0) return true; } catch (e) {}   // your own houses have doors
+  return false;
+}
 const _camRay = new THREE.Ray(), _camHit = new THREE.Vector3();
 function rebuildCamBlockers() {
   camBlockersWorld = G.world; camBlockersAt = performance.now();
@@ -6757,7 +6806,7 @@ function rebuildCamBlockers() {
   try { (npcs || []).forEach(n => n.group && skip.add(n.group)); } catch (e) {}
   try { pets.forEach(p => p.f && p.f.mesh && skip.add(p.f.mesh)); } catch (e) {}
   const voxel = new Set(); blocks.forEach(b => b.mesh && voxel.add(b.mesh));
-  const out = [];
+  const out = [], walkOut = [];
   const walk = o => {
     if (!o.visible || skip.has(o) || voxel.has(o)) return;
     if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
@@ -6767,14 +6816,32 @@ function rebuildCamBlockers() {
         const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
         const h = box.max.y - box.min.y, w = box.max.x - box.min.x, dz = box.max.z - box.min.z;
         if (h >= 0.9 && box.max.y >= 0.8 && Math.max(w, dz) >= 0.35 && w < 40 && dz < 40) {
-          out.push({ box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 });
+          const ent = { box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 };
+          out.push(ent);
+          if (box.min.y < 0.6 && h >= 1.5 && Math.max(w, dz) >= 0.8 && w < 30 && dz < 30 && !walkBlockerExcluded(ent.cx, ent.cz)) {
+            const hx = Math.max(0.15, w / 2 - 0.05), hz = Math.max(0.15, dz / 2 - 0.05);   // thin walls get ≥30 cm thickness
+            walkOut.push({ x0: ent.cx - hx, x1: ent.cx + hx, z0: ent.cz - hz, z1: ent.cz + hz, y0: box.min.y, y1: box.max.y, cx: ent.cx, cz: ent.cz, r: Math.hypot(hx, hz) });
+          }
         }
       }
     }
     for (const c of o.children) walk(c);
   };
   try { scene.updateMatrixWorld(); walk(scene); } catch (e) {}
-  camBlockers = out;
+  camBlockers = out; walkBlockers = walkOut;
+}
+function ensureBlockers() { if (camBlockersWorld !== G.world || performance.now() - camBlockersAt > 6000) rebuildCamBlockers(); }
+function walkBoxesHit(skip) {                    // building walls the hero's body overlaps (except those in `skip`)
+  const half = player.width / 2, px = player.pos.x, pz = player.pos.z, y0 = player.pos.y, y1 = player.pos.y + player.height;
+  let hit = null;
+  for (const b of walkBlockers) {
+    if (Math.abs(b.cx - px) > b.r + 1 || Math.abs(b.cz - pz) > b.r + 1) continue;
+    if (px + half > b.x0 && px - half < b.x1 && pz + half > b.z0 && pz - half < b.z1 && y1 > b.y0 && y0 < b.y1) {
+      if (skip && skip.indexOf(b) !== -1) continue;
+      (hit = hit || []).push(b);
+    }
+  }
+  return hit;
 }
 function camBlockerT(head, dir, far) {
   const now = performance.now();
@@ -15134,7 +15201,11 @@ function playerBlocked() {
 }
 function collideAxis(axis, delta) {
   const previousY=player.pos.y;
+  const boxCheck = axis !== 'y' && !player.driving && delta !== 0;
+  let preBoxes = null;
+  if (boxCheck) { ensureBlockers(); preBoxes = walkBoxesHit(null); }   // already overlapping one (spawn/teleport)? it never traps you
   player.pos[axis] += delta;
+  if (boxCheck && walkBoxesHit(preBoxes)) { player.pos[axis] -= delta; return; }   // solid building wall (no auto-step through it)
   const stairY=!player.driving?walkStairSurface(player.pos.x,player.pos.z):null;
   if(stairY!=null&&player.vel.y<=.2&&((axis==='y'&&delta<=0&&previousY>=stairY-.35&&player.pos.y<=stairY)||(axis!=='y'&&Math.abs(previousY-stairY)<.35))){player.pos.y=stairY;player.vel.y=0;player.onGround=true;}
   if (playerBlocked()) {
@@ -15742,7 +15813,7 @@ function updatePlayer(dt) {
   let moving = false;
   const jmag = Math.hypot(touch.joyX, touch.joyY);
   const kbMove = keys['ArrowUp'] || keys['KeyW'] || keys['ArrowDown'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-  if (jmag > 0.1 || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
+  if (jmag > JOY_DEAD || kbMove) player.walkTo = null;                    // any manual input cancels click-to-move
   if (player.walkTo) {                                                // 🚶 click-to-move: head to the clicked spot
     const tdx = player.walkTo.x - player.pos.x, tdz = player.walkTo.z - player.pos.z;
     const td = Math.hypot(tdx, tdz);
@@ -15754,7 +15825,7 @@ function updatePlayer(dt) {
       player.yaw += Math.max(-0.2, Math.min(0.2, turn));
       player.vel.x = ndx * speed; player.vel.z = ndz * speed;
     }
-  } else if (jmag > 0.1) {                                           // small deadzone (Pip QA N4: was 0.22, felt broken on short drags)
+  } else if (jmag > JOY_DEAD) {                                      // 9% dead zone (Pip QA P0-6; N4 was 0.22, felt broken)
     // hole.io-style: steer toward the move-circle; the hero turns to face it and the camera follows
     moving = true;
     const moveYaw = touch.moveYaw == null ? player.yaw : touch.moveYaw;
@@ -15763,12 +15834,16 @@ function updatePlayer(dt) {
     let dx = crx * touch.joyX + cfx * (-touch.joyY);                  // up on screen = forward
     let dz = crz * touch.joyX + cfz * (-touch.joyY);
     const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+    // Pip retest rt34–rt35: pulling the stick DOWN backs up — the hero keeps facing forward and
+    // steps backward, so the camera never swings round 180° to look at their face
+    const backing = touch.joyY > 0 && Math.abs(touch.joyX) < touch.joyY * 0.8;
     // turn GENTLY toward the push, and never spin faster than a calm cap (kid-friendly)
-    let turn = shortAngle(player.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
+    let turn = shortAngle(player.yaw, backing ? Math.atan2(dx, dz) : Math.atan2(-dx, -dz)) * Math.min(1, dt * 4.5);
     const maxStep = 3.4 * dt;
     player.yaw += Math.max(-maxStep, Math.min(maxStep, turn));
-    // linear and predictable: a small push walks, a full push jogs at ~85% (no overshooting shops)
-    const sp = speed * 0.85 * (0.3 + 0.7 * Math.min(1, (jmag - 0.1) / 0.9));
+    // linear and predictable (Pip QA P0-6): speed grows straight with the push, topping out at
+    // ~60% of the old full-push speed (backing up is a little slower), so no overshooting into walls
+    const sp = speed * JOY_TOP * Math.min(1, (jmag - JOY_DEAD) / (1 - JOY_DEAD)) * (backing ? 0.7 : 1);
     player.vel.x = dx * sp; player.vel.z = dz * sp;
   } else {
     let mx = 0, mz = 0;
@@ -18745,10 +18820,13 @@ function camFollowYaw(dt) {
   if (player.camYaw == null || !isTouch || player.driving || G.firstPerson || jumped) { player.camYaw = player.yaw; return player.yaw; }
   const diff = shortAngle(player.camYaw, player.yaw);
   const moving = Math.hypot(player.vel.x, player.vel.z) > 0.3;
-  if (moving) {
+  const stickHeld = Math.hypot(touch.joyX || 0, touch.joyY || 0) > 0;
+  if (stickHeld) {
+    player._camMoveAt = now;      // Pip QA P0-6: the camera holds still while the stick steers (no swing)
+  } else if (moving) {
     player._camMoveAt = now;
     if (Math.abs(diff) < 1.75) player.camYaw += diff * Math.min(1, dt * 2.6);
-  } else if (now - (player._camMoveAt || 0) > 1400) {
+  } else if (now - (player._camMoveAt || 0) > 1400 && Math.abs(diff) < 2.3) {   // never swing 180° round to the hero's back
     player.camYaw += diff * Math.min(1, dt * 1.6);
   }
   return player.camYaw;
@@ -20369,7 +20447,7 @@ $w('camBtn').onclick = () => {
   if (m.style.display === 'flex') { m.style.display = 'none'; return; }
   const cur = G.firstPerson ? 'fp' : (G.birdsEye ? 'bird' : 'third');
   m.querySelectorAll('.viewOpt').forEach(b => b.classList.toggle('cur', b.dataset.m === cur));
-  const r = $('camBtn').getBoundingClientRect();
+  const _cb = $('camBtn'), r = (_cb.offsetParent ? _cb : $('menuBtn')).getBoundingClientRect();   // 🧍 hidden on the tablet HUD → open under ☰
   m.style.top = Math.min(innerHeight - 200, r.bottom + 6) + 'px';
   m.style.right = Math.max(8, innerWidth - r.right) + 'px';
   m.style.display = 'flex';
@@ -20385,10 +20463,14 @@ addEventListener('pointerdown', e => {        // tap anywhere else → the choos
 }, true);
 /* ☰ THE MENU — the extra buttons live here now, each with a label kids can read.
    The original buttons stay in the DOM (hidden): their onclick IS the feature, we just call it. */
+function onScreen(id) { const e = $(id); return !!(e && e.offsetParent && e.getBoundingClientRect().width > 0); }   // ☰ only repeats what the HUD hides
 function openHudMenu() {
   const m = $('hudMenu');
   const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
   const items = [
+    ...(!onScreen('camBtn') ? [
+      ['camBtn', '🎥', '<b>Camera view</b> <small>' + (G.firstPerson ? 'through my eyes' : (G.birdsEye ? "bird's eye" : 'behind me')) + '</small>'],
+    ] : []),
     ['goalRow', '🎯', '<b>My dream goal</b>'],
     ['badgeBtn', '🏅', '<b>My badges</b>'],
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
@@ -20398,7 +20480,7 @@ function openHudMenu() {
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
-    ['homeBtn',   '🏠', '<b>Save & go home</b>'],
+    ...(!onScreen('leaveBtn') ? [['homeBtn',   '🏠', '<b>Save & go home</b> <small>(Leave)</small>']] : []),
   ];
   m.innerHTML = items.map(([id, ic, html]) => '<button class="viewOpt" data-b="' + id + '">' + ic + ' ' + html + '</button>').join('');
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
@@ -20988,7 +21070,7 @@ function setRemoveMode(on) {
 }
 $w('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
   if (!G.removeMode) ensureBuildClickPlaces();
-  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click places a block. WASD/joystick to move.', 2600); };
+  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : (isTouch ? '🧱 Build mode — tap places a block. Drag anywhere to move.' : '🧱 Build mode — click places a block. WASD/arrows to move.'), 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
 $w('useBtnDesk').onclick = () => { tryUse(); };
 function syncMouseWalkUI(quiet) {
@@ -21006,7 +21088,7 @@ function syncMouseWalkUI(quiet) {
   if (!quiet) {
     toast(G.mouseWalk
       ? '🚶 Click-to-move ON — left-click the ground to walk there. No keyboard needed!'
-      : '🧱 Build mode — click places blocks. Move with WASD or the joystick.', 2800);
+      : (isTouch ? '🧱 Build mode — tap places blocks. Drag anywhere to move.' : '🧱 Build mode — click places blocks. Move with WASD or the arrow keys.'), 2800);
   }
 }
 /* Pip QA: while placing/building, click-to-move stays off so kids aren't confused */
@@ -21014,7 +21096,7 @@ function ensureBuildClickPlaces() {
   if (!G.mouseWalk) return;
   G.mouseWalk = false; player.walkTo = null;
   syncMouseWalkUI(true);
-  toast('🧱 Building — click places a block. Move with WASD or the joystick.', 3000);
+  toast(isTouch ? '🧱 Building — tap places a block. Drag anywhere to move.' : '🧱 Building — click places a block. Move with WASD or the arrow keys.', 3000);
 }
 $w('walkBtn').onclick = () => {
   Sound.click();
@@ -21067,6 +21149,7 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
+if (isTouch && !isPhone()) document.body.classList.add('touchHud');   // 👆 tablet touch HUD: by device (shorter screen side ≥ 520), not by the browser-bar-shrunk viewport
 /* 🔄 Phones now play in ANY orientation — the "turn your phone" gate and the fullscreen
    landscape lock are retired (portrait is how you film vertical shorts for social!).
    The touch HUD has a dedicated compact portrait layout instead. updateRotateGate stays
@@ -21079,6 +21162,8 @@ function updateRotateGate() {
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
 const touch = { joyX: 0, joyY: 0, jump: false, moveYaw: null };
+const JOY_DEAD = 0.09;          // joystick dead zone, as a fraction of the stick radius (Pip QA P0-6: 8–10%)
+const JOY_TOP = 0.85 * 0.6;     // full-push walking speed vs base speed: ~60% of the old 85% top speed
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
@@ -21095,8 +21180,8 @@ if (isTouch) {
     joyStick.style.left = (33 + ux * cl * 0.5) + 'px';
     joyStick.style.top = (33 + uy * cl * 0.5) + 'px';
     const frac = cl / JOY_R;
-    touch.joyX = cl > 4 ? ux * frac : 0;   // Pip QA N4: smaller dead zone
-    touch.joyY = cl > 4 ? uy * frac : 0;
+    touch.joyX = frac > JOY_DEAD ? ux * frac : 0;   // Pip QA P0-6: 9% dead zone (was 4 px ≈ 7%)
+    touch.joyY = frac > JOY_DEAD ? uy * frac : 0;
   }
   // ⛏️ hold your finger still on a block → it breaks — and KEEP holding to dig block
   // after block (the raycast reaches the next one each time). Replaces the old
@@ -21893,7 +21978,9 @@ function startGame() {
   } else if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
-    toast('🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the joystick — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
+    toast(isTouch
+      ? '🌈 Calm mode! You start with a few 🧱 blocks. Drag anywhere to move, tap to build. Tap ☰ → 🏠 Save & go home when you are done.'
+      : '🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the arrow keys — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
   }
   if (!showLeoIntro && G.world === 'city') {
     setTimeout(() => toast('🏘️ High Street is right ahead — Library, Cinema, Post Office & Arcade are on the paved street!', 4200), 2800);
