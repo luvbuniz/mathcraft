@@ -7779,7 +7779,7 @@ VEHICLES.forEach(def => {
     protoSize: pb.getSize(new THREE.Vector3()) };
 });
 /* 🚗🎨 REAL vehicle models — the avatar trick, for the garage: drop vehicles/<id>.glb in
-   the repo and that ride upgrades automatically. The boxy build stays as the instant
+   the repo, list the id in VEHICLE_MODEL_IDS, and that ride upgrades automatically. The boxy build stays as the instant
    stand-in and the no-file fallback. Shapes face +Z, same as the models should; fix a
    backwards or mis-sized export with a one-liner in VEHICLE_MODEL_TWEAKS. */
 const VEHICLE_MODEL_TWEAKS = {
@@ -7821,8 +7821,14 @@ function swapVehicleModel(c, gltf) {
   c.group.add(inner);
   c.model = inner;
 }
+// Only the rides that REALLY have a vehicles/<id>.glb in the repo. Probing every id made
+// ~14 404s per page load (jeep, bus, taxi…) — wasted requests on cheap tablets and noise in
+// the console. Dropped in a new export? Add its id here (tests/vehicle-assets.cjs checks
+// that every id listed has its file).
+const VEHICLE_MODEL_IDS = ['firetruck', 'police'];
 function maybeUpgradeVehicleToModel(id) {
   const c = cars[id]; if (!c || c._modelKicked) return;
+  if (VEHICLE_MODEL_IDS.indexOf(id) < 0) return;       // no model file → the boxy ride stays, no request
   c._modelKicked = true;
   if (typeof THREE.GLTFLoader === 'undefined') return;
   fetch('vehicles/' + id + '.glb')
