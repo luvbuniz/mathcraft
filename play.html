@@ -4389,17 +4389,23 @@ const AVATARS = [
         const skin = 0xE9AC80, armor = 0xC2C9D2, armorD = 0x8E97A3, tabard = 0x2255CC, gold = 0xF5C542, plume = 0xE53935;
         const a = blockKidBase(skin), H = a.head, g = a.group;
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
-          { iris: 0x5A3A20, pupil: 0x2A1A10, brow: 0x6B4A2A, mouth: 0x8A3A30, blush: 0xEE8E8E });
-        // ⛑️ a real knight's helm: eyes peek out of a T-shaped visor gap; a nose guard and a
-        // faceguard with breathing slots cover the nose and mouth
+          { iris: 0x5A3A20, pupil: 0x2A1A10, brow: 0x6B4A2A, mouth: 0x8A3A30 });   // no blush: the helm is closed
+        // ⛑️ a friendly, fully closed knight's helm: a visor covers the whole face and only a
+        // narrow dark eye slit is left open, with a little eye glint inside (no skin, no cheeks);
+        // a nose guard and a faceguard with breathing slots cover the nose and mouth
         box(H, 0.72, 0.16, 0.72, armor, 0, 0.34, 0);
         box(H, 0.72, 0.7, 0.12, armor, 0, 0.0, -0.31);
         [-1, 1].forEach(s => {
           box(H, 0.1, 0.7, 0.64, armor, s * 0.32, 0.0, -0.02);
-          box(H, 0.08, 0.36, 0.08, armor, s * 0.28, -0.12, 0.31);          // cheek guards
+          box(H, 0.08, 0.36, 0.08, armor, s * 0.28, -0.12, 0.35);          // cheek guards
         });
-        box(H, 0.7, 0.09, 0.09, armorD, 0, 0.24, 0.31);                    // brow guard
-        box(H, 0.08, 0.26, 0.08, armorD, 0, 0.06, 0.34);                    // nose guard between the eyes
+        box(H, 0.66, 0.13, 0.05, armor, 0, 0.17, 0.345);                    // visor above the slit (tucks under the brow guard)
+        box(H, 0.66, 0.115, 0.05, armor, 0, -0.0425, 0.345);                // visor below the slit (tucks behind the faceguard)
+        [-1, 1].forEach(s => box(H, 0.11, 0.11, 0.05, armor, s * 0.27, 0.06, 0.345));     // slit ends
+        box(H, 0.48, 0.12, 0.008, 0x231C2B, 0, 0.06, 0.335);                // dark eye slit (eyes glint through)
+        box(H, 0.66, 0.14, 0.05, armor, 0, 0.27, 0.335);                   // forehead plate: no skin between the cap and the brow
+        box(H, 0.7, 0.09, 0.09, armorD, 0, 0.24, 0.35);                     // brow guard
+        box(H, 0.08, 0.26, 0.08, armorD, 0, 0.06, 0.36);                    // nose guard between the eyes
         box(H, 0.64, 0.26, 0.1, armor, 0, -0.2, 0.33);                      // faceguard over the mouth and chin
         [-0.13, 0, 0.13].forEach(x => box(H, 0.07, 0.035, 0.03, armorD, x, -0.17, 0.385));   // breathing slots
         box(H, 0.66, 0.05, 0.11, armorD, 0, -0.33, 0.33);                   // faceguard rim
@@ -21155,9 +21161,9 @@ function refreshAvatarPreviews() {
   const suffix = classicHeroes() ? '-classic' : '';
   document.querySelectorAll('#avatarGrid img[data-avatar-id]').forEach(img => {
     const base = 'avatars/previews/' + img.dataset.avatarId;
-    const src = base + suffix + '.webp?v=305';
+    const src = base + suffix + '.webp?v=306';
     if (img.getAttribute('src') === src) return;
-    img.onerror = () => { img.onerror = null; img.src = base + '-classic.webp?v=305'; };
+    img.onerror = () => { img.onerror = null; img.src = base + '-classic.webp?v=306'; };
     img.src = src;
   });
 }
