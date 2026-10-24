@@ -6748,6 +6748,20 @@ const CITY_SOLID = new Set();           // footprints of Reading Town's backgrou
    follow camera pulls in front of them instead of going inside (Pip QA F4/N3).
    Rebuilt on world change and every few seconds; tested as cheap ray-vs-box checks. */
 let camBlockers = [], camBlockersWorld = null, camBlockersAt = 0;
+/* 🧱 Walk blockers (Pip QA P0-6): many shops are hollow shells of thin wall meshes on a small
+   3×3 grid footprint, so a hero could walk straight through a wall into the shop (tablet: Country
+   Homes, Stack Barn) and the camera then filled the screen with one wall colour. Ground-standing
+   building parts ≥1.5 m tall become solid for walking. Walk-in places (Stack Feed, your homes)
+   and the fairground rides are left out. */
+let walkBlockers = [];
+function walkBlockerExcluded(cx, cz) {
+  if (G.world === 'meadow') {
+    if (typeof FEED_WALL !== 'undefined' && cx > FEED_WALL.x0 - 1.5 && cx < FEED_WALL.x1 + 2.5 && cz > FEED_WALL.z0 - 1.5 && cz < FEED_WALL.z1 + 2.5) return true;   // walk-in store
+    if (typeof FAIR_POS !== 'undefined' && Math.hypot(cx - FAIR_POS.x, cz - FAIR_POS.z) < 15.2) return true;   // fairground rides & fences
+  }
+  try { if (typeof homeLotAt === 'function' && homeLotAt(cx, cz) >= 0) return true; } catch (e) {}   // your own houses have doors
+  return false;
+}
 const _camRay = new THREE.Ray(), _camHit = new THREE.Vector3();
 function rebuildCamBlockers() {
   camBlockersWorld = G.world; camBlockersAt = performance.now();
@@ -6757,7 +6771,7 @@ function rebuildCamBlockers() {
   try { (npcs || []).forEach(n => n.group && skip.add(n.group)); } catch (e) {}
   try { pets.forEach(p => p.f && p.f.mesh && skip.add(p.f.mesh)); } catch (e) {}
   const voxel = new Set(); blocks.forEach(b => b.mesh && voxel.add(b.mesh));
-  const out = [];
+  const out = [], walkOut = [];
   const walk = o => {
     if (!o.visible || skip.has(o) || voxel.has(o)) return;
     if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
@@ -6767,14 +6781,32 @@ function rebuildCamBlockers() {
         const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
         const h = box.max.y - box.min.y, w = box.max.x - box.min.x, dz = box.max.z - box.min.z;
         if (h >= 0.9 && box.max.y >= 0.8 && Math.max(w, dz) >= 0.35 && w < 40 && dz < 40) {
-          out.push({ box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 });
+          const ent = { box, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2, r: Math.hypot(w, dz) / 2 };
+          out.push(ent);
+          if (box.min.y < 0.6 && h >= 1.5 && Math.max(w, dz) >= 0.8 && w < 30 && dz < 30 && !walkBlockerExcluded(ent.cx, ent.cz)) {
+            const hx = Math.max(0.15, w / 2 - 0.05), hz = Math.max(0.15, dz / 2 - 0.05);   // thin walls get ≥30 cm thickness
+            walkOut.push({ x0: ent.cx - hx, x1: ent.cx + hx, z0: ent.cz - hz, z1: ent.cz + hz, y0: box.min.y, y1: box.max.y, cx: ent.cx, cz: ent.cz, r: Math.hypot(hx, hz) });
+          }
         }
       }
     }
     for (const c of o.children) walk(c);
   };
   try { scene.updateMatrixWorld(); walk(scene); } catch (e) {}
-  camBlockers = out;
+  camBlockers = out; walkBlockers = walkOut;
+}
+function ensureBlockers() { if (camBlockersWorld !== G.world || performance.now() - camBlockersAt > 6000) rebuildCamBlockers(); }
+function walkBoxesHit(skip) {                    // building walls the hero's body overlaps (except those in `skip`)
+  const half = player.width / 2, px = player.pos.x, pz = player.pos.z, y0 = player.pos.y, y1 = player.pos.y + player.height;
+  let hit = null;
+  for (const b of walkBlockers) {
+    if (Math.abs(b.cx - px) > b.r + 1 || Math.abs(b.cz - pz) > b.r + 1) continue;
+    if (px + half > b.x0 && px - half < b.x1 && pz + half > b.z0 && pz - half < b.z1 && y1 > b.y0 && y0 < b.y1) {
+      if (skip && skip.indexOf(b) !== -1) continue;
+      (hit = hit || []).push(b);
+    }
+  }
+  return hit;
 }
 function camBlockerT(head, dir, far) {
   const now = performance.now();
@@ -15134,7 +15166,11 @@ function playerBlocked() {
 }
 function collideAxis(axis, delta) {
   const previousY=player.pos.y;
+  const boxCheck = axis !== 'y' && !player.driving && delta !== 0;
+  let preBoxes = null;
+  if (boxCheck) { ensureBlockers(); preBoxes = walkBoxesHit(null); }   // already overlapping one (spawn/teleport)? it never traps you
   player.pos[axis] += delta;
+  if (boxCheck && walkBoxesHit(preBoxes)) { player.pos[axis] -= delta; return; }   // solid building wall (no auto-step through it)
   const stairY=!player.driving?walkStairSurface(player.pos.x,player.pos.z):null;
   if(stairY!=null&&player.vel.y<=.2&&((axis==='y'&&delta<=0&&previousY>=stairY-.35&&player.pos.y<=stairY)||(axis!=='y'&&Math.abs(previousY-stairY)<.35))){player.pos.y=stairY;player.vel.y=0;player.onGround=true;}
   if (playerBlocked()) {
