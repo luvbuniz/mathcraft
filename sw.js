@@ -45,6 +45,22 @@ function isAuthUrl(url) {
   return /accounts\.google\.com|googleapis\.com|gstatic\.com\/identity|identitytoolkit|securetoken\.googleapis|firebaseapp\.com|firebaseio\.com|firebasestorage\.googleapis|gsi\/client|recaptcha|gstatic\.com\/recaptcha|google\.com\/recaptcha/.test(url);
 }
 
+// 📺 Video is NEVER cached or proxied: Wizlings TV episodes stream straight from the media host
+// (Cloudflare R2) and range requests go to the network untouched. Caching a cartoon would eat a
+// tablet's storage and the offline cache quota. Any .mp4/.webm/.m4v/.mov/.m3u8, a request with a
+// Range header, a video/audio element fetch, or the media host itself is left to the browser.
+const VIDEO_HOSTS = /(^|\.)r2\.dev$|(^|\.)r2\.cloudflarestorage\.com$|^media\.stackadoo\.com$/;
+function isVideoRequest(req) {
+  try {
+    const u = new URL(req.url);
+    if (VIDEO_HOSTS.test(u.hostname)) return true;
+    if (/\.(mp4|m4v|webm|mov|m3u8|ts)$/i.test(u.pathname)) return true;
+    if (req.destination === 'video') return true;
+    if (req.headers && req.headers.get && req.headers.get('range')) return true;
+  } catch (e) {}
+  return false;
+}
+
 function isPlayHtml(req) {
   try {
     const u = new URL(req.url);
@@ -72,6 +88,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   if (isAuthUrl(req.url)) return;          // let the browser talk to Google / Firebase directly
+  if (isVideoRequest(req)) return;         // 📺 stream video from the network; never cache it
 
   if (isPlayHtml(req) && (req.mode === 'navigate' || (req.destination === 'document') || req.url.indexOf('play.html') >= 0)) {
     e.respondWith(

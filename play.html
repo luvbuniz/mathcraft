@@ -424,6 +424,57 @@
     color:#4a4030; font-size:clamp(14px,2.5vw,17px); line-height:1.5; max-height:42vh; overflow-y:auto; margin:0; }
   .libText.small { font-size:clamp(12px,2vw,14px); line-height:1.4; max-height:22vh; opacity:.92; }
   .scriptText { font-family:'Courier New',monospace; white-space:pre-wrap; font-size:clamp(11px,1.9vw,14px); line-height:1.35; }
+  /* 📺 Wizlings TV */
+  .wizTag { display:block; margin-top:4px; font-size:13px; font-weight:800; color:#7a3fc4; letter-spacing:.2px }
+  .wizTag.on { color:#2f8a52 }
+  .libBtn.wizTvLibBtn { background:linear-gradient(135deg,#ff5fa2,#9b5cff 55%,#3aa0ff); color:#fff; font-size:16px; margin-top:4px; box-shadow:0 4px 0 #5a2fa0 }
+  .wizTvLibBtn small { font-weight:700; opacity:.9 }
+  .libBtn.wizWatchBtn { background:linear-gradient(135deg,#ffcf3a,#ff7a2f); color:#4a1d00; font-size:clamp(20px,3.6vw,27px); font-weight:900; box-shadow:0 5px 0 #c2410c; animation:wizPulse 1.3s ease-in-out infinite }
+  @keyframes wizPulse { 0%,100% { transform:scale(1) } 50% { transform:scale(1.04) } }
+  .wizUnlock { margin:10px auto 0; padding:10px 14px; max-width:520px; border-radius:16px; background:linear-gradient(135deg,#fff3c4,#ffe0f0); border:3px solid #ffb000; color:#5a2fa0; font-size:clamp(17px,2.8vw,22px) }
+  .wizUnlock span { display:block; font-size:.85em; color:#7a4ea0 }
+  .wizTile { font-family:inherit; border:none; cursor:pointer; padding:8px 8px 10px; border-radius:18px; background:#efe7fb; box-shadow:0 4px 0 #cdbde8; display:flex; flex-direction:column; gap:3px; align-items:stretch; text-align:center }
+  .wizTile.on { background:linear-gradient(160deg,#fff,#fff4d6); box-shadow:0 4px 0 #ffb000, 0 0 0 3px #ffd34d inset }
+  .wizThumb { position:relative; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,#7b4dff,#ff5fa2); display:flex; align-items:center; justify-content:center }
+  .wizThumb.lock { background:repeating-linear-gradient(45deg,#cbbfe3 0 10px,#d9cff0 10px 20px) }
+  .wizThumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover }
+  .wizEm { font-size:34px; position:relative }
+  .wizThumb img + .wizEm { display:none }
+  .wizPlay { position:absolute; right:6px; bottom:6px; width:30px; height:30px; border-radius:50%; background:#ff3d7f; color:#fff; font-size:14px; line-height:30px; box-shadow:0 2px 6px rgba(0,0,0,.35) }
+  .wizEp { font-size:11px; font-weight:900; letter-spacing:1.5px; color:#9b5cff }
+  .wizName { font-size:14px; font-weight:800; line-height:1.15; color:#3b2366 }
+  .wizGo { font-size:13px; font-weight:900; color:#2f8a52 }
+  .wizHint { font-size:11px; font-weight:700; color:#a06a2c; line-height:1.2 }
+  #wizTvPlayer { position:fixed; inset:0; z-index:100000; background:#0d0820; display:flex; flex-direction:column; color:#fff; font-family:inherit }
+  #wizTvPlayer .wizBar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px 8px 14px; padding-top:max(8px,env(safe-area-inset-top)); background:linear-gradient(90deg,#9b5cff,#ff5fa2) }
+  #wizTvPlayer .wizBarT { font-size:clamp(14px,2.6vw,19px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  #wizTvPlayer .wizBarT span { opacity:.9 }
+  #wizTvPlayer .wizX { flex:none; width:48px; height:48px; border-radius:50%; border:3px solid #fff; background:#ff3d7f; color:#fff; font-size:22px; font-weight:900; cursor:pointer }
+  #wizTvPlayer .wizStage { position:relative; flex:1; min-height:0; display:flex; align-items:center; justify-content:center; background:#000 }
+  #wizTvPlayer video { width:100%; height:100%; object-fit:contain; background:#000 }
+  .wizSpin, .wizSoon, .wizEnd { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:20px; pointer-events:none }
+  .wizSoon, .wizEnd { background:radial-gradient(circle at 50% 35%,#4b2a8a,#140a2b); pointer-events:auto; font-size:clamp(22px,4vw,32px) }
+  .wizSoon span { font-size:clamp(15px,2.6vw,20px); max-width:440px; color:#e6dbff }
+  .wizSpin div { width:46px; height:46px; border-radius:50%; border:6px solid rgba(255,255,255,.25); border-top-color:#ffd34d; animation:wizRot .9s linear infinite }
+  @keyframes wizRot { to { transform:rotate(360deg) } }
+  .wizBtn { font-family:inherit; font-weight:900; font-size:20px; padding:12px 22px; border:none; border-radius:16px; background:#ffd34d; color:#4a1d00; box-shadow:0 4px 0 #c28a00; cursor:pointer }
+  .wizBtn.alt { background:#36c46b; color:#fff; box-shadow:0 4px 0 #1f7a40 }
+  .libOpt { transition: opacity .2s, filter .2s; }
+  .libOpt.libLocked { opacity: .5; filter: saturate(.5); cursor: default; }
+  .libOpt.libGone { opacity: .35; filter: grayscale(1); box-shadow: none !important; cursor: default; }
+  .libShake { animation: libShake .42s ease-in-out; }
+  @keyframes libShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  .libListen { display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px; background: #fff3c4; color: #8a5a00; font-size: 12.5px; font-weight: 800; vertical-align: middle; }
+  .libListen[hidden] { display: none; }
+  .libListen.libNudge { animation: libShake .35s; }
+  .libLionBubble { display: flex; align-items: center; gap: 10px; margin: 6px auto 8px; max-width: 420px; padding: 8px 14px 8px 8px; border-radius: 18px; background: #fff; border: 3px solid #f2b631; box-shadow: 0 4px 0 #d99a12; font-weight: 900; color: #5a3a00; font-size: 17px; }
+  .libLionBubble[hidden] { display: none; }
+  .libLionBubble.pop { animation: wizPop .35s ease-out; }
+  .libLionFace { font-size: 34px; width: 46px; height: 46px; border-radius: 50%; background: #ffd84d; display: grid; place-items: center; flex: none; }
+  @keyframes wizPop { 0% { transform: scale(.7); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+  .libRetryArt { font-size: 48px; }
+  .libRetryMsg { font-weight: 700; color: #3b5d9e; font-size: 16px; margin: 4px auto; max-width: 440px; }
+  .libRetryBtn { background: linear-gradient(180deg,#4fb3ff,#2a7fd4) !important; color: #fff !important; font-weight: 900 !important; }
   .libBtn { font-family:inherit; font-weight:700; font-size:clamp(18px,3.1vw,25px); padding:16px 20px; border:none;
     border-radius:13px; cursor:pointer; color:#5a4632; background:#F0E6D2; box-shadow:0 4px 0 #cdbf9f; line-height:1.3; }
   .libBtn:active { transform:translateY(3px); box-shadow:0 1px 0 #cdbf9f; }
@@ -10773,6 +10824,206 @@ function unlockNextCartoon() {                        // finishing a book lights
   if (next) { u.push(next.id); profileDirty = true; saveProfile(); return next; }
   return null;
 }
+/* 📺 WIZLINGS TV — each paired Library story unlocks ITS OWN Wizlings cartoon. Pass the story's
+   last comprehension question (first try) with the usual 3-of-4 "really read it" bar and the
+   episode lights up: a big "Watch the Wizlings episode!" button right away, then it lives in the
+   📺 Wizlings TV corner (☰ menu or the Library) to rewatch anytime. Saved per profile.
+   LAG RULES (tablets): no video ships in the app — each episode STREAMS from the media host only
+   when a kid taps ▶, only the one cut that fits the screen is fetched, the 3D render loop + game
+   audio are suspended while the full-screen player is open, and on close the <video> is fully
+   torn down (pause → removeAttribute('src') → load() → remove) before the game resumes. sw.js never
+   caches video. Locked tiles load nothing; unlocked tiles load one small poster JPG. */
+/* 👂 Library anti-guessing (Amy, Oct 24). Pure logic lives between the markers so
+   tests/library-quiz.cjs can run it in a VM. */
+/* LIBQ-LOGIC-START */
+const LIBQ = {
+  readBaseMs: 2000, readPerWordMs: 150, readMaxMs: 6000,   // muted / no voice: ~2 s + a little per word
+  speakCapMs: 9000,                                        // never stay locked longer than this
+  tapWindowMs: 1000, tapBurst: 3, relockMs: 1800,          // 3 taps inside ~1 s = guessing
+  passFrac: 0.6                                            // first-try bar: 2 of 3, else 60 %
+};
+function libReadDelay(text) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+  return Math.min(LIBQ.readMaxMs, LIBQ.readBaseMs + words * LIBQ.readPerWordMs);
+}
+function libFirstTryNeed(n) { return n === 3 ? 2 : Math.ceil(n * LIBQ.passFrac - 1e-9); }
+function libFirstTryPassed(firstRight, n) { return n > 0 && (firstRight || 0) >= libFirstTryNeed(n); }
+// rapid-tap detector: call with each answer tap's time; true when the burst threshold is hit
+function makeTapBurst(windowMs, burst) {
+  let taps = [];
+  const f = function (now) {
+    taps = taps.filter(t => now - t < windowMs); taps.push(now);
+    if (taps.length >= burst) { taps = []; return true; }
+    return false;
+  };
+  f.reset = () => { taps = []; };
+  return f;
+}
+// a fresh answer order every attempt; when it can, never repeat the previous order
+function shuffleOptions(opts, prev, rnd) {
+  rnd = rnd || Math.random;
+  const one = () => { const a = opts.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+  let a = one();
+  if (prev && opts.length > 1) for (let k = 0; k < 6 && a.join('\u0001') === prev.join('\u0001'); k++) a = one();
+  if (prev && opts.length > 1 && a.join('\u0001') === prev.join('\u0001')) a = a.slice(1).concat(a[0]);   // rotate as a last resort
+  return a;
+}
+/* LIBQ-LOGIC-END */
+/* WIZTV-LOGIC-START */
+const WIZ_TV = {
+  // Cloudflare R2 bucket (public custom domain) — PLACEHOLDER until Amy OKs the upload. Each episode
+  // lives at <base><id>-h.mp4 (720p landscape) / <id>-v.mp4 (720x1280 portrait) / <id>-h.jpg poster.
+  base: 'https://media.stackadoo.com/wizlings/v1/',
+  unlock: { rule: 'firstTry', passFrac: 0.6 },     // see libFirstTryPassed: 2 of 3, else 60 % on the FIRST try
+  episodes: [
+    { id: 'ep1', n: 1, title: "Scooter's Secret",                         story: 'Scooter: From Wizard to Pomeranian',         e: '🐕', v: false },
+    { id: 'ep2', n: 2, title: "The Wizard Dogs' Barking Brilliant Plan",  story: "The Wizard Dogs' Barking Brilliant Plan",    e: '🐾', v: true },
+    { id: 'ep3', n: 3, title: "Bronco's Escape",                          story: "Bronco's Icy Escape",                        e: '❄️', v: true },
+    { id: 'ep4', n: 4, title: "RoboCat's Big Adventure",                  story: "RobotCat's Big Adventure",                   e: '🤖', v: true },
+    // ep5's vertical file is an 89 s short, not the full 3:36 episode — horizontal everywhere until Amy decides
+    { id: 'ep5', n: 5, title: "Popcorn's Magical Adventure",              story: "Popcorn's Magical Journey",                  e: '🐶', v: false },
+    // ep6 is Bonnie's match, but Amy says it's "not done yet": LOCKED + HIDDEN (no tile, no hint, no unlock)
+    { id: 'ep6', n: 6, title: 'Bonnie & Lily',                            story: "Bonnie's Magical Meadow",                    e: '🌸', v: true, hidden: true },
+    { id: 'ep7', n: 7, title: 'The Dragon Who Wanted to Shine',           story: 'The Dragon Who Wanted to Shine',             e: '🎆', v: true }
+  ]
+};
+function wizTvBase(loc) {                     // ?wiztvbase=http://127.0.0.1:PORT/ — local QA only, never a remote host
+  try {
+    const q = new URLSearchParams((loc || location).search).get('wiztvbase');
+    if (q && /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(q)) return q;
+  } catch (e) {}
+  return WIZ_TV.base;
+}
+function wizVisibleEpisodes() { return WIZ_TV.episodes.filter(ep => !ep.hidden); }
+function wizEpisodeForStory(title) { return WIZ_TV.episodes.find(ep => ep.story === title && !ep.hidden) || null; }
+function wizUnlocked(p) { return (p.wizTvUnlocked = Array.isArray(p.wizTvUnlocked) ? p.wizTvUnlocked : []); }
+function wizIsUnlocked(ep, p) { return !!ep && !ep.hidden && wizUnlocked(p).indexOf(ep.id) !== -1; }
+// "finished the story" = every question answered (a kid can't move on until each one is right),
+// with MOST answers right on the FIRST try (2 of 3, else 60 %) so guessing can't unlock a cartoon.
+function wizQualifies(s) {
+  if (!s || s.battle || !s.qs || !s.qs.length || s.qi < s.qs.length) return false;
+  return libFirstTryPassed(s.firstRight, s.qs.length);
+}
+function wizUnlockForSession(s, p) {          // → { ep, isNew } when this finished read earned its episode
+  const ep = s && s.story ? wizEpisodeForStory(s.story.t) : null;
+  if (!ep || !wizQualifies(s)) return null;
+  const u = wizUnlocked(p), isNew = u.indexOf(ep.id) === -1;
+  if (isNew) u.push(ep.id);
+  return { ep: ep, isNew: isNew };
+}
+// Portrait PHONES get the vertical cut (when the episode has one); tablets — either way up — and
+// any landscape screen get the horizontal 720p cut. Only the picked file is ever requested.
+function wizPickCut(ep, w, h) {
+  const portraitPhone = h > w && Math.min(w, h) < 600;
+  return portraitPhone && ep && ep.v ? 'v' : 'h';
+}
+function wizSrc(ep, cut, base) { return (base || WIZ_TV.base) + ep.id + '-' + cut + '.mp4'; }
+function wizPoster(ep, cut, base) { return (base || WIZ_TV.base) + ep.id + '-' + (cut || 'h') + '.jpg'; }
+/* WIZTV-LOGIC-END */
+
+const WizTV = { open: false, loopParked: false, el: null, vid: null, cut: null, media: [], audio: false, opens: 0 };
+function wizTvCount() { const vis = wizVisibleEpisodes(); return vis.filter(ep => wizIsUnlocked(ep, profile)).length + '/' + vis.length; }
+function openWizTv() {                        // ☰ → 📺 Wizlings TV (or the Library button)
+  if (!lib) { openLibrary(); if (!lib) return; }
+  lib.phase = 'wiztv'; $('libStory').innerHTML = ''; renderLib();
+}
+function renderWizTvShelf() {
+  $('libTitle').innerHTML = '<span style="background:linear-gradient(90deg,#ff5fa2,#ffb000,#36c46b,#3aa0ff,#9b5cff);-webkit-background-clip:text;background-clip:text;color:transparent">📺 Wizlings TV</span>';
+  $('libStory').innerHTML = '';
+  const vis = wizVisibleEpisodes(), got = vis.filter(ep => wizIsUnlocked(ep, profile)).length;
+  $('libPrompt').innerHTML = '📖 Finish a Wizlings story to unlock its cartoon! — <b>' + got + ' / ' + vis.length + '</b> unlocked';
+  const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
+  const base = wizTvBase();
+  const grid = document.createElement('div'); grid.id = 'wizTvGrid';
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,42vw),1fr));gap:10px;width:100%';
+  vis.forEach(ep => {
+    const open = wizIsUnlocked(ep, profile);
+    const cell = document.createElement('button'); cell.className = 'wizTile' + (open ? ' on' : ''); cell.dataset.ep = ep.id;
+    cell.innerHTML = open
+      ? '<div class="wizThumb"><img loading="lazy" decoding="async" alt="" src="' + wizPoster(ep, 'h', base) + '" onerror="this.remove()"><span class="wizEm">' + ep.e + '</span><span class="wizPlay">▶</span></div>' +
+        '<div class="wizEp">EPISODE ' + ep.n + '</div><div class="wizName">' + ep.title + '</div><div class="wizGo">▶ Watch</div>'
+      : '<div class="wizThumb lock"><span class="wizEm">🔒</span></div><div class="wizEp">EPISODE ' + ep.n + '</div>' +
+        '<div class="wizName" style="color:#8b7aa8">? ? ?</div><div class="wizHint">📖 Read “' + ep.story + '”</div>';
+    if (open) cell.onclick = () => { Sound.click(); wizPlay(ep); };
+    else cell.onclick = () => { Sound.click(); $('libMsg').style.color = '#7a4ea0'; $('libMsg').textContent = '📺 Finish “' + ep.story + '” in the Library to unlock this cartoon!'; };
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+  const back = document.createElement('button'); back.className = 'libBtn'; back.textContent = '⬅ Back to the Library'; back.style.marginTop = '4px';
+  back.onclick = () => { Sound.click(); lib.phase = 'pick'; renderLib(); };
+  wrap.appendChild(back);
+}
+function wizPauseGame() {
+  try { Narrator.stop(); } catch (e) {}
+  try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {}
+  WizTV.audio = false;
+  try { if (Sound.ctx && Sound.ctx.state === 'running') { Sound.ctx.suspend(); WizTV.audio = true; } } catch (e) {}
+  WizTV.media = [];
+  document.querySelectorAll('audio,video').forEach(m => { if (m !== WizTV.vid && !m.paused) { try { m.pause(); WizTV.media.push(m); } catch (e) {} } });
+  try { dispatchEvent(new Event('wiztv:open')); } catch (e) {}      // music / ambience hooks pause themselves
+}
+function wizResumeGame() {
+  try { if (WizTV.audio && Sound.ctx) Sound.ctx.resume(); } catch (e) {}
+  WizTV.audio = false;
+  WizTV.media.forEach(m => { if (m.isConnected) { const p = m.play(); if (p && p.catch) p.catch(() => {}); } });
+  WizTV.media = [];
+  if (WizTV.loopParked) { WizTV.loopParked = false; lastT = performance.now(); requestAnimationFrame(loop); }   // restart the 3D loop
+  try { dispatchEvent(new Event('wiztv:close')); } catch (e) {}
+}
+function wizPlay(ep) {
+  if (WizTV.open || !wizIsUnlocked(ep, profile)) return;
+  const base = wizTvBase(), cut = wizPickCut(ep, innerWidth, innerHeight);
+  WizTV.open = true; WizTV.cut = cut; WizTV.opens++;
+  wizPauseGame();                                                     // loop() parks itself on its next frame
+  const ov = document.createElement('div'); ov.id = 'wizTvPlayer'; ov.className = 'wizCut-' + cut;
+  ov.innerHTML =
+    '<div class="wizBar"><div class="wizBarT">📺 <b>Wizlings TV</b> <span>· Ep ' + ep.n + ' · ' + ep.title + '</span></div>' +
+      '<button class="wizX" id="wizTvClose" aria-label="Close">✕</button></div>' +
+    '<div class="wizStage" id="wizTvStage">' +
+      '<div class="wizSpin" id="wizTvSpin"><div></div><b>Loading the cartoon…</b></div>' +
+      '<div class="wizSoon" id="wizTvSoon" style="display:none"><div style="font-size:54px">🎬✨</div><b>Coming soon!</b>' +
+        '<span>“' + ep.title + '” is on its way to Wizlings TV. Check back soon!</span>' +
+        '<button class="wizBtn" id="wizTvSoonOk">👍 OK</button></div>' +
+      '<div class="wizEnd" id="wizTvEnd" style="display:none"><div style="font-size:50px">🌟</div><b>The End!</b>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="wizBtn" id="wizTvAgain">🔁 Watch again</button><button class="wizBtn alt" id="wizTvDone">✅ Done</button></div></div>' +
+    '</div>';
+  const v = document.createElement('video');
+  v.id = 'wizTvVideo'; v.controls = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+  v.preload = 'auto'; v.setAttribute('controlsList', 'nodownload noplaybackrate'); v.disablePictureInPicture = true;
+  v.poster = wizPoster(ep, cut, base);
+  const show = (id, on) => { const n = document.getElementById(id); if (n) n.style.display = on ? '' : 'none'; };
+  v.addEventListener('error', () => { if (!WizTV.open || WizTV.vid !== v) return; show('wizTvSpin', false); v.style.visibility = 'hidden'; show('wizTvSoon', true); });
+  v.addEventListener('playing', () => { show('wizTvSpin', false); show('wizTvEnd', false); });
+  v.addEventListener('waiting', () => show('wizTvSpin', true));
+  v.addEventListener('ended', () => show('wizTvEnd', true));
+  ov.querySelector('#wizTvStage').prepend(v);
+  document.body.appendChild(ov);
+  WizTV.el = ov; WizTV.vid = v;
+  v.src = wizSrc(ep, cut, base);                                      // streams NOW — the first and only request
+  const p = v.play(); if (p && p.catch) p.catch(() => {});            // blocked autoplay → the native ▶ is right there
+  $w('wizTvClose').onclick = () => { Sound.click(); wizClose(); };
+  $w('wizTvSoonOk').onclick = () => { Sound.click(); wizClose(); };
+  $w('wizTvDone').onclick = () => { Sound.click(); wizClose(); };
+  $w('wizTvAgain').onclick = () => { Sound.click(); show('wizTvEnd', false); try { v.currentTime = 0; v.play(); } catch (e) {} };
+  try { const fs = ov.requestFullscreen || ov.webkitRequestFullscreen; if (fs) { const r = fs.call(ov); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+  addEventListener('keydown', wizKey);
+}
+function wizKey(e) { if (e.key === 'Escape' && WizTV.open) { e.preventDefault(); wizClose(); } }
+function wizClose() {
+  if (!WizTV.open) return;
+  removeEventListener('keydown', wizKey);
+  const v = WizTV.vid;
+  if (v) {                                    // FULL teardown so no decoder / buffer / network survives
+    try { v.pause(); } catch (e) {}
+    v.removeAttribute('src'); v.removeAttribute('poster');
+    try { v.load(); } catch (e) {}
+    v.remove();
+  }
+  if (WizTV.el) WizTV.el.remove();
+  WizTV.el = WizTV.vid = null; WizTV.open = false;
+  try { const fe = document.fullscreenElement || document.webkitFullscreenElement; if (fe) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
+  wizResumeGame();
+}
 function renderCartoonShelf() {
   $('libTitle').innerHTML = '🎞️ My Movie Collection';
   $('libStory').innerHTML = '';
@@ -10858,12 +11109,15 @@ function renderLib() {
   if (!lib) return;
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   if (lib.phase === 'movies') { renderCartoonShelf(); return; }
+  if (lib.phase === 'wiztv') { renderWizTvShelf(); return; }
   if (lib.phase === 'watch') { renderCartoonWatch(); return; }
   if (lib.phase === 'pick') {
     $('libTitle').innerHTML = '📚 Library'; $('libStory').innerHTML = '';
     $('libPrompt').textContent = 'Pick a story to read:  •  📖 Reading Level ' + readLevelNow();
     shuffle(STORIES.slice()).slice(0, 3).forEach(s => {
       const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '16px'; b.innerHTML = s.e + ' ' + s.t;
+      const wep = wizEpisodeForStory(s.t);                     // 📺 paired with a Wizlings cartoon (never Ep6 — it's hidden)
+      if (wep) b.innerHTML += wizIsUnlocked(wep, profile) ? '<span class="wizTag on">📺 Cartoon unlocked</span>' : '<span class="wizTag">📺 Finish this story to unlock a cartoon</span>';
       b.onclick = () => { Sound.click(); lib.story = s; lib.phase = 'read'; renderLib(); };
       wrap.appendChild(b);
     });
@@ -10873,6 +11127,10 @@ function renderLib() {
     mv.innerHTML = '🎞️ My Movie Collection (' + u.length + '/' + CARTOONS.length + ')';
     mv.onclick = () => { Sound.click(); lib.phase = 'movies'; renderLib(); };
     wrap.appendChild(mv);
+    const tv = document.createElement('button'); tv.className = 'libBtn wizTvLibBtn'; tv.id = 'libWizTvBtn';
+    tv.innerHTML = '📺 Wizlings TV <small>(' + wizTvCount() + ')</small>';
+    tv.onclick = () => { Sound.click(); lib.phase = 'wiztv'; renderLib(); };
+    wrap.appendChild(tv);
     const booksRead = profile.booksRead || 0, battlesWon = profile.battlesWon || 0;
     if (booksRead >= (battlesWon + 1) * 3) {                    // ⚔️ a Library Battle is ready (every 3 books)
       const bt = document.createElement('button'); bt.className = 'libBtn';
@@ -10887,7 +11145,8 @@ function renderLib() {
     $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
     $('libStory').innerHTML = libStoryHTML(false);
     $('libPrompt').innerHTML = (lib.story.script ? '🎬 This is a screenplay — a script for a TV show or movie. Read the scene carefully!' : '📖 Read the story carefully!') +
-      '<br><span style="font-size:0.84em;color:#8a6d3b">Your <b>first</b> answer to each question counts toward your reading score — so take your time and check the story.</span>';
+      '<br><span style="font-size:0.84em;color:#8a6d3b">Your <b>first</b> answer to each question counts toward your reading score — so take your time and check the story.</span>' +
+      (function () { const wep = !lib.battle && wizEpisodeForStory(lib.story.t); return wep && !wizIsUnlocked(wep, profile) ? '<br><span class="wizTag">📺 Finish this story to unlock a Wizlings cartoon!</span>' : ''; })();
     {     // 🔊 warm storytime voice (pre-recorded Heart) — not the robot desktop voice
       const ra = document.createElement('button'); ra.className = 'libBtn'; ra.style.background = '#2E5E8C'; ra.style.color = '#fff'; ra.textContent = '🔊 Read it to me';
       ra.onclick = () => {
@@ -10933,13 +11192,89 @@ function renderLib() {
   const isCh = q.g > (lib.level != null ? lib.level : readLevelNow());
   $('libTitle').innerHTML = lib.story.e + ' ' + lib.story.t;
   $('libStory').innerHTML = libStoryHTML(true);
-  $('libPrompt').textContent = (isCh ? '🌟 Challenge (bonus 🪙)! ' : '') + '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q;
-  shuffle(q.o.slice()).forEach(opt => {
-    const b = document.createElement('button'); b.className = 'libBtn'; b.style.fontSize = '15px'; b.textContent = opt;
-    b.onclick = () => libAnswer(opt, q, b);
+  $('libPrompt').innerHTML = '';
+  $('libPrompt').appendChild(document.createTextNode((isCh ? '🌟 Challenge (bonus 🪙)! ' : '') + '❓ (' + (lib.qi + 1) + '/' + lib.qs.length + ') ' + q.q));
+  const lis = document.createElement('span'); lis.id = 'libListen'; lis.className = 'libListen'; lis.textContent = '👂 Listen first…';
+  $('libPrompt').appendChild(lis);
+  libRenderOptions(q);
+  libReadQuestion(q);                  // 👂 answers stay locked until the question has been read aloud
+}
+// 👂 anti-guessing: answer buttons (fresh order each attempt), greyed misses stay greyed
+function libRenderOptions(q) {
+  const wrap = $('libChoices'); wrap.innerHTML = '';
+  if (lib.optQ !== q) { lib.optQ = q; lib.gone = []; lib.order = null; }
+  lib.order = shuffleOptions(q.o, lib.order);
+  if (!lib.tapBurst) lib.tapBurst = makeTapBurst(LIBQ.tapWindowMs, LIBQ.tapBurst);
+  lib.locked = true;
+  lib.order.forEach(opt => {
+    const b = document.createElement('button'); b.className = 'libBtn libOpt libLocked' + (lib.gone.indexOf(opt) !== -1 ? ' libGone' : '');
+    b.style.fontSize = '15px'; b.textContent = opt; b.setAttribute('aria-disabled', 'true');
+    b.onclick = () => libTap(opt, q, b);
     wrap.appendChild(b);
   });
-  lockChoices(wrap, 1000);            // read first — no instant mashing
+}
+function libSetLocked(on) {
+  if (!lib) return;
+  lib.locked = on;
+  const wrap = $('libChoices');
+  if (wrap) wrap.querySelectorAll('.libOpt').forEach(b => { b.classList.toggle('libLocked', on); b.setAttribute('aria-disabled', on || b.classList.contains('libGone') ? 'true' : 'false'); });
+  const l = $('libListen'); if (l) l.hidden = !on;
+}
+// read the question with the existing read-aloud voice; unlock when it finishes. If audio is
+// muted or the voice never starts, fall back to ~2 s + a little per word.
+function libReadQuestion(q, preDelay) {
+  const session = lib, id = (lib.readId = (lib.readId || 0) + 1);
+  const done = () => { if (lib === session && lib.readId === id && lib.qs[lib.qi] === q) libSetLocked(false); };
+  const fallback = libReadDelay(q.q);
+  const go = () => {
+    if (lib !== session || lib.readId !== id) return;
+    let spoke = false;
+    try {
+      if (!Sound.muted && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(q.q); u.lang = 'en-US'; u.rate = 0.9; u.pitch = 1.05;
+        if (typeof spellVoice !== 'undefined' && spellVoice) u.voice = spellVoice;
+        const t0 = performance.now(), rest = () => setTimeout(done, Math.max(0, fallback - (performance.now() - t0)));
+        u.onstart = () => { spoke = true; };
+        u.onend = () => { if (spoke) setTimeout(done, 150); else rest(); };
+        u.onerror = rest;                                        // voice failed → still wait the ~2 s + per-word time
+        speechSynthesis.speak(u);
+        setTimeout(() => { if (!spoke) done(); }, fallback);     // no voice / blocked → time-based unlock
+        setTimeout(done, LIBQ.speakCapMs);                       // hard cap
+        return;
+      }
+    } catch (e) {}
+    setTimeout(done, fallback);
+  };
+  if (preDelay) setTimeout(go, preDelay); else go();
+}
+// every answer tap goes through here first: rapid taps → King Lion "Let's read it together!"
+function libTap(opt, q, btn) {
+  if (!lib || lib.completed || lib.qs[lib.qi] !== q) return;
+  if (lib.tapBurst && lib.tapBurst(performance.now())) { libReadTogether(q); return; }
+  if (lib.locked) {                                  // still listening — a tiny nudge, no penalty
+    const l = $('libListen'); if (l) { l.classList.remove('libNudge'); void l.offsetWidth; l.classList.add('libNudge'); }
+    return;
+  }
+  libAnswer(opt, q, btn);
+}
+function libReadTogether(q) {
+  const session = lib;
+  libSetLocked(true);
+  let bub = $('libLionBubble');
+  if (!bub) { bub = document.createElement('div'); bub.id = 'libLionBubble'; bub.className = 'libLionBubble'; bub.innerHTML = '<span class="libLionFace">🦁</span><span class="libLionText"></span>'; }
+  const stage = $('libChoices'); stage.parentNode.insertBefore(bub, stage);
+  bub.querySelector('.libLionText').textContent = (LION_LINES.read_together || {}).text || "Let's read it together! 📖";
+  bub.hidden = false; bub.classList.remove('pop'); void bub.offsetWidth; bub.classList.add('pop');
+  libRenderOptions(q);                                // reshuffle — a brand-new attempt order
+  const t0 = performance.now();
+  const after = () => {
+    if (lib !== session) return;
+    const wait = Math.max(0, LIBQ.relockMs - (performance.now() - t0));
+    libReadQuestion(q, Math.min(wait, 400));          // replay the question, then unlock
+    setTimeout(() => { if (bub) bub.hidden = true; }, 3200);
+  };
+  Narrator.playFile('audio/intro/lion-read_together.mp3?v=' + LION_AUDIO_V).then(after, () => { speakWord(LION_LINES.read_together.say, { rate: 0.95, pitch: 0.85 }); setTimeout(after, 1400); });
 }
 // Kid-friendly definitions for the figurative-language questions. When a kid
 // misses one, we show the meaning right in the feedback — so the Library teaches
@@ -10959,31 +11294,39 @@ function deviceDef(answer) {                          // find a definition if th
   return null;
 }
 function libAnswer(opt, q, btn) {
-  if (!lib || lib.completed || lib.attempted || lib.qs[lib.qi] !== q) return;               // one answer per question — no mashing to the right one
+  if (!lib || lib.completed || lib.qs[lib.qi] !== q || lib.locked) return;
+  if (lib.gone && lib.gone.indexOf(opt) !== -1) return;               // that answer is already greyed out
   const session = lib;
+  const first = !lib.attempted;                       // 👂 only the FIRST tap counts toward the score
   lib.attempted = true;
-  disableChoices($('libChoices'));
-  // this is the only attempt, so it's what counts toward comprehension
-  profile.readFirstTotal = (profile.readFirstTotal || 0) + 1;
-  profile.readFirstByGrade = profile.readFirstByGrade || {};
-  const bg = profile.readFirstByGrade; bg[q.g] = bg[q.g] || { right: 0, total: 0 }; bg[q.g].total++;
   const right = opt === q.a;
-  if (right) { profile.readFirstRight = (profile.readFirstRight || 0) + 1; bg[q.g].right++; lib.firstRight = (lib.firstRight || 0) + 1; }
-  else recordWrong({ skill: 'reading', level: q.g });
-  profileDirty = true; saveProfile();
-  lib.qi++;
+  if (first) {
+    profile.readFirstTotal = (profile.readFirstTotal || 0) + 1;
+    profile.readFirstByGrade = profile.readFirstByGrade || {};
+    const bg = profile.readFirstByGrade; bg[q.g] = bg[q.g] || { right: 0, total: 0 }; bg[q.g].total++;
+    if (right) { profile.readFirstRight = (profile.readFirstRight || 0) + 1; bg[q.g].right++; lib.firstRight = (lib.firstRight || 0) + 1; }
+    else recordWrong({ skill: 'reading', level: q.g });
+    profileDirty = true; saveProfile();
+  }
   if (right) {
-    Sound.correct(); G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++; awardTokenHalf();   // 🎮 reading earns arcade tokens (1 per 2 right — Pip QA N1)
-    $('libMsg').style.color = '#2f8a52'; $('libMsg').textContent = '✓ Nice reading!';
-    setTimeout(() => { if (lib !== session) return; if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, 750);
-  } else {
-    Sound.wrong(); btn.classList.add('flop'); lib.wrong = (lib.wrong || 0) + 1;
+    disableChoices($('libChoices'));
+    lib.qi++;
+    Sound.correct();
+    if (first) { G.solved++; recordSolve({ skill: 'reading', level: q.g }); refreshHUD(); bumpHud('solvedCount'); lib.right++; awardTokenHalf(); }   // 🎮 rewards for first-try answers only
     markCorrectChoice($('libChoices'), q.a);
-    const def = deviceDef(q.a);                      // if it's a literary device, explain what it means
-    $('libMsg').style.color = '#c0392b';
-    $('libMsg').innerHTML = '✗ The answer was: <b>' + q.a + '</b>' +
-      (def ? '<br><span style="color:#5a4a7a;font-weight:600;font-size:0.92em">💡 ' + def + '</span>' : '');
-    setTimeout(() => { if (lib !== session) return; if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, def ? 4400 : 2400);
+    const def = !first && deviceDef(q.a);
+    $('libMsg').style.color = '#2f8a52';
+    $('libMsg').innerHTML = (first ? '✓ Nice reading!' : '✓ You found it!') + (def ? '<br><span style="color:#5a4a7a;font-weight:600;font-size:0.92em">💡 ' + def + '</span>' : '');
+    setTimeout(() => { if (lib !== session) return; if (lib.qi >= lib.qs.length) finishLib(); else renderLib(); }, def ? 3200 : 750);
+  } else {                                            // gentle shake, grey it out, keep trying
+    Sound.wrong(); lib.wrong = (lib.wrong || 0) + 1;
+    (lib.gone = lib.gone || []).push(opt);
+    if (btn && btn.classList) {
+      btn.classList.remove('libShake'); void btn.offsetWidth;
+      btn.classList.add('libShake', 'libGone'); btn.setAttribute && btn.setAttribute('aria-disabled', 'true');
+    }
+    $('libMsg').style.color = '#b35c00';
+    $('libMsg').textContent = '🤔 Not quite — peek back at the story and try another!';
   }
 }
 function finishLib() {
@@ -11013,17 +11356,29 @@ function finishLib() {
   } else { G.readStreak = 0; }
   profile.readLevel = G.readLevel; profile.readStreak = G.readStreak; profile.readSlip = G.readSlip; profile.booksRead = (profile.booksRead || 0) + 1; profileDirty = true; saveProfile();
   const unlockedNow = accFr >= Math.ceil(accT * 0.75) ? unlockNextCartoon() : null; // comprehension unlocks the cartoon
+  const wiz = wizUnlockForSession(lib, profile);                // 📺 this story's OWN Wizlings episode
+  if (wiz && wiz.isNew) { profileDirty = true; saveProfile(); }
+  const wizEp = wizEpisodeForStory(lib.story.t);
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
   $('libPrompt').innerHTML = 'You finished <b>' + lib.story.t + '</b>.' + (accFr ? ' Nice work!' : ' Let’s read it together and try again.') +
     '<br><span style="color:#3b5d9e;font-weight:800">📖 First-try score: ' + (lib.firstRight || 0) + '/' + lib.qs.length + '</span>' +
     (hadChallenge && accFr === accT ? '<br><span style="color:#E0A100;font-weight:800">🌟 Challenge bonus included!</span>' : '') +
     (levelMsg ? '<br><span style="color:#2f8a52;font-weight:800">' + levelMsg + '</span>' : '') +
-    (unlockedNow ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 New cartoon unlocked — "' + unlockedNow.title + '"! Watch it in 🎞️ My Movie Collection.</span>' : '');
-  $('libChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
+    (unlockedNow ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 New cartoon unlocked — "' + unlockedNow.title + '"! Watch it in 🎞️ My Movie Collection.</span>' : '') +
+    (wiz ? '<div class="wizUnlock">' + (wiz.isNew ? '📺 <b>NEW on Wizlings TV!</b>' : '📺 <b>Wizlings TV</b>') + '<span>Episode ' + wiz.ep.n + ' · ' + wiz.ep.title + '</span></div>'
+      : (wizEp && !wizIsUnlocked(wizEp, profile) ? '<br><span class="wizTag">📺 Get ' + libFirstTryNeed(accT) + ' of ' + accT + ' right on the first try to unlock this story’s cartoon!</span>' : ''));
+  const retry = !libFirstTryPassed(accFr, accT);      // 💛 no-shame retry path
+  if (wiz && wiz.isNew) { try { Sound.fanfare && setTimeout(() => Sound.fanfare(), 650); } catch (e) {} }
+  if (retry) $('libStory').innerHTML = '<div class="libRetryArt">📖✨</div><div class="libRetryMsg">Great effort! Stories make more sense the second time — let’s read it again and the answers will pop right out.</div>';
+  $('libChoices').innerHTML = (retry ? '<button class="libBtn libRetryBtn" id="libRetryBtn">📖 Let’s read the story again!</button>' : '') +
+    (wiz ? '<button class="libBtn wizWatchBtn" id="libWizWatchBtn">📺 Watch the Wizlings episode!</button>' : '') +
+    '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
     (unlockedNow ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch my new cartoon!</button>' : '') +
     '<button class="libBtn" id="libDoneBtn">Done</button>';
   $('libMsg').textContent = 'Coins come from first-try answers. Get ' + Math.ceil(accT * 0.75) + ' out of ' + accT + ' right to unlock a cartoon.';
   $('libAgainBtn').onclick = () => { closeLibrary(); openLibrary(); };
+  if (retry) $('libRetryBtn').onclick = () => { Sound.click(); const st = lib.story; lib = { phase: 'read', story: st, qs: [], qi: 0, right: 0, wrong: 0 }; renderLib(); };
+  if (wiz) $('libWizWatchBtn').onclick = () => { Sound.click(); wizPlay(wiz.ep); };
   if (unlockedNow) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow }; $('libStory').innerHTML = ''; renderLib(); };
   $('libDoneBtn').onclick = closeLibrary;
 }
@@ -11762,6 +12117,10 @@ const LION_LINES = /*LION_LINES_START*/{
  "bye": {
   "say": "Bye bye, friend! Come back tomorrow, and we'll build something even bigger!",
   "text": "Bye, friend! Come back tomorrow! 👋"
+ },
+ "read_together": {
+  "say": "Let's read it together!",
+  "text": "Let's read it together! 📖"
  }
 }/*LION_LINES_END*/;
 const LION_AUDIO_V = 300;
@@ -20370,6 +20729,7 @@ function openHudMenu() {
     ['mirrorBtn', '🪞', '<b>Hero Mirror</b> <small>' + (heroMirrorUnlocked() ? 'switch hero' : '🔒 finish 3 quests') + '</small>'],
     ['classicBtn', profile.classicHeroes ? '🧱' : '🎬', '<b>Hero style</b> <small>' + (profile.classicHeroes ? 'classic blocky' : 'studio models') + '</small>'],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
+    ['wizTvBtn',  '📺', '<b>Wizlings TV</b> <small>' + wizTvCount() + ' cartoons</small>'],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
@@ -20379,7 +20739,8 @@ function openHudMenu() {
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
     m.style.display = 'none';
     if (b.dataset.b === 'mirrorBtn') { Sound.click(); openHeroMirror(); return; }   // 🪞 lives right here (no hidden HUD button)
-    if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }   // 🧱 same — a menu-only feature
+    if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }
+    if (b.dataset.b === 'wizTvBtn') { Sound.click(); openWizTv(); return; }           // 📺 menu-only too   // 🧱 same — a menu-only feature
     const t = $(b.dataset.b);
     if (t && t.onclick) t.onclick();
   });
@@ -22716,6 +23077,7 @@ function dropShadowsForSpeed() {
   scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
 }
 function loop(now) {
+  if (WizTV.open) { WizTV.loopParked = true; return; }   // 📺 player open: the 3D loop fully stops (wizResumeGame restarts it)
   requestAnimationFrame(loop);
   try {
   const dt = Math.min(0.05, (now - lastT) / 1000);
