@@ -3611,7 +3611,7 @@ function keepFace(face) {
 }
 function addPixelFace(head, size, z, recipe) {
   const s = size * 2.2;                                             // eye size for this head (kid ≈ 1.36, fox = 1)
-  if (recipe.patch) for (const sx of [-1, 1]) box(head, 0.15 * s, 0.15 * s, 0.02, recipe.patch, sx * 0.11 * s, 0.045 * s, z - 0.004);
+  if (recipe.patch) for (const sx of [-1, 1]) box(head, 0.13 * s, 0.17 * s, 0.02, recipe.patch, sx * 0.11 * s, 0.035 * s, z - 0.004).rotation.z = sx * 0.4;
   if (recipe.mask) box(head, size + 0.012, 0.15 * s, 0.02, recipe.mask, 0, 0.045 * s, z - 0.004);
   addEyes(head, recipe.iris, z, !recipe.blush, s);
   if (recipe.lashes) for (const sx of [-1, 1]) box(head, 0.032 * s, 0.022 * s, 0.03, recipe.pupil || 0x2A1A14, sx * 0.165 * s, 0.1 * s, z + 0.006);
@@ -4171,12 +4171,12 @@ const AVATARS = [
         box(H, 0.5, 0.26, 0.1, beard, 0, -0.3, 0.3);                       // long white beard
         box(H, 0.34, 0.22, 0.1, beard, 0, -0.52, 0.28);
         box(H, 0.16, 0.16, 0.08, beard, 0, -0.68, 0.26);
-        // 🎩 tall stepped pointy hat that bends back
+        // 🎩 stepped pointy hat that bends back
         box(H, 0.88, 0.06, 0.88, robe, 0, 0.35, 0);
-        [[0.58, 0.16, 0.46, 0], [0.46, 0.15, 0.6, -0.03], [0.34, 0.14, 0.73, -0.07], [0.22, 0.12, 0.84, -0.12], [0.11, 0.1, 0.93, -0.18]]
+        [[0.58, 0.13, 0.43, 0], [0.44, 0.12, 0.54, -0.03], [0.3, 0.11, 0.64, -0.07], [0.16, 0.09, 0.73, -0.12]]
           .forEach(([w, h, y, z]) => box(H, w, h, w, robe, 0, y, z));
         decal(H, 0.59, 0.05, 0.59, gold, 0, 0.42, 0);
-        decal(H, 0.07, 0.07, 0.02, gold, 0, 0.62, 0.236);
+        decal(H, 0.07, 0.07, 0.02, gold, 0, 0.47, 0.296);
         // 🧙 long navy robe to the floor, gold trim and little stars
         box(g, 0.54, 0.46, 0.3, robe, 0, 0.8, 0);
         blockFrustum(g, 0.56, 0.78, 0.6, 0.62, robe, 0, 0.33, 0);
@@ -4207,7 +4207,7 @@ const AVATARS = [
     id: 'panda', name: 'Panda 🐼',
     build() {
       return blockyBuild(() => {
-        const wht = 0xF6F6F4, blk = 0x3D3A44;
+        const wht = 0xF6F6F4, blk = 0x4A4652;
         const a = blockKidBase(wht), H = a.head, g = a.group;             // upright bear
         [-1, 1].forEach(s => box(H, 0.18, 0.18, 0.1, blk, s * 0.25, 0.36, -0.02));   // round black ears
         box(H, 0.28, 0.17, 0.12, wht, 0, -0.15, 0.33);                    // muzzle
@@ -4233,7 +4233,7 @@ const AVATARS = [
     id: 'penguin', name: 'Penguin 🐧',
     build() {
       return blockyBuild(() => {
-        const blk = 0x34405A, wht = 0xF7F4EE, org = 0xF5A623, orgD = 0xD9861A;
+        const blk = 0x40507A, wht = 0xF7F4EE, org = 0xF5A623, orgD = 0xD9861A;
         const a = blockKidBase(blk), H = a.head, g = a.group;
         decal(H, 0.5, 0.34, 0.02, wht, 0, -0.07, 0.312);                    // white face
         [-1, 1].forEach(s => decal(H, 0.2, 0.12, 0.02, wht, s * 0.14, 0.13, 0.312));
@@ -4282,7 +4282,7 @@ const AVATARS = [
     id: 'superhero', name: 'Superhero 🦸',
     build() {
       return blockyBuild(() => {
-        const skin = 0xE9AC80, suit = 0x2255CC, red = 0xE53935, redD = 0xB72A26, gold = 0xFFD23E, hair = 0x2B2B2B;
+        const skin = 0xE9AC80, suit = 0x2255CC, red = 0xE53935, redD = 0xB72A26, gold = 0xFFD23E, hair = 0x4A3428;
         const a = blockKidBase(skin), H = a.head, g = a.group;
         box(H, 0.68, 0.13, 0.68, hair, 0, 0.335, 0);
         box(H, 0.68, 0.46, 0.13, hair, 0, 0.13, -0.29);
@@ -4290,7 +4290,7 @@ const AVATARS = [
         box(H, 0.66, 0.1, 0.1, hair, 0, 0.3, 0.3);
         const curl = box(H, 0.13, 0.13, 0.08, hair, -0.08, 0.22, 0.33); curl.rotation.z = 0.5;   // heroic curl
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
-          { iris: 0x2A2A2A, pupil: 0x000000, brow: 0x2B2B2B, mask: red, mouth: 0x8A3A30, nose: 0xCC8558 });
+          { iris: 0x2A2A2A, pupil: 0x000000, brow: 0x4A3428, mask: red, mouth: 0x8A3A30, nose: 0xCC8558 });
         box(g, 0.52, 0.46, 0.28, suit, 0, 0.79, 0);
         decal(g, 0.2, 0.2, 0.02, gold, 0, 0.88, 0.142);                     // gold badge with a red star
         decal(g, 0.11, 0.11, 0.02, red, 0, 0.88, 0.152).rotation.z = Math.PI / 4;   // red diamond
