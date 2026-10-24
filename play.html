@@ -11234,8 +11234,10 @@ function libReadQuestion(q, preDelay) {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(q.q); u.lang = 'en-US'; u.rate = 0.9; u.pitch = 1.05;
         if (typeof spellVoice !== 'undefined' && spellVoice) u.voice = spellVoice;
+        const t0 = performance.now(), rest = () => setTimeout(done, Math.max(0, fallback - (performance.now() - t0)));
         u.onstart = () => { spoke = true; };
-        u.onend = u.onerror = () => setTimeout(done, 150);
+        u.onend = () => { if (spoke) setTimeout(done, 150); else rest(); };
+        u.onerror = rest;                                        // voice failed → still wait the ~2 s + per-word time
         speechSynthesis.speak(u);
         setTimeout(() => { if (!spoke) done(); }, fallback);     // no voice / blocked → time-based unlock
         setTimeout(done, LIBQ.speakCapMs);                       // hard cap
