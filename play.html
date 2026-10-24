@@ -1163,6 +1163,32 @@
     #hudMode { max-width:calc(100vw - 210px); font-size:12px; }
   }
 
+
+  /* 👆 Tablet touch HUD (Amy UI step 7, ages 7–10): four big actions only.
+     ⭐ USE 120×96 bottom-right (primary), ⬆ Jump 80×80 above it, ↩️ Undo 64×64 to its left,
+     ☰ 56×56 top-right with 🎒 56×56 under it. Leave / camera / badges live in ☰ so nothing small
+     is left to mis-tap. Gaps are 12–16dp. body.touchHud is set from JS only on touch devices, and the
+     size gate keeps phones on their compact layouts. */
+  @media (min-width:560px) and (min-height:560px) {
+    body.touchHud #leaveBtn, body.touchHud #camBtn, body.touchHud #badgeBtn { display:none !important; }
+    body.touchHud #menuBtn { box-sizing:border-box; width:56px; height:56px; padding:0; top:12px; right:12px;
+      font-size:28px; border-radius:16px; display:flex; align-items:center; justify-content:center; }
+    body.touchHud #invBtn, body.touchHud #sirenBtn { box-sizing:border-box; width:56px; height:56px; padding:0; right:12px;
+      font-size:26px; border-radius:16px; text-align:center; }
+    body.touchHud #invBtn { top:80px; }   /* 🎒 stays on screen: shops and tips say "in your 🎒 backpack" */
+    body.touchHud #sirenBtn { top:148px; }   /* shown/hidden inline by JS while driving */
+    body.touchHud .touchBtn { box-sizing:border-box; display:flex; align-items:center; justify-content:center;
+      padding:0 8px; border-radius:20px; text-align:center; }
+    body.touchHud #btnAction { width:120px; height:96px; right:16px; bottom:16px; font-size:21px; line-height:1.15;
+      white-space:normal; box-shadow:0 4px 0 rgba(0,0,0,.25); }
+    body.touchHud #btnJump { width:80px; height:80px; min-width:0; min-height:0; right:36px; bottom:124px; border-radius:50%; }
+    body.touchHud #btnJump .jumpIcon { font-size:38px; }
+    body.touchHud #btnUndoTouch { width:64px; height:64px; right:148px; bottom:32px; padding:0; }
+    body.touchHud #btnUndoTouch .tbIc { font-size:30px; line-height:1; }
+    body.touchHud #btnUndoTouch .tbTx { display:none; }
+    body.touchHud #btnShoot { width:120px; height:64px; right:148px; bottom:124px; font-size:18px; }
+    body.touchHud #npcChat { max-width:calc(100vw - 300px); }
+  }
 </style>
 </head>
 <body>
@@ -2425,8 +2451,8 @@
 <div id="touchUI">
   <div id="joyBase"><div id="joyStick"></div></div>
   <button class="touchBtn" id="btnJump" aria-label="Jump"><span class="jumpIcon">⬆</span></button>
-  <button class="touchBtn" id="btnAction">⭐ USE</button>
-  <button class="touchBtn" id="btnUndoTouch">↩️ Undo</button>
+  <button class="touchBtn" id="btnAction" aria-label="Use">⭐ USE</button>
+  <button class="touchBtn" id="btnUndoTouch" aria-label="Undo"><span class="tbIc">↩️</span><span class="tbTx"> Undo</span></button>
   <button class="touchBtn" id="btnShoot" style="display:none">🎯 Shoot</button>
 </div>
 
@@ -20412,7 +20438,7 @@ $w('camBtn').onclick = () => {
   if (m.style.display === 'flex') { m.style.display = 'none'; return; }
   const cur = G.firstPerson ? 'fp' : (G.birdsEye ? 'bird' : 'third');
   m.querySelectorAll('.viewOpt').forEach(b => b.classList.toggle('cur', b.dataset.m === cur));
-  const r = $('camBtn').getBoundingClientRect();
+  const _cb = $('camBtn'), r = (_cb.offsetParent ? _cb : $('menuBtn')).getBoundingClientRect();   // 🧍 hidden on the tablet HUD → open under ☰
   m.style.top = Math.min(innerHeight - 200, r.bottom + 6) + 'px';
   m.style.right = Math.max(8, innerWidth - r.right) + 'px';
   m.style.display = 'flex';
@@ -20432,6 +20458,9 @@ function openHudMenu() {
   const m = $('hudMenu');
   const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
   const items = [
+    ...(document.body.classList.contains('touchHud') ? [
+      ['camBtn', '🎥', '<b>Camera view</b> <small>' + (G.firstPerson ? 'through my eyes' : (G.birdsEye ? "bird's eye" : 'behind me')) + '</small>'],
+    ] : []),
     ['goalRow', '🎯', '<b>My dream goal</b>'],
     ['badgeBtn', '🏅', '<b>My badges</b>'],
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
@@ -20441,7 +20470,7 @@ function openHudMenu() {
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
-    ['homeBtn',   '🏠', '<b>Save & go home</b>'],
+    ['homeBtn',   '🏠', '<b>Save & go home</b>' + (document.body.classList.contains('touchHud') ? ' <small>(Leave)</small>' : '')],
   ];
   m.innerHTML = items.map(([id, ic, html]) => '<button class="viewOpt" data-b="' + id + '">' + ic + ' ' + html + '</button>').join('');
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
@@ -21031,7 +21060,7 @@ function setRemoveMode(on) {
 }
 $w('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
   if (!G.removeMode) ensureBuildClickPlaces();
-  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click places a block. WASD/joystick to move.', 2600); };
+  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : (isTouch ? '🧱 Build mode — tap places a block. Drag anywhere to move.' : '🧱 Build mode — click places a block. WASD/arrows to move.'), 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
 $w('useBtnDesk').onclick = () => { tryUse(); };
 function syncMouseWalkUI(quiet) {
@@ -21049,7 +21078,7 @@ function syncMouseWalkUI(quiet) {
   if (!quiet) {
     toast(G.mouseWalk
       ? '🚶 Click-to-move ON — left-click the ground to walk there. No keyboard needed!'
-      : '🧱 Build mode — click places blocks. Move with WASD or the joystick.', 2800);
+      : (isTouch ? '🧱 Build mode — tap places blocks. Drag anywhere to move.' : '🧱 Build mode — click places blocks. Move with WASD or the arrow keys.'), 2800);
   }
 }
 /* Pip QA: while placing/building, click-to-move stays off so kids aren't confused */
@@ -21057,7 +21086,7 @@ function ensureBuildClickPlaces() {
   if (!G.mouseWalk) return;
   G.mouseWalk = false; player.walkTo = null;
   syncMouseWalkUI(true);
-  toast('🧱 Building — click places a block. Move with WASD or the joystick.', 3000);
+  toast(isTouch ? '🧱 Building — tap places a block. Drag anywhere to move.' : '🧱 Building — click places a block. Move with WASD or the arrow keys.', 3000);
 }
 $w('walkBtn').onclick = () => {
   Sound.click();
@@ -21110,6 +21139,7 @@ addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
 const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
+if (isTouch) document.body.classList.add('touchHud');   // 👆 tablet touch HUD sizing (CSS gates it by screen size)
 /* 🔄 Phones now play in ANY orientation — the "turn your phone" gate and the fullscreen
    landscape lock are retired (portrait is how you film vertical shorts for social!).
    The touch HUD has a dedicated compact portrait layout instead. updateRotateGate stays
@@ -21938,7 +21968,9 @@ function startGame() {
   } else if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
-    toast('🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the joystick — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
+    toast(isTouch
+      ? '🌈 Calm mode! You start with a few 🧱 blocks. Drag anywhere to move, tap to build. Tap ☰ → 🏠 Save & go home when you are done.'
+      : '🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the arrow keys — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
   }
   if (!showLeoIntro && G.world === 'city') {
     setTimeout(() => toast('🏘️ High Street is right ahead — Library, Cinema, Post Office & Arcade are on the paved street!', 4200), 2800);
