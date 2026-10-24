@@ -53,3 +53,5 @@ assert(/body\.guideOpen > #world3d \{ z-index:95 !important; \}/.test(s)&&/body\
 assert(/renderer\.domElement\.id = 'world3d';/.test(s));
 assert(/body\.guideOpen #hud, body\.guideOpen #hud \*, body\.guideOpen #touchUI/.test(s),'HUD and touch controls hidden while the intro is up');
 console.log('intro-backdrop ok ('+n+')');
+// the boot-frame helper stops once the game loop runs, so it can't paint the world over the backdrop
+assert(/if \(window\._sdLoop\) return;   \/\/ the game loop owns the canvas now/.test(s),'bootFrames stops drawing once the loop owns the canvas');

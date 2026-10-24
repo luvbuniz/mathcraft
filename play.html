@@ -6656,6 +6656,7 @@ try { camera.position.set(8, 9, 14); camera.lookAt(0.5, 0.4, 0.5); renderer.rend
         requestAnimationFrame(loop);
         return;
       }
+      if (window._sdLoop) return;   // the game loop owns the canvas now (else this re-drew the world over the King Lion intro backdrop)
     } catch (e) {}
     try { renderer.render(scene, camera); } catch (e) {}
     if (n < 240) requestAnimationFrame(tick);
