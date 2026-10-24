@@ -138,6 +138,21 @@
   #solvedGoal { opacity:.65; font-size:.82em; margin-left:2px; }
   #blockCount, #powerCount, #coinCount { display:inline-block; }
   .countPop { animation:countPop .5s; color:#2f7d27; }
+  .coinFly { position:fixed; z-index:9999; font-size:26px; pointer-events:none; margin:-14px 0 0 -14px; transition:transform .26s ease-out; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+  #loopChip { position:fixed; z-index:22; display:none; align-items:center; gap:8px; padding:6px 12px 6px 8px; border-radius:22px; border:3px solid #e0a82e; background:linear-gradient(180deg,#fff7d6,#ffe08a); box-shadow:0 4px 0 #c08a1e, 0 6px 14px #0003; font-weight:900; color:#6b4a00; font-size:18px; cursor:pointer; pointer-events:auto; animation:lcPop .5s; }
+  #loopChip.ready { border-color:#3f9d34; background:linear-gradient(180deg,#e9ffd9,#a8e88a); box-shadow:0 4px 0 #2f7d27, 0 6px 14px #0003; color:#1f5c17; animation:lcPulse 1.2s infinite; }
+  #loopChip .lcIcon, .loopChipInline .lcIcon { font-size:28px; line-height:1; }
+  .lcBar { display:inline-block; width:78px; height:14px; border-radius:8px; background:#e8d9a8; border:2px solid #c99a2e; overflow:hidden; }
+  .lcBar i { display:block; height:100%; background:linear-gradient(90deg,#f0a830,#ffd54a); }
+  .lcNum { white-space:nowrap; } .lcDone { font-size:24px; }
+  .loopChipInline { display:inline-flex; align-items:center; gap:8px; font-size:18px; }
+  @keyframes lcPop { 0%{transform:scale(.6)} 70%{transform:scale(1.08)} 100%{transform:scale(1)} }
+  @keyframes lcPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+  #loopArrow { position:fixed; left:0; top:0; z-index:21; width:60px; height:60px; pointer-events:none; align-items:center; justify-content:center; }
+  #loopArrow .laIcon { width:46px; height:46px; border-radius:50%; background:#5B3FA8; border:4px solid #FFD54A; color:#fff; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px #0005; }
+  #loopArrow.mart .laIcon { background:#2f7d27; }
+  #loopArrow .laTip { position:absolute; inset:0; display:flex; justify-content:center; align-items:flex-start; color:#FFD54A; font-size:22px; line-height:1; margin-top:-16px; text-shadow:0 2px 3px #0008; }
+  #shopGoal { display:none; margin:8px auto 4px; padding:8px 14px; max-width:520px; border-radius:14px; background:linear-gradient(90deg,#fff2c2,#ffe08a); border:2px solid #e0a82e; color:#6b4a00; font-weight:800; font-size:clamp(14px,2.4vw,18px); }
   @keyframes countPop { 0%{transform:scale(1)} 40%{transform:scale(1.7)} 100%{transform:scale(1)} }
   #hudMode { top:calc(env(safe-area-inset-top, 0px) + 14px); left:50%; transform:translateX(-50%); color:#3b5d9e; text-align:center; }
   #hudTimer { font-size:clamp(18px,3vw,26px); color:#c0392b; display:none; }
@@ -754,6 +769,8 @@
       white-space:normal; max-width:72vw; text-align:center; }
     #placingTag { bottom:auto; top:146px; left:50%; transform:translateX(-50%);
       white-space:normal; max-width:72vw; text-align:center; }
+    body.loopChipOn #hintBar { top:calc(var(--lcBottom, 120px) + 8px); }     /* clear of the 👟 loop chip */
+    body.loopChipOn #placingTag { top:calc(var(--lcBottom, 120px) + 50px); }
     #toast { top:30%; }
     /* joystick tucked into the bottom-left corner */
     #joyBase { bottom:18px; left:14px; width:104px; height:104px; opacity:.8; }
@@ -1413,6 +1430,8 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
+<button id="loopChip" type="button" aria-label="Show me where to go" style="display:none"></button>
+<div id="loopArrow" style="display:none" aria-hidden="true"><span class="laIcon">❓</span><span class="laTip">▲</span></div>
   <div id="feedListHud"></div>
   <div id="npcBubbles"></div>
   <div id="npcChat"></div>
@@ -1536,6 +1555,7 @@
     <div style="display:flex; justify-content:flex-end"><button class="closeX" id="shopClose" title="Close" aria-label="Close">✕</button></div>
     <h2 id="shopTitle" style="color:#b5832a; font-size:clamp(24px,4vw,32px)">🛒 Stack Mart</h2>
     <div style="font-weight:bold; color:#7a6a35">You have <span id="shopCoins">0</span> 🪙</div>
+    <div id="shopGoal"></div>
     <div id="shopTabs"></div>
     <div id="shopItems"></div>
   </div>
@@ -5331,7 +5351,7 @@ const SHOP_ITEMS = [
   { id: 'sell',   icon: '🍓', name: 'Sell Berries', price: 0, kind: 'sell',  desc: 'Trade every berry for 1 coin each.', hidden: true }
 ];
 /* Two stores: 🛒 Stack Mart (general goods) and 🏚️ Stack Barn (build + home: everything you build a house with). */
-const MART_CATS = [['food', '🍎 Food'], ['july4', '🎆 July 4th'], ['pets', '🐾 Pets'], ['gear', '⭐ Gear']];
+const MART_CATS = [['gear', '⭐ Gear'], ['pets', '🐾 Pets'], ['food', '🍎 Food'], ['july4', '🎆 July 4th']];   // fun stuff first (Pip top-5 #2)
 const BARN_CATS = [['build', '🧱 Building'], ['living', '🛋️ Living'], ['kitchen', '🍳 Kitchen'], ['bedroom', '🛏️ Bedroom'], ['bath', '🛁 Bath'], ['outdoor', '🌳 Garden'], ['floor', '🪵 Flooring'], ['play', '🏞️ Park & Playground']];
 const STORE_CATS = { mart: MART_CATS, barn: BARN_CATS };
 const ITEM_CAT = {
@@ -5358,7 +5378,8 @@ const ITEM_CAT = {
 const catOf = id => ITEM_CAT[id] || 'gear';
 const storeOfCat = cat => (MART_CATS.some(c => c[0] === cat) ? 'mart' : 'barn');
 let currentStore = 'mart';
-let shopCat = 'food';
+let shopCat = 'gear';
+let shopCatPicked = false;                // the kid chose a Mart tab this session → keep it
 
 /* ============================ BADGES & SAVING ============================ */
 /* Badges are themed per town so a reader isn't called a "Math Champion". The math
@@ -7216,6 +7237,42 @@ const stationMat = new THREE.MeshLambertMaterial({ map: questionTexture(), emiss
   topper.position.set(sx + 0.5, 1.45, sz + 0.5);
   scene.add(topper);
   stations.push({ x: sx, z: sz, mesh: m, topper });
+});
+/* ✨🪙 Pip top-5 #1 — the ? boxes read as TREASURE, not plain purple blocks: a soft gold halo
+   that breathes with the existing pulse, and a floating "🪙 +N" coin tag over each box.
+   N is what the last box actually paid (rewards climb with level), so the tag never fibs;
+   before the first answer it shows the starter payout (+3 on the core math ladder). */
+let lastBoxReward = 0;
+const boxTagCv = document.createElement('canvas'); boxTagCv.width = 256; boxTagCv.height = 112;
+const boxTagTex = new THREE.CanvasTexture(boxTagCv);
+let boxTagDrawn = -1;
+function boxTagValue() { return lastBoxReward || 3; }
+function drawBoxTag() {
+  const v = boxTagValue(); if (v === boxTagDrawn) return; boxTagDrawn = v;
+  const c = boxTagCv.getContext('2d'); c.clearRect(0, 0, 256, 112);
+  c.fillStyle = 'rgba(40,20,80,0.82)'; c.strokeStyle = '#FFD54A'; c.lineWidth = 7;
+  c.beginPath(); if (c.roundRect) c.roundRect(10, 12, 236, 88, 44); else c.rect(10, 12, 236, 88); c.fill(); c.stroke();
+  const g = c.createRadialGradient(62, 50, 6, 70, 56, 36); g.addColorStop(0, '#FFF3A8'); g.addColorStop(1, '#E8A317');
+  c.fillStyle = g; c.beginPath(); c.arc(70, 56, 30, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#B5730F'; c.lineWidth = 5; c.stroke();
+  c.fillStyle = '#B5730F'; c.font = '900 34px "Arial Black", Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('¢', 70, 58);
+  c.font = '900 56px "Arial Black", Arial, sans-serif'; c.lineWidth = 8; c.strokeStyle = '#2a1650';
+  c.strokeText('+' + v, 162, 60); c.fillStyle = '#FFE066'; c.fillText('+' + v, 162, 60);
+  boxTagTex.needsUpdate = true;
+}
+const boxHaloTex = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64; const c = cv.getContext('2d');
+  const g = c.createRadialGradient(32, 32, 4, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,230,120,0.95)'); g.addColorStop(0.45, 'rgba(255,190,60,0.45)'); g.addColorStop(1, 'rgba(255,170,40,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv);
+})();
+const boxTagMat = new THREE.SpriteMaterial({ map: boxTagTex, transparent: true, depthWrite: false });
+const boxHaloMat = new THREE.SpriteMaterial({ map: boxHaloTex, transparent: true, depthWrite: false, depthTest: true });
+drawBoxTag();
+stations.forEach(s => {
+  const halo = new THREE.Sprite(boxHaloMat); halo.scale.set(2.4, 2.4, 1); halo.position.set(s.x + 0.5, 0.95, s.z + 0.5); scene.add(halo);
+  const tag = new THREE.Sprite(boxTagMat); tag.scale.set(1.5, 0.66, 1); tag.position.set(s.x + 0.5, 2.3, s.z + 0.5); scene.add(tag);
+  s.halo = halo; s.tag = tag;
 });
 /* (removed the standalone MART ➜ signpost — it crowded the spawn area;
    the shop building already has its own sign on the roof) */
@@ -11936,7 +11993,7 @@ function lionCoachTick() {
     const b = ensureCoachBeacon(), t = lionCoach.target;
     if (t) {
       b.visible = !popupOpen;
-      b.position.set(t.x + 0.5, 2.55 + Math.abs(Math.sin(now / 260)) * 0.35, t.z + 0.5);
+      b.position.set(t.x + 0.5, 2.95 + Math.abs(Math.sin(now / 260)) * 0.35, t.z + 0.5);
       b.rotation.y = now / 500;
       const r = b.userData.ring; r.scale.setScalar(1 + (now % 1200) / 1200 * 0.5); r.material.opacity = 0.8 * (1 - (now % 1200) / 1200);
     }
@@ -13582,7 +13639,36 @@ function cotswoldStore(g, x, z, frontCol, name, sub, prop, rot, roofCol, stoneCo
   S.position.set(x, 0, z); S.rotation.y = rot || 0; g.add(S);
 }
 // a painted canvas shop sign mounted on a building
+// 🪧 Pip top-5 #3 — chunky, readable STACK shop signs: a big icon + heavy sans word, fitted to
+// the board (the tiny italic subtitle couldn't be read on a phone). Only "STACK …" signs change.
+const STACK_SIGN_ICON = { MART: '🛒', SWEETS: '🍭', BARN: '🏚️', FEED: '🌾', LUMBER: '🪵', MOTORS: '🚗' };
+function chunkyStackSign(parent, name, bgCol, sw, sh, x, y, z) {
+  let W = Math.round(160 * sw / sh), H = 160;
+  if (W > 1024) { H = Math.round(1024 * sh / sw); W = 1024; }
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+  c.fillStyle = '#' + ('000000' + (bgCol >>> 0).toString(16)).slice(-6); c.fillRect(0, 0, W, H);
+  const b = Math.max(6, H * 0.07);
+  c.strokeStyle = '#FFD54A'; c.lineWidth = b; c.strokeRect(b, b, W - 2 * b, H - 2 * b);
+  const word = name.replace(/^STACK\s+/, ''), icon = STACK_SIGN_ICON[word] || '⭐';
+  const iconPx = Math.round(H * 0.62);
+  let fs = Math.round(H * 0.58); const font = px => '900 ' + px + 'px "Arial Black", "Arial Bold", Arial, sans-serif';
+  const label = 'STACK ' + word;
+  c.font = font(fs);
+  const room = W - 4 * b - iconPx * 1.25;
+  while (fs > 12 && c.measureText(label).width > room) { fs -= 2; c.font = font(fs); }
+  const tw = c.measureText(label).width, total = iconPx * 1.2 + tw, x0 = (W - total) / 2;
+  c.textBaseline = 'middle'; c.textAlign = 'left';
+  c.font = iconPx + 'px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+  c.fillText(icon, x0, H / 2 + H * 0.03);
+  c.font = font(fs); c.lineJoin = 'round'; c.lineWidth = Math.max(4, fs * 0.14); c.strokeStyle = '#2a1a0a';
+  c.strokeText(label, x0 + iconPx * 1.2, H / 2 + H * 0.04);
+  c.fillStyle = '#FFFFFF'; c.fillText(label, x0 + iconPx * 1.2, H / 2 + H * 0.04);
+  const tex = new THREE.CanvasTexture(cv); if (renderer && renderer.capabilities) tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  const m = new THREE.Mesh(new THREE.BoxGeometry(sw, sh, 0.06), new THREE.MeshLambertMaterial({ map: tex }));
+  m.position.set(x, y, z); parent.add(m);
+}
 function signOn(parent, name, sub, bgCol, sw, sh, x, y, z) {
+  if (/^STACK [A-Z]+$/.test(name)) return chunkyStackSign(parent, name, bgCol, sw, sh, x, y, z);
   const cv = document.createElement('canvas'); cv.width = 256; cv.height = 80; const c = cv.getContext('2d');
   c.fillStyle = '#' + ('000000' + (bgCol >>> 0).toString(16)).slice(-6); c.fillRect(0, 0, 256, 80);
   c.strokeStyle = '#F4ECD8'; c.lineWidth = 5; c.strokeRect(4, 4, 248, 72);
@@ -16668,6 +16754,7 @@ const DREAM_GOALS = [
 function updateGoalBar() {
   const row = $('goalRow'); if (!row) return;
   row.style.display = G.running ? 'block' : 'none';
+  if (starterGoalBar()) return;   // 🧭 first loop: ❓ → 🪙 → 🛒 chip (Pip top-5 #4)
   if (!G.goal) { $('goalText').innerHTML = '🎯 Tap to pick a dream to save for!'; $('goalFill').style.width = '0%'; return; }
   const g = G.goal, pct = Math.max(0, Math.min(100, Math.round(G.coins / g.price * 100))), reached = G.coins >= g.price;
   $('goalText').innerHTML = reached
@@ -16687,6 +16774,207 @@ function setGoal(g) {
   if (typeof saveGame === 'function') saveGame();
   updateGoalBar();
   if (g) toast('🎯 New goal: ' + g.emoji + ' ' + g.label + ' — save up ' + g.price + ' 🪙!', 3200);
+}
+/* ===================== 🧭 Pip top-5: the ❓ → 🪙 → 🛒 loop, made visible =====================
+   Small, self-contained helpers (independent of the King Lion coach): a coin burst that flies
+   into the 🪙 counter, a "what can I buy next?" starter goal, shop "!" markers, a 💤 bubble
+   when the hero dozes off, and friends that step out of the camera's line to the hero. */
+const FUN_CATS = { gear: 1, pets: 1 };
+function starterLoot() {                  // cheapest fun thing (Gear first, then Pets) the kid doesn't own yet
+  let best = null;
+  for (const it of SHOP_ITEMS) {
+    if (it.hidden || it.kind !== 'own' || G.owned[it.id] || !FUN_CATS[ITEM_CAT[it.id]]) continue;
+    if (it.id === 'hat' || it.id === 'usahat') continue;
+    if (!best || it.price < best.price || (it.price === best.price && ITEM_CAT[it.id] === 'gear' && ITEM_CAT[best.id] !== 'gear')) best = it;
+  }
+  return best;
+}
+function ownsFunThing() { return SHOP_ITEMS.some(it => it.kind === 'own' && G.owned[it.id] && FUN_CATS[ITEM_CAT[it.id]]); }
+function boxesFor(price) { return Math.max(1, Math.ceil((price - G.coins) / boxTagValue())); }
+function loopChipHTML(it) {                // 👟 [████░░] 🪙 4/6  — or  👟 ✅ 🛒  (read at a glance, no sentence)
+  const have = G.coins >= it.price, pct = Math.max(0, Math.min(100, Math.round(G.coins / it.price * 100)));
+  return '<span class="lcIcon">' + it.icon + '</span>' + (have
+    ? '<span class="lcDone">✅ 🛒</span>'
+    : '<span class="lcBar"><i style="width:' + pct + '%"></i></span><span class="lcNum">🪙 ' + G.coins + '/' + it.price + '</span>');
+}
+function shopGoalLine() {                 // same chip at the top of Stack Mart
+  if (currentStore !== 'mart') return '';
+  const it = starterLoot(); if (!it) return '';
+  return '<span class="loopChipInline">' + loopChipHTML(it) + '</span>';
+}
+let loopGuide = null;                     // { it, have } while the first ❓ → 🪙 → 🛒 loop is on
+function starterGoalBar() {               // no dream picked + no fun buy yet → the chunky loop chip replaces the goal line
+  const chip = $('loopChip');
+  const it = (!G.goal && !ownsFunThing()) ? starterLoot() : null;
+  loopGuide = it && G.running ? { it, have: G.coins >= it.price } : null;
+  if (chip) {
+    chip.style.display = loopGuide ? 'flex' : 'none';
+    document.body.classList.toggle('loopChipOn', !!loopGuide);   // phones: the top hint bar slides below the chip
+    if (loopGuide) { chip.innerHTML = loopChipHTML(it); chip.classList.toggle('ready', loopGuide.have); placeLoopChip(); }
+  }
+  if (!it) return false;
+  $('goalRow').style.display = 'none';    // the chip IS the goal for now
+  return true;
+}
+function placeLoopChip() {                // tuck it just under the HUD card, whatever size the card is
+  const chip = $('loopChip'), top = $('hudTop'); if (!chip || !top) return;
+  const r = top.getBoundingClientRect();
+  chip.style.left = Math.max(8, r.left) + 'px'; chip.style.top = Math.round(r.bottom + 6) + 'px';
+  document.body.style.setProperty('--lcBottom', Math.round(r.bottom + 6 + (chip.offsetHeight || 46)) + 'px');
+}
+/* 🧭 the loop arrow: tap the chip (or stand idle) → a big arrow points at the nearest ❓ box,
+   or at Stack Mart once the item is affordable. Its own element — independent of the coach. */
+let loopArrowUntil = 0, loopLastInput = performance.now();
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, e => {
+  if (e.target && e.target.closest && e.target.closest('#loopChip')) return;
+  loopLastInput = performance.now(); loopArrowUntil = 0;
+}, { passive: true, capture: true }));
+function loopTarget() {
+  if (!loopGuide) return null;
+  if (loopGuide.have) { const L = WORLD_LAYOUT[G.world] || WORLD_LAYOUT.meadow; return { x: L.shop.x, y: 2.6, z: L.shop.z }; }
+  // nearest ❓ the kid can already SEE wins (a box right in front beats a slightly closer one behind them)
+  let best = null, bd = 1e9, vis = false;
+  for (const st of stations) {
+    const d = Math.hypot(st.x + 0.5 - player.pos.x, st.z + 0.5 - player.pos.z);
+    _lv.set(st.x + 0.5, 1.6, st.z + 0.5).project(camera);
+    const onScr = d < 40 && _lv.z < 1 && Math.abs(_lv.x) < 0.9 && Math.abs(_lv.y) < 0.9;
+    if ((onScr && !vis) || (onScr === vis && d < bd)) { bd = d; best = st; vis = onScr; }
+  }
+  return best ? { x: best.x + 0.5, y: 1.6, z: best.z + 0.5 } : null;
+}
+const _lv = new THREE.Vector3();
+function loopArrowTick(now) {
+  const a = $('loopArrow'); if (!a) return;
+  const idle = now - loopLastInput > 12000;
+  const t = (loopGuide && !popupOpen && !G.over && G.running && (now < loopArrowUntil || idle)) ? loopTarget() : null;
+  if (!t || (G.world !== 'meadow' && !loopGuide.have)) { if (a.style.display !== 'none') a.style.display = 'none'; return; }
+  const W = innerWidth, H = innerHeight;
+  _lv.set(t.x, t.y, t.z).project(camera);
+  let sx = (_lv.x + 1) / 2 * W, sy = (1 - _lv.y) / 2 * H;
+  const behind = _lv.z > 1;
+  if (behind) { sx = W - sx; sy = H - sy; }
+  const mx = 56, myT = Math.min(H * 0.3, 150), myB = Math.min(H * 0.32, 170);
+  const on = !behind && sx > mx && sx < W - mx && sy > myT && sy < H - myB;
+  let x, y, ang;
+  if (on) { x = sx; y = sy - 46 - Math.abs(Math.sin(now / 220)) * 12; ang = 180; }   // hover above it, pointing down
+  else {
+    const cx = W / 2, cy = H / 2, dx = sx - cx, dy = sy - cy;
+    const k = Math.min((W / 2 - mx) / Math.max(1e-3, Math.abs(dx)), (dy < 0 ? (cy - myT) : (H - myB - cy)) / Math.max(1e-3, Math.abs(dy)));
+    x = cx + dx * k; y = cy + dy * k; ang = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+  }
+  a.style.display = 'flex'; a.classList.toggle('mart', loopGuide.have);
+  a.firstChild.textContent = loopGuide.have ? '🛒' : '❓';
+  a.style.transform = 'translate(' + Math.round(x - 30) + 'px,' + Math.round(y - 30) + 'px)';
+  a.lastChild.style.transform = 'rotate(' + Math.round(ang) + 'deg)';
+}
+function coinBurstFrom(fromEl, n) {       // 🪙🪙🪙 coins pop out and fly into the counter
+  try {
+    const fr = fromEl && fromEl.getBoundingClientRect();
+    const to = $('coinCount') && $('coinCount').getBoundingClientRect();
+    const sx = fr && fr.width ? fr.left + fr.width / 2 : innerWidth / 2, sy = fr && fr.height ? fr.top + fr.height / 2 : innerHeight / 2;
+    const tx = to && to.width ? to.left + to.width / 2 : 40, ty = to && to.height ? to.top + to.height / 2 : 24;
+    const k = Math.max(5, Math.min(10, (n || 4) + 3));
+    for (let i = 0; i < k; i++) {
+      const c = document.createElement('div'); c.className = 'coinFly'; c.textContent = '🪙';
+      c.style.left = sx + 'px'; c.style.top = sy + 'px';
+      document.body.appendChild(c);
+      const a = (i / k) * Math.PI * 2, r = 46 + Math.random() * 34;
+      const bx = Math.cos(a) * r, by = Math.sin(a) * r - 20;
+      requestAnimationFrame(() => { c.style.transform = 'translate(' + bx + 'px,' + by + 'px) scale(1.25)'; });
+      setTimeout(() => { c.style.transition = 'transform .55s cubic-bezier(.55,0,.8,.4), opacity .55s'; c.style.transform = 'translate(' + (tx - sx) + 'px,' + (ty - sy) + 'px) scale(.6)'; c.style.opacity = '0.4'; }, 260 + i * 45);
+      setTimeout(() => c.remove(), 1000 + i * 45);
+    }
+    setTimeout(() => bumpHud('coinCount'), 760);
+  } catch (e) {}
+}
+/* ❗ over a shop when there's something fun the kid can afford in it (checked once a second) */
+function bangSprite() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c = cv.getContext('2d');
+  c.fillStyle = '#FFD23F'; c.strokeStyle = '#7a3e00'; c.lineWidth = 9;
+  c.beginPath(); c.arc(64, 64, 54, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = '#D7263D'; c.font = '900 92px "Arial Black", Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('!', 64, 70);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false }));
+  s.scale.set(1.0, 1.0, 1); s.visible = false; scene.add(s); return s;
+}
+let shopBangs = null, shopBangCheckAt = 0;
+function storeHasFunBuy(store) {
+  return SHOP_ITEMS.some(it => {
+    if (it.hidden || it.kind === 'sell' || it.price > G.coins || (it.kind === 'own' && G.owned[it.id])) return false;
+    const cat = catOf(it.id);
+    return store === 'mart' ? !!FUN_CATS[cat] : (storeOfCat(cat) === 'barn' && cat !== 'build');
+  });
+}
+/* 💤 Zzz bubble over a dozing studio hero */
+let zzzSprite = null;
+function makeZzz() {
+  const cv = document.createElement('canvas'); cv.width = 160; cv.height = 128; const c = cv.getContext('2d');
+  c.fillStyle = 'rgba(255,255,255,0.92)'; c.strokeStyle = '#5B3FA8'; c.lineWidth = 6;
+  c.beginPath(); c.ellipse(80, 56, 70, 44, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.beginPath(); c.arc(34, 108, 9, 0, Math.PI * 2); c.fill(); c.stroke();
+  c.fillStyle = '#5B3FA8'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '900 40px "Arial Black", Arial, sans-serif'; c.fillText('Z', 52, 64);
+  c.font = '900 30px "Arial Black", Arial, sans-serif'; c.fillText('z', 88, 52);
+  c.font = '900 22px "Arial Black", Arial, sans-serif'; c.fillText('z', 116, 40);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false }));
+  s.scale.set(1.05, 0.84, 1); s.visible = false; scene.add(s); return s;
+}
+const EARLY_FIDGET_SKIP = { queenfox: 1, dragon: 1 };   // their idle tuning is Amy-protected — left exactly as-is
+function pipIdleTick(now) {
+  // ✨ station halos/tags breathe + bob with the boxes
+  drawBoxTag();
+  const p = 0.5 + Math.sin(now / 300) * 0.5;
+  boxHaloMat.opacity = 0.45 + p * 0.45;
+  stations.forEach((s, i) => {
+    if (s.halo) s.halo.scale.setScalar(2.1 + p * 0.5);
+    if (s.tag) s.tag.position.y = 2.3 + Math.sin(now / 400 + i) * 0.1;
+  });
+  // ❗ shop markers
+  if (!shopBangs) shopBangs = { mart: bangSprite(), barn: bangSprite() };
+  if (now >= shopBangCheckAt) {
+    shopBangCheckAt = now + 1000;
+    const L = G.world === 'meadow' ? WORLD_LAYOUT.meadow : null;
+    ['mart', 'barn'].forEach(k => {
+      const s = shopBangs[k], on = !!L && G.running && !G.over && storeHasFunBuy(k);
+      s.visible = on;
+      if (on) { const at = k === 'mart' ? L.shop : L.barn; s.userData.x = at.x; s.userData.z = at.z; s.userData.y = k === 'mart' ? 4.3 : 5.6; }
+    });
+  }
+  ['mart', 'barn'].forEach((k, i) => { const s = shopBangs[k]; if (s.visible) s.position.set(s.userData.x, s.userData.y + Math.abs(Math.sin(now / 320 + i)) * 0.35, s.userData.z); });
+  // 💤 + an earlier first fidget for the player's studio hero
+  const d = player.avatarData;
+  if (!zzzSprite) zzzSprite = makeZzz();
+  const dozy = !!(d && d.glb && d._afk && !G.firstPerson && (d._afk === d.sleepAction || now - d._afkAt > 4000));
+  zzzSprite.visible = dozy;
+  if (dozy) {
+    const k = (now % 2400) / 2400;
+    zzzSprite.position.set(player.pos.x + 0.35, player.pos.y + 1.9 + k * 0.45, player.pos.z);
+    zzzSprite.material.opacity = k < 0.85 ? 1 : (1 - k) / 0.15;
+  }
+  if (d && d.glb && d.fidgets && d.fidgets.length && !d._afk && !d._special && d._stillAt && d._earlyFor !== d._stillAt &&
+      now - d._stillAt > 5000 && !EARLY_FIDGET_SKIP[(AVATARS[G.avatarIndex] || {}).id]) {
+    d._earlyFor = d._stillAt;
+    d._fidgetAt = now;                    // the hero's own idle code plays it next frame (no change to that code)
+  }
+}
+/* 🎥 is this spot between the camera and the hero (where a friend would block the shot)? */
+function npcInCamLine(x, z) {
+  if (G.firstPerson) return false;
+  const C = camera.position, P = player.pos, vx = P.x - C.x, vz = P.z - C.z, L2 = vx * vx + vz * vz;
+  if (L2 < 1) return false;
+  const t = ((x - C.x) * vx + (z - C.z) * vz) / L2;
+  if (t < 0.05 || t > 0.95) return false;
+  return Math.abs((x - C.x) * vz - (z - C.z) * vx) / Math.sqrt(L2) < 1.0;
+}
+function npcStepAside(n, now) {           // sidestep out of the shot (to whichever side they're already on)
+  const g = n.group, C = camera.position, P = player.pos, vx = P.x - C.x, vz = P.z - C.z, L = Math.hypot(vx, vz) || 1;
+  const side = ((g.position.x - C.x) * vz - (g.position.z - C.z) * vx) >= 0 ? 1 : -1;
+  for (const sgn of [side, -side]) {
+    const x = g.position.x + (vz / L) * sgn * 2.0, z = g.position.z + (-vx / L) * sgn * 2.0;
+    if (!npcStepBlocked(x, z) && !npcStepBlocked((g.position.x + x) / 2, (g.position.z + z) / 2) && !npcInCamLine(x, z)) {
+      n.target = { x, z }; n.mode = 'walk'; n._asideUntil = now + 2500; return true;
+    }
+  }
+  return false;
 }
 function openGoalPicker() {
   if (popupOpen || G.over || !G.running) return;
@@ -16709,6 +16997,8 @@ function openGoalPicker() {
 }
 function closeGoalPicker() { $('goalPopup').style.display = 'none'; popupOpen = false; }
 $w('goalRow').onclick = () => { Sound.click(); openGoalPicker(); };
+$w('loopChip').onclick = () => { Sound.click(); loopArrowUntil = performance.now() + 6000; };
+addEventListener('resize', () => { if (loopGuide) placeLoopChip(); });
 $w('goalClose').onclick = () => { Sound.click(); closeGoalPicker(); };
 function fmtTime(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
@@ -17152,7 +17442,8 @@ function answerPicked(btn, opt) {
       return b;
     };
     wrap.appendChild(mk('wood', '🧱 +' + reward + ' build blocks', () => { G.blocks += reward; G.blockColor = 0xC9B79A; selectSlot('block', true); bumpHud('blockCount'); }));
-    wrap.appendChild(mk('coins', '🪙 +' + reward + ' coins', () => { G.coins += reward; Sound.coin(); bumpHud('coinCount'); }));
+    if (typeof reward === 'number') lastBoxReward = reward;     // the floating 🪙 +N tag shows the real payout
+    wrap.appendChild(mk('coins', '🪙 +' + reward + ' coins', () => { G.coins += reward; Sound.coin(); bumpHud('coinCount'); coinBurstFrom(wrap.querySelector('.rewardBtn.coins'), reward); }));
     if (G.gloomiesEnabled) wrap.appendChild(mk('balls', '⚽ +' + balls + ' softballs', () => { G.balls += balls; Sound.pop(); }));
     return;                               // wait for the player's choice (auto-collected on close)
   } else {
@@ -17214,6 +17505,7 @@ function openShop(store) {
   currentStore = store === 'barn' ? 'barn' : 'mart';
   const cats = STORE_CATS[currentStore];
   if (!cats.some(c => c[0] === shopCat)) shopCat = cats[0][0];   // land on a valid department for this store
+  if (currentStore === 'mart' && !shopCatPicked) shopCat = 'gear';   // 🎯 open on the fun stuff (Pip top-5 #2)
   popupOpen = true;
   document.exitPointerLock && document.exitPointerLock();
   renderShop();
@@ -17275,9 +17567,10 @@ function renderShop() {
     const t = document.createElement('button');
     t.className = 'shopTab' + (shopCat === id ? ' sel' : '');
     t.textContent = label;
-    t.onclick = () => { Sound.click(); shopCat = id; renderShop(); };
+    t.onclick = () => { Sound.click(); shopCat = id; if (currentStore === 'mart') shopCatPicked = true; renderShop(); };
     tabs.appendChild(t);
   });
+  const sg = $('shopGoal'); if (sg) { const gl = shopGoalLine(); sg.innerHTML = gl; sg.style.display = gl ? 'block' : 'none'; }
   const wrap = $('shopItems');
   wrap.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
@@ -22657,7 +22950,9 @@ function updateNpcs(dt, now) {
         if (arr.length) { a.lineIx = (a.lineIx + 1) % arr.length; npcSay(n, arr[a.lineIx]); n.coolAt = now + 14000 + Math.random() * 6000; }
       }
       if (n.actT <= 0) npcStandUp(n);
-    } else if ((talking || pd < 3.2) && !(n.byeUntil > now)) {   // 👋 a kid is here — stop and face them
+    } else if (n.mode !== 'walk' && !(n._asideUntil > now) && pd < 7 && npcInCamLine(g.position.x, g.position.z) && npcStepAside(n, now)) {
+      // 🎥 parked between the camera and the hero → sidestep out of the shot (Pip top-5 #5)
+    } else if ((talking || pd < 3.2) && !(n.byeUntil > now) && !(n._asideUntil > now)) {   // 👋 a kid is here — stop and face them
       const want = Math.atan2(player.pos.x - g.position.x, player.pos.z - g.position.z);
       let dy = want - g.rotation.y;
       while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
@@ -22686,7 +22981,7 @@ function updateNpcs(dt, now) {
             const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
             const x = n.home.x + Math.cos(a) * r, z = n.home.z + Math.sin(a) * r;
             const mx = (g.position.x + x) / 2, mz = (g.position.z + z) / 2;   // midpoint too — no cutting through walls
-            if (!npcStepBlocked(x, z) && !npcStepBlocked(mx, mz) && !inShopZone(Math.floor(x), Math.floor(z))) {
+            if (!npcStepBlocked(x, z) && !npcStepBlocked(mx, mz) && !inShopZone(Math.floor(x), Math.floor(z)) && !npcInCamLine(x, z)) {
               n.target = { x, z }; n.mode = 'walk'; break;
             }
           }
@@ -22745,6 +23040,8 @@ function loop(now) {
   stationMat.emissive.setRGB(0.15 + pulse * 0.25, 0.05 + pulse * 0.1, 0.4 + pulse * 0.2);
   powerMat.emissive.setRGB(0.02, 0.22 + pulse * 0.18, 0.28 + pulse * 0.22);
   stations.forEach((s, i) => { s.topper.rotation.y = now / 700 + i; s.topper.position.y = 1.45 + Math.sin(now / 400 + i) * 0.1; });
+  pipIdleTick(now);
+  loopArrowTick(now);
 
   // the portal swirls, glows, and twinkles
   if (portalGroup) {
