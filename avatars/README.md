@@ -24,7 +24,7 @@ Ship one character at a time, in any order.
 
 ## 🚗 Vehicles get the same magic
 
-Drop a Meshy vehicle export at `vehicles/<id>.glb` (e.g. `vehicles/firetruck.glb`)
+Drop a Meshy vehicle export at `vehicles/<id>.glb` (e.g. `vehicles/firetruck.glb`) and add the id to `VEHICLE_MODEL_IDS` in play.html,
 and that ride upgrades automatically — the boxy build stays as the instant
 stand-in and the fallback. No rig or animations needed: the game supplies the
 driving, engine sounds, sirens and the flashing light bar (it climbs onto the
