@@ -12143,12 +12143,26 @@ function qHintTick() {
   if (popupOpen || !G.running) { a.hidden = true; qHint.since = now; return; }
   if (Math.hypot(player.pos.x - qHint.x, player.pos.z - qHint.z) > 0.8) { endQHint(); return; }   // they're on the move
   if (now - qHint.since < 3500) return;
-  const ns = nearestStation(); if (!ns.st) { endQHint(); return; }
-  _qv.set(ns.st.x + 0.5, (ns.st.y || 0) + 1.9, ns.st.z + 0.5).project(camera);
   const W = innerWidth, H = innerHeight, mx = 56, top = 120, bot = H - 190;
+  if (!qHint.st) {                             // nearest box — but if one almost as close is already on screen, that one
+    const ns = nearestStation(); if (!ns.st) { endQHint(); return; }
+    let best = ns.st, bd = 1e9;
+    for (const st of stations) {
+      const d = Math.hypot(player.pos.x - st.x - 0.5, player.pos.z - st.z - 0.5);
+      if (d > ns.dist + 4) continue;
+      _qv.set(st.x + 0.5, 1.9, st.z + 0.5).project(camera);
+      if (_qv.z < 1 && Math.abs(_qv.x) < 0.9 && _qv.y > -0.6 && _qv.y < 0.8 && d < bd) { bd = d; best = st; }
+    }
+    qHint.st = best;
+  }
+  if (lionCoach && lionCoach.stage === 'go') { lionCoach.target = qHint.st; lionCoach.retargetAt = now + 1000; }   // gold beacon = same box
+  _qv.set(qHint.st.x + 0.5, 1.9, qHint.st.z + 0.5).project(camera);
   let x = (_qv.x + 1) / 2 * W, y = (1 - _qv.y) / 2 * H, ang = 0;
-  const behind = _qv.z > 1, on = !behind && x > mx && x < W - mx && y > top && y < bot;
-  if (!on) {                                   // off-screen: sit on the edge and point the way
+  const behind = _qv.z > 1, on = !behind && x > -8 && x < W + 8 && y > top - 60 && y < bot + 40;
+  if (on) {                                    // box on screen: point down at it (tilted if it hugs an edge)
+    const cx = Math.max(mx, Math.min(W - mx, x));
+    ang = Math.max(-35, Math.min(35, (cx - x) * 0.9)); x = cx; y = Math.max(top, Math.min(bot, y));
+  } else {                                   // off-screen: sit on the edge and point the way
     const cx = W / 2, cy = (top + bot) / 2;
     let dx = x - cx, dy = y - cy; if (behind) { dx = -dx; dy = -dy; }
     if (Math.abs(dx) + Math.abs(dy) < 1) dy = 1;
@@ -12158,7 +12172,7 @@ function qHintTick() {
   }
   a.hidden = false;
   a.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px) translate(-50%,-100%)';
-  a.querySelector('.qa').style.rotate = on ? '' : ang.toFixed(0) + 'deg';
+  a.querySelector('.qa').style.rotate = ang ? ang.toFixed(0) + 'deg' : '';
 }
 function lionCoachTick() {
   const c = $('lionCoach');
