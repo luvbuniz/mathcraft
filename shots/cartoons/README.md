@@ -3,9 +3,12 @@
 Kids **unlock** these cartoons by finishing Library books, then rewatch them in
 the in-game "🎞️ My Movie Collection" (inside the Library).
 
-Drop each finished cartoon here with the EXACT filename below. Until a file
-exists, the game shows a "🎬 Coming soon" card for that slot — so nothing breaks
-while you fill them in.
+Drop each finished cartoon here with the EXACT filename below. A cartoon only
+appears in the collection (and can only be unlocked) once its file exists: the
+game checks for the file when the Library opens, and reels flagged `ready: true`
+in the `CARTOONS` list are always on. Until then kids just see "More cartoons are
+on the way!" — never a dead-end "Coming soon" screen. After uploading, set
+`ready: true` on that entry so it doesn't depend on the check.
 
 | Cartoon                       | Upload this file     |
 | ----------------------------- | -------------------- |
