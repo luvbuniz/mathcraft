@@ -3540,39 +3540,35 @@ function buildQuad(bodyColor, headColor, legColor, pawColor) {
 }
 
 /* ============================ 🧱 BLOCKY CLASSIC STYLE ============================
-   The classic heroes' shared look: crisp chunky blocks, a pixel-art face, and a dark cartoon
-   outline so every hero reads at a glance on a busy screen. Kept cheap for low-end tablets:
-   bakeBlocky() glues each moving part's little boxes into ONE mesh (+ one outline mesh), so a
-   hero is ~15 draw calls instead of ~60, with no textures to download. */
-const BLK_ROUND = 0.10;                       // corner softness for blocky builders (AV_ROUND is the old pillowy 0.40)
-const BLK_HEAD = 0.62;                        // chunky kid head (cube side)
-const BLK_LINE = 0.022;                       // outline thickness (in blocks)
+   The classic heroes' shared look now matches Queen Fox and the dragon: soft rounded blocks
+   (AV_ROUND), real 3D eyes + a bendy mouth, world-palette colours and no dark outline.
+   Kept cheap for low-end tablets: bakeBlocky() glues each moving part's little boxes into ONE
+   mesh with one shared material, so a hero is ~15 draw calls instead of ~60, with no textures. */
+const BLK_ROUND = AV_ROUND;                   // same pillowy corners as Queen Fox / the dragon
+const BLK_HEAD = 0.62;                        // kid head in builder units (hair, hats and faces are laid out on this cube)
+const BLK_HEAD_SCALE = 0.48 / BLK_HEAD;       // …shown at 0.48, close to Queen Fox's 0.42 head
 const BLK_MAT = new THREE.MeshLambertMaterial({ vertexColors: true });
-const BLK_LINE_MAT = new THREE.MeshBasicMaterial({ color: 0x2A2130, side: THREE.BackSide });
-function blockyBuild(fn) {                    // run a builder with crisp corners, then restore
+function blockyBuild(fn) {                    // run a builder with the soft avatar corners, then restore
   const prev = avRoundK; avRoundK = BLK_ROUND;
   try { return fn(); } finally { avRoundK = prev; }
 }
 /* Glue every plain-coloured box/orb under each part (body, head, each limb, tail…) into one
-   vertex-coloured mesh, and give it an "inverted hull" outline: the same shape grown by
-   BLK_LINE on every side, drawn back-faces-only in dark ink. Hidden parts are dropped.
-   Paper-thin decals (< 0.03 thick: pockets, flowers, stripes) get no outline of their own. */
-function bakeBlocky(a, line) {
-  const t = line == null ? BLK_LINE : line;
+   vertex-coloured mesh. Hidden parts are dropped; face pieces that animate are marked keep. */
+function bakeBlocky(a) {
   const parts = [];
   a.group.traverse(o => { if (o.isGroup || o === a.group) parts.push(o); });
-  const tmpBox = new THREE.Box3(), size = new THREE.Vector3(), ctr = new THREE.Vector3(), col = new THREE.Color();
-  const merge = (list, withColor) => {
+  const col = new THREE.Color();
+  const merge = list => {
     let nv = 0, ni = 0;
     list.forEach(e => { nv += e.g.attributes.position.count; ni += e.g.index ? e.g.index.count : e.g.attributes.position.count; });
-    const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), clr = withColor ? new Float32Array(nv * 3) : null;
+    const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), clr = new Float32Array(nv * 3);
     const idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
     let vo = 0, io = 0;
     list.forEach(e => {
       const P = e.g.attributes.position, N = e.g.attributes.normal, n = P.count;
       pos.set(P.array.subarray(0, n * 3), vo * 3);
       if (N) nrm.set(N.array.subarray(0, n * 3), vo * 3);
-      if (clr) for (let i = 0; i < n; i++) { clr[(vo + i) * 3] = e.c.r; clr[(vo + i) * 3 + 1] = e.c.g; clr[(vo + i) * 3 + 2] = e.c.b; }
+      for (let i = 0; i < n; i++) { clr[(vo + i) * 3] = e.c.r; clr[(vo + i) * 3 + 1] = e.c.g; clr[(vo + i) * 3 + 2] = e.c.b; }
       if (e.g.index) { const I = e.g.index.array; for (let i = 0; i < I.length; i++) idx[io + i] = I[i] + vo; io += I.length; }
       else { for (let i = 0; i < n; i++) idx[io + i] = vo + i; io += n; }
       vo += n;
@@ -3581,133 +3577,69 @@ function bakeBlocky(a, line) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
-    if (clr) g.setAttribute('color', new THREE.BufferAttribute(clr, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(clr, 3));
     g.setIndex(new THREE.BufferAttribute(idx, 1));
     return g;
   };
   parts.forEach(p => {
-    const fills = [], lines = [];
+    const fills = [];
     p.children.slice().forEach(c => {
       if (!c.isMesh || c.children.length || c.userData.keep || !matCacheSet.has(c.material)) return;
       p.remove(c);
       if (!c.visible) { c.geometry.dispose(); return; }
       c.updateMatrix();
-      const g0 = c.geometry;
-      fills.push({ g: g0.clone().applyMatrix4(c.matrix), c: col.copy(c.material.color).clone() });
-      g0.computeBoundingBox(); tmpBox.copy(g0.boundingBox); tmpBox.getSize(size); tmpBox.getCenter(ctr);
-      const sx = size.x * Math.abs(c.scale.x), sy = size.y * Math.abs(c.scale.y), sz = size.z * Math.abs(c.scale.z);
-      if (t > 0 && !c.userData.noLine && Math.min(sx, sy, sz) >= 0.03) {
-        const k = v => (v > 1e-4 ? 1 + 2 * t / v : 1);
-        const og = g0.clone();
-        og.translate(-ctr.x, -ctr.y, -ctr.z);
-        og.scale(k(sx), k(sy), k(sz));
-        og.translate(ctr.x, ctr.y, ctr.z);
-        lines.push({ g: og.applyMatrix4(c.matrix) });
-      }
-      g0.dispose();
+      fills.push({ g: c.geometry.clone().applyMatrix4(c.matrix), c: col.copy(c.material.color).clone() });
+      c.geometry.dispose();
     });
     if (fills.length) {
-      const m = new THREE.Mesh(merge(fills, true), BLK_MAT);
+      const m = new THREE.Mesh(merge(fills), BLK_MAT);
       m.castShadow = true; m.receiveShadow = true; m.userData.baked = true;
       p.add(m);
-    }
-    if (lines.length) {
-      const o = new THREE.Mesh(merge(lines, false), BLK_LINE_MAT);
-      o.userData.baked = true; o.userData.outline = true;
-      p.add(o);
     }
   });
   return a;
 }
-/* 🙂 A pixel-art face: a 16×16 picture painted on a see-through square on the head's front.
-   The head's own skin shows through, so only eyes / brows / nose / cheeks / mouth are pixels.
-   Three pictures per face (smile, grin, frown) — setFaceExpr just swaps which one shows.
-   Faces are cached by recipe, so the hero and any town friend share the same tiny textures. */
-const PIXEL_FACE_CACHE = {};
-function paintPixelFace(f, kind) {
-  const cv = document.createElement('canvas'); cv.width = cv.height = 16;
-  const c = cv.getContext('2d');
-  const hx = n => '#' + (n >>> 0).toString(16).padStart(6, '0');
-  const px = (x, y, color) => { c.fillStyle = hx(color); c.fillRect(x, y, 1, 1); c.fillRect(15 - x, y, 1, 1); };  // mirrored pair
-  const W = f.sclera != null ? f.sclera : 0xFFFFFF, ey = f.eyeY != null ? f.eyeY : 7, by = f.browY != null ? f.browY : ey - 2;
-  if (f.mask) for (let y = ey - 1; y <= ey + 3; y++) for (let x = 1; x <= 7; x++) px(x, y, f.mask);   // 🦸 hero mask band
-  if (f.patch) for (let y = ey - 1; y <= ey + 3; y++) for (let x = 2; x <= 6; x++) if (!((y === ey - 1 || y === ey + 3) && (x === 2 || x === 6))) px(x, y, f.patch);   // 🐼 eye patches
-  // brows (sad = inner ends lifted)
-  if (f.brow != null) {
-    if (kind === 'frown') { px(3, by + 1, f.brow); px(4, by, f.brow); px(5, by, f.brow); }
-    else { px(3, by, f.brow); px(4, by, f.brow); px(5, by, f.brow); }
-  }
-  // eyes: 4 wide × 3 tall — white edges, iris in the middle, a sparkle up top
-  for (let y = ey; y < ey + 3; y++) { px(3, y, W); px(6, y, W); }
-  px(4, ey, f.shine != null ? f.shine : 0xFFFFFF); px(5, ey, f.iris);
-  px(4, ey + 1, f.iris); px(5, ey + 1, f.pupil);
-  px(4, ey + 2, f.iris); px(5, ey + 2, f.pupil);
-  if (f.lashes) { px(2, ey, f.pupil); px(3, ey - 1, f.pupil); }
-  // nose + cheeks
-  if (f.nose) px(7, ey + 3, f.nose);
-  if (f.blush) { px(2, ey + 3, f.blush); px(3, ey + 3, f.blush); }
-  if (f.mouth == null) return pixelMat(cv);                 // animals: the mouth lives on the muzzle (addPixelMouth)
-  // mouth
-  const my = ey + 4, m = f.mouth;
-  if (kind === 'grin') {
-    px(5, my, m); px(6, my, W); px(7, my, W);
-    px(6, my + 1, m); px(7, my + 1, f.tongue || 0xE8707E);
-    px(7, my + 2, m);
-  } else if (kind === 'frown') {
-    px(6, my + 1, m); px(7, my + 1, m); px(5, my + 2, m);
-  } else {
-    px(5, my, m); px(6, my + 1, m); px(7, my + 1, m);
-  }
-  return pixelMat(cv);
-}
-function pixelMat(cv) {
-  const tex = new THREE.CanvasTexture(cv);
-  tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
-  return new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 });
-}
-/* A little 6×3 pixel mouth for a muzzle / beak front (smile, grin, frown). */
-function paintPixelMouth(m, kind) {
-  const cv = document.createElement('canvas'); cv.width = 6; cv.height = 3;
-  const c = cv.getContext('2d');
-  const px = (x, y, color) => { c.fillStyle = '#' + (color >>> 0).toString(16).padStart(6, '0'); c.fillRect(x, y, 1, 1); c.fillRect(5 - x, y, 1, 1); };
-  if (kind === 'grin') { px(0, 0, m); px(1, 0, 0xFFFFFF); px(2, 0, 0xFFFFFF); px(1, 1, m); px(2, 1, 0xE8707E); px(2, 2, m); }
-  else if (kind === 'frown') { px(1, 1, m); px(2, 1, m); px(0, 2, m); }
-  else { px(0, 0, m); px(1, 1, m); px(2, 1, m); }
-  return pixelMat(cv);
-}
-function addPixelMouth(face, head, w, x, y, z, color) {
-  const key = 'mouth:' + color;
-  const mats = PIXEL_FACE_CACHE[key] || (PIXEL_FACE_CACHE[key] = {
-    smile: paintPixelMouth(color, 'smile'), grin: paintPixelMouth(color, 'grin'), frown: paintPixelMouth(color, 'frown')
-  });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), mats.smile);
-  m.position.set(x, y, z); head.add(m);
-  face.pixel = [].concat(face.pixel, { mesh: m, mats });
+/* 🙂 The classic heroes' face, built like Queen Fox's: 3D eyes (addEyes) + the bendy mouth and
+   brows from addFace, so smile / grin / frown animate the same way. The mouth and brows are
+   marked keep so bakeBlocky leaves them movable.
+   recipe: iris, brow (hidden if missing), mouth (no mouth → none here, e.g. a beak), nose,
+   blush, lashes, patch (panda), mask (superhero), mouthY / mouthZ (a muzzle sticking out). */
+function keepFace(face) {
+  face.mouth.children.forEach(m => { m.userData.keep = true; });
+  face.browL.userData.keep = face.browR.userData.keep = true;
   return face;
 }
 function addPixelFace(head, size, z, recipe) {
-  const key = JSON.stringify(recipe);
-  const mats = PIXEL_FACE_CACHE[key] || (PIXEL_FACE_CACHE[key] = {
-    smile: paintPixelFace(recipe, 'smile'), grin: paintPixelFace(recipe, 'grin'), frown: paintPixelFace(recipe, 'frown')
+  const s = size * 2.2;                                             // eye size for this head (kid ≈ 1.36, fox = 1)
+  if (recipe.patch) for (const sx of [-1, 1]) box(head, 0.15 * s, 0.15 * s, 0.02, recipe.patch, sx * 0.11 * s, 0.045 * s, z - 0.004);
+  if (recipe.mask) box(head, size + 0.012, 0.15 * s, 0.02, recipe.mask, 0, 0.045 * s, z - 0.004);
+  addEyes(head, recipe.iris, z, !recipe.blush, s);
+  if (recipe.lashes) for (const sx of [-1, 1]) box(head, 0.032 * s, 0.022 * s, 0.03, recipe.pupil || 0x2A1A14, sx * 0.165 * s, 0.1 * s, z + 0.006);
+  if (recipe.nose) box(head, 0.05 * s, 0.035 * s, 0.03, recipe.nose, 0, -0.035 * s, z + 0.008);
+  if (recipe.mouth == null) return { pixel: [] };                   // no mouth here (beak) — stops the default face
+  const face = keepFace(addFace(head, recipe.mouthY != null ? recipe.mouthY : -0.25 * size, recipe.mouthZ != null ? recipe.mouthZ : z, recipe.mouth, z + 0.004));
+  face.browY = 0.1 * s + 0.03;
+  [face.browL, face.browR].forEach((b, i) => {
+    b.position.set((i ? 1 : -1) * 0.11 * s, face.browY, z + 0.004);
+    b.scale.x = s;
+    if (recipe.brow != null) b.material = mat(recipe.brow); else b.visible = false;
   });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mats.smile);
-  m.position.set(0, 0, z);
-  head.add(m);
-  return { pixel: { mesh: m, mats } };
+  return face;
 }
-/* A chunky blocky kid: short legs, boxy body, big cube head. Builders dress it up.
-   Legs hinge right under the hips and arms at the shoulders, so nothing gaps when they swing. */
+/* A chunky blocky kid: short legs, boxy body, a rounded head. Builders dress it up.
+   Legs hinge right under the hips and arms at the shoulders, so nothing gaps when they swing.
+   The head group is scaled down as a whole, so hair, hats and the face stay attached. */
 function blockKidBase(skin) {
   const g = new THREE.Group();
   const hinge = (x, y) => { const L = new THREE.Group(); L.position.set(x, y, 0); g.add(L); return L; };
   const legs = [hinge(-0.125, 0.5), hinge(0.125, 0.5)];
   const arms = [hinge(-0.345, 1.0), hinge(0.345, 1.0)];
   box(g, 0.17, 0.12, 0.17, skin, 0, 1.06, 0);                        // neck
-  const head = new THREE.Group(); head.position.set(0, 1.39, 0); g.add(head);
+  const head = new THREE.Group(); head.position.set(0, 1.08 + BLK_HEAD * BLK_HEAD_SCALE / 2, 0); head.scale.setScalar(BLK_HEAD_SCALE); g.add(head);
   box(head, BLK_HEAD, BLK_HEAD, BLK_HEAD, skin, 0, 0, 0);
   return { group: g, legs, arms, head };
 }
-/* A tiny pixel flower decal on a flat face of a part: n = 'f' front, 'b' back, 'l'/'r' sides. */
+/* A tiny flower decal on a flat face of a part: n = 'f' front, 'b' back, 'l'/'r' sides. */
 function pixelFlower(parent, x, y, z, n, petal, mid, tilt) {
   const side = n === 'l' || n === 'r';
   const d = 0.012, L = 0.078, s = 0.026;
@@ -3716,14 +3648,14 @@ function pixelFlower(parent, x, y, z, n, petal, mid, tilt) {
     : [box(parent, L, s, d, petal, x, y, z), box(parent, s, L, d, petal, x, y, z), box(parent, s, s, d + 0.006, mid, x, y, z)];
   if (tilt) parts.forEach(m => { if (side) m.rotation.z = tilt; else m.rotation.x = tilt; });   // lie flat on a slanted skirt
 }
-/* Four-legged heroes: pixel eyes on the head front + a small pixel mouth on the muzzle front. */
-function quadPixelFace(a, recipe, mouthY, mouthZ, mouthColor, mouthW) {
-  a.face = addPixelFace(a.head, 0.42, 0.213, Object.assign({ eyeY: 4 }, recipe));
-  addPixelMouth(a.face, a.head, mouthW || 0.1, 0, mouthY, mouthZ, mouthColor || 0x4A2A22);
+/* Four-legged heroes: exactly Queen Fox's eyes on the head front + the narrow bendy mouth on the muzzle. */
+function quadPixelFace(a, recipe, mouthY, mouthZ, mouthColor) {
+  addEyes(a.head, recipe.iris, 0.22);
+  a.face = keepFace(addFace(a.head, mouthY, mouthZ, mouthColor || 0x5a2b2b, 0.222, true));
   return a.face;
 }
-/* A ring of decals around a block-shaped part (stripes, bands): thin, so no outline of their own. */
-function decal(parent, w, h, d, color, x, y, z) { const m = box(parent, w, h, d, color, x, y, z); m.userData.noLine = true; return m; }
+/* Stripes and bands wrapped around a block-shaped part. */
+function decal(parent, w, h, d, color, x, y, z) { return box(parent, w, h, d, color, x, y, z); }
 const GLASS_MAT = new THREE.MeshLambertMaterial({ color: 0x9AD8FF, transparent: true, opacity: 0.32, depthWrite: false });
 /* A flat-shaded square "frustum" (wider at the bottom) — an A-line skirt or gown in one block. */
 function blockFrustum(parent, wTop, wBot, h, depthRatio, color, x, y, z) {
@@ -4071,7 +4003,7 @@ const AVATARS = [
     id: 'piratecat', name: 'Pirate Cat 🐱🏴‍☠️',
     build() {
       return blockyBuild(() => {
-        const gin = 0xE0913E, ginD = 0xB86A22, cream = 0xFFF1D6, navy = 0x24305E, gold = 0xF5C542, blk = 0x1A1A1E, red = 0xC0302A, pink = 0xF0A0B4;
+        const gin = 0xE0913E, ginD = 0xB86A22, cream = 0xFFF1D6, navy = 0x3F5A8C, gold = 0xF5C542, blk = 0x1A1A1E, hat = 0x4A3B4F, red = 0xC0302A, pink = 0xF0A0B4;
         const a = buildQuad(gin, gin, gin, cream);                       // white paws
         a.legs.forEach(L => decal(L, 0.192, 0.045, 0.202, ginD, 0, -0.36, 0));   // tabby leg stripe
         // 🧥 navy pirate coat with gold buttons and trim, red sash
@@ -4083,7 +4015,7 @@ const AVATARS = [
         // 🐱 face: cream muzzle, pink nose, eye patch + strap, gold earring
         box(a.head, 0.22, 0.14, 0.14, cream, 0, -0.12, 0.25);
         box(a.head, 0.07, 0.05, 0.04, pink, 0, -0.065, 0.33);
-        decal(a.head, 0.13, 0.12, 0.02, blk, -0.075, 0.06, 0.224);       // eye patch over his right eye
+        box(a.head, 0.13, 0.13, 0.06, blk, -0.11, 0.05, 0.245);          // eye patch over his right eye (covers the 3D eye)
         const strap = decal(a.head, 0.44, 0.025, 0.44, blk, 0, 0.15, 0); strap.rotation.z = -0.35;
         box(a.head, 0.04, 0.07, 0.04, gold, 0.225, -0.05, 0.05);         // gold hoop
         [-1, 1].forEach(s => {                                          // pointy ears poking out by the hat
@@ -4091,11 +4023,11 @@ const AVATARS = [
           box(a.head, 0.06, 0.06, 0.07, gin, s * 0.22, 0.42, -0.02);
           decal(a.head, 0.05, 0.08, 0.02, pink, s * 0.22, 0.34, 0.018);
         });
-        // 🏴‍☠️ black tricorn hat with gold trim and a skull badge
-        box(a.head, 0.54, 0.06, 0.48, blk, 0, 0.24, 0);
-        box(a.head, 0.32, 0.16, 0.3, blk, 0, 0.34, 0);
-        box(a.head, 0.54, 0.12, 0.07, blk, 0, 0.3, 0.215);
-        box(a.head, 0.54, 0.12, 0.07, blk, 0, 0.3, -0.215);
+        // 🏴‍☠️ plum tricorn hat with gold trim and a skull badge
+        box(a.head, 0.54, 0.06, 0.48, hat, 0, 0.24, 0);
+        box(a.head, 0.32, 0.16, 0.3, hat, 0, 0.34, 0);
+        box(a.head, 0.54, 0.12, 0.07, hat, 0, 0.3, 0.215);
+        box(a.head, 0.54, 0.12, 0.07, hat, 0, 0.3, -0.215);
         decal(a.head, 0.55, 0.02, 0.49, gold, 0, 0.27, 0);
         decal(a.head, 0.1, 0.09, 0.02, 0xF2F2F2, 0, 0.32, 0.256);
         [-1, 1].forEach(s => decal(a.head, 0.025, 0.025, 0.02, blk, s * 0.025, 0.33, 0.268));
@@ -4115,9 +4047,9 @@ const AVATARS = [
     id: 'ninjadog', name: 'Ninja Dog 🐶🥷',
     build() {
       return blockyBuild(() => {
-        const tan = 0xE3A15E, cream = 0xFFF2DC, blk = 0x2A2D34, red = 0xD8342C, redD = 0xA8241E;
+        const tan = 0xE3A15E, cream = 0xFFF2DC, blk = 0x4A5470, red = 0xD8342C, redD = 0xA8241E;
         const a = buildQuad(blk, tan, blk, tan);                          // ninja suit, tan face & paws
-        // 🐶 a friendly tan face that's easy to see, under a black ninja hood
+        // 🐶 a friendly tan face that's easy to see, under a slate ninja hood
         box(a.head, 0.22, 0.14, 0.15, cream, 0, -0.12, 0.25);
         box(a.head, 0.08, 0.06, 0.05, 0x1A1A1A, 0, -0.07, 0.335);
         [-1, 1].forEach(s => box(a.head, 0.06, 0.12, 0.14, cream, s * 0.2, -0.12, 0.1));
@@ -4151,16 +4083,15 @@ const AVATARS = [
     id: 'robot', name: 'Robot 🤖',
     build() {
       return blockyBuild(() => {
-        const metal = 0xA9B4C0, metalD = 0x7C8794, dark = 0x222A33, cyan = 0x33D6FF, red = 0xE53935;
+        const metal = 0xB4BFC8, metalD = 0x8C98A5, boot = 0x5E6B7A, screen = 0xC6E8F5, cyan = 0x5CC8EA, red = 0xE53935;
         const a = blockKidBase(metal), H = a.head, g = a.group;
-        decal(H, 0.52, 0.22, 0.02, dark, 0, -0.02, 0.312);               // dark visor
-        decal(H, 0.3, 0.1, 0.02, dark, 0, -0.2, 0.312);                  // speaker grille behind the smile
+        decal(H, 0.52, 0.4, 0.02, screen, 0, -0.04, 0.312);              // soft blue face screen
         box(H, 0.05, 0.2, 0.05, metalD, 0, 0.4, 0);                       // antenna
         box(H, 0.11, 0.11, 0.11, red, 0, 0.54, 0);
         [-1, 1].forEach(s => box(H, 0.08, 0.18, 0.18, metalD, s * 0.34, 0, 0));   // ear bolts
         [[-0.25, 0.25], [0.25, 0.25]].forEach(([x, y]) => decal(H, 0.04, 0.04, 0.02, metalD, x, y, 0.312));   // rivets
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.014,
-          { iris: cyan, pupil: 0xBFF4FF, sclera: dark, mouth: cyan, tongue: 0x7FE8FF });
+          { iris: 0x2A8CC8, mouth: 0x2A6A96 });
         box(g, 0.54, 0.48, 0.32, metal, 0, 0.8, 0);                       // chest
         decal(g, 0.28, 0.16, 0.02, cyan, 0, 0.88, 0.162);                 // chest screen
         [[-0.08, 0xFFD23E], [0.08, red]].forEach(([x, c]) => decal(g, 0.07, 0.07, 0.02, c, x, 0.7, 0.162));   // buttons
@@ -4168,12 +4099,12 @@ const AVATARS = [
         a.arms.forEach(A => {
           box(A, 0.2, 0.2, 0.2, metalD, 0, -0.06, 0);                      // shoulder joint
           box(A, 0.15, 0.24, 0.15, metal, 0, -0.26, 0);
-          box(A, 0.18, 0.12, 0.18, metalD, 0, -0.44, 0);                   // chunky hand
+          box(A, 0.18, 0.14, 0.18, metalD, 0, -0.42, 0);                   // chunky hand (overlaps the arm: no gap)
         });
         a.legs.forEach(L => {
           box(L, 0.2, 0.36, 0.2, metal, 0, -0.17, 0);
           decal(L, 0.21, 0.04, 0.21, metalD, 0, -0.2, 0);                  // knee ring
-          box(L, 0.24, 0.13, 0.3, dark, 0, -0.435, 0.03);                  // boots
+          box(L, 0.24, 0.13, 0.3, boot, 0, -0.435, 0.03);                  // boots
         });
         a.hatY = 0.45;
         return bakeBlocky(a);
@@ -4229,7 +4160,7 @@ const AVATARS = [
     id: 'wizard', name: 'Wizard 🧙',
     build() {
       return blockyBuild(() => {
-        const skin = 0xEDB48C, robe = 0x2A3A7A, robeD = 0x1E2A5E, gold = 0xF5C542, beard = 0xF2F2F2, wood = 0x7A4A22;
+        const skin = 0xEDB48C, robe = 0x4A63B0, robeD = 0x3A4F94, gold = 0xF5C542, beard = 0xF2F2F2, wood = 0x7A4A22;
         const a = blockKidBase(skin), H = a.head, g = a.group;
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
           { iris: 0x3A6AB0, pupil: 0x1A2A50, brow: 0xD8D8D8, blush: 0xF2A0A0 });
@@ -4276,14 +4207,13 @@ const AVATARS = [
     id: 'panda', name: 'Panda 🐼',
     build() {
       return blockyBuild(() => {
-        const wht = 0xF6F6F4, blk = 0x26262A;
+        const wht = 0xF6F6F4, blk = 0x3D3A44;
         const a = blockKidBase(wht), H = a.head, g = a.group;             // upright bear
         [-1, 1].forEach(s => box(H, 0.18, 0.18, 0.1, blk, s * 0.25, 0.36, -0.02));   // round black ears
         box(H, 0.28, 0.17, 0.12, wht, 0, -0.15, 0.33);                    // muzzle
         box(H, 0.1, 0.06, 0.04, blk, 0, -0.09, 0.39);                      // nose
         a.face = addPixelFace(H, BLK_HEAD, BLK_HEAD / 2 + 0.003,
-          { iris: 0x4A3A30, pupil: 0x0A0A0A, sclera: 0x111114, patch: blk, blush: 0xF7B0C4, eyeY: 6 });
-        addPixelMouth(a.face, H, 0.12, 0, -0.19, 0.392, 0x3A2A2A);
+          { iris: 0x4A3A30, patch: blk, blush: 0xF7B0C4, mouth: 0x3A2A2A, mouthY: -0.19, mouthZ: 0.392 });
         box(g, 0.56, 0.5, 0.34, wht, 0, 0.8, 0);                           // white tummy
         box(g, 0.58, 0.18, 0.36, blk, 0, 0.97, 0);                         // black shoulder band
         box(g, 0.5, 0.12, 0.3, wht, 0, 0.52, 0);
@@ -4303,7 +4233,7 @@ const AVATARS = [
     id: 'penguin', name: 'Penguin 🐧',
     build() {
       return blockyBuild(() => {
-        const blk = 0x23272E, wht = 0xF7F4EE, org = 0xF5A623, orgD = 0xD9861A;
+        const blk = 0x34405A, wht = 0xF7F4EE, org = 0xF5A623, orgD = 0xD9861A;
         const a = blockKidBase(blk), H = a.head, g = a.group;
         decal(H, 0.5, 0.34, 0.02, wht, 0, -0.07, 0.312);                    // white face
         [-1, 1].forEach(s => decal(H, 0.2, 0.12, 0.02, wht, s * 0.14, 0.13, 0.312));
