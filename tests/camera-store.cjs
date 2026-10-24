@@ -18,6 +18,21 @@ assert(!/av\.visible = false/.test(fn('renderMainView')),'hero is never hidden b
 assert(/CAM_SWING_YAWS = \[0, 0\.45, -0\.45, 0\.9, -0\.9, 1\.35, -1\.35\]/.test(s)&&/CAM_SWING_LIFTS = \[0, 0\.5, 0\.9\]/.test(s));
 assert(s.includes('if (_sw) look.lerp('),'lifted camera looks at the hero');
 assert(s.includes('player._camSwing = null; player._feedExitHush = false;'),'fresh camera state on start/Continue');
+// PR #495 round 2 (r2-495-12/-29/-30): a sideways swing turns the aim round the hero by the same
+// angle, so the hero stays centred (camera, hero and look point line up), and it eases back after
+{const a=s.indexOf('  const _aimT ='),b=s.indexOf('} else player._aimYaw = 0;',a)+'} else player._aimYaw = 0;'.length;assert(a>0&&b>a);
+ const snip=s.slice(a,b);
+ const run=(swing,snapped,aim0,dt)=>{const q=vm.createContext({_swOn:!!swing,player:{_camSwing:swing,_camSnapped:snapped,_aimYaw:aim0,pos:{x:0,y:0,z:0}},look:{x:0,z:-8},dt,Math});vm.runInContext(snip,q);return q;};
+ const yaw=0.9,dir={x:0,z:1},c=Math.cos(yaw),sn=Math.sin(yaw),cam={x:dir.x*c+dir.z*sn,z:-dir.x*sn+dir.z*c};   // the swing's own rotation
+ const q=run({yaw,lift:0},true,0,1/60);
+ assert(Math.abs(cam.x*q.look.z-cam.z*q.look.x)<1e-9&&cam.x*q.look.x+cam.z*q.look.z<0,'swung camera looks straight through the hero');
+ let aim=yaw;for(let i=0;i<30;i++)aim=run({yaw:0,lift:0},false,aim,1/60).player._aimYaw;      // 0.5 s after the swing ends
+ assert(Math.abs(aim)<0.01,'aim is back to straight ahead within 0.5 s');
+ aim=0;for(let i=0;i<24;i++)aim=run({yaw,lift:0},false,aim,1/60).player._aimYaw;               // eased swing: ~0.4 s
+ assert(Math.abs(aim-yaw)<0.03,'aim catches up with an eased swing within 0.4 s');}
+// r2-495-27: in Stack Feed's doorway the camera stays outside (low, under the lintel) instead of in the hero
+assert(s.includes('insideFeedStore(head.x, head.z) && head.z <= FEED_WALL.z1 - 0.45 ? {'),'room box only once past the doorway');
+assert(s.includes('if (inStore && !selfie && player.pos.z > FEED_WALL.z1 - 0.45) cy = Math.min(cy, player.pos.y + 1.85);'),'doorway camera ducks under the lintel');
 // "Behind me" sticks, and the auto first-person indoors respects it
 assert(/G\.keepThird = mode === 'third';/.test(s),'menu Behind me remembered');
 assert(s.includes("if (inside && allowed < 1.0 && !G.birdsEye && !G.keepThird && !inStore) {"),'store never forces first-person');
@@ -34,4 +49,4 @@ d.exitFeedStore();assert(!d.insideFeedStore(d.player.pos.x,d.player.pos.z),'Exit
 assert(d.player.pos.z>=-12+4,'Exit leaves room for the camera behind');assert.equal(d.player._feedExitHush,true,'door prompt hushed after Exit');
 const h=vm.createContext({G:{world:'meadow'},player:{_feedExitHush:true,pos:{x:6.5,z:-7.8}}});vm.runInContext(fn('feedExitHushed')+fn('feedDoorDist'),h);
 assert.equal(h.feedExitHushed(),true,'still hushed near the door');h.player.pos.z=-5;assert.equal(h.feedExitHushed(),false,'prompt back once you walk away');
-console.log('PASS hero see-through (never hidden) when camera <1 m, blocked camera swings, Exit hushes the door prompt, Behind me honoured indoors, store faces shelves, big Exit button works');
+console.log('PASS camera re-aims at the hero after a wall swing, hero see-through (never hidden) when camera <1 m, blocked camera swings, Exit hushes the door prompt, Behind me honoured indoors, store faces shelves, big Exit button works');

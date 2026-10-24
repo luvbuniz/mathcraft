@@ -16000,6 +16000,7 @@ function updatePlayer(dt) {
     G.firstPerson = false; G._autoInterior = false;
     const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
   }
+  player._camSnapped = false;
   if (G.firstPerson) {
     camera.position.set(player.pos.x, headY, player.pos.z);
   } else if (G.birdsEye) {
@@ -16015,7 +16016,10 @@ function updatePlayer(dt) {
     const ang = selfie ? (player.yaw + Math.PI + (G.selfieAngle || 0)) : camFollowYaw(dt);
     const cx = player.pos.x + Math.sin(ang) * dist * Math.cos(player.pitch);
     const cz = player.pos.z + Math.cos(ang) * dist * Math.cos(player.pitch);
-    const cy = headY + dist * Math.sin(-player.pitch) * 0.8 + (selfie ? 0.15 : 0.9);
+    let cy = headY + dist * Math.sin(-player.pitch) * 0.8 + (selfie ? 0.15 : 0.9);
+    // standing in Stack Feed's doorway (r2-495-27): keep the camera outside, low enough to look in
+    // under the lintel, instead of parking it in the hero until they're a step further in
+    if (inStore && !selfie && player.pos.z > FEED_WALL.z1 - 0.45) cy = Math.min(cy, player.pos.y + 1.85);
     // Only pull the camera in a little if a wall/roof sits behind you, so it stays
     // mostly zoomed OUT inside a house instead of snapping right up to your face.
     const head = new THREE.Vector3(player.pos.x, headY, player.pos.z);
@@ -16056,7 +16060,8 @@ function updatePlayer(dt) {
       const target = head.clone().add(dir.multiplyScalar(allowed));
       // blocked: jump straight to the safe spot in front of the wall (easing would show the wall/hair
       // for a few frames); open space: ease as before
-      if (allowed < far - 0.05 && camera.position.distanceTo(head) > allowed + 0.05) camera.position.copy(target);
+      player._camSnapped = allowed < far - 0.05 && camera.position.distanceTo(head) > allowed + 0.05;
+      if (player._camSnapped) camera.position.copy(target);
       else camera.position.lerp(target, 0.35);
     }
   }
@@ -16073,8 +16078,20 @@ function updatePlayer(dt) {
           player.pos.z - Math.cos(_lookYaw()) * Math.cos(player.pitch) * 8
         );
   // camera lifted over a wall: aim nearer the hero so they stay in the frame (pr495-03)
-  const _sw = (!G.birdsEye && !G.firstPerson && !G.selfie && player._camSwing) ? player._camSwing.lift : 0;
+  const _swOn = !G.birdsEye && !G.firstPerson && !G.selfie && player._camSwing;
+  const _sw = _swOn ? player._camSwing.lift : 0;
   if (_sw) look.lerp(new THREE.Vector3(player.pos.x, headY - 0.3, player.pos.z), Math.min(0.7, _sw * 0.75));
+  // camera swung sideways round a wall (PR #495 round 2, r2-495-12/-29/-30): turn the aim round the
+  // hero by the same angle, so the hero stays centred instead of sliding under the joystick. It
+  // follows the swing within ~0.4 s (snaps when the camera snapped), and eases back when the
+  // swing ends. Two sin/cos per frame.
+  const _aimT = _swOn ? player._camSwing.yaw : 0;
+  player._aimYaw = player._camSnapped ? _aimT : (player._aimYaw || 0) + (_aimT - (player._aimYaw || 0)) * Math.min(1, dt * 9);
+  if (Math.abs(player._aimYaw) > 0.002) {
+    const c = Math.cos(player._aimYaw), sn = Math.sin(player._aimYaw);
+    const ox = look.x - player.pos.x, oz = look.z - player.pos.z;
+    look.x = player.pos.x + ox * c + oz * sn; look.z = player.pos.z - ox * sn + oz * c;
+  } else player._aimYaw = 0;
   camera.lookAt(look);
 
   // first time you stand under your own roof, suggest first-person for a look around inside
@@ -18814,7 +18831,8 @@ function camRoomAlong(head, dir, far, inside) {
   const zoneOk = !inShopZone(Math.floor(head.x), Math.floor(head.z));
   // 🌾 inside Stack Feed the camera stays inside the room (its thin walls and roof aren't grid
   // blocks the ray could hit), so you always see your hero among the shelves
-  const store = insideFeedStore(head.x, head.z) ? { x0: FEED_WALL.x0 + 1.25, x1: FEED_WALL.x1 - 0.25, z0: FEED_WALL.z0 + 1.25, z1: FEED_WALL.z1 - 0.15, y1: 2.75 } : null;
+  // (in the doorway itself the head is still south of the room box, so the camera may stay outside)
+  const store = insideFeedStore(head.x, head.z) && head.z <= FEED_WALL.z1 - 0.45 ? { x0: FEED_WALL.x0 + 1.25, x1: FEED_WALL.x1 - 0.25, z0: FEED_WALL.z0 + 1.25, z1: FEED_WALL.z1 - 0.15, y1: 2.75 } : null;
   for (let d = 0.5; d < far; d += 0.3) {
     if (store) {
       const qx = head.x + dir.x * d, qy = head.y + dir.y * d, qz = head.z + dir.z * d;
