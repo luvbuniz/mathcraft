@@ -16,7 +16,7 @@
 </script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js?v=311').catch(function () {}); });</script>
 <!-- Don't greet newcomers with the browser's automatic "Install app?" pop-up — it's off-putting on a
      first visit. Suppress it; install stays available via the browser menu (⋮ → Install). -->
 <script>window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window._installPrompt = e; });</script>
