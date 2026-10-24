@@ -210,6 +210,13 @@
     body.feedInside #feedListHud {font-size:13px;padding:8px;line-height:1.45;}
   }
   #leoIntro { align-items:flex-end; background:none; }
+  /* 🦁 intro backdrop (Amy, tablet): while King Lion talks the 3D canvas lifts above the whole HUD and paints a
+     soft sky→meadow gradient instead of the world (see drawIntroBackdrop), so only the lion, his bubble and
+     Again / Skip / Next show. Everything else is hidden + inert (openLeoIntro) and comes back on close. */
+  body.guideOpen > #world3d { z-index:95 !important; }
+  body.guideOpen #leoIntro { z-index:96; }
+  body.guideOpen #hud, body.guideOpen #hud *, body.guideOpen #touchUI, body.guideOpen #touchUI *,
+  body.guideOpen #qHintArrow, body.guideOpen #viewMenu, body.guideOpen #hudMenu { visibility:hidden !important; }
   .shopItem.canAfford { box-shadow:0 0 0 3px rgba(92,194,79,.55); background:#f3fbef; }
   .shopItem.canAfford .buyBtn:not(.owned)::before { content:'✨ '; }
   .shopItem .info small { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -6637,6 +6644,7 @@ document.body.appendChild(renderer.domElement);
 renderer.domElement.style.position = 'fixed';
 renderer.domElement.style.inset = '0';
 renderer.domElement.style.zIndex = '0';
+renderer.domElement.id = 'world3d';
 try { camera.position.set(8, 9, 14); camera.lookAt(0.5, 0.4, 0.5); renderer.render(scene, camera); } catch (e) {}
 (function bootFrames() {
   let n = 0;
@@ -11998,6 +12006,27 @@ function guideAutoNext(ms) {
   intro.autoT = setTimeout(go, ms);
 }
 function hideGuideCaption() { clearTimeout(guideCaptionT); const c = $('guideCaption'); if (c) c.hidden = true; }
+/* 🎨 the intro backdrop: one full-screen gradient quad (no world, no shadows) — the 3D world is paused while it's up */
+let introBackdrop = null;
+const INTRO_FRAME_MS = 33;                    // ~30 fps is plenty for the lion's sway; halves the cheap tablet's GPU work
+function drawIntroBackdrop() {
+  if (!introBackdrop) {
+    const c = document.createElement('canvas'); c.width = 2; c.height = 256;
+    const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0, '#5fb6e8'); gr.addColorStop(0.55, '#9fd8d0'); gr.addColorStop(1, '#8ccf74');   // sky → meadow
+    g.fillStyle = gr; g.fillRect(0, 0, 2, 256);
+    const sc = new THREE.Scene(); sc.background = new THREE.CanvasTexture(c);
+    introBackdrop = { scene: sc, camera: new THREE.Camera(), at: -1e9 };
+  }
+  const oldTest = renderer.getScissorTest(); renderer.setScissorTest(false);
+  try { renderer.render(introBackdrop.scene, introBackdrop.camera); } finally { renderer.setScissorTest(oldTest); }
+}
+function introFrame(now) {
+  if (introBackdrop && now - introBackdrop.at < INTRO_FRAME_MS - 2) return;
+  const dt = introBackdrop ? Math.min(0.05, (now - introBackdrop.at) / 1000) : 0.016;
+  drawIntroBackdrop(); introBackdrop.at = now;
+  drawGuide(dt);
+}
 function drawGuide(dt) {
   if (!leoIntro || !guideView) return;
   const el = $('guideStage'), rect = el.getBoundingClientRect(), main = renderer.domElement.getBoundingClientRect();
@@ -12038,18 +12067,35 @@ function openLeoIntro(first) {
   leoIntro = { i: 0, first: !!first, steps };
   popupOpen = true; player.walkTo = null; Object.keys(keys).forEach(k => { keys[k] = false; });
   try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
+  leoIntro.focusBack = document.activeElement;
+  coverForIntro(leoIntro);
   document.body.classList.add('guideOpen'); $('leoIntro').style.display = 'flex';
   prepareGuideView(); renderLeoIntro();
   $('leoNext').focus();
+}
+/* 🛡️ while the intro is up nothing behind it can be tapped or tabbed to: every other top-level element goes
+   inert (only the ones that weren't already), and the arrow hint is parked. Undone exactly on close. */
+function coverForIntro(intro) {
+  const keep = new Set([$('leoIntro'), renderer.domElement]);
+  intro.inerted = [...document.body.children].filter(el => !keep.has(el) && !el.inert && !/^(SCRIPT|STYLE|LINK)$/.test(el.tagName));
+  intro.inerted.forEach(el => { el.inert = true; });
+  const a = $('qHintArrow'); if (a) a.hidden = true;
+}
+function uncoverAfterIntro(intro) {
+  (intro.inerted || []).forEach(el => { el.inert = false; });
+  intro.inerted = null;
 }
 function closeLeoIntro(skipped) {
   if (leoIntro) clearTimeout(leoIntro.autoT);
   Narrator.stop(); hideGuideCaption();
   if (leoIntro) setTimeout(startQHint, 0); document.body.classList.remove('guideOpen'); $('leoIntro').style.display = 'none';
   const was = leoIntro; leoIntro = null;
-  if (was) popupOpen = false;
+  if (was) { uncoverAfterIntro(was); popupOpen = false; }
   if (was && was.first) { markIntroSeen(); if (!skipped) startLionCoach(); }
-  if (was) $('menuBtn').focus();
+  if (was) {
+    const f = was.focusBack, ok = f && f !== document.body && f.isConnected && f.getClientRects().length && !f.closest('[inert]');
+    try { (ok ? f : $('menuBtn')).focus(); } catch (e) {}
+  }
 }
 function renderLeoIntro() {
   if (!leoIntro) return;
@@ -22997,7 +23043,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000);
   lastT = now;
   if (!G.running) { renderer.render(scene, camera); return; }
-  if (leoIntro) { renderer.render(scene, camera); drawGuide(dt); return; }
+  if (leoIntro) { introFrame(now); return; }     // 🦁 world paused under the intro backdrop; only the lion draws
   if (G.rotateGate) { renderer.render(scene, camera); return; }     // 🔄 phone held upright — everything waits
   if (trainRide) { updateTrainRide(dt); renderer.render(scene, camera); return; }   // 🚂 ride cutscene takes over the frame
   if (liveRace) { tickLiveRace(dt, now); renderer.render(scene, camera); return; }   // 🏎️ fairground race takes the camera
