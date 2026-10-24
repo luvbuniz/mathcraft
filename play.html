@@ -10807,17 +10807,18 @@ function openLibrary() {
   if (popupOpen || G.over || !G.running) return;
   // each reader has their own reading level that gently adapts (Fiona may run ahead of Leo)
   restoreReadingProgress('read');
+  probeCartoons();
   popupOpen = true; document.exitPointerLock && document.exitPointerLock();
   lib = { phase: 'pick', story: null, qs: [], qi: 0, right: 0, wrong: 0 };
   renderLib();
   $('libraryPopup').style.display = 'flex';
 }
-function closeLibrary() { try { Narrator.stop(); } catch (e) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
+function closeLibrary() { stopLibVideo(); try { Narrator.stop(); } catch (e) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e) {} $('libraryPopup').style.display = 'none'; popupOpen = false; lib = null; }
 // 🎞️ Movie collection — kids UNLOCK a cartoon by finishing a Library book, then rewatch it here
 // anytime. Titled like a SHOW (not a "lesson") so it never feels like a tutorial. Drop each clip
 // in as shots/cartoons/<id>.mp4; until then it shows a "coming soon" card.
 const CARTOONS = [
-  { id: 'icecream',   title: 'Leo and the Ice Cream Man', emoji: '🍦' },
+  { id: 'icecream',   title: 'Leo and the Ice Cream Man', emoji: '🍦', ready: true },   // ready = the .mp4 is in shots/cartoons/
   { id: 'waterslide', title: 'The Great Water Slide',     emoji: '🛝' },
   { id: 'firetruck',  title: 'Leo and the Fire Truck',    emoji: '🚒' },
   { id: 'unicorn',    title: 'Fiona and the Unicorns',    emoji: '🦄' },
@@ -10825,21 +10826,51 @@ const CARTOONS = [
   { id: 'coin',       title: 'The Magic Stackadoo Coin',  emoji: '🪙' }
 ];
 function unlockedCartoons() { return (profile.cartoonsUnlocked = profile.cartoonsUnlocked || []); }
-function unlockNextCartoon() {                        // finishing a book lights up the next reel
+// 🎬 Only reels whose clip really exists can be unlocked or shown (Pip QA P0-2: 5 of 6 reels 404'd
+// into a full-screen "COMING SOON" dead end). A reel is ready if it's flagged `ready`, or if a
+// quiet HEAD check finds its .mp4 — so a newly uploaded clip goes live without a code change.
+const CARTOON_FOUND = {};
+function cartoonReady(c) { return !!(c && (c.ready || CARTOON_FOUND[c.id] === true)); }
+function readyCartoons() { return CARTOONS.filter(cartoonReady); }
+function probeCartoons() {
+  if (typeof fetch !== 'function') return;
+  CARTOONS.forEach(c => {
+    if (c.ready || c.id in CARTOON_FOUND) return;
+    CARTOON_FOUND[c.id] = false;                       // probe once per session
+    fetch('shots/cartoons/' + c.id + '.mp4', { method: 'HEAD', cache: 'no-store' }).then(r => {
+      const ct = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
+      CARTOON_FOUND[c.id] = !!(r.ok && /video|octet-stream/i.test(ct));
+    }).catch(() => {});
+  });
+}
+function unlockNextCartoon() {                        // finishing a book lights up the next READY reel
   const u = unlockedCartoons();
-  const next = CARTOONS.find(c => u.indexOf(c.id) === -1);
+  const next = CARTOONS.find(c => cartoonReady(c) && u.indexOf(c.id) === -1);
   if (next) { u.push(next.id); profileDirty = true; saveProfile(); return next; }
-  return null;
+  return null;                                         // nothing new to unlock — callers offer a rewatch instead
+}
+function rewatchCartoon() {                          // every ready reel collected → offer one they already own
+  const u = unlockedCartoons(), own = readyCartoons().filter(c => u.indexOf(c.id) !== -1);
+  return own.length ? own[Math.floor(Math.random() * own.length)] : null;
+}
+function exitVideoFullscreen() {
+  try { const fe = document.fullscreenElement || document.webkitFullscreenElement; if (fe) { const r = (document.exitFullscreen || document.webkitExitFullscreen).call(document); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+}
+function stopLibVideo() {                            // leaving the player: drop fullscreen and silence the clip
+  exitVideoFullscreen();
+  try { const v = document.getElementById('cvid2'); if (v) { v.pause(); v.removeAttribute('src'); v.load(); } } catch (e) {}
 }
 function renderCartoonShelf() {
   $('libTitle').innerHTML = '🎞️ My Movie Collection';
   $('libStory').innerHTML = '';
-  const u = unlockedCartoons();
-  $('libPrompt').innerHTML = '📖 Read books to unlock cartoons! — <b>' + u.length + ' / ' + CARTOONS.length + '</b> collected';
+  const u = unlockedCartoons(), shelf = readyCartoons();     // reels without a clip yet are never shown
+  const got = shelf.filter(c => u.indexOf(c.id) !== -1).length;
+  $('libPrompt').innerHTML = '📖 Read books to unlock cartoons! — <b>' + got + ' / ' + shelf.length + '</b> collected' +
+    (shelf.length < CARTOONS.length ? '<br><span style="font-size:0.85em;color:#8a6d3b">More cartoons are on the way!</span>' : '');
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:9px;width:100%';
-  CARTOONS.forEach(c => {
+  shelf.forEach(c => {
     const got = u.indexOf(c.id) !== -1;
     const cell = document.createElement('button'); cell.className = 'libBtn';
     cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 7px;' + (got ? '' : 'opacity:.65;filter:grayscale(.6)');
@@ -10856,20 +10887,30 @@ function renderCartoonShelf() {
 }
 function renderCartoonWatch() {
   const c = lib.watch;
+  if (!cartoonReady(c)) { lib.phase = 'movies'; renderLib(); return; }   // never open a reel with no clip
   $('libTitle').innerHTML = c.emoji + ' ' + c.title;
   $('libPrompt').textContent = '';
   mountMoviePlayer($('libStory'), 'shots/cartoons/' + c.id + '.mp4', c.title);
-  // Pip QA N8: the kid just tapped "Watch" — start it big and with sound, not tiny and muted
+  // Pip QA N8: the kid just tapped "Watch" — start it big and with sound, not tiny and muted.
+  // Fullscreen only once the clip is really PLAYING: a failed/missing clip must never leave an
+  // invisible fullscreen layer that swallows every tap (Pip QA P0-2).
   const v = $('cvid2');
   if (v) {
     v.muted = false; v.loop = false;
     try { v.currentTime = 0; } catch (e) {}
+    const goBig = () => {
+      v.removeEventListener('playing', goBig);
+      if (lib !== libAtStart || !v.isConnected || v.error) return;
+      try { const fsf = v.requestFullscreen || v.webkitRequestFullscreen; if (fsf) { const r = fsf.call(v); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+    };
+    const libAtStart = lib;
+    v.addEventListener('playing', goBig);
+    v.addEventListener('error', () => { v.removeEventListener('playing', goBig); exitVideoFullscreen(); });
     const pp = v.play(); if (pp && pp.catch) pp.catch(() => { v.muted = true; v.loop = true; v.play().catch(() => {}); });
-    try { const fsf = v.requestFullscreen || v.webkitRequestFullscreen; if (fsf) { const r = fsf.call(v); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
   }
   const wrap = $('libChoices'); wrap.innerHTML = ''; $('libMsg').textContent = '';
   const back = document.createElement('button'); back.className = 'libBtn'; back.textContent = '⬅ Back to collection';
-  back.onclick = () => { Sound.click(); $('libStory').innerHTML = ''; lib.phase = 'movies'; renderLib(); };
+  back.onclick = () => { Sound.click(); stopLibVideo(); $('libStory').innerHTML = ''; lib.phase = 'movies'; renderLib(); };
   wrap.appendChild(back);
 }
 // Self-contained movie player (inline-styled so it works anywhere): autoplays muted + loops,
@@ -10894,7 +10935,7 @@ function mountMoviePlayer(host, src, title) {
     '</div>';
   const vid = document.getElementById('cvid2'), cue = document.getElementById('sndcue2'), fs = document.getElementById('cfs2'), fall = document.getElementById('cfall2');
   if (vid) {
-    vid.addEventListener('error', () => { vid.style.display = 'none'; if (cue) cue.remove(); if (fs) fs.remove(); });   // no clip yet → keep the "coming soon" card
+    vid.addEventListener('error', () => { exitVideoFullscreen(); vid.style.display = 'none'; if (cue) cue.remove(); if (fs) fs.remove(); });   // clip failed → leave fullscreen, keep the card
     vid.addEventListener('playing', () => { if (fall) fall.style.display = 'none'; if (cue && vid.muted) cue.style.display = ''; if (fs) fs.style.display = ''; });
     const unmute = () => { try { vid.loop = false; vid.muted = false; vid.currentTime = 0; vid.play(); } catch (e) {} if (cue) cue.style.display = 'none'; };
     vid.onclick = unmute; if (cue) cue.onclick = unmute;
@@ -10928,7 +10969,8 @@ function renderLib() {
     const u = unlockedCartoons();
     const mv = document.createElement('button'); mv.className = 'libBtn';
     mv.style.cssText = 'background:#7a4ea0;color:#fff;font-size:15px;margin-top:4px';
-    mv.innerHTML = '🎞️ My Movie Collection (' + u.length + '/' + CARTOONS.length + ')';
+    const shelf = readyCartoons();
+    mv.innerHTML = '🎞️ My Movie Collection (' + shelf.filter(c => u.indexOf(c.id) !== -1).length + '/' + shelf.length + ')';
     mv.onclick = () => { Sound.click(); lib.phase = 'movies'; renderLib(); };
     wrap.appendChild(mv);
     const booksRead = profile.booksRead || 0, battlesWon = profile.battlesWon || 0;
@@ -11070,19 +11112,23 @@ function finishLib() {
     if (G.readSlip >= 2 && G.readLevel > 1) { G.readLevel--; G.readSlip = 0; levelMsg = '📖 Now at Reading Level ' + G.readLevel + ' — you\'ve got this!'; }
   } else { G.readStreak = 0; }
   profile.readLevel = G.readLevel; profile.readStreak = G.readStreak; profile.readSlip = G.readSlip; profile.booksRead = (profile.booksRead || 0) + 1; profileDirty = true; saveProfile();
-  const unlockedNow = accFr >= Math.ceil(accT * 0.75) ? unlockNextCartoon() : null; // comprehension unlocks the cartoon
+  const earnedReel = accFr >= Math.ceil(accT * 0.75);
+  const unlockedNow = earnedReel ? unlockNextCartoon() : null; // comprehension unlocks the cartoon
+  const rewatch = earnedReel && !unlockedNow ? rewatchCartoon() : null;   // all ready reels collected → watch a favourite again
   $('libStory').innerHTML = '<div style="font-size:50px">📚⭐</div>';
   $('libPrompt').innerHTML = 'You finished <b>' + lib.story.t + '</b>.' + (accFr ? ' Nice work!' : ' Let’s read it together and try again.') +
     '<br><span style="color:#3b5d9e;font-weight:800">📖 First-try score: ' + (lib.firstRight || 0) + '/' + lib.qs.length + '</span>' +
     (hadChallenge && accFr === accT ? '<br><span style="color:#E0A100;font-weight:800">🌟 Challenge bonus included!</span>' : '') +
     (levelMsg ? '<br><span style="color:#2f8a52;font-weight:800">' + levelMsg + '</span>' : '') +
-    (unlockedNow ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 New cartoon unlocked — "' + unlockedNow.title + '"! Watch it in 🎞️ My Movie Collection.</span>' : '');
+    (unlockedNow ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 New cartoon unlocked — "' + unlockedNow.title + '"! Watch it in 🎞️ My Movie Collection.</span>' : '') +
+    (rewatch ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 You\'ve collected every cartoon so far — more are coming soon!</span>' : '');
   $('libChoices').innerHTML = '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">🪙 +' + reward + ' — Read another!</button>' +
     (unlockedNow ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch my new cartoon!</button>' : '') +
+    (rewatch ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch a cartoon again</button>' : '') +
     '<button class="libBtn" id="libDoneBtn">Done</button>';
   $('libMsg').textContent = 'Coins come from first-try answers. Get ' + Math.ceil(accT * 0.75) + ' out of ' + accT + ' right to unlock a cartoon.';
   $('libAgainBtn').onclick = () => { closeLibrary(); openLibrary(); };
-  if (unlockedNow) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow }; $('libStory').innerHTML = ''; renderLib(); };
+  if (unlockedNow || rewatch) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: unlockedNow || rewatch }; $('libStory').innerHTML = ''; renderLib(); };
   $('libDoneBtn').onclick = closeLibrary;
 }
 /* ⚔️ Library Battle — a milestone boss-read: a longer story one level harder, a 5-question
@@ -11110,16 +11156,17 @@ function finishBattle() {
     G.readStreak = G.readSlip = profile.readStreak = profile.readSlip = 0;  // a battle win bumps the reading level
     const reward = 30 + (lib.battleLevel || 2) * 4;
     G.coins += reward; if (Sound.fanfare) Sound.fanfare(); refreshHUD(); if (typeof bumpHud === 'function') bumpHud('coinCount');
-    const prize = unlockNextCartoon();                          // bonus movie prize
+    const prizeNew = unlockNextCartoon();                      // bonus movie prize…
+    const prize = prizeNew || rewatchCartoon();                 // …or a favourite again, once every ready reel is collected
     profileDirty = true; saveProfile();
     $('libTitle').innerHTML = '⚔️ Library Battle — WON!';
     $('libStory').innerHTML = '<div style="font-size:54px">🏆⚔️</div>';
     $('libPrompt').innerHTML = '🎉 You aced the challenge — <b>' + fr + '/' + total + '</b>!  +' + reward + ' 🪙' +
       '<br><span style="color:#2f8a52;font-weight:800">📈 Reading Level up — now Level ' + G.readLevel + '!</span>' +
-      (prize ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 Prize unlocked — "' + prize.title + '"!</span>' : '') +
+      (prizeNew ? '<br><span style="color:#7a4ea0;font-weight:800">🎬 Prize unlocked — "' + prizeNew.title + '"!</span>' : '') +
       '<br><span style="color:#8a6d3b;font-size:0.9em">Keep reading to earn the 🐛 Bookworm &amp; 🦉 Wise Owl badges!</span>';
     $('libChoices').innerHTML =
-      (prize ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">🎬 Watch my prize cartoon!</button>' : '') +
+      (prize ? '<button class="libBtn" style="background:#7a4ea0;color:#fff" id="libWatchBtn">' + (prizeNew ? '🎬 Watch my prize cartoon!' : '🎬 Watch a cartoon again') + '</button>' : '') +
       '<button class="libBtn" style="background:#3f9d34;color:#fff" id="libAgainBtn">📚 Back to the Library</button>' +
       '<button class="libBtn" id="libDoneBtn">Done</button>';
     if (prize) $('libWatchBtn').onclick = () => { Sound.click(); lib = { phase: 'watch', watch: prize }; $('libStory').innerHTML = ''; renderLib(); };
