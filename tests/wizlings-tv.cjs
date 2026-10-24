@@ -70,7 +70,7 @@ test('unlocks are per profile', () => {
   W.wizUnlockForSession(session('Scooter: From Wizard to Pomeranian'), leo);
   const ep1 = W.WIZ_TV.episodes[0];
   assert.equal(W.wizIsUnlocked(ep1, leo), true); assert.equal(W.wizIsUnlocked(ep1, fiona), false);
-  assert.deepEqual(JSON.parse(JSON.stringify(leo)), { wizTvUnlocked: ['ep1'], wizTvTickets: ['ep1'] });   // survives the JSON save
+  assert.deepEqual(JSON.parse(JSON.stringify(leo)), { wizTvUnlocked: ['ep1'], wizTvGrandfathered: ['ep1'], wizTvTickets: ['ep1'] });   // survives the JSON save
 });
 const ep = id => W.WIZ_TV.episodes.find(e => e.id === id);
 function extract(name) { const s = html.indexOf('function ' + name + '('); return html.slice(s, html.indexOf('\n}', s) + 2); }
@@ -180,9 +180,48 @@ test('no bypass in the UI code: player needs a ticket, no Watch-again, ended blo
   assert.equal((shelf.match(/wizPlay\(/g) || []).length, 1, 'only ready tiles call wizPlay');
   assert.ok(/Read it again to watch!/.test(shelf));
 });
-test('legacy save (unlocked before this rule, no tickets) shows watched, not playable', () => {
+test('legacy save BEFORE grandfathering runs: unlock alone is not a ticket', () => {
   const p = reload({ wizTvUnlocked: ['ep3'] });
   assert.equal(W.wizIsUnlocked(ep('ep3'), p), true); assert.equal(W.wizHasTicket(ep('ep3'), p), false);
+});
+
+// ---- 🎟️ grandfathering: episodes unlocked before tickets existed get ONE free viewing ----
+test('legacy save (unlocked before tickets, no ticket record) gets exactly 1 ticket per episode on load', () => {
+  const p = reload({ wizTvUnlocked: ['ep3', 'ep1'] });
+  assert.equal(W.wizGrandfather(p), 2);
+  assert.equal(W.wizHasTicket(ep('ep3'), p), true); assert.equal(W.wizHasTicket(ep('ep1'), p), true);
+  assert.deepEqual([...p.wizTvTickets].sort(), ['ep1', 'ep3']);
+  assert.equal(W.wizGrandfather(p), 0); assert.deepEqual([...p.wizTvTickets].sort(), ['ep1', 'ep3']);   // a second load does not stack
+});
+test('grandfathered viewing used → reload → no re-grant (flag persists)', () => {
+  let p = reload({ wizTvUnlocked: ['ep3'] }); W.wizGrandfather(p);
+  const h = spendHarness(p); h.c.WizTV.ended = true; h.c.spend();
+  assert.equal(W.wizHasTicket(ep('ep3'), p), false);
+  p = reload(p);
+  assert.deepEqual([...p.wizTvGrandfathered], ['ep3']);
+  assert.equal(W.wizGrandfather(p), 0); assert.equal(W.wizHasTicket(ep('ep3'), p), false);
+  p = reload(p); assert.equal(W.wizGrandfather(p), 0); assert.deepEqual([...p.wizTvTickets], []);
+});
+test('grandfathering: a new profile gets nothing free; new-rule unlocks are never grandfathered', () => {
+  const fresh = reload({}); assert.equal(W.wizGrandfather(fresh), 0); assert.equal((fresh.wizTvTickets || []).length, 0);
+  let p = {}; W.wizUnlockForSession(bronco(), p);
+  const h = spendHarness(p); h.c.WizTV.ended = true; h.c.spend(); p = reload(p);
+  assert.equal(W.wizGrandfather(p), 0); assert.equal(W.wizHasTicket(ep('ep3'), p), false);
+});
+test('grandfathering: an unused existing ticket is kept as one (no double)', () => {
+  const p = reload({ wizTvUnlocked: ['ep3'], wizTvTickets: ['ep3'] });
+  assert.equal(W.wizGrandfather(p), 0); assert.deepEqual([...p.wizTvTickets], ['ep3']);
+});
+test('grandfathering never grants Ep6 or unpaired ids, even in a hand-edited save', () => {
+  const p = reload({ wizTvUnlocked: ['ep6', 'lostkite', 'ep99'] });
+  assert.equal(W.wizGrandfather(p), 0);
+  assert.equal(W.wizHasTicket(ep('ep6'), p), false); assert.deepEqual([...p.wizTvTickets], []);
+  const p2 = reload({ wizTvUnlocked: ['ep6', 'ep2'] }); assert.equal(W.wizGrandfather(p2), 1);
+  assert.deepEqual([...p2.wizTvTickets], ['ep2']); assert.ok(!p2.wizTvGrandfathered.includes('ep6'));
+});
+test('profile load runs the grandfathering once and marks the profile dirty', () => {
+  const lp = extract('loadProfileFor');
+  assert.ok(/wizGrandfather\(profile\)\) profileDirty = true/.test(lp));
 });
 
 // ---- player teardown (pause → removeAttribute src → load → remove) and render-loop resume ----

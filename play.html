@@ -5485,6 +5485,8 @@ function loadProfileFor(name) {
   // begin a conservative fresh evidence window; their old global level is never treated
   // as proof of mastery.
   ensureMathLearning();
+  // 📺 one free Wizlings TV viewing for episodes unlocked before tickets existed (granted once, then flagged)
+  try { if (wizGrandfather(profile)) profileDirty = true; } catch (e) {}
 }
 
 function safeMathGrade(value, fallback) {
@@ -10918,6 +10920,21 @@ function wizGrantTicket(ep, p) {             // → true if a NEW ticket was add
   const t = wizTickets(p); if (t.indexOf(ep.id) !== -1) return false;
   t.push(ep.id); return true;
 }
+/* 🎟️ GRANDFATHERING (Amy/Riley, Oct 24): an episode unlocked under the OLD scheme (before tickets) with no
+   ticket gets exactly ONE free viewing, once per profile + episode. p.wizTvGrandfathered records every
+   episode already granted (or earned under the new rule), so a used free viewing is never re-granted —
+   reloads included. Only visible, paired episodes count: Ep6 / unknown ids in a hand-edited save get nothing. */
+function wizGrandfathered(p) { return (p.wizTvGrandfathered = Array.isArray(p.wizTvGrandfathered) ? p.wizTvGrandfathered : []); }
+function wizGrandfather(p) {                 // → number of free viewings granted now (call on profile load)
+  if (!p || !Array.isArray(p.wizTvUnlocked) || !p.wizTvUnlocked.length) return 0;
+  const g = wizGrandfathered(p), t = wizTickets(p); let n = 0;
+  wizVisibleEpisodes().forEach(ep => {
+    if (!wizIsUnlocked(ep, p) || g.indexOf(ep.id) !== -1) return;
+    g.push(ep.id);
+    if (t.indexOf(ep.id) === -1) { t.push(ep.id); n++; }
+  });
+  return n;
+}
 function wizUseTicket(ep, p) {               // → true if a ticket was actually spent
   const t = wizTickets(p), i = ep ? t.indexOf(ep.id) : -1;
   if (i === -1) return false;
@@ -10939,6 +10956,7 @@ function wizUnlockForSession(s, p) {          // → { ep, isNew, ticket } when 
   if (!ep || !wizQualifies(s)) return null;
   const u = wizUnlocked(p), isNew = u.indexOf(ep.id) === -1;
   if (isNew) u.push(ep.id);
+  const g = wizGrandfathered(p); if (g.indexOf(ep.id) === -1) g.push(ep.id);   // earned under the new rule → never grandfathered
   const ticket = wizGrantTicket(ep, p);       // one viewing per pass; already holding one → still one
   return { ep: ep, isNew: isNew, ticket: ticket };
 }
