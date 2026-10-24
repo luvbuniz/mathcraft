@@ -256,7 +256,7 @@
   #leoStep i.on { background:#ffb81f; box-shadow:0 0 0 2px #fff3c4; }
   #leoStep i.done { background:#9cc58d; }
   /* 👇 after the intro: a bouncing arrow to the nearest ❓ box while the kid hasn't moved yet */
-  #qHintArrow { position:fixed; left:0; top:0; z-index:26; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:4px; will-change:transform; }
+  #qHintArrow { position:fixed; left:0; top:0; z-index:47; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:4px; will-change:transform; }
   #qHintArrow[hidden] { display:none; }
   #qHintArrow .qa { width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ffc83d;
     filter:drop-shadow(0 3px 0 #e2a21b) drop-shadow(0 4px 8px rgba(0,0,0,.25)); animation:qBounce .8s ease-in-out infinite; }
@@ -12143,7 +12143,7 @@ function qHintTick() {
   if (popupOpen || !G.running) { a.hidden = true; qHint.since = now; return; }
   if (Math.hypot(player.pos.x - qHint.x, player.pos.z - qHint.z) > 0.8) { endQHint(); return; }   // they're on the move
   if (now - qHint.since < 3500) return;
-  const W = innerWidth, H = innerHeight, mx = 56, top = 120, bot = H - 190;
+  const W = innerWidth, H = innerHeight, short = H < 520, mx = 56, top = short ? 78 : 120, bot = H - (short ? 96 : 190);
   if (!qHint.st) {                             // nearest box — but if one almost as close is already on screen, that one
     const ns = nearestStation(); if (!ns.st) { endQHint(); return; }
     let best = ns.st, bd = 1e9;
