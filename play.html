@@ -16664,7 +16664,7 @@ function hudLevelText() {
   const w = curWorld();
   if (w && w.subject === 'reading') {
     const rl = G.readLevel != null ? G.readLevel : Math.max(1, Math.min(5, (profile && profile.readLevel) || G.grade || 2));
-    return '📖 Reading Level ' + rl;
+    return '📖 Level ' + rl;                 // short: the pill already says Reading Town
   }
   return '⭐ Level ' + levelFromScore(profile.stars || 0);
 }
