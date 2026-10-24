@@ -21155,9 +21155,9 @@ function refreshAvatarPreviews() {
   const suffix = classicHeroes() ? '-classic' : '';
   document.querySelectorAll('#avatarGrid img[data-avatar-id]').forEach(img => {
     const base = 'avatars/previews/' + img.dataset.avatarId;
-    const src = base + suffix + '.webp?v=304';
+    const src = base + suffix + '.webp?v=305';
     if (img.getAttribute('src') === src) return;
-    img.onerror = () => { img.onerror = null; img.src = base + '-classic.webp?v=304'; };
+    img.onerror = () => { img.onerror = null; img.src = base + '-classic.webp?v=305'; };
     img.src = src;
   });
 }

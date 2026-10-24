@@ -46,7 +46,7 @@ async function main() {
   assert.equal(cards.length,2);assert.equal(images.length,2);
   assert(cards[1].className.includes('selected'));
   assert(images.every(img=>img.loading==='lazy'&&img.decoding==='async'));
-  assert(images[0].src.endsWith('queenfox.webp?v=304'));
+  assert(images[0].src.endsWith('queenfox.webp?v=305'));
   cards[0].onclick();assert.equal(menuContext.G.avatarIndex,0);
   classic=true;menuContext.refreshAvatarPreviews();assert(images[1].src.includes('leo-classic.webp'));
   classic=false;menuContext.refreshAvatarPreviews();images[1].onerror();
