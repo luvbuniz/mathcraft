@@ -22,7 +22,7 @@ import argparse, json, os, re, subprocess, sys, tempfile, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'audio', 'intro')
-DEFAULT_EL_VOICE = 'pNInz6obpgDQGcFmaJgB'   # ElevenLabs premade "Adam"; set ELEVENLABS_VOICE_ID to pick another
+DEFAULT_EL_VOICE = 'iq1GS1mcjc63xtqTrsFh'   # ElevenLabs "Piksel" (King Lion, Amy's pick); set ELEVENLABS_VOICE_ID to pick another
 
 
 def load_lines():
