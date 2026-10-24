@@ -1170,7 +1170,6 @@
 <!-- ================= START SCREEN ================= -->
 <div id="startScreen">
   <button id="startSoundBtn" title="Sound on/off" style="position:fixed;top:12px;right:12px;z-index:51;font-size:22px;width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.85);box-shadow:0 3px 0 #cbb67a;cursor:pointer">🔊</button>
-  <button id="startMusicBtn" title="Music on/off" style="display:none;position:fixed;top:12px;right:66px;z-index:51;font-size:22px;width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.85);box-shadow:0 3px 0 #cbb67a;cursor:pointer">🎵</button>
   <svg id="bgScene" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <circle cx="1066" cy="116" r="122" fill="#FFE7A0" opacity=".4"/>
     <circle cx="1066" cy="116" r="66" fill="#FFDE76"/>
@@ -2639,84 +2638,6 @@ const Sound = {
   toggleMute() { this.muted = !this.muted; try { LS.setItem('stackadooMuted', this.muted ? '1' : '0'); } catch (e) {} return this.muted; }
 };
 try { Sound.muted = LS.getItem('stackadooMuted') === '1'; } catch (e) {}   // 🔊 remember the on/off choice
-/* 🎵 BACKGROUND MUSIC — bright, upbeat tracks per world, kept quiet and polite:
-   - low volume, starts with a slow fade-in, and a 30–45 s quiet gap between tracks
-     (non-stop loops are what makes kids' game music irritating)
-   - ducks under King Lion / story voices; goes silent in the Library, Post Office,
-     Cinema, Void Drift and full-screen cartoons, where kids need to hear words
-   - its own on/off (🎵), remembered per device; the 🔊 Sound switch mutes it too
-   Tracks live in audio/music/<world>-<n>.mp3 (made by tools/make_music.py). */
-const MUSIC_TRACKS = { meadow: 3, city: 3, beach: 2, west: 2 };
-const MUSIC_V = 1, MUSIC_VOL = 0.16;
-const Music = {
-  on: true, el: null, world: null, playing: false, gapUntil: 0, avail: {}, vol: 0, timer: null, order: [], idx: 0,
-  init() {
-    try { this.on = LS.getItem('stackadooMusic') !== '0'; } catch (e) {}
-    if (!this.timer) this.timer = setInterval(() => this.tick(), 250);
-  },
-  src(world, n) { return 'audio/music/' + world + '-' + n + '.mp3?v=' + MUSIC_V; },
-  async probe(world) {                       // does this world have music yet? (missing files = silent, no errors)
-    if (this.avail[world] != null) return this.avail[world];
-    const n = MUSIC_TRACKS[world] || 0; const ok = [];
-    for (let i = 1; i <= n; i++) { try { const r = await fetch(this.src(world, i), { method: 'HEAD' }); if (r.ok) ok.push(i); } catch (e) {} }
-    this.avail[world] = ok; refreshMusicUI(); return ok;
-  },
-  async start(world) {
-    this.world = world; this.gapUntil = 0;
-    const ok = await this.probe(world);
-    if (this.world !== world || !ok.length) return;
-    this.order = shuffle(ok.slice()); this.idx = 0;
-    if (this.on && !Sound.muted) this.next();
-  },
-  next() {
-    const ok = this.avail[this.world] || [];
-    if (!ok.length) return;
-    if (this.idx >= this.order.length) { this.order = shuffle(ok.slice()); this.idx = 0; }
-    const n = this.order[this.idx++];
-    this.halt();
-    const a = new Audio(this.src(this.world, n)); a.preload = 'auto'; a.volume = 0; this.vol = 0;
-    a.addEventListener('ended', () => { if (this.el === a) { this.playing = false; this.gapUntil = performance.now() + 30000 + Math.random() * 15000; } });
-    a.addEventListener('error', () => { if (this.el === a) this.playing = false; });
-    this.el = a; this.playing = true;
-    const p = a.play(); if (p && p.catch) p.catch(() => { this.playing = false; });   // autoplay blocked: the next tap retries
-  },
-  halt() { if (this.el) { try { this.el.pause(); this.el.removeAttribute('src'); this.el.load(); } catch (e) {} } this.el = null; this.playing = false; },
-  stop() { this.world = null; this.halt(); },
-  quietPlace() {                             // places where words matter more than music
-    const vis = id => { const e = $(id); return e && e.style.display === 'flex'; };
-    return vis('libraryPopup') || vis('postPopup') || vis('cinemaPopup') || !!$('voidOverlay') ||
-      !!(document.fullscreenElement || document.webkitFullscreenElement);
-  },
-  tick() {
-    if (!this.world || !G.running) { if (this.el) this.halt(); return; }
-    if (G.world !== this.world && !this._switching) { this._switching = true; this.halt(); this.start(G.world).finally(() => { this._switching = false; }); return; }   // travelled to another world
-    const want = this.on && !Sound.muted;
-    if (!want) { if (this.el) this.halt(); return; }
-    if (!this.el && !this.playing && performance.now() > this.gapUntil && (this.avail[this.world] || []).length && !document.hidden) { this.next(); return; }
-    if (!this.el) return;
-    if (document.hidden) { if (!this.el.paused) this.el.pause(); return; }
-    if (this.el.paused && this.playing) { const p = this.el.play(); if (p && p.catch) p.catch(() => {}); }
-    let target = MUSIC_VOL;
-    if (this.quietPlace()) target = 0;
-    else if (Narrator.speaking || (typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking)) target = MUSIC_VOL * 0.25;
-    else if (popupOpen) target = MUSIC_VOL * 0.6;              // a little softer while answering questions
-    const step = target > this.vol ? 0.006 : 0.03;              // slow fade-in, quicker duck
-    this.vol = this.vol < target ? Math.min(target, this.vol + step) : Math.max(target, this.vol - step);
-    try { this.el.volume = this.vol; } catch (e) {}
-  },
-  toggle() {
-    this.on = !this.on; try { LS.setItem('stackadooMusic', this.on ? '1' : '0'); } catch (e) {}
-    if (!this.on) this.halt(); else { this.gapUntil = 0; if (this.world && !this.el) this.next(); }
-    refreshMusicUI(); return this.on;
-  }
-};
-function musicAvailable() { return Object.keys(Music.avail).some(w => (Music.avail[w] || []).length); }
-function refreshMusicUI() {
-  const b = $('startMusicBtn');
-  if (b) { b.textContent = Music.on ? '🎵' : '🎵̸'; b.style.opacity = Music.on ? '1' : '.55'; b.title = Music.on ? 'Music is on — tap to turn off' : 'Music is off — tap to turn on'; b.style.display = musicAvailable() ? '' : 'none'; }
-}
-Music.init();
-
 document.addEventListener('pointerdown', function initAudioOnce() {
   Sound.init();
   if (Sound.ctx && Sound.ctx.state === 'suspended') Sound.ctx.resume();
@@ -6101,7 +6022,6 @@ function confirmLeave() {
 }
 function goHome() {
   $('leavePopup').style.display = 'none';
-  try { Music.stop(); } catch (e) {}
   try { closeLeoIntro(true); } catch (e) { try { Narrator.stop(); } catch (e2) {} }
   try { lionCoach = null; if (coachBeacon) coachBeacon.visible = false; coachPulseUse(false); $('lionCoach').hidden = true; $('lionCoachBubble').hidden = true; } catch (e) {}
   if (typeof hideBridgeOffer === 'function') hideBridgeOffer();
@@ -20004,7 +19924,6 @@ function openHudMenu() {
     ['classicBtn', profile.classicHeroes ? '🧱' : '🎬', '<b>Hero style</b> <small>' + (profile.classicHeroes ? 'classic blocky' : 'studio models') + '</small>'],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
-    ...(musicAvailable() ? [['musicBtn', '🎵', '<b>Music</b> <small>' + (Music.on ? 'is on' : 'is off') + '</small>']] : []),
     ['cursorBtn', '❔', '<b>How to play</b>'],
     ['saveBtn',   '💾', '<b>Save game</b>'],
     ['homeBtn',   '🏠', '<b>Save & go home</b>'],
@@ -20014,7 +19933,6 @@ function openHudMenu() {
     m.style.display = 'none';
     if (b.dataset.b === 'mirrorBtn') { Sound.click(); openHeroMirror(); return; }   // 🪞 lives right here (no hidden HUD button)
     if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }   // 🧱 same — a menu-only feature
-    if (b.dataset.b === 'musicBtn') { Sound.click(); const on = Music.toggle(); toast(on ? '🎵 Music on' : '🎵 Music off', 1400); return; }
     const t = $(b.dataset.b);
     if (t && t.onclick) t.onclick();
   });
@@ -20642,8 +20560,6 @@ function refreshMuteIcons() {
 }
 function toggleAudio() { const m = Sound.toggleMute(); refreshMuteIcons(); if (!m) Sound.click(); }
 $w('soundBtn').onclick = toggleAudio;
-$w('startMusicBtn').onclick = () => { Sound.click(); Music.toggle(); };
-Music.probe('meadow');                                // show the 🎵 button on the title screen once tracks exist
 $w('startSoundBtn').onclick = toggleAudio;
 refreshMuteIcons();                                   // reflect the remembered on/off choice on load
 
@@ -21494,7 +21410,6 @@ function startGame() {
   respawnNpcs();                                // 🧑‍🤝‍🧑 town friends stroll near spawn (restore & travel come through here too)
   refreshHUD();
   G.running = true;
-  try { Music.start(G.world); } catch (e) {}
   updateRotateGate();                             // 🔄 clears any leftover rotate overlay (portrait plays now!)
   if (G.grade) profile.grade = G.grade;           // remember the starting grade (parents' grade-equivalency uses it)
 
