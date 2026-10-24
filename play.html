@@ -56,6 +56,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script>/*TOUCH_FIRST_START*/
+/* 👆 Touch-first devices (tablets & phones) never see keyboard copy (Amy, Oct 24:
+   "WASD keyboard use shouldn't be on anything that resembles a tablet").
+   touch-first = the PRIMARY pointer is coarse, or there is touch and NO hover-capable
+   pointer. A touch laptop with a mouse/trackpad reports (pointer: fine) + (hover: hover),
+   so it keeps the keyboard hints. Touch CONTROLS still use isTouch (any touch at all). */
+function detectTouchFirst(w) {
+  try {
+    const mm = q => !!(w.matchMedia && w.matchMedia(q).matches);
+    if (mm('(pointer: coarse)')) return true;
+    const tp = (w.navigator && w.navigator.maxTouchPoints) || 0;
+    return tp > 0 && !mm('(hover: hover)');
+  } catch (e) { return false; }
+}
+var touchFirst = detectTouchFirst(window);
+/* kbOr(desktop, touch): pick the hint copy for this device. */
+function kbOr(desk, touch) { return touchFirst ? touch : desk; }
+document.documentElement.classList.toggle('touchFirst', touchFirst);
+/*TOUCH_FIRST_END*/</script>
+<style>
+  html.touchFirst .kbdOnly { display:none !important; }
+  html:not(.touchFirst) .touchOnly { display:none !important; }
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="interior-art.js?v=283-ready"></script>
 <script src="lib/GLTFLoader.js"></script><!-- 🎨 real 3D character models (avatars/<id>.glb), optional & offline-cached -->
@@ -1327,6 +1350,7 @@
       <details class="howto">
         <summary>How to play</summary>
         <div class="howtoBody">
+          <div class="kbdOnly">
           <span class="kbd">Arrows</span>/<span class="kbd">WASD</span> move <span class="kbd">Space</span> jump
           <span class="kbd">E</span> use / sit <span class="kbd">D</span> drop / place
           <span class="kbd">R</span> remove <span class="kbd">I</span> backpack
@@ -1334,7 +1358,8 @@
           <p><b>Two ways to play with a mouse</b> (pick whichever you like):</p>
           <p>🚶 <b>Click-to-move</b> (no keyboard needed): turn on the <b>🚶 Click-to-move</b> button (bottom-left), then <b>left-click the ground</b> to walk there. Click a math block or shop to use it. <b>Driving?</b> Just click the road ahead and your vehicle steers there. Drag to look around.</p>
           <p>🔨 <b>Build mode</b> (default): <b>left-click builds</b>, <b>right-click removes</b>, drag to look. Move with the arrow keys / WASD.</p>
-          <p><b>Phone or tablet:</b> drag anywhere to move (a circle appears under your thumb). <b>Tap</b> the world to build a block, <b>hold your finger on a block</b> to break it (keep holding to dig!), and <b>flick up on your hero</b> to jump. ⭐ Use starts math & everything nearby.</p>
+          </div>
+          <p><b class="kbdOnly">Phone or tablet: </b>Drag anywhere to move (a circle appears under your thumb). <b>Tap</b> the world to build a block, <b>hold your finger on a block</b> to break it (keep holding to dig!), and <b>flick up on your hero</b> to jump. ⭐ Use starts math & everything nearby.</p>
           <p>Solve math to earn bricks and coins for your next creation!</p>
           <p>✅ <b>Works best in Chrome</b> — on phones, tablets, <b>and desktop</b>. Other browsers (like Brave) can be janky or block features; if anything looks or feels off, switch to Chrome.</p>
         </div>
@@ -5235,7 +5260,7 @@ const SHOP_ITEMS = [
   { id: 'table',  icon: '🍽️', name: 'Picnic Table', price: 12, kind: 'many', desc: 'Goes in your backpack. Put food on top!' },
   { id: 'umbrella', icon: '⛱️', name: 'Patio Umbrella', price: 16, kind: 'many', desc: 'A patio table shaded by a big striped umbrella — perfect for the yard or poolside.' },
   { id: 'lounger', icon: '🏖️', name: 'Sun Lounger', price: 13, kind: 'many', desc: 'A reclining deck chair to soak up the sun by the pool.' },
-  { id: 'bed',    icon: '🛏️', name: 'Big Comfy Bed', price: 14, kind: 'many', desc: 'Avatar-sized bed. Place it, walk close, then press L to lie down.' },
+  { id: 'bed',    icon: '🛏️', name: 'Big Comfy Bed', price: 14, kind: 'many', get desc() { return kbOr('Avatar-sized bed. Place it, walk close, then press L to lie down.', 'Avatar-sized bed. Place it, walk close, then tap ⭐ USE to lie down.'); } },
   { id: 'dtable', icon: '🍽️', name: 'Dining Table', price: 24, kind: 'many', desc: 'A fancy dining table — pick a style in your 🎒 backpack. Set plates on it!' },
   { id: 'plates', icon: '🍴', name: 'Plates & Cutlery', price: 8, kind: 'many', desc: 'A place setting — put it on a table to set it for dinner.' },
   { id: 'couch',  icon: '🛋️', name: 'Comfy Couch', price: 24, kind: 'many', desc: 'A plush couch — pick a style & color, and pets can curl up on it!' },
@@ -7942,7 +7967,7 @@ function summonVehicle(id) {
   a.group.position.set(player.pos.x + 1.6, 0, player.pos.z);   // appears beside you
   a.yaw = Math.PI; a.group.rotation.y = a.yaw + Math.PI; a.group.visible = true; a.spawned = true;
   saveGarageState();
-  toast(a.def.emoji + ' ' + a.def.name + ' is right beside you — tap ⭐ USE (E) to drive!', 3200);
+  toast(a.def.emoji + ' ' + a.def.name + ' is right beside you — tap ⭐ USE' + kbOr(' (E)', '') + ' to drive!', 3200);
 }
 // Put the current vehicle away in the backpack (clears it from the world).
 function stowVehicle() {
@@ -8334,7 +8359,7 @@ function finishBake() {
   G.treats.push({ e: treatEmoji, n: treatName() });   // pop it in the backpack to eat later
   $('bakeTray').innerHTML = '<div style="font-size:54px">' + treatEmoji + '</div>';
   $('bakePrompt').innerHTML = '🎉 Your <b>' + treatName() + '</b> is ' + (bake.treat.ice ? 'frozen just right' : 'baked perfectly') + ' — yum!' +
-    '<br><span style="color:#3b5d9e;font-weight:800">🎒 Popped in your backpack — press I to eat it!</span>' +
+    '<br><span style="color:#3b5d9e;font-weight:800">🎒 Popped in your backpack — ' + kbOr('press I', 'tap 🎒') + ' to eat it!</span>' +
     (bonus ? '<br><span style="color:#2f8a52;font-weight:800">🇪🇺 European bonus: +' + bonus + ' 🪙!</span>' : '');
   $('bakeChoices').innerHTML = '<button class="bakeBtn" style="background:#3f9d34;color:#fff" id="bakeAgainBtn">🪙 +' + reward + ' — Make another!</button>' +
     '<button class="bakeBtn" id="bakeDoneBtn">Done</button>';
@@ -11767,7 +11792,7 @@ const LION_LINES = /*LION_LINES_START*/{
 const LION_AUDIO_V = 300;
 function lionText(key) {
   const l = LION_LINES[key]; if (!l) return '';
-  if (!isTouch) {                                  // desktop wording for the "how do I" lines
+  if (!touchFirst) {                               // desktop wording for the "how do I" lines
     if (key === 'go_block') return 'Walk to the purple ❓ box (arrow keys / WASD). Follow the ⬇️ arrow.';
     if (key === 'at_block') return 'You found it! Press ⭐ USE (or E)!';
     if (key === 'build') return 'Click the grass to put down a brick! 🧱';
@@ -14734,7 +14759,7 @@ function toggleBedRest() {
     player.restingBed = null;
     player.pos.set(bed.mesh.position.x + 1.5, bed.mesh.position.y, bed.mesh.position.z);
     player.vel.set(0, 0, 0);
-    toast('All rested! Press L near the bed to lie down again.');
+    toast(kbOr('All rested! Press L near the bed to lie down again.', 'All rested! Tap ⭐ USE near the bed to lie down again.'));
     return;
   }
   const bed = nearestBed(3.4);
@@ -14742,7 +14767,7 @@ function toggleBedRest() {
     player.restingBed = bed;
     player.vel.set(0, 0, 0);
     if (document.pointerLockElement) document.exitPointerLock();
-    toast('Cozy! Press L again when you are ready to get up.');
+    toast(kbOr('Cozy! Press L again when you are ready to get up.', 'Cozy! Tap ⭐ USE when you are ready to get up.'));
     return;
   }
   // Country Home / roofed room: L enters a real interior view (sleep if a bed is in the house)
@@ -14753,15 +14778,15 @@ function toggleBedRest() {
       player.restingBed = houseBed;
       player.vel.set(0, 0, 0);
       if (document.pointerLockElement) document.exitPointerLock();
-      toast('🛏️ Nighty-night! Press L again to get up.', 2800);
+      toast(kbOr('🛏️ Nighty-night! Press L again to get up.', '🛏️ Nighty-night! Tap ⭐ USE to get up.'), 2800);
       return;
     }
     G.firstPerson = true; G.birdsEye = false; G._autoInterior = true;
     const cb = $('camBtn'); if (cb) cb.textContent = camIcon();
-    toast('🏠 You\'re inside! Walk to a 🛏️ bed and press L to lie down. Press C to change view.', 4000);
+    toast(kbOr('🏠 You\'re inside! Walk to a 🛏️ bed and press L to lie down. Press C to change view.', '🏠 You\'re inside! Walk to a 🛏️ bed and tap ⭐ USE to lie down. Tap 👁️ to change view.'), 4000);
     return;
   }
-  toast('Walk close to your bed (or into your house), then press L.');
+  toast(kbOr('Walk close to your bed (or into your house), then press L.', 'Walk close to your bed (or into your house), then tap ⭐ USE.'));
 }
 
 /* 🎠 PLAYGROUND — the rideable pieces you build & play on. Walk up, tap ⭐ USE to hop on. */
@@ -14918,7 +14943,7 @@ function useStairs(entry) {
   const top = baseY + LIFT_FLOOR_H;
   const goingUp = player.pos.y < baseY + LIFT_FLOOR_H * 0.5;
   if (goingUp && !liftHasLanding(entry, top)) {          // 🪜 no second floor yet → teach, don't teleport
-    toast('🪜 No floor up there yet! Build one ' + LIFT_FLOOR_H + ' blocks up next to the stairs — press C twice for 🦅 bird\'s eye and use 🌉 Fill across to lay it fast!', 4200);
+    toast('🪜 No floor up there yet! Build one ' + LIFT_FLOOR_H + ' blocks up next to the stairs — ' + kbOr('press C', 'tap 👁️') + ' twice for 🦅 bird\'s eye and use 🌉 Fill across to lay it fast!', 4200);
     if (Sound.wrong) Sound.wrong();
     return;
   }
@@ -15992,7 +16017,7 @@ function updatePlayer(dt) {
     for (let y = Math.floor(player.pos.y) + 2; y <= 9; y++) {
       if (blocks.has(key(hx, y, hz))) {
         G.roofHintShown = true;
-        toast('🏠 You\'re inside your house! Tap 👁️ (or press C) for a first-person look at your windows & kitchen.', 4500);
+        toast('🏠 You\'re inside your house! Tap 👁️' + kbOr(' (or press C)', '') + ' for a first-person look at your windows & kitchen.', 4500);
         break;
       }
     }
@@ -17385,7 +17410,7 @@ function buyItem(id) {
     else if (id === 'garagedoor') { G.garageDoors++; extra = ' (you now have ' + G.garageDoors + ')'; }
     else if (id === 'roof') { G.furniture.roof += 12; extra = ' (+12 tiles → you have ' + G.furniture.roof + ')'; }
     else { G.furniture[id]++; extra = ' (you now have ' + G.furniture[id] + ')'; }
-    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 red backpack' + extra + '. Press I to place it.', 4200);
+    toast('✅ Bought ' + item.icon + ' ' + item.name + '!  −' + item.price + ' 🪙 · ' + G.coins + ' left · now in your 🎒 red backpack' + extra + '. ' + kbOr('Press I', 'Tap 🎒') + ' to place it.', 4200);
   } else {
     if (G.owned[id]) { toast('✓ You already own ' + item.icon + ' ' + item.name + ' — no need to buy it again!', 2800); return; }
     if (G.coins < item.price) { toast('🪙 Not enough coins for ' + item.name + ' — it costs ' + item.price + ' 🪙 and you have ' + G.coins + '.', 3200); if (Sound.wrong) Sound.wrong(); return; }
@@ -19967,7 +19992,7 @@ function barnDist() { return Math.hypot(player.pos.x - BARN_POS.x, player.pos.z 
 /* ⭐ USE spots: ONE list used by both the hint bar and the USE button, so the
    place the hint names is always the place USE opens (Pip QA F2). The winner is
    the spot you are deepest inside (distance ÷ reach), not the first in a list. */
-function _useTxt(tap, key) { return isTouch ? 'Tap ⭐ USE ' + tap : '⭐ USE (or E) ' + key; }
+function _useTxt(tap, key) { return touchFirst ? 'Tap ⭐ USE ' + tap : '⭐ USE (or E) ' + key; }
 const USE_SPOTS = [
   { d: () => nearestStation().dist, r: 2.6, go: () => openMath(),
     hint: () => { const v = curWorld().subject === 'math' ? 'do math' : curWorld().subject === 'spanish' ? 'learn Spanish' : 'read'; return '❓ ' + _useTxt('to ' + v + ' and pick a reward!', 'to ' + v + ' and pick a reward!'); } },
@@ -20001,7 +20026,7 @@ const USE_SPOTS = [
   { d: () => shopDist(), r: 3.5, go: () => openShop('mart'), hint: () => '🛒 ' + _useTxt('to open Stack Mart!', 'to open Stack Mart!') },
   { d: () => barnDist(), r: 3.7, go: () => openShop('barn'), hint: () => '🏚️ ' + _useTxt('— Stack Barn: doors, blocks & furniture!', '— Stack Barn: doors, blocks & furniture!') },
   { d: () => portalDist(), r: 4.0, go: () => openTravel(),
-    hint: () => isTouch ? '🌀 The TRAVEL portal! Tap ⭐ USE (or tap the portal) to visit other worlds!' : '🌀 The TRAVEL portal! ⭐ USE (or E, or click the portal) to visit other worlds!' },
+    hint: () => touchFirst ? '🌀 The TRAVEL portal! Tap ⭐ USE (or tap the portal) to visit other worlds!' : '🌀 The TRAVEL portal! ⭐ USE (or E, or click the portal) to visit other worlds!' },
   { d: () => dogParkDist(), r: 3.6, go: () => startFetch(), hint: () => '🐕 ' + _useTxt('— play fetch at the dog park!', '— play fetch at the dog park!') }
 ];
 function bestUseSpot() {
@@ -20425,7 +20450,7 @@ function selectSlot(slot, quiet) {
   if (placingTagTimer) { clearTimeout(placingTagTimer); placingTagTimer = null; }
   if (SLOT_TAGS[slot]) {
     tag.style.display = 'block';
-    tag.textContent = 'Placing ' + SLOT_TAGS[slot] + ' — press D (or tap) to drop it';
+    tag.textContent = 'Placing ' + SLOT_TAGS[slot] + ' — ' + kbOr('press D (or tap)', 'tap the ground') + ' to drop it';
     placingTagTimer = setTimeout(() => { tag.style.display = 'none'; }, 4000);   // fade the hint so it doesn't clutter
   } else tag.style.display = 'none';
   if (!quiet) Sound.click();
@@ -20463,11 +20488,11 @@ function startPlacing(slot) {
   if (slot === 'paint') { toast('🎨 Paint mode on! Tap any of your wall blocks to paint it. Pick a color in your 🎒 backpack.', 3600); return; }
   if (FLOOR_TYPES.includes(slot)) {
     toast(G.world === 'meadow'
-      ? '🪵 Stand INSIDE a walled room, then press D (or tap) — your 📏 tape measures it and the floor rolls out!'
-      : '🪵 Stand INSIDE a walled room, then press D (or tap the ground) — the floor fills the whole room and tucks under your furniture!', 4200);
+      ? '🪵 Stand INSIDE a walled room, then ' + kbOr('press D (or tap)', 'tap the ground') + ' — your 📏 tape measures it and the floor rolls out!'
+      : '🪵 Stand INSIDE a walled room, then ' + kbOr('press D (or tap the ground)', 'tap the ground') + ' — the floor fills the whole room and tucks under your furniture!', 4200);
     return;
   }
-  toast('Walk where you want it, then press D (or tap the ground) to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
+  toast('Walk where you want it, then ' + kbOr('press D (or tap the ground)', 'tap the ground') + ' to place your ' + (SLOT_TAGS[slot] || 'block') + '!', 3200);
 }
 function renderInv() {
   refreshHUD();
@@ -20641,7 +20666,7 @@ function renderInv() {
     row.className = 'invItem';
     row.innerHTML = '<div class="icon">' + icon + '</div>' +
       '<div class="info"><b>' + biName(name, slot) + '</b><small>' + (slot === 'paint' ? 'Pick a color below, then tap your walls to paint them! 🎨' : 'You have ' + count) +
-      (slot === 'bed' ? ' • Place it, walk close, then press L to lie down' :
+      (slot === 'bed' ? ' • Place it, walk close, then ' + kbOr('press L', 'tap ⭐ USE') + ' to lie down' :
        slot === 'window' ? ' • Drops into a wall gap at any height' :
        slot === 'roof' ? ' • Tap the top of a finished house — ONE roof covers it all! (walls 2+ tall, no gaps but a door is fine). Pick a style below' :
        (slot === 'pot' || slot === 'pan' || slot === 'bacon') ? ' • Aim at a 🔥 stove and place it on a burner to cook' :
@@ -20679,7 +20704,7 @@ function renderInv() {
           G.blockColor = pc.color; selectSlot(isPaint ? 'paint' : 'block', true);
           prow.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
           sw.classList.add('sel');
-          toast(isPaint ? '🎨 ' + pc.name + ' paint — tap a wall to paint it!' : '🎨 ' + pc.name + ' blocks selected! Press G or tap to build.', 2000);
+          toast(isPaint ? '🎨 ' + pc.name + ' paint — tap a wall to paint it!' : '🎨 ' + pc.name + ' blocks selected! ' + kbOr('Press G or tap', 'Tap the ground') + ' to build.', 2000);
         };
         prow.appendChild(sw);
       });
@@ -20936,6 +20961,7 @@ $('leavePopup').addEventListener('keydown', e => {
 
 $w('unstuckBtn').onclick = () => { Sound.click(); unstickPlayer(); };
 function freeMouse() {
+  if (touchFirst) return;                 // 👆 mouse tips only; tablets have the touch hint bar
   toast(G.mouseWalk
     ? '🖱️ 🚶 Click-to-move ON — left-click the ground to walk there; click a math block/shop to use it. Drag to look. (Toggle it bottom-left.)'
     : '🖱️ Drag to look • left-click to build • right-click (or X) to remove. Want mouse movement? Tap 🚶 Click-to-move (bottom-left) — no keyboard needed!', 4200);
@@ -20963,7 +20989,7 @@ function setRemoveMode(on) {
 }
 $w('modeBtn').onclick = () => { Sound.click(); G.buildMode = true; setRemoveMode(!G.removeMode);
   if (!G.removeMode) ensureBuildClickPlaces();
-  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : '🧱 Build mode — click places a block. WASD/joystick to move.', 2600); };
+  toast(G.removeMode ? '⛏️ Remove mode — click a block (even high ones!) to delete it.' : kbOr('🧱 Build mode — click places a block. WASD/joystick to move.', '🧱 Build mode — tap places a block. Drag to move.'), 2600); };
 // 🚶 Click-to-move: drag to look, left-click a spot to walk there (mouse/trackpad friendly — no arrow keys needed)
 $w('useBtnDesk').onclick = () => { tryUse(); };
 function syncMouseWalkUI(quiet) {
@@ -20981,7 +21007,7 @@ function syncMouseWalkUI(quiet) {
   if (!quiet) {
     toast(G.mouseWalk
       ? '🚶 Click-to-move ON — left-click the ground to walk there. No keyboard needed!'
-      : '🧱 Build mode — click places blocks. Move with WASD or the joystick.', 2800);
+      : kbOr('🧱 Build mode — click places blocks. Move with WASD or the joystick.', '🧱 Build mode — tap places blocks. Drag to move.'), 2800);
   }
 }
 /* Pip QA: while placing/building, click-to-move stays off so kids aren't confused */
@@ -20989,7 +21015,7 @@ function ensureBuildClickPlaces() {
   if (!G.mouseWalk) return;
   G.mouseWalk = false; player.walkTo = null;
   syncMouseWalkUI(true);
-  toast('🧱 Building — click places a block. Move with WASD or the joystick.', 3000);
+  toast(kbOr('🧱 Building — click places a block. Move with WASD or the joystick.', '🧱 Building — tap places a block. Drag to move.'), 3000);
 }
 $w('walkBtn').onclick = () => {
   Sound.click();
@@ -21041,7 +21067,11 @@ window.addEventListener('mouseup', e => {
 addEventListener('contextmenu', e => e.preventDefault());
 
 /* ---- touch controls ---- */
-const isTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
+const isTouch = (('ontouchstart' in window) && navigator.maxTouchPoints > 0) || touchFirst;
+/* 👆 touch-first: strip "(E key)" / "(Space / N)" style key names from button tooltips too */
+if (touchFirst) document.querySelectorAll('[title]').forEach(function (el) {
+  el.title = el.title.replace(/\s*\((?:[A-Z]|[A-Z] key|Space \/ N)\)/g, '');
+});
 /* 🔄 Phones now play in ANY orientation — the "turn your phone" gate and the fullscreen
    landscape lock are retired (portrait is how you film vertical shorts for social!).
    The touch HUD has a dedicated compact portrait layout instead. updateRotateGate stays
@@ -21868,7 +21898,7 @@ function startGame() {
   } else if (G.gloomiesEnabled) {
     toast('🏡 Build and shop while it is calm. Solve math for 🧱 blocks, 🪙 coins, or ⚽ ammo — and rare ⚡ Power Blocks — before the Gloomies arrive!', 6500);
   } else {
-    toast('🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the joystick — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', 6200);
+    toast(kbOr('🌈 Calm mode! You start with a few 🧱 blocks. Move with WASD or the joystick — or tap 🚶 Click-to-move (bottom-left) to walk by tapping the ground. Tap 🏠 Leave to save & go home.', '🌈 Calm mode! You start with a few 🧱 blocks. Drag to move. Tap 🏠 Leave to save & go home.'), 6200);
   }
   if (!showLeoIntro && G.world === 'city') {
     setTimeout(() => toast('🏘️ High Street is right ahead — Library, Cinema, Post Office & Arcade are on the paved street!', 4200), 2800);
@@ -21905,7 +21935,7 @@ function doomsdayStart() {
   gloomyWaveAt = 22;            // first reinforcement wave after ~22s
   Sound.sad();
   if (isTouch) $('btnShoot').style.display = 'block';
-  toast('💜 The GLOOMIES are coming! They start slow — hide behind walls + a 🚪 door, or press F (tap 🎯) to bonk them with softballs!', 6000);
+  toast('💜 The GLOOMIES are coming! They start slow — hide behind walls + a 🚪 door, or ' + kbOr('press F (tap 🎯)', 'tap 🎯') + ' to bonk them with softballs!', 6000);
   spawnGloomies(3);            // a few slow ones to start; more arrive over time
 }
 $w('againBtn').onclick = () => location.reload();
@@ -22847,12 +22877,12 @@ function loop(now) {
     checkUseOnArrive();
     if (roadExitDist() < 3.2) {
       const dest = WORLDS[ROAD_DEST[G.world]];
-      hint.textContent = (isTouch ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ ⭐ USE (or E) — take the road to ') + (dest ? dest.name : 'the next town') + '!';
+      hint.textContent = (touchFirst ? '🛣️ Tap ⭐ USE — take the road to ' : '🛣️ ⭐ USE (or E) — take the road to ') + (dest ? dest.name : 'the next town') + '!';
       hint.style.display = 'block';
     } else if (player.driving) {
       hint.textContent = (performance.now() - (player.driveStart || 0) < 4500)
-        ? (isTouch ? '🛻 Steer with the move-circle • 👁️ first-person • 🚪 USE to get out' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • 🚪 USE (or E) to get out' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • 🚪 USE (or E) to get out'))
-        : (isTouch ? '🚪 Tap the 🚪 EXIT button to get out of the car' : '🚪 Press 🚪 EXIT (or E) to get out of the car');
+        ? (touchFirst ? '🛻 Steer with the move-circle • 👁️ first-person • 🚪 USE to get out' : (G.mouseWalk ? '🛻 Click the road to drive there • 👁️ first-person • 🚪 USE (or E) to get out' : '🛻 Drive with WASD/arrows (or 🚶 Click-to-move) • 👁️ first-person • 🚪 USE (or E) to get out'))
+        : (touchFirst ? '🚪 Tap the 🚪 EXIT button to get out of the car' : '🚪 Press 🚪 EXIT (or E) to get out of the car');
       hint.style.display = 'block';
     } else if (!isTouch && G.buildMode && !G.removeMode && !player.driving && (G.blocks || 0) > 0) {
       hint.textContent = '🧱 Click places a block • WASD / arrows to move' + (G.mouseWalk ? ' (click-to-move paused while building)' : '');
@@ -22861,15 +22891,15 @@ function loop(now) {
       hint.textContent = _spot.hint();
       hint.style.display = 'block';
     } else if (ns.dist < 6) {
-      hint.textContent = isTouch ? '❓ Walk closer to the ❓ block, or tap ⭐ USE to go there!' : '❓ Walk closer to the ❓ block, or press ⭐ USE (E) to go there!';
+      hint.textContent = touchFirst ? '❓ Walk closer to the ❓ block, or tap ⭐ USE to go there!' : '❓ Walk closer to the ❓ block, or press ⭐ USE (E) to go there!';
       hint.style.display = 'block';
     } else if (player.sittingChair || nearestChair()) {
-      hint.textContent = isTouch ? '🪑 Tap ⭐ USE to ' + (player.sittingChair ? 'get up' : 'sit down') + '!' : '🪑 ⭐ USE (or E) to ' + (player.sittingChair ? 'get up' : 'sit down') + '!';
+      hint.textContent = touchFirst ? '🪑 Tap ⭐ USE to ' + (player.sittingChair ? 'get up' : 'sit down') + '!' : '🪑 ⭐ USE (or E) to ' + (player.sittingChair ? 'get up' : 'sit down') + '!';
       hint.style.display = 'block';
     } else if (nearestBed()) {
-      hint.textContent = isTouch ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';
+      hint.textContent = touchFirst ? '🛏️ Tap ⭐ USE to lie in bed!' : '🛏️ Press E or L to lie in bed!';
       hint.style.display = 'block';
-    } else if (isTouch && !movedHintDone) {
+    } else if (touchFirst && !movedHintDone) {
       hint.textContent = '🕹️ Drag anywhere to move • tap to build • hold a block to break it!';
       hint.style.display = 'block';
     } else hint.style.display = 'none';
