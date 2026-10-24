@@ -12137,6 +12137,30 @@ function startQHint() {
 }
 function endQHint() { qHint = null; const a = $('qHintArrow'); if (a) a.hidden = true; }
 addEventListener('pointerdown', () => { if (qHint && !popupOpen) endQHint(); }, true);
+/* never let the ❓ arrow sit on King Lion's coach bubble or the hint bar (phone landscape had it over the text):
+   if it would, slide it to the first clear spot (beside, below, above) and tilt it at the box */
+function qHintDodgeCoach(a, x, y, ang, W, H, mx, tx, ty) {
+  const rs = [];
+  for (const id of ['lionCoach', 'hintBar', 'btnAction', 'btnJump', 'undoBtn']) {
+    const e = $(id); if (!e || e.hidden) continue;
+    const r = e.getBoundingClientRect(); if (r.width && r.height) rs.push(r);
+  }
+  if (!rs.length) return [x, y, ang];
+  const w = a.offsetWidth || 120, h = a.offsetHeight || 70, pad = 10;
+  const hit = (r, px, py) => px + w / 2 > r.left - pad && px - w / 2 < r.right + pad && py > r.top - pad && py - h < r.bottom + pad;
+  const hits = (px, py) => rs.some(r => hit(r, px, py));
+  if (!hits(x, y)) return [x, y, ang];
+  const fits = (px, py) => px - w / 2 >= 4 && px + w / 2 <= W - 4 && py - h >= 4 && py <= H - 4;
+  const r = rs.find(r => hit(r, x, y));
+  const side = [[r.right + pad + w / 2, y], [r.left - pad - w / 2, y]], vert = [[x, r.top - pad], [x, r.bottom + pad + h]];
+  const cands = (r.width > W / 2 ? vert.concat(side) : side.concat(vert))     // a wide bar: hop over it, don't slide to the edge
+    .concat([[r.right + pad + w / 2, r.bottom + pad + h], [r.right + pad + w / 2, r.top - pad]]);
+  const c = cands.find(([px, py]) => fits(px, py) && !hits(px, py));   // first in preference order: sideways beats up/down
+  if (!c) return [x, y, ang];
+  const [nx, ny] = c;
+  if (tx != null) { ang = Math.atan2(ty - ny, tx - nx) * 180 / Math.PI - 90; if (ang < -180) ang += 360; }   // still point at the box
+  return [nx, ny, ang];
+}
 function qHintTick() {
   if (!qHint) return;
   const a = $('qHintArrow'), now = performance.now();
@@ -12171,6 +12195,7 @@ function qHintTick() {
     ang = Math.atan2(dy, dx) * 180 / Math.PI - 90;
   }
   a.hidden = false;
+  [x, y, ang] = qHintDodgeCoach(a, x, y, ang, W, H, mx, on ? (_qv.x + 1) / 2 * W : null, on ? (1 - _qv.y) / 2 * H : null);
   a.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px) translate(-50%,-100%)';
   a.querySelector('.qa').style.rotate = ang ? ang.toFixed(0) + 'deg' : '';
 }
