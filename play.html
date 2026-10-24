@@ -56,6 +56,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  #fsBar { position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:23; display:none; align-items:center; gap:10px;
+    padding:6px 8px 6px 16px; border-radius:22px; background:linear-gradient(180deg,#fff3c4,#ffd76a); border:3px solid #e0a82e;
+    box-shadow:0 4px 0 #b9831f, 0 6px 14px #0003; font:800 18px Nunito,system-ui,sans-serif; color:#6b4e10; }
+  #fsBar button { font:800 16px Nunito,system-ui,sans-serif; border:0; border-radius:16px; padding:7px 12px; background:#4caf50; color:#fff; box-shadow:0 3px 0 #2e7d32; }
+  body.freestyle #hintBar { display:none !important; }
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="interior-art.js?v=283-ready"></script>
 <script src="lib/GLTFLoader.js"></script><!-- 🎨 real 3D character models (avatars/<id>.glb), optional & offline-cached -->
@@ -1413,6 +1420,7 @@
   <div id="hintBar"></div>
   <div id="placingTag"></div>
   <div id="toast"></div>
+<div id="fsBar"><span>🖐️ Freestyle</span><button id="fsDone" type="button">✅ Done</button></div>
   <div id="feedListHud"></div>
   <div id="npcBubbles"></div>
   <div id="npcChat"></div>
@@ -20369,6 +20377,7 @@ function openHudMenu() {
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
     ['mirrorBtn', '🪞', '<b>Hero Mirror</b> <small>' + (heroMirrorUnlocked() ? 'switch hero' : '🔒 finish 3 quests') + '</small>'],
     ['classicBtn', profile.classicHeroes ? '🧱' : '🎬', '<b>Hero style</b> <small>' + (profile.classicHeroes ? 'classic blocky' : 'studio models') + '</small>'],
+    ['freestyleBtn', '🖐️', '<b>Freestyle</b> <small>' + (fsOn ? '— ON, tap to stop' : 'drag your friends') + '</small>'],
     ['selfieBtn', '🤳', '<b>Selfie mode</b>' + (G.selfie ? ' <small>— ON, tap to stop</small>' : '')],
     ['soundBtn',  Sound.muted ? '🔇' : '🔊', '<b>Sound</b> <small>' + (Sound.muted ? 'is off' : 'is on') + '</small>'],
     ['cursorBtn', '❔', '<b>How to play</b>'],
@@ -20379,7 +20388,8 @@ function openHudMenu() {
   m.querySelectorAll('.viewOpt').forEach(b => b.onclick = () => {
     m.style.display = 'none';
     if (b.dataset.b === 'mirrorBtn') { Sound.click(); openHeroMirror(); return; }   // 🪞 lives right here (no hidden HUD button)
-    if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }   // 🧱 same — a menu-only feature
+    if (b.dataset.b === 'classicBtn') { Sound.click(); toggleClassicHeroes(); return; }
+    if (b.dataset.b === 'freestyleBtn') { Sound.click(); toggleFreestyle(); return; }   // 🖐️ prototype: drag town friends   // 🧱 same — a menu-only feature
     const t = $(b.dataset.b);
     if (t && t.onclick) t.onclick();
   });
@@ -20389,6 +20399,7 @@ function openHudMenu() {
   m.style.maxHeight = Math.max(150, innerHeight - r.bottom - 14) + 'px';       // short phones: the list scrolls
   m.style.display = 'flex';
 }
+$w('fsDone').onclick = () => { Sound.click(); toggleFreestyle(false); };
 $w('menuBtn').onclick = () => {
   Sound.click();
   const m = $('hudMenu');
@@ -22557,6 +22568,140 @@ function npcLegsRest(n) {
   d.legs.forEach(l => l.rotation.x *= 0.8);
   if (d.arms) d.arms.forEach(a => a.rotation.x *= 0.8);
 }
+/* 🖐️ FREESTYLE (prototype, Meadow only) — tap & drag town friends around.
+   Cheap by design: ONE raycast on pointerdown against a tiny list of Box3 proxies
+   (never the skinned meshes), then the drag is just ray ∩ ground plane per move.
+   No physics: drop = snap to the cell centre, nudge out of walls/furniture with the
+   same npcStepBlocked/npcSpawnSpot checks friends already walk by. Camera follow pauses
+   (updatePlayer is skipped) while a friend is in your hand. Spots persist in localStorage.
+   Queen Fox & the Dragon are NOT draggable (their builders are off-limits). */
+const FS_KEY = 'stackadoo.freestyle.v1';
+const FS_SKIP = { queenfox: 1, dragon: 1 };
+const FS_AREA = { meadow: { cx: 0, cz: 2, r: 26 } };       // the one area this prototype allows
+let fsOn = false, fsDrag = null, fsPending = null;
+const fsRay = new THREE.Raycaster(), fsNdc = new THREE.Vector2(), fsBox = new THREE.Box3(), fsHit = new THREE.Vector3();
+const fsGround = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const fsStats = { downs: 0, moves: 0, downMs: 0, moveMs: 0 };
+let fsRing = null;
+function fsSaved() { try { return JSON.parse(localStorage.getItem(FS_KEY) || '{}'); } catch (e) { return {}; } }
+function fsSave(id, x, z) { const s = fsSaved(); (s[G.world] = s[G.world] || {})[id] = [+x.toFixed(2), +z.toFixed(2)]; try { localStorage.setItem(FS_KEY, JSON.stringify(s)); } catch (e) {} }
+function fsDraggable(n) { return n && n.cast && !FS_SKIP[n.cast.id] && n.group && n.group.visible !== false; }
+function fsAreaOk() { return !!FS_AREA[G.world]; }
+function toggleFreestyle(on) {
+  fsOn = on == null ? !fsOn : !!on;
+  if (fsOn && !fsAreaOk()) { fsOn = false; toast('🖐️ Freestyle works in 🌳 Math Meadow for now!', 2200); }
+  const bar = $('fsBar'); if (bar) bar.style.display = fsOn ? 'flex' : 'none';
+  document.body.classList.toggle('freestyle', fsOn);
+  if (fsOn) { for (const n of npcs) if (fsDraggable(n)) { n.mode = 'idle'; n.target = null; n.timer = 3; } toast('🖐️ Drag a friend to move them!', 1800); }
+  else fsDrop(true);
+}
+function fsPointerToNdc(e) {
+  const r = canvas.getBoundingClientRect();
+  fsNdc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  fsRay.setFromCamera(fsNdc, camera);
+}
+function fsPick(e) {                          // the ONLY raycast: a handful of boxes, nearest wins
+  fsPointerToNdc(e);
+  let best = null, bd = 1e9;
+  for (const n of npcs) {
+    if (!fsDraggable(n)) continue;
+    const p = n.group.position;
+    fsBox.min.set(p.x - 0.6, p.y, p.z - 0.6); fsBox.max.set(p.x + 0.6, p.y + 1.9, p.z + 0.6);
+    if (fsRay.ray.intersectBox(fsBox, fsHit)) { const d = fsHit.distanceToSquared(fsRay.ray.origin); if (d < bd) { bd = d; best = n; } }
+  }
+  return best;
+}
+function fsGroundAt(e) {
+  fsPointerToNdc(e);
+  if (!fsRay.ray.intersectPlane(fsGround, fsHit)) return null;
+  const A = FS_AREA[G.world]; let x = fsHit.x, z = fsHit.z;
+  const dx = x - A.cx, dz = z - A.cz, m = Math.hypot(dx, dz);
+  if (m > A.r) { x = A.cx + dx / m * A.r; z = A.cz + dz / m * A.r; }      // stay in the Freestyle area
+  return { x, z };
+}
+function fsEat(e) { e.stopImmediatePropagation(); if (e.cancelable) e.preventDefault(); }
+let fsEatUntil = 0;                           // swallow the click/touchend that trails a drop
+function fsDown(e) {
+  if (e.type !== 'pointerdown') { if (fsPending || fsDrag) fsEat(e); return; }   // pointerdown always fires first
+  if (!fsOn || !G.running || popupOpen || e.target !== canvas) return;
+  const t0 = performance.now();
+  const n = fsPick(e);
+  fsStats.downs++; fsStats.downMs += performance.now() - t0;
+  if (!n) return;                             // missed every friend → normal joystick / look / build
+  fsEat(e);
+  fsPending = { n, x: e.clientX, y: e.clientY, at: performance.now() };
+}
+function fsLift(n) {
+  fsDrag = { n, from: { x: n.group.position.x, z: n.group.position.z } };
+  n.mode = 'idle'; n.target = null; n.act = null; n.timer = 99;
+  if (!fsRing) {
+    fsRing = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.78, 28), new THREE.MeshBasicMaterial({ color: 0xffd54a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+    fsRing.rotation.x = -Math.PI / 2; scene.add(fsRing);
+  }
+  fsRing.visible = true;
+  if (Sound.click) Sound.click();
+}
+function fsMove(e) {
+  if (!fsPending && !fsDrag) return;
+  fsEat(e);
+  if (e.type !== 'pointermove') return;
+  if (fsPending && !fsDrag) {                 // 🛡️ accidental-drag guard: 10px or a 160ms hold first
+    if (Math.hypot(e.clientX - fsPending.x, e.clientY - fsPending.y) < 10 && performance.now() - fsPending.at < 160) return;
+    fsLift(fsPending.n);
+  }
+  const t0 = performance.now();
+  const g = fsGroundAt(e);
+  if (g) {
+    const ok = !npcStepBlocked(g.x, g.z);
+    fsDrag.pos = g; fsDrag.ok = ok;
+    fsDrag.n.group.position.set(g.x, 0.35, g.z);     // held a little off the grass
+    if (fsRing) { fsRing.position.set(g.x, 0.04, g.z); fsRing.material.color.setHex(ok ? 0xffd54a : 0xff6b6b); }
+  }
+  fsStats.moves++; fsStats.moveMs += performance.now() - t0;
+}
+function fsDrop(cancel) {
+  if (fsPending && !fsDrag) { const n = fsPending.n; fsPending = null; if (!cancel) npcSay(n, '🖐️ Drag me somewhere fun!', 1800); return; }
+  fsPending = null;
+  if (!fsDrag) return;
+  const n = fsDrag.n, p = n.group.position;
+  let x = Math.floor(p.x) + 0.5, z = Math.floor(p.z) + 0.5;            // snap to the cell centre
+  if (npcStepBlocked(x, z) || npcLotForbidden(n, x, z)) {                // a wall / a neighbour's house → nearest clear cell
+    const s = npcSpawnSpot(x, z); if (s) { x = s.x; z = s.z; } else { x = fsDrag.from.x; z = fsDrag.from.z; }
+  }
+  p.set(x, 0, z);
+  if (!n.housed) n.home = { x, z };                                      // they hang around their new spot
+  n.timer = 6; n.mode = 'idle';
+  fsSave(n.cast.id, x, z);
+  if (fsRing) fsRing.visible = false;
+  fsDrag = null;
+  if (!cancel) npcSay(n, ['🎉 Wheee!', '😄 Nice spot!', '🌼 I like it here!'][Math.floor(Math.random() * 3)], 1600);
+}
+function fsUp(e) {
+  const active = fsPending || fsDrag;
+  if (!active) { if (performance.now() < fsEatUntil && e.type !== 'pointerup') fsEat(e); return; }
+  fsEat(e);
+  if (e.type !== 'pointerup' && e.type !== 'pointercancel') return;
+  fsDrop(e.type === 'pointercancel');
+  fsEatUntil = performance.now() + 350;
+}
+['pointerdown', 'mousedown', 'touchstart'].forEach(t => addEventListener(t, fsDown, { capture: true, passive: false }));
+['pointermove', 'mousemove', 'touchmove'].forEach(t => addEventListener(t, fsMove, { capture: true, passive: false }));
+['pointerup', 'pointercancel', 'mouseup', 'touchend', 'touchcancel', 'click'].forEach(t => addEventListener(t, fsUp, { capture: true, passive: false }));
+function freestyleTick() {                    // after updateNpcs: hold the dragged friend, keep the others parked, apply saved spots
+  if (fsOn && !fsAreaOk()) toggleFreestyle(false);       // left Meadow → Freestyle switches itself off
+  if (!npcs.length) return;
+  const saved = fsAreaOk() ? (fsSaved()[G.world] || {}) : null;
+  for (const n of npcs) {
+    if (!fsDraggable(n)) continue;
+    if (saved && !n._fsApplied) {
+      n._fsApplied = true;
+      const s = saved[n.cast.id];
+      if (s && !npcStepBlocked(s[0], s[1])) { n.group.position.set(s[0], 0, s[1]); if (!n.housed) n.home = { x: s[0], z: s[1] }; }
+    }
+    if (fsDrag && fsDrag.n === n) { n.mode = 'idle'; n.target = null; n.timer = 99; if (fsDrag.pos) n.group.position.set(fsDrag.pos.x, 0.35, fsDrag.pos.z); }
+    else if (fsOn && n.mode === 'walk') { n.mode = 'idle'; n.target = null; n.timer = 3; }   // Freestyle = friends stay where you put them
+  }
+}
 function updateNpcs(dt, now) {
   npcRectsReset();
   placePlayerBubble(now);
@@ -22730,7 +22875,7 @@ function loop(now) {
     if (slowFrames > 150) dropShadowsForSpeed();
   }
 
-  if (!popupOpen && !G.over) updatePlayer(dt);
+  if (!popupOpen && !G.over && !fsDrag) updatePlayer(dt);   // 🖐️ camera follow pauses while a friend is in your hand
   if (player.ridingBuggy) updateBuggyRide();   // 🐴 keep the rented buggy under the rider
   if (fetchGame) updateFetch(dt);              // 🐕 dog-park fetch game
   if (!G.over) { updateDoors(dt); updateGarages(dt); questTimer += dt; if (questTimer > 0.9) { questTimer = 0; checkQuests(); } }
@@ -22738,6 +22883,7 @@ function loop(now) {
   if (G.pendingLevelQuest && !popupOpen && G.running && !G.over) { const lv = G.pendingLevelQuest; G.pendingLevelQuest = null; offerLevelQuest(lv); }   // pop the level-up bonus quest once you're free
   if (!popupOpen && !G.over) updatePets(dt, now);
   if (!popupOpen && !G.over) updateNpcs(dt, now);
+  if (!G.over) freestyleTick();
   if (!G.over) updateQuest(dt, now);
 
   // pulse the math stations
