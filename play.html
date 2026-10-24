@@ -11244,14 +11244,25 @@ function voidKey(type, code, key) {
 /* 🔴 Auto-fire: a gentle repeating Space so little ones just steer. Pip QA N1: it only fires
    while the kid is actually steering (stick touched in the last 2.5 s), so an idle ship
    no longer farms points, and it no longer auto-restarts a lost run. */
-let voidAuto = true, voidFireTimer = null, voidSteerAt = 0, voidFireUI = null;
+let voidAuto = true, voidFireTimer = null, voidSteerAt = 0, voidFireUI = null, voidTipT = null;
+const VOID_TIP_AUTO = '🕹️ Steer your ship to fire!';
+function voidManualTip() {                  // PR #496 retest: manual mode never says "Steer your ship to fire!"
+  return (typeof isTouch !== 'undefined' && isTouch) ? '⚪ Manual fire — tap the round button for 🔴 AUTO fire!' : '⌨️ Manual fire — press SPACE to shoot!';
+}
 function setVoidAuto(on) {
   voidAuto = on;
   if (voidFireUI) voidFireUI();             // Pip QA P1-2: the label always shows the real state (2nd game said "manual")
   if (voidFireTimer) { clearInterval(voidFireTimer); voidFireTimer = null; }
+  const tip = $('voidIdle');
+  if (tip) {                                // the tip always matches the mode
+    clearTimeout(voidTipT);
+    tip.textContent = on ? VOID_TIP_AUTO : voidManualTip();
+    tip.style.display = on ? 'none' : 'block';
+    if (!on) voidTipT = setTimeout(function () { if (!voidAuto) tip.style.display = 'none'; }, 3000);
+  }
   if (on) voidFireTimer = setInterval(function () {
     const idle = performance.now() - voidSteerAt > 2500;
-    const hint = $('voidIdle'); if (hint) hint.style.display = idle ? 'block' : 'none';
+    const hint = $('voidIdle'); if (hint) { hint.textContent = VOID_TIP_AUTO; hint.style.display = idle ? 'block' : 'none'; }
     if (idle) return;
     let playing = true;
     try { const f = $('voidFrame'), go = f.contentDocument.getElementById('overlayScore'); playing = !(go && go.style.display !== 'none'); } catch (e) {}
@@ -11328,7 +11339,7 @@ function startVoidDrift() {
   const idleTip = document.createElement('div');
   idleTip.id = 'voidIdle';
   idleTip.style.cssText = 'display:none;position:absolute;left:50%;top:42%;transform:translateX(-50%);background:rgba(10,14,30,.85);color:#ffe066;font:800 22px system-ui,sans-serif;padding:10px 18px;border-radius:14px;pointer-events:none';
-  idleTip.textContent = '🕹️ Steer your ship to fire!';
+  idleTip.textContent = VOID_TIP_AUTO;
   ov.appendChild(idleTip);
   frame.addEventListener('load', function () { try { frame.contentWindow.addEventListener('keydown', function (e) { if (e.isTrusted) voidSteerAt = performance.now(); }); } catch (e) {} });
   frame.addEventListener('load', function () {   // Pip QA P1-3: no text selection / search sheet inside the game either
