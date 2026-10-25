@@ -6428,7 +6428,7 @@ function requestLeave() {
   popupOpen = true;
   $('hudMenu').style.display = 'none'; $('viewMenu').style.display = 'none';
   Object.keys(keys).forEach(k => { keys[k] = false; });
-  touch.joyX = 0; touch.joyY = 0; touch.jump = false; touch.moveYaw = null;
+  touch.joyX = 0; touch.joyY = 0; touch.jump = false; touch.jumpTapAt = 0; touch.moveYaw = null;
   try { document.exitPointerLock && document.exitPointerLock(); } catch (e) {}
   $('leaveStatus').textContent = '';
   $('leaveSaveBtn').disabled = false; $('leaveStayBtn').disabled = false;
@@ -15764,11 +15764,14 @@ function updatePlayer(dt) {
   const nearLadder = G.owned.ladder && nearTrunk();
   if (nearLadder && (keys['Space'] || touch.jump)) {
     player.vel.y = 3.2;                                  // climb up
+    touch.jumpTapAt = 0;
   } else if (nearLadder && !player.onGround && player.vel.y <= 0) {
     player.vel.y = 0;                                    // hang on the ladder — no falling while you pick!
   } else {
     player.vel.y -= 22 * dt;
-    if ((keys['Space'] || touch.jump) && player.onGround) {
+    const wj = wantJumpNow(!!(keys['Space'] || touch.jump), touch.jumpTapAt, player.onGround, performance.now());
+    touch.jumpTapAt = wj.tapAt;
+    if (wj.jump) {
       player.vel.y = jumpV;
       player.onGround = false;
     }
@@ -20089,6 +20092,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM' && G.running) { freeMouse(); return; }
   if (!G.running || popupOpen) return;
   keys[e.code] = true;
+  if (e.code === 'Space' && !e.repeat) touch.jumpTapAt = performance.now();   // same latch for a quick Space tap
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (e.code === 'KeyP') pickupBlock();
   if (e.code === 'KeyG') putDownBlock();
@@ -21053,7 +21057,15 @@ function updateRotateGate() {
 }
 addEventListener('resize', updateRotateGate);
 try { if (screen.orientation) screen.orientation.addEventListener('change', updateRotateGate); } catch (e) {}
-const touch = { joyX: 0, joyY: 0, jump: false, moveYaw: null };
+const touch = { joyX: 0, joyY: 0, jump: false, jumpTapAt: 0, moveYaw: null };
+/* 🦘 a quick tap on Jump (press + release inside one frame) used to be missed: the physics only looked at "held".
+   The press is latched until the next physics step and spent by exactly one jump (slow phones included); a tap
+   made mid-air is kept ~150 ms so a tap just before touching down still jumps (once), then it's dropped. */
+function wantJumpNow(held, tapAt, onGround, now) {
+  const tap = tapAt > 0;
+  if (onGround) return { jump: held || tap, tapAt: 0 };
+  return { jump: false, tapAt: tap && now - tapAt <= 150 ? tapAt : 0 };
+}
 let movedHintDone = false;   // hide the "drag to move" hint once they've moved
 if (isTouch) {
   const mb = $('modeBtn'); if (mb) mb.style.display = 'none';   // touch needs no mode: tap=place, hold=break
@@ -21109,7 +21121,7 @@ if (isTouch) {
   }, { passive: false });
 
   $('btnJump').addEventListener('touchstart', e => {
-    touch.jump = true; e.preventDefault();
+    touch.jump = true; touch.jumpTapAt = performance.now(); e.preventDefault();
     if (liveRace) fireNitro();
   }, { passive: false });
   $('btnJump').addEventListener('touchend', () => touch.jump = false);
