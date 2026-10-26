@@ -11909,7 +11909,20 @@ function showCoachLine(key) {
   b.hidden = false;
   b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
   clearTimeout(showCoachLine._t);
-  if (!lionCoach) showCoachLine._t = setTimeout(() => { if (!lionCoach) b.hidden = true; }, 6500);   // one-off lines fade away
+  if (lionTuck()) tuckCoachLater();
+  else if (!lionCoach) showCoachLine._t = setTimeout(() => { if (!lionCoach) b.hidden = true; }, 6500);   // one-off lines fade away
+}
+/* 🦁 Small phones (Amy): the round King Lion bubble sat over the TRAVEL sign and the play area all
+   game long. On phones he now shows ONLY while he's talking — head + line pop up, then the whole
+   thing tucks away once he's done (≥7 s, and never mid-sentence). ☰ gets "Ask King Lion" to hear
+   the current step again. Tablets and desktop keep the always-there head. */
+function lionTuck() { return typeof isPhone === 'function' && isPhone(); }
+function tuckCoachLater() {
+  clearTimeout(showCoachLine._t);
+  showCoachLine._t = setTimeout(function chk() {
+    if (typeof Narrator !== 'undefined' && Narrator.speaking) { showCoachLine._t = setTimeout(chk, 600); return; }   // let him finish
+    const b = $('lionCoachBubble'); if (b) b.hidden = true;
+  }, 7000);
 }
 function coachPulseUse(on) {
   ['btnAction', 'useBtnDesk'].forEach(id => { const el = $(id); if (el) el.classList.toggle('coachPulse', !!on); });
@@ -11927,7 +11940,13 @@ function ensureCoachBeacon() {
 }
 function lionCoachTick() {
   const c = $('lionCoach');
-  if (c) { c.classList.toggle('mini', !!popupOpen); const hide = !G.running || G.over; if (c.hidden !== hide) c.hidden = hide; }   // the lion head stays as a help button (Pip QA §D)
+  if (c) {
+    c.classList.toggle('mini', !!popupOpen);
+    // the lion head stays as a help button (Pip QA §D) — except on phones, where he only shows while talking
+    const quiet = lionTuck() && !popupOpen && $('lionCoachBubble').hidden;
+    const hide = !G.running || G.over || quiet;
+    if (c.hidden !== hide) c.hidden = hide;
+  }
   if (!lionCoach) return;
   const now = performance.now(), ns = nearestStation();
   const st = lionCoach.stage;
@@ -20364,6 +20383,7 @@ function openHudMenu() {
   const m = $('hudMenu');
   const qTxt = ($('questBtn').textContent || '').replace('🗺️', '').trim();     // live "2/6" from the quest button
   const items = [
+    ...(lionTuck() ? [['lionCoachHead', '🦁', '<b>Ask King Lion</b> <small>what do I do?</small>']] : []),   // phones: he's tucked away
     ['goalRow', '🎯', '<b>My dream goal</b>'],
     ['badgeBtn', '🏅', '<b>My badges</b>'],
     ['questBtn',  '🗺️', '<b>Quest Board</b>' + (qTxt ? ' <small>' + qTxt + ' done</small>' : '')],
