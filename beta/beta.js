@@ -96,15 +96,24 @@
   }
   $('skip').onclick=()=>start(null);
   $('import').onclick=()=>{ try { const names=selected(), payload=core.select(source,names); start(payload,localSource?{names,payload}:null); } catch(e) {say(e.message);} };
-  $('full-screen').onclick=()=>instance?.SetFullscreen(1);
-  $('retry-transfer').onclick=()=>{if(importing)return; document.body.classList.remove('playing'); $('setup').hidden=false;$('game').hidden=true;$('check-local').focus();};
+  $('full-screen').onclick=async()=>{
+    closeWebsiteControls();
+    try {
+      if (!$('unity-canvas').requestFullscreen) throw Error('Fullscreen unavailable');
+      await $('unity-canvas').requestFullscreen();
+    } catch {
+      $('transfer-result').textContent='The game already fills your browser. This browser could not hide its tabs and address bar.';
+      document.querySelector('.transfer-notice').hidden=false;
+    }
+  };
+  function closeWebsiteControls() { $('website-tools').hidden=true; $('website-controls').setAttribute('aria-expanded','false'); $('website-controls').textContent='Website controls'; }
+  $('website-controls').onclick=()=>{ const open=$('website-tools').hidden; $('website-tools').hidden=!open; $('website-controls').setAttribute('aria-expanded',String(open)); $('website-controls').textContent=open?'Close website controls':'Website controls'; };
+  $('game-account').onclick=()=>$('signin-dialog').showModal();
+  $('retry-transfer').onclick=()=>{if(importing)return; closeWebsiteControls(); document.body.classList.remove('playing'); $('setup').hidden=false;$('game').hidden=true;$('check-local').focus();};
   $('dismiss-transfer').onclick=()=>{document.querySelector('.transfer-notice').hidden=true;};
   $('game-help').onclick=()=>$('game-help-dialog').showModal();
   document.querySelector('#auth-account a[href^="play.html"]').onclick=event=>{event.preventDefault();$('signin-dialog').close();start(null);};
   const entry=new URLSearchParams(location.search);
   if(entry.has('transfer')) $('check-local').click();
-  else {
-    let played=false;try{played=localStorage.getItem('stackadoo.beta.hasPlayed')==='1';}catch{}
-    if(entry.has('start')||played)start(null);
-  }
+  else start(null);
 })();

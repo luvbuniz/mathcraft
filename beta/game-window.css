@@ -1,0 +1,11 @@
+/* The game owns the browser viewport; website controls overlay it on demand. */
+.game-page.playing { width:100%; height:100vh; height:100dvh; margin:0; padding:0; }
+.playing .game-nav { display:none; }
+.playing .beta-main, .playing #game { width:100%; height:100%; max-width:none; margin:0; padding:0; }
+.playing canvas { position:absolute; inset:0; width:100%; height:100%; min-height:0; border-radius:0; }
+.playing #loading { inset:0; }
+#website-controls { position:absolute; z-index:4; bottom:max(8px,env(safe-area-inset-bottom)); left:max(8px,env(safe-area-inset-left)); min-height:36px; padding:7px 13px; border:1px solid #c5d6bd; border-radius:20px; background:#fffbefee; color:#173b4e; font:700 13px system-ui,sans-serif; cursor:pointer; }
+.playing .game-tools { position:absolute; z-index:4; left:8px; bottom:52px; max-width:calc(100% - 16px); min-height:44px; padding:8px 14px; border:1px solid #c5d6bd; border-radius:16px; box-shadow:0 4px 20px #16321c30; justify-content:flex-start; gap:16px; }
+.playing .game-tools .button, .playing .game-tools>a { min-height:36px; display:inline-flex; align-items:center; }
+.playing .transfer-notice { bottom:108px; }
+@media(max-width:600px) { .playing .game-tools { gap:8px 14px; } #website-controls { min-height:40px; } }
