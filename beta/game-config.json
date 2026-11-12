@@ -1,67 +1,67 @@
 {
-  "loaderUrl": "Build/WebBeta.loader.js",
+  "loaderUrl": "Build/WebBeta.loader.js?v=a10b02e3d5354f42",
   "dataParts": [
     {
-      "url": "Build/world-data-00.part",
+      "url": "Build/world-data-00.part?v=8ba5b267ca5d0f43",
       "bytes": 20971520,
-      "sha256": "375b41923e2f7874563591b4227e5740d1d5149f31b9677e1480ee0e9f1a3b3b"
+      "sha256": "8ba5b267ca5d0f438856abbc55895db153583627c65244165d67af2b7d50b3cb"
     },
     {
-      "url": "Build/world-data-01.part",
+      "url": "Build/world-data-01.part?v=36f85df9aaccdd70",
       "bytes": 20971520,
-      "sha256": "48f7c20f46702d5753d2626c121709de2faf547af1d9460b5c941410bcb64ea0"
+      "sha256": "36f85df9aaccdd70883ee2827ccd2641e7c41f280f32187ca6e8188bee1a4dbf"
     },
     {
-      "url": "Build/world-data-02.part",
+      "url": "Build/world-data-02.part?v=64844a550050809b",
       "bytes": 20971520,
-      "sha256": "dc0463884b28ad479c0d962e0b7cca6e003e2d9c413fc3ee529535b34b0c34a2"
+      "sha256": "64844a550050809b5007e6015e79b68affcc364170be006f8556645293153294"
     },
     {
-      "url": "Build/world-data-03.part",
+      "url": "Build/world-data-03.part?v=63958bdad68f7835",
       "bytes": 20971520,
-      "sha256": "ddfe7abc951d56fe05333c2c4c51245a09d2dabefa722b3435201f4f8338ac75"
+      "sha256": "63958bdad68f7835540cd2f20314c3fcfb76b5f4ecdb6469dd856c13afd4750b"
     },
     {
-      "url": "Build/world-data-04.part",
+      "url": "Build/world-data-04.part?v=51c998f885c3cb3d",
       "bytes": 20971520,
-      "sha256": "e2ebed2abe9fa5823a82e6f90d81eeb5dea062979e8ade912f294aab6a6434b4"
+      "sha256": "51c998f885c3cb3d6b3efed036059330a0f6c2a931e3074142d3ba73fd1924a4"
     },
     {
-      "url": "Build/world-data-05.part",
+      "url": "Build/world-data-05.part?v=7867ed5b25926a82",
       "bytes": 20971520,
-      "sha256": "7d26c6474280c5b96565c5b1f60175c0ec9e3e3c7ac9cf4fdea4a50457f3fca7"
+      "sha256": "7867ed5b25926a82ac4154d2c8bd729dbe093e029f7bd4d7b2e25309f64e7d42"
     },
     {
-      "url": "Build/world-data-06.part",
+      "url": "Build/world-data-06.part?v=b16f781532d280f1",
       "bytes": 20971520,
-      "sha256": "bdc48fae07f3e09cfabb8ce033674f1d6af60651b6f545beb3b680cfb312e3a0"
+      "sha256": "b16f781532d280f1794292031fe0e20097a31b4bb8882753fd8d81e57fbcf73e"
     },
     {
-      "url": "Build/world-data-07.part",
+      "url": "Build/world-data-07.part?v=e61c266a6523615d",
       "bytes": 20971520,
-      "sha256": "d4af33af80eb74dd1e9d1b04ac098b345c0927f25b930769dba7a5db514e7953"
+      "sha256": "e61c266a6523615d5dd343b7a91997b016ed641acdeb69f36bf04cd596b3d162"
     },
     {
-      "url": "Build/world-data-08.part",
+      "url": "Build/world-data-08.part?v=51a6eb7a9abc41d9",
       "bytes": 20971520,
-      "sha256": "8fa8bd258c5ca7b0b9248d46637597e82ce5a41ec92d35f4f475fd65b4b1b3df"
+      "sha256": "51a6eb7a9abc41d9a6a621f7d221d5d1ed973eb200a01d16b6a5a87d95a35a18"
     },
     {
-      "url": "Build/world-data-09.part",
+      "url": "Build/world-data-09.part?v=18d98604542d9ae3",
       "bytes": 20971520,
-      "sha256": "ab770b41ffc63ec90679d8a82983645bb599ec51267c174ade6d2ab3f6ddf691"
+      "sha256": "18d98604542d9ae3b0f4e1a84da000a0356ef624fdc3467adab22c76e35addce"
     },
     {
-      "url": "Build/world-data-10.part",
-      "bytes": 15866409,
-      "sha256": "18eb3865a68905a8bbad9a7677308480bc05149deac76befa7c9565801cafced"
+      "url": "Build/world-data-10.part?v=a613ce5626eb385f",
+      "bytes": 15872792,
+      "sha256": "a613ce5626eb385f98663afa9b16f68c3f72fcf19ab3d3896e42449a78663286"
     }
   ],
-  "frameworkUrl": "Build/WebBeta.framework.js.unityweb",
-  "codeUrl": "Build/WebBeta.wasm.unityweb",
+  "frameworkUrl": "Build/WebBeta.framework.js.unityweb?v=c25970f85c822859",
+  "codeUrl": "Build/WebBeta.wasm.unityweb?v=75b6a70c3f1a0e0f",
   "streamingAssetsUrl": "StreamingAssets",
   "companyName": "Stackadoo",
   "productName": "Stackadoo Browser Beta",
-  "productVersion": "2026.11.12-beta1",
+  "productVersion": "2026.11.12-beta2",
   "autoSyncPersistentDataPath": true
 }
