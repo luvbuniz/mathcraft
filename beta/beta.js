@@ -52,11 +52,12 @@
     }
     pendingOriginal = null;
     $('transfer-result').textContent = result.message;
+    document.querySelector('.transfer-notice').hidden = false;
     $('import').disabled = !selected().length;
     if (!result.ok) $('retry-transfer').focus();
     // Originals stay in the old game's storage. Unity keeps their complete source records in its own save.
   }};
-  async function start(payload) {
+  async function start(payload, originalSnapshot = null) {
     if (starting || importing) return;
     starting = true; $('skip').disabled = $('import').disabled = true;
     try {
@@ -64,7 +65,7 @@
         const response = await fetch('game-config.json', {cache:'no-store'});
         if (!response.ok) throw Error('The browser game is not available yet. Please try again later.');
         const config = await response.json();
-        $('setup').hidden = true; $('game').hidden = false; $('loading').hidden = false;
+        $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing'); $('loading').hidden = false;
         if (config.dataParts) {
           const chunks = []; let done = 0;
           const total = config.dataParts.reduce((sum, part) => sum + part.bytes, 0);
@@ -86,14 +87,24 @@
         if (config.dataUrl?.startsWith('blob:')) URL.revokeObjectURL(config.dataUrl);
         $('loading').hidden = true; $('full-screen').disabled = false;
       }
-      $('setup').hidden = true; $('game').hidden = false;
-      if (payload) { pendingOriginal = localSource ? {names:selected(),payload} : null; importing = true; $('transfer-result').textContent='Bringing your selected games and learning records…'; instance.SendMessage('Stackadoo web transfer','ImportSelected',payload); }
+      $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing');
+      if (payload) { pendingOriginal = originalSnapshot; importing = true; document.querySelector('.transfer-notice').hidden = false; $('transfer-result').textContent='Bringing your selected games and learning records…'; instance.SendMessage('Stackadoo web transfer','ImportSelected',payload); }
+      try { localStorage.setItem('stackadoo.beta.hasPlayed','1'); } catch {}
       $('unity-canvas').focus();
-    } catch (e) { $('setup').hidden=false; $('game').hidden=true; say(e.message || 'The game could not start. Please try again in an up-to-date browser.'); }
+    } catch (e) { document.body.classList.remove('playing'); $('setup').hidden=false; $('game').hidden=true; say(e.message || 'The game could not start. Please try again in an up-to-date browser.'); }
     finally { starting=false; $('skip').disabled=false; $('import').disabled=importing || !selected().length; }
   }
   $('skip').onclick=()=>start(null);
-  $('import').onclick=()=>{ try { start(core.select(source,selected())); } catch(e) {say(e.message);} };
+  $('import').onclick=()=>{ try { const names=selected(), payload=core.select(source,names); start(payload,localSource?{names,payload}:null); } catch(e) {say(e.message);} };
   $('full-screen').onclick=()=>instance?.SetFullscreen(1);
-  $('retry-transfer').onclick=()=>{if(importing)return; $('setup').hidden=false;$('game').hidden=true;$('check-local').focus();};
+  $('retry-transfer').onclick=()=>{if(importing)return; document.body.classList.remove('playing'); $('setup').hidden=false;$('game').hidden=true;$('check-local').focus();};
+  $('dismiss-transfer').onclick=()=>{document.querySelector('.transfer-notice').hidden=true;};
+  $('game-help').onclick=()=>$('game-help-dialog').showModal();
+  document.querySelector('#auth-account a[href^="play.html"]').onclick=event=>{event.preventDefault();$('signin-dialog').close();start(null);};
+  const entry=new URLSearchParams(location.search);
+  if(entry.has('transfer')) $('check-local').click();
+  else {
+    let played=false;try{played=localStorage.getItem('stackadoo.beta.hasPlayed')==='1';}catch{}
+    if(entry.has('start')||played)start(null);
+  }
 })();

@@ -28,6 +28,7 @@ const sampleWeeks = [
 const sampleSummary = {all:{answered:35,correct:27},math:{answered:20,correct:16},reading:{answered:15,correct:11}};
 const chart = document.getElementById('progress-chart');
 const table = document.getElementById('chart-table');
+if (chart && table) {
 sampleWeeks.forEach(row=>{
  const tr=document.createElement('tr');
  [row.week,row.math,row.reading,row.math+row.reading].forEach((value,index)=>{const cell=document.createElement(index?'td':'th');if(!index)cell.scope='row';cell.textContent=value;tr.append(cell)});
@@ -57,3 +58,5 @@ function showSampleSubject(subject) {
 }
 document.querySelectorAll('[data-subject]').forEach(button=>button.addEventListener('click',()=>showSampleSubject(button.dataset.subject)));
 showSampleSubject('all');
+
+}
