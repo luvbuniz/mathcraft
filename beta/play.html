@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>Stackadoo — Browser beta</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="beta.css"></head><body class="game-page">
+<header class="game-nav"><a href="index.html" class="wordmark">Stackadoo <small>Browser beta</small></a><nav><button data-open="signin-dialog">Parent account</button><a href="https://stackadoo.com/play.html">Back to the old game</a></nav></header>
+<main class="beta-main"><section id="setup" class="beta-card"><p class="panel-eyebrow">A NEW ADVENTURE, TOGETHER</p><h1>Ready to explore?</h1><p>Try the new Stackadoo in your browser. Your old games stay where they are.</p>
+<div class="beta-actions"><button id="check-local" class="button green">Bring my old games</button><button id="skip" class="button cream">Not now · Let's play</button></div>
+<p class="small">Use the same browser and website address where you played before. You can return to transfer later.</p>
+<div id="transfer" hidden><h2>Choose games to bring</h2><p>We’ll make a copy with the learning records. Some old items do not have playable matches yet; the original details are kept.</p><div id="players" class="player-list"></div><button id="import" class="button green" disabled>Bring selected games and play</button><p id="source-note" class="small"></p></div>
+<details><summary>Saved somewhere else?</summary><p>If your old game was backed up to your parent account, sign in above, then check that backup. Nothing will be uploaded or changed there.</p><button id="cloud" class="button cream">Check my cloud backup</button><p>Or choose an old Stackadoo backup file:</p><input id="backup-file" type="file" accept=".json,application/json" aria-label="Old Stackadoo backup file"></details>
+<p id="status" role="status" aria-live="polite"></p></section>
+<section id="game" hidden aria-label="New Stackadoo game"><div id="loading" role="status"><h2>Opening Math Meadow…</h2><progress id="load-progress" max="1" value="0"></progress><p id="load-message">The first visit downloads the game. This may take a few minutes.</p></div><canvas id="unity-canvas" tabindex="0" aria-label="Stackadoo game"></canvas><p id="transfer-result" role="status" aria-live="polite"></p><div class="game-tools"><button id="full-screen" class="button cream" disabled>Full screen</button><button id="retry-transfer" class="button cream">Bring an old game</button><a href="index.html">Back to website</a></div></section>
+<p class="beta-footnote">Test version · Progress stays in this browser. This beta does not yet sync new progress to your tablet.</p></main><dialog id="signin-dialog" aria-labelledby="signin-title">
+<button class="close" aria-label="Close sign-in">×</button>
+<p class="panel-eyebrow">FOR GROWN-UPS</p><h2 id="signin-title">One family.<br>A world of adventures.</h2>
+<div id="auth-preview" class="auth-preview-note">Local preview · Sign-in and emails are not live yet.</div>
+<div id="auth-account" hidden><p>Signed in as <strong id="auth-account-email"></strong></p><p>Your parent account is ready. Beta progress stays in this browser. Signing in does not automatically move or replace your games.</p><a class="button green" href="https://stackadoo.com/play.html">Open the browser game</a><button id="auth-signout" class="auth-text-button" data-auth-action>Sign out</button></div>
+<div id="auth-signed-out">
+<p class="auth-intro">Use Google, or get a sign-in link by email.<br>No new password to remember.</p>
+<button id="auth-google" class="button auth-google" data-auth-action>Continue with Google</button>
+<div id="auth-or" class="auth-divider"><span>or use your email</span></div>
+<p id="auth-link-instructions" class="auth-explainer" hidden>To finish securely, enter the same email address that received this link.</p>
+<form id="auth-email-form"><label class="auth-email-label" for="parent-email">Parent’s email address</label><input type="email" id="parent-email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required><button id="auth-send" class="button green auth-send" type="submit" data-auth-action>Email me a sign-in link</button></form>
+<button id="auth-fresh-link" class="auth-text-button" hidden data-auth-action>Request a fresh link instead</button>
+<p class="auth-explainer">Children play with their nicknames. Sign-in is for grown-ups.</p>
+<details id="auth-help" class="auth-help"><summary>Trouble signing in?</summary>
+<p><strong>Lost your link?</strong> Enter your email above and we’ll send a fresh one.</p><button id="auth-resend" class="auth-recovery-button" data-auth-action>Send a fresh sign-in link</button>
+<p><strong>Used a password before?</strong> Enter your email above and your existing password here.</p><input id="auth-password" type="password" autocomplete="current-password" placeholder="Existing password" aria-label="Existing password"><button id="auth-password-submit" class="auth-recovery-button" data-auth-action>Sign in with my password</button><button id="auth-reset" class="auth-recovery-button" data-auth-action>Email a password reset</button>
+<p><strong>Usually sign in with Google?</strong> Choose Continue with Google and pick the same Google account.</p>
+<p><strong>Forgot which email you used?</strong> Check your inboxes for earlier Stackadoo messages, or <a href="https://stackadoo.com/support.html">contact support</a>. Never send your password or sign-in link.</p>
+</details></div>
+<p id="auth-status" class="auth-status" role="status" aria-live="polite" aria-atomic="true"></p>
+<p class="dialog-note">Already playing? <a href="https://stackadoo.com/play.html">Use the existing browser-game sign-in</a>. <a href="https://stackadoo.com/support.html#privacy">Privacy notice</a>.</p>
+</dialog>
+
+<script src="dialogs.js"></script><script src="auth-config.js"></script><script src="auth-service.js"></script><script src="auth-ui.js"></script><script src="transfer-core.js"></script><script src="beta.js"></script></body></html>

@@ -1,0 +1,67 @@
+{
+  "loaderUrl": "Build/WebBeta.loader.js",
+  "dataParts": [
+    {
+      "url": "Build/world-data-00.part",
+      "bytes": 20971520,
+      "sha256": "375b41923e2f7874563591b4227e5740d1d5149f31b9677e1480ee0e9f1a3b3b"
+    },
+    {
+      "url": "Build/world-data-01.part",
+      "bytes": 20971520,
+      "sha256": "48f7c20f46702d5753d2626c121709de2faf547af1d9460b5c941410bcb64ea0"
+    },
+    {
+      "url": "Build/world-data-02.part",
+      "bytes": 20971520,
+      "sha256": "dc0463884b28ad479c0d962e0b7cca6e003e2d9c413fc3ee529535b34b0c34a2"
+    },
+    {
+      "url": "Build/world-data-03.part",
+      "bytes": 20971520,
+      "sha256": "ddfe7abc951d56fe05333c2c4c51245a09d2dabefa722b3435201f4f8338ac75"
+    },
+    {
+      "url": "Build/world-data-04.part",
+      "bytes": 20971520,
+      "sha256": "e2ebed2abe9fa5823a82e6f90d81eeb5dea062979e8ade912f294aab6a6434b4"
+    },
+    {
+      "url": "Build/world-data-05.part",
+      "bytes": 20971520,
+      "sha256": "7d26c6474280c5b96565c5b1f60175c0ec9e3e3c7ac9cf4fdea4a50457f3fca7"
+    },
+    {
+      "url": "Build/world-data-06.part",
+      "bytes": 20971520,
+      "sha256": "bdc48fae07f3e09cfabb8ce033674f1d6af60651b6f545beb3b680cfb312e3a0"
+    },
+    {
+      "url": "Build/world-data-07.part",
+      "bytes": 20971520,
+      "sha256": "d4af33af80eb74dd1e9d1b04ac098b345c0927f25b930769dba7a5db514e7953"
+    },
+    {
+      "url": "Build/world-data-08.part",
+      "bytes": 20971520,
+      "sha256": "8fa8bd258c5ca7b0b9248d46637597e82ce5a41ec92d35f4f475fd65b4b1b3df"
+    },
+    {
+      "url": "Build/world-data-09.part",
+      "bytes": 20971520,
+      "sha256": "ab770b41ffc63ec90679d8a82983645bb599ec51267c174ade6d2ab3f6ddf691"
+    },
+    {
+      "url": "Build/world-data-10.part",
+      "bytes": 15866409,
+      "sha256": "18eb3865a68905a8bbad9a7677308480bc05149deac76befa7c9565801cafced"
+    }
+  ],
+  "frameworkUrl": "Build/WebBeta.framework.js.unityweb",
+  "codeUrl": "Build/WebBeta.wasm.unityweb",
+  "streamingAssetsUrl": "StreamingAssets",
+  "companyName": "Stackadoo",
+  "productName": "Stackadoo Browser Beta",
+  "productVersion": "2026.11.12-beta1",
+  "autoSyncPersistentDataPath": true
+}
