@@ -30,3 +30,9 @@
   #website-controls {bottom:max(6px,env(safe-area-inset-bottom));min-height:36px;}
   .playing .game-tools {max-height:65dvh;overflow-y:auto;}
 }
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  #website-controls, .playing .game-tools {display:none !important;}
+  .playing canvas {height:100%;}
+}
+.playing canvas:fullscreen {width:100vw;height:100vh;}
