@@ -22,3 +22,11 @@
   #signin-dialog .button {min-height:48px;font-size:18px;padding:12px;}
   #signin-dialog input {font-size:16px;min-height:48px;}
 }
+
+/* Short landscape phones keep website controls outside the tappable game. */
+@media (max-width:1100px) and (max-height:500px) and (orientation:landscape) {
+  .playing canvas {height:calc(100% - 48px);}
+  .playing #game {background:#fff8e7;}
+  #website-controls {bottom:max(6px,env(safe-area-inset-bottom));min-height:36px;}
+  .playing .game-tools {max-height:65dvh;overflow-y:auto;}
+}
