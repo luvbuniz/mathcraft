@@ -10,5 +10,7 @@
 #video-dialog.portrait-trailer{width:min(460px,calc(100% - 24px))}
 #video-dialog.portrait-trailer video{width:auto;max-width:100%;height:min(64dvh,640px);aspect-ratio:9/16}
 #video-dialog .trailer-fallback{font-size:14px;margin:12px 0 0;text-align:center}
-#video-dialog .trailer-fallback a{text-decoration:underline;color:#186b47}
+#trailer-fullscreen{font:inherit;text-decoration:underline;color:#186b47;background:transparent;border:0;min-height:44px;padding:8px 16px;cursor:pointer}
+#trailer-fullscreen-status{display:block}
+#video-dialog video:fullscreen{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;border-radius:0;object-fit:contain;background:#000}
 @media(max-width:767px){#video-dialog{padding:22px 16px}#video-dialog h2{font-size:27px;padding-right:34px}#video-dialog>p{font-size:15px;margin:12px 0}}

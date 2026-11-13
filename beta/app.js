@@ -10,10 +10,24 @@ function prepareAdventureTrailer(dialog) {
     video.poster = video.dataset[format + 'Poster'];
     video.src = video.dataset[format];
     video.dataset.activeFormat = format;
-    document.getElementById('trailer-direct').href = video.dataset[format];
     video.load();
   }
 }
+
+// Full screen stays in the player and preserves the current playback position.
+document.getElementById('trailer-fullscreen')?.addEventListener('click', async () => {
+  const video = document.getElementById('adventure-trailer');
+  const status = document.getElementById('trailer-fullscreen-status');
+  status.textContent = '';
+  try {
+    if (video.requestFullscreen) await video.requestFullscreen();
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+    else status.textContent = 'Use the full-screen control on the video.';
+  } catch {
+    status.textContent = 'Use the full-screen control on the video.';
+  }
+});
 
 const openers = new Map();
 document.querySelectorAll('[data-open]').forEach(button => {
