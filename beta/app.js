@@ -1,8 +1,26 @@
+// Pick one trailer on opening; rotation never restarts a playing video.
+function prepareAdventureTrailer(dialog) {
+  const video = dialog.querySelector('#adventure-trailer');
+  if (!video) return;
+  const portrait = window.matchMedia('(max-width: 767px), (max-height: 500px) and (pointer: coarse)').matches;
+  const format = portrait ? 'portrait' : 'landscape';
+  dialog.classList.toggle('portrait-trailer', portrait);
+  if (video.dataset.activeFormat !== format) {
+    video.pause();
+    video.poster = video.dataset[format + 'Poster'];
+    video.src = video.dataset[format];
+    video.dataset.activeFormat = format;
+    document.getElementById('trailer-direct').href = video.dataset[format];
+    video.load();
+  }
+}
+
 const openers = new Map();
 document.querySelectorAll('[data-open]').forEach(button => {
   button.addEventListener('click', () => {
     const dialog = document.getElementById(button.dataset.open);
     openers.set(dialog, button);
+    if (dialog.id === 'video-dialog') prepareAdventureTrailer(dialog);
     dialog.showModal();
   });
 });
