@@ -1,7 +1,7 @@
 (async function() {
   'use strict';
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
-  let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null;
+  let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
   const say = text => { $('status').textContent = text; };
   function showSource(value, label) {
     localSource = false; source = value; $('players').replaceChildren(); $('transfer').hidden = false;
@@ -16,32 +16,53 @@
   }
   function selected() { return [...$('players').querySelectorAll('input:checked')].map(input => input.value); }
   $('check-local').onclick = () => {
+    ++lookupVersion;$('cloud').disabled=false;
     try { showSource(core.fromStorage(localStorage), 'Games saved in this browser. The originals will stay unchanged.'); localSource = true; }
     catch (e) { say(e.message || 'This browser did not allow access to old saves. You can choose a backup file instead.'); }
   };
   $('backup-file').onchange = async event => {
     try {
       const file = event.target.files[0]; if (!file) return;
+      ++lookupVersion;$('cloud').disabled=false;
       if (file.size > 20 * 1024 * 1024) throw Error('Choose a backup smaller than 20 MB.');
       showSource(core.fromJSON(await file.text()), 'A copy from your backup file. Learning records are included.');
     } catch (e) { say(e.message || 'That backup could not be opened.'); }
     finally { event.target.value = ''; }
   };
-  $('cloud').onclick = async () => {
+  async function checkCloud() {
     const account = window.StackadooBetaAccount, user = account?.auth.currentUser;
-    if (!user) { $('signin-dialog').showModal(); say('Sign in with the parent account you used before, then check the cloud backup again.'); return; }
+    if (!user) { findAfterSignIn=true; $('signin-dialog').showModal(); say('Sign in with the parent account you used before. We will then check for its old backup.'); return; }
+    localSource=false;source=null;$('players').replaceChildren();$('transfer').hidden=true;$('import').disabled=true;
+    const lookup=++lookupVersion;
     $('cloud').disabled = true; say('Looking for a backup in your parent account…');
     try {
       const sdk = await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
       const snap = await sdk.getDocFromServer(sdk.doc(sdk.getFirestore(account.app), 'users', user.uid));
-      if (account.auth.currentUser?.uid !== user.uid) throw Error('Your account changed. Check the backup again with the correct account.');
+      if (lookup!==lookupVersion || account.auth.currentUser?.uid!==user.uid) return;
       const blob = snap.data()?.blob;
       if (!snap.exists() || typeof blob !== 'string') { say('No cloud backup was found. Games may still be saved on the device where you played.'); return; }
       showSource(core.fromJSON(blob), 'Copy from this parent account’s cloud backup. We will not change the cloud backup.');
-    } catch { say('We could not read the cloud backup. Check your connection and parent account, or use a backup file.'); }
-    finally { $('cloud').disabled = false; }
-  };
-  window.addEventListener('stackadoo-account', () => { source = null; $('players').replaceChildren(); $('transfer').hidden = true; $('import').disabled = true; });
+    } catch { if(lookup===lookupVersion) say('We could not read the cloud backup. Check your connection and parent account, or use a backup file.'); }
+    finally { if(lookup===lookupVersion) $('cloud').disabled = false; }
+  }
+  $('cloud').onclick=checkCloud;
+  function openFinder() {
+    if(importing)return;
+    $('signin-dialog').close();closeWebsiteControls();
+    document.body.classList.remove('playing');$('setup').hidden=false;$('game').hidden=true;
+    $('check-local').click();
+    $('other-saves').open=true;
+    if(!source?.names.length) checkCloud();
+    $('check-local').focus();
+  }
+  window.addEventListener('stackadoo-find-players',openFinder);
+  $('signin-dialog').addEventListener('close',()=>{findAfterSignIn=false;});
+  window.addEventListener('stackadoo-account',event=>{
+    ++lookupVersion;
+    if(!localSource){source=null;$('players').replaceChildren();$('transfer').hidden=true;$('import').disabled=true;}
+    $('cloud').disabled=false;
+    if(event.detail.signedIn && findAfterSignIn){findAfterSignIn=false;$('signin-dialog').close();checkCloud();}
+  });
   window.StackadooBeta = {transferResult(json) {
     importing = false; const result = JSON.parse(json);
     if (result.ok && pendingOriginal) {
@@ -112,8 +133,10 @@
   $('retry-transfer').onclick=()=>{if(importing)return; closeWebsiteControls(); document.body.classList.remove('playing'); $('setup').hidden=false;$('game').hidden=true;$('check-local').focus();};
   $('dismiss-transfer').onclick=()=>{document.querySelector('.transfer-notice').hidden=true;};
   $('game-help').onclick=()=>$('game-help-dialog').showModal();
-  document.querySelector('#auth-account a[href^="play.html"]').onclick=event=>{event.preventDefault();$('signin-dialog').close();start(null);};
+  document.querySelector('#auth-account a[href="play.html?start=1"]').onclick=event=>{event.preventDefault();$('signin-dialog').close();start(null);};
+  $('auth-find-players').onclick=event=>{event.preventDefault();openFinder();};
   const entry=new URLSearchParams(location.search);
-  if(entry.has('transfer')) $('check-local').click();
+  if(entry.has('account')) openFinder();
+  else if(entry.has('transfer')) $('check-local').click();
   else start(null);
 })();

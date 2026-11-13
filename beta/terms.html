@@ -24,7 +24,7 @@
 <button class="close" aria-label="Close sign-in">×</button>
 <p class="panel-eyebrow">FOR GROWN-UPS</p><h2 id="signin-title">One family.<br>A world of adventures.</h2>
 <div id="auth-preview" class="auth-preview-note">Local preview · Sign-in and emails are not live yet.</div>
-<div id="auth-account" hidden><p>Signed in as <strong id="auth-account-email"></strong></p><p>Your parent account is ready. Beta progress stays in this browser. Signing in does not automatically move or replace your games.</p><a class="button green" href="play.html?start=1">Play the new game</a><button id="auth-signout" class="auth-text-button" data-auth-action>Sign out</button></div>
+<div id="auth-account" hidden><p>Signed in as <strong id="auth-account-email"></strong></p><p>Find players saved in this browser or in your old parent-account backup, then choose which to bring with their learning records. New beta progress stays in this browser.</p><a id="auth-find-players" class="button green" href="play.html?transfer=1&amp;account=1">Find my saved players</a><a class="button cream" href="play.html?start=1">Play Stackadoo</a><button id="auth-signout" class="auth-text-button" data-auth-action>Sign out</button></div>
 <div id="auth-signed-out">
 <p class="auth-intro">Use Google, or get a sign-in link by email.<br>No new password to remember.</p>
 <button id="auth-google" class="button auth-google" data-auth-action>Continue with Google</button>
@@ -41,4 +41,4 @@
 </details></div>
 <p id="auth-status" class="auth-status" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="dialog-note">Already playing? <a href="https://stackadoo.com/play.html">Use the existing browser-game sign-in</a>. <a href="privacy.html">Privacy notice</a>.</p>
-</dialog><script src="app.js?v=full1"></script><script src="auth-config.js"></script><script src="auth-service.js"></script><script src="auth-ui.js"></script></body></html>
+</dialog><script src="app.js?v=full1"></script><script src="auth-config.js"></script><script src="auth-service.js"></script><script src="auth-ui.js?v=players2"></script></body></html>

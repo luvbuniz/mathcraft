@@ -43,7 +43,7 @@
       document.getElementById('auth-account-email').textContent = user.email || 'Your parent account';
       pendingLink = '';
       linkMode(false);
-      say('You are signed in. Beta progress stays in this browser; transfers are optional.');
+      say('You are signed in. Choose Find my saved players to look for your earlier games and learning records.');
     }
   }
   async function run(action) {
