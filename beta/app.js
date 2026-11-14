@@ -1,18 +1,26 @@
-// Pick one trailer on opening; rotation never restarts a playing video.
-function prepareAdventureTrailer(dialog) {
-  const video = dialog.querySelector('#adventure-trailer');
-  if (!video) return;
-  const portrait = window.matchMedia('(max-width: 767px), (max-height: 500px) and (pointer: coarse)').matches;
-  const format = portrait ? 'portrait' : 'landscape';
-  dialog.classList.toggle('portrait-trailer', portrait);
-  if (video.dataset.activeFormat !== format) {
-    video.pause();
-    video.poster = video.dataset[format + 'Poster'];
-    video.src = video.dataset[format];
-    video.dataset.activeFormat = format;
-    video.load();
-  }
+// Use the phone trailer on phones; never restart an adventure already in progress on rotation.
+const trailerCard = document.getElementById('adventure-trailer-card');
+const adventureTrailer = document.getElementById('adventure-trailer');
+const phoneTrailer = window.matchMedia('(max-width: 767px), (max-height: 500px) and (pointer: coarse)');
+function prepareAdventureTrailer() {
+  if (!adventureTrailer || !trailerCard) return;
+  if (adventureTrailer.currentTime > 0 && !adventureTrailer.ended) return;
+  const format = phoneTrailer.matches ? 'portrait' : 'landscape';
+  trailerCard.classList.toggle('portrait-trailer', format === 'portrait');
+  if (adventureTrailer.dataset.activeFormat === format) return;
+  adventureTrailer.poster = adventureTrailer.dataset[format + 'Poster'];
+  adventureTrailer.src = adventureTrailer.dataset[format];
+  adventureTrailer.dataset.activeFormat = format;
+  adventureTrailer.load();
 }
+prepareAdventureTrailer();
+phoneTrailer.addEventListener('change', prepareAdventureTrailer);
+document.querySelectorAll('[data-watch-trailer]').forEach(link => {
+  link.addEventListener('click', () => {
+    prepareAdventureTrailer();
+    adventureTrailer?.play().catch(() => {}); // Native Play remains available if the browser blocks playback.
+  });
+});
 
 // Full screen stays in the player and preserves the current playback position.
 document.getElementById('trailer-fullscreen')?.addEventListener('click', async () => {
@@ -34,7 +42,7 @@ document.querySelectorAll('[data-open]').forEach(button => {
   button.addEventListener('click', () => {
     const dialog = document.getElementById(button.dataset.open);
     openers.set(dialog, button);
-    if (dialog.id === 'video-dialog') prepareAdventureTrailer(dialog);
+    adventureTrailer?.pause();
     dialog.showModal();
   });
 });

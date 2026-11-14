@@ -4,13 +4,13 @@
 @media(max-width:900px){.site-header nav{padding-left:0}.site-header .logo{flex-basis:210px}.page-heading{padding-top:45px}.world-feature{margin-inline:20px;gap:25px;grid-template-columns:1fr}.world-feature .art{max-height:250px;width:100%}.parent-guide{grid-template-columns:1fr;gap:30px;max-width:700px}.sample-dashboard,.info-note,.support-card,.policy-copy{margin-inline:20px}.roster-page .hero-intro .avatar{width:130px;height:130px}.roster-page .featured-heroes{grid-template-columns:1fr 1fr}.full-footer nav{flex-basis:100%}.sample-dashboard{padding:25px}}
 @media(max-width:600px){.site-header .logo{flex-basis:165px}.site-header nav{gap:10px;justify-content:space-between}.site-header nav a,.site-header nav button{font-size:13px}.page-heading{padding:35px 22px 20px}.page-heading>p:last-child{font-size:18px;line-height:1.6}.page-section,.faq-list{padding:18px}.roster-page .featured-heroes{gap:12px}.roster-page .hero-intro{padding:20px 10px}.roster-page .hero-intro .avatar{width:116px;height:116px}.roster-page .hero-intro p{font-size:14px}.roster-page .hero-unlock{font-size:11px}.page-cta h2{font-size:29px}.world-feature{padding:18px;margin-inline:15px}.world-feature h2{font-size:32px}.help-grid{grid-template-columns:1fr;padding:18px}.info-note{padding:22px}.faq-list details{padding:18px}.faq-list summary{font-size:18px}.sample-dashboard{margin-inline:12px;padding:20px 14px}.sample-dashboard .progress-chart{height:220px}.play-guide{padding:18px}.play-guide li{padding:22px 18px 22px 77px}.play-guide li:before{width:42px;height:42px;left:18px;font-size:24px}.play-guide h2{font-size:25px}.support-card{padding:28px 20px}.policy-copy{padding:25px}.policy-copy h2{font-size:29px}.policy-copy h3{font-size:22px}.policy-copy p{font-size:16px}.playing .game-nav{padding:8px 12px;gap:10px;align-items:center}.playing .game-nav nav{gap:12px;font-size:12px}.playing .wordmark{font-size:19px}.playing .wordmark small{font-size:10px}.playing .game-tools{gap:14px;padding-inline:12px;flex-wrap:wrap;justify-content:center}.playing .game-tools .button,.playing .game-tools>a{font-size:12px}.transfer-notice{bottom:60px;left:10px;max-width:calc(100% - 20px)}}
 
-/* Keep each trailer uncropped and leave controls reachable on short screens. */
-#video-dialog{width:min(1040px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:28px}
-#video-dialog video{display:block;width:100%;height:auto;max-height:70dvh;aspect-ratio:16/9;object-fit:contain;background:#142b33;border-radius:16px;margin:18px auto 0}
-#video-dialog.portrait-trailer{width:min(460px,calc(100% - 24px))}
-#video-dialog.portrait-trailer video{width:auto;max-width:100%;height:min(64dvh,640px);aspect-ratio:9/16}
-#video-dialog .trailer-fallback{font-size:14px;margin:12px 0 0;text-align:center}
+/* One real embedded player replaces the cropped screenshot card. */
+.embedded-trailer{margin:0;align-self:start;scroll-margin-top:24px;text-align:center}
+.embedded-trailer video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:#142b33}
+.embedded-trailer.portrait-trailer video{aspect-ratio:9/16}
+.embedded-trailer .trailer-label{position:static;display:block;margin:16px 16px 0;padding:0;background:none;box-shadow:none;font-size:clamp(22px,2.5vw,32px)}
+.embedded-trailer .trailer-note{font-size:15px;padding:8px 16px 0}
+.embedded-trailer .trailer-fallback{font-size:16px;margin:0 0 8px;text-align:center}
 #trailer-fullscreen{font:inherit;text-decoration:underline;color:#186b47;background:transparent;border:0;min-height:44px;padding:8px 16px;cursor:pointer}
 #trailer-fullscreen-status{display:block}
-#video-dialog video:fullscreen{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;border-radius:0;object-fit:contain;background:#000}
-@media(max-width:767px){#video-dialog{padding:22px 16px}#video-dialog h2{font-size:27px;padding-right:34px}#video-dialog>p{font-size:15px;margin:12px 0}}
+#adventure-trailer:fullscreen{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;border-radius:0;object-fit:contain;background:#000}
