@@ -3,6 +3,51 @@
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
   const say = text => { $('status').textContent = text; };
+  // The site-wide sw.js (old game) would otherwise also control /beta/ and copy every game download into its own
+  // cache. This tiny /beta/ worker takes over these pages instead; it has no fetch handler, so requests go straight out.
+  try { navigator.serviceWorker?.register('sw.js?v=1', {scope:'./'}).catch(() => {}); } catch {}
+  // ---- on-device game cache (Cache Storage; Unity keeps the code files in its own IndexedDB cache) ----
+  async function openGameStore(version) {
+    try {
+      if (!window.caches || !version) return null;
+      const name = 'stackadoo-beta-' + version, keys = await caches.keys();
+      const old = keys.filter(k => k.startsWith('stackadoo-beta-') && k !== name);
+      await Promise.all(old.map(k => caches.delete(k)));
+      let seen = null; try { seen = localStorage.getItem('stackadoo.beta.cachedBuild'); } catch {}
+      if ((seen && seen !== version) || (!seen && old.length)) {   // a new build: Unity's cached code files belong to the old one
+        await Promise.all(keys.filter(k => k.startsWith('UnityCache')).map(k => caches.delete(k)));
+        await new Promise(done => { try { const r = indexedDB.deleteDatabase('UnityCache'); r.onsuccess = r.onerror = r.onblocked = done; } catch { done(); } });
+      }
+      try { localStorage.setItem('stackadoo.beta.cachedBuild', version); } catch {}
+      try { navigator.storage?.persist?.(); } catch {}
+      return {cache: await caches.open(name), hit: false};
+    } catch { return null; }
+  }
+  async function cachedPart(store, part) {
+    try {
+      const found = store && await store.cache.match(part.url);
+      if (!found) return null;
+      const blob = await found.blob();
+      if (blob.size !== part.bytes) { await store.cache.delete(part.url); return null; }
+      store.hit = true; return blob;
+    } catch { return null; }
+  }
+  async function savePart(store, part, bytes) {
+    try {
+      if (!store) return null;
+      await store.cache.put(part.url, new Response(bytes, {headers:{'Content-Type':'application/octet-stream','Content-Length':String(part.bytes)}}));
+      const saved = await (await store.cache.match(part.url))?.blob();
+      return saved?.size === part.bytes ? saved : null;
+    } catch { return null; }   // storage full or blocked: keep playing from the download
+  }
+  async function cachedScript(store, url) {
+    try {
+      if (!store) return url;
+      let found = await store.cache.match(url);
+      if (!found) { const r = await fetch(url, {cache:'no-store'}); if (!r.ok) return url; await store.cache.put(url, r); found = await store.cache.match(url); }
+      return found ? URL.createObjectURL(new Blob([await found.blob()], {type:'text/javascript'})) : url;
+    } catch { return url; }
+  }
   function showSource(value, label) {
     localSource = false; source = value; $('players').replaceChildren(); $('transfer').hidden = false;
     for (const name of source.names) {
@@ -87,25 +132,36 @@
         if (!response.ok) throw Error('The browser game is not available yet. Please try again later.');
         const config = await response.json();
         $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing'); $('loading').hidden = false;
+        // Keep the game on this device: each build is stored once in Cache Storage (named by buildVersion; files are
+        // keyed by their ?v=<sha> URLs), so later visits load the world without downloading it again. Older builds'
+        // copies are removed when the version changes. If storage is unavailable (private mode, quota) we just download.
+        const store = await openGameStore(config.buildVersion);
         if (config.dataParts) {
-          const chunks = []; let done = 0;
+          let chunks = []; let done = 0;
           const total = config.dataParts.reduce((sum, part) => sum + part.bytes, 0);
           for (const part of config.dataParts) {
-            const download = await fetch(part.url, {cache:'force-cache'});
-            if (!download.ok) throw Error('A game download was interrupted. Please try again.');
-            const bytes = await download.arrayBuffer();
-            const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
-            if (bytes.byteLength !== part.bytes || hash !== part.sha256) throw Error('A game file did not download correctly. Please reload and try again.');
-            chunks.push(bytes); done += bytes.byteLength;
+            let piece = await cachedPart(store, part);   // a disk-backed Blob: nothing extra held in memory
+            if (!piece) {
+              const download = await fetch(part.url, {cache:'no-store'});
+              if (!download.ok) throw Error('A game download was interrupted. Please try again.');
+              let bytes = await download.arrayBuffer();
+              const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+              if (bytes.byteLength !== part.bytes || hash !== part.sha256) throw Error('A game file did not download correctly. Please reload and try again.');
+              piece = (await savePart(store, part, bytes)) || new Blob([bytes]); bytes = null;   // only verified files are kept
+            }
+            chunks.push(piece); done += part.bytes;
             $('load-progress').value = .7 * done / total;
-            $('load-message').textContent = 'Downloading the world: ' + Math.round(done/1024/1024) + ' of ' + Math.round(total/1024/1024) + ' MB';
+            $('load-message').textContent = (store?.hit ? 'Opening the saved world: ' : 'Downloading the world: ') + Math.round(done/1024/1024) + ' of ' + Math.round(total/1024/1024) + ' MB';
           }
           config.dataUrl = URL.createObjectURL(new Blob(chunks, {type:'application/octet-stream'}));
+          chunks.length = 0; chunks = null;   // memory (phones): the Blob now holds the world; drop the downloaded parts so they are not kept twice
           $('load-message').textContent = 'Opening the game…';
         }
-        await new Promise((resolve,reject) => { const script = document.createElement('script'); script.src = config.loaderUrl; script.onload=resolve; script.onerror=()=>reject(Error('The game download did not start. Please check your connection.')); document.body.append(script); });
-        instance = await createUnityInstance($('unity-canvas'), {...config, cacheControl:url=>url.startsWith('blob:')?'no-store':'must-revalidate', devicePixelRatio:Math.min(window.devicePixelRatio || 1,1.5), showBanner:(message,type)=>{if(type==='error') $('load-message').textContent=message;}}, value => { $('load-progress').value=.7 + .3*value; });
-        if (config.dataUrl?.startsWith('blob:')) URL.revokeObjectURL(config.dataUrl);
+        const loaderSrc = await cachedScript(store, config.loaderUrl);
+        await new Promise((resolve,reject) => { const script = document.createElement('script'); script.src = loaderSrc; script.onload=resolve; script.onerror=()=>reject(Error('The game download did not start. Please check your connection.')); document.body.append(script); });
+        if (loaderSrc.startsWith('blob:')) URL.revokeObjectURL(loaderSrc);
+        instance = await createUnityInstance($('unity-canvas'), {...config, cacheControl:url=>url.startsWith('blob:')?'no-store':(store && /[?&]v=/.test(url)?'immutable':'must-revalidate'), devicePixelRatio:Math.min(window.devicePixelRatio || 1,1.5), showBanner:(message,type)=>{if(type==='error') $('load-message').textContent=message;}}, value => { $('load-progress').value=.7 + .3*value; });
+        if (config.dataUrl?.startsWith('blob:')) { URL.revokeObjectURL(config.dataUrl); config.dataUrl = null; }   // Unity has its copy; let the Blob go
         $('loading').hidden = true; $('full-screen').disabled = false;
       }
       $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing');
