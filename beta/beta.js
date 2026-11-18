@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
   let releaseWorld = () => {};
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
-  const BETA_JS = 'cache4';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
+  const BETA_JS = 'cache5';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
   const say = text => { $('status').textContent = text; };
   // The site-wide sw.js (old game) would otherwise also control /beta/ and copy every game download into its own
   // cache. This tiny /beta/ worker takes over these pages instead; it has no fetch handler, so requests go straight out.

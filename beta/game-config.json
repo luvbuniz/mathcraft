@@ -1,71 +1,71 @@
 {
-  "loaderUrl": "Build/WebBeta.loader.js?v=b5db16027b118baf",
+  "loaderUrl": "Build/WebBeta.loader.js?v=d6292865e328536b",
   "dataParts": [
     {
-      "url": "Build/world-data-00.part?v=092f06ab6660c261",
+      "url": "Build/world-data-00.part?v=1ab241d2bc5ad5c9",
       "bytes": 20971520,
-      "sha256": "092f06ab6660c2616ca80f9a335f4e972b6c368c4498885d8f9dc774c16e6da4"
+      "sha256": "1ab241d2bc5ad5c91ba55130f7046f25fd5d6bb4a249718173c4e8047fe9d8a6"
     },
     {
-      "url": "Build/world-data-01.part?v=7d909b108fd72c6e",
+      "url": "Build/world-data-01.part?v=2085a24984a1ef88",
       "bytes": 20971520,
-      "sha256": "7d909b108fd72c6e9d4a6ae5f97f7d044484882b435b7e48fa1991bc817bf823"
+      "sha256": "2085a24984a1ef88ff64118dd53180ad33750bbcc4ab1b799522865c488e5444"
     },
     {
-      "url": "Build/world-data-02.part?v=cb581771cd5481cf",
+      "url": "Build/world-data-02.part?v=313d8bc70f75428f",
       "bytes": 20971520,
-      "sha256": "cb581771cd5481cf832f475b23fb2ab1e7c55c724f5be5ccd8840e9416050867"
+      "sha256": "313d8bc70f75428f1fdbfcfa881a07f8219cb8ba6bc3819b1b0e7921ff7e393f"
     },
     {
-      "url": "Build/world-data-03.part?v=e6f9ab35c1942a4f",
+      "url": "Build/world-data-03.part?v=d87a7d7c459fde4e",
       "bytes": 20971520,
-      "sha256": "e6f9ab35c1942a4fcb16a0553f31399a6c4cb8476039eb98e9bfcfb46a201eee"
+      "sha256": "d87a7d7c459fde4e5aec698f0a6c79a040f6f5baf409e308e9a55a51b8331e9b"
     },
     {
-      "url": "Build/world-data-04.part?v=9d068f9feaa67c0d",
+      "url": "Build/world-data-04.part?v=f7b11e51f9eef155",
       "bytes": 20971520,
-      "sha256": "9d068f9feaa67c0d7d14f4f0afba65ec08747e43c71b72ed6f197c385bcb9954"
+      "sha256": "f7b11e51f9eef155f8f2233e6f8289c14a254a2cfdd6675f115fe65802863519"
     },
     {
-      "url": "Build/world-data-05.part?v=4949c168d8f7215b",
+      "url": "Build/world-data-05.part?v=61d3eaabd5866d9d",
       "bytes": 20971520,
-      "sha256": "4949c168d8f7215bb328c6d841fccde25e2b205da8239106cae10c29b02b5f18"
+      "sha256": "61d3eaabd5866d9d4056a3587d93be2d3356797f10ab81afc5eb56ec7a171d35"
     },
     {
-      "url": "Build/world-data-06.part?v=64c12784a2d65af8",
+      "url": "Build/world-data-06.part?v=7fe2c00e5006714e",
       "bytes": 20971520,
-      "sha256": "64c12784a2d65af8f66727bd0e8edee79859139132dd71bf59e87d164a85aff0"
+      "sha256": "7fe2c00e5006714ed5d5352e0344e8de362a69e074ebdb49f07b61856e5cdf96"
     },
     {
-      "url": "Build/world-data-07.part?v=b1c069fb664d5afb",
+      "url": "Build/world-data-07.part?v=bfbf746e58a55a42",
       "bytes": 20971520,
-      "sha256": "b1c069fb664d5afb3e8594ebaca42d6c1a660f173e454bef158baad9e7b648e1"
+      "sha256": "bfbf746e58a55a4235fce28b12c71edf45fa210ce58beb2018d66d8256526d92"
     },
     {
-      "url": "Build/world-data-08.part?v=bff9a1a9d90070b5",
+      "url": "Build/world-data-08.part?v=d7451ecae365a8a2",
       "bytes": 20971520,
-      "sha256": "bff9a1a9d90070b5efaa2cc4d6474c392642dbd5ef046d6229624a015bcf5668"
+      "sha256": "d7451ecae365a8a2ded652c80553cbc8d427672a637be98c6ec8498ff125d651"
     },
     {
-      "url": "Build/world-data-09.part?v=608d2913a70605fc",
+      "url": "Build/world-data-09.part?v=72710e92beedc4d1",
       "bytes": 20971520,
-      "sha256": "608d2913a70605fcd9ad46a5fa3df4af392f5953a98c279af7e51904de7a92f0"
+      "sha256": "72710e92beedc4d11d459208121a3f5c978a7f1851e1c7ad3817e05d9637554a"
     },
     {
-      "url": "Build/world-data-10.part?v=cacbf34b90e694b3",
-      "bytes": 16473844,
-      "sha256": "cacbf34b90e694b31ac390e1c86f9e83cb11a9c5cac6bf011ab87c34b3819e4e"
+      "url": "Build/world-data-10.part?v=5832d5ef28a61a5f",
+      "bytes": 16474771,
+      "sha256": "5832d5ef28a61a5f1843176d5b4cd336618dd0aa9020987af704dc8c1e927902"
     }
   ],
-  "frameworkUrl": "Build/WebBeta.framework.js.unityweb?v=80a142c0d9b6072e",
-  "codeUrl": "Build/WebBeta.wasm.unityweb?v=a7224a7946ebc931",
+  "frameworkUrl": "Build/WebBeta.framework.js.unityweb?v=d41df5e2b4727ba0",
+  "codeUrl": "Build/WebBeta.wasm.unityweb?v=f237a61dba276aea",
   "streamingAssetsUrl": "StreamingAssets",
   "companyName": "Stackadoo",
   "productName": "Stackadoo Browser Beta",
-  "productVersion": "2026.11.18-dojo8",
+  "productVersion": "2026.11.18-dojo9",
   "autoSyncPersistentDataPath": true,
-  "buildVersion": "2026.11.18-dojo8",
+  "buildVersion": "2026.11.18-dojo9",
   "unityBranch": "cobble/dojo-camera-fixes",
-  "unityCommit": "30ee8591fd4f6596526131db34c01bc08f5b936d",
+  "unityCommit": "4e44c686e44cad062fe347653ecd897032ede49a",
   "webDeploy": "f6359b6"
 }
