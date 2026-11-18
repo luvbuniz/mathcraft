@@ -2,6 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
+  const BETA_JS = 'cache2';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
   const say = text => { $('status').textContent = text; };
   // The site-wide sw.js (old game) would otherwise also control /beta/ and copy every game download into its own
   // cache. This tiny /beta/ worker takes over these pages instead; it has no fetch handler, so requests go straight out.
@@ -23,22 +24,42 @@
       return {cache: await caches.open(name), hit: false};
     } catch { return null; }
   }
-  async function cachedPart(store, part) {
+  // The world file (about 226 MB packed, 258 MB unpacked) is kept on the device already unpacked, as one disk-backed
+  // entry. A later visit hands it to Unity as it is: Unity reads it once into a single buffer of the right size, with
+  // no packed copy and no in-page unzip (that pair was the 500+ MB spike while 'Opening the game…').
+  const WORLD = 'Build/world-unpacked', WORLD_SIZE = 'Build/world-unpacked-bytes';
+  async function savedWorld(store) {
     try {
-      const found = store && await store.cache.match(part.url);
+      if (!store) return null;
+      const size = await store.cache.match(WORLD_SIZE), found = size && await store.cache.match(WORLD);
       if (!found) return null;
-      const blob = await found.blob();
-      if (blob.size !== part.bytes) { await store.cache.delete(part.url); return null; }
+      const blob = await found.blob();   // disk-backed: nothing is read into memory here
+      if (!blob.size || blob.size !== Number(await size.text())) { await store.cache.delete(WORLD_SIZE); await store.cache.delete(WORLD); return null; }
       store.hit = true; return blob;
     } catch { return null; }
   }
-  async function savePart(store, part, bytes) {
-    try {
-      if (!store) return null;
-      await store.cache.put(part.url, new Response(bytes, {headers:{'Content-Type':'application/octet-stream','Content-Length':String(part.bytes)}}));
-      const saved = await (await store.cache.match(part.url))?.blob();
-      return saved?.size === part.bytes ? saved : null;
-    } catch { return null; }   // storage full or blocked: keep playing from the download
+  // Downloads each part (checked against its size and SHA-256), and, when it can, unpacks it straight into the
+  // device cache as it arrives: only one 20 MB part is in memory at a time. Without Cache Storage or a built-in
+  // gzip unpacker it falls back to handing Unity the packed parts (Unity unpacks them itself).
+  async function downloadWorld(parts, store, show, unpack) {
+    let writer = null, put = null, pieces = [], size = 0, done = 0;
+    if (unpack) { const ds = new DecompressionStream('gzip'); writer = ds.writable.getWriter(); put = store.cache.put(WORLD, new Response(ds.readable, {headers:{'Content-Type':'application/octet-stream'}})); put.catch(() => {}); }
+    for (const part of parts) {
+      const download = await fetch(part.url, {cache:'no-store'});
+      if (!download.ok) { writer?.abort().catch(() => {}); throw Error('A game download was interrupted. Please try again.'); }
+      let bytes = await download.arrayBuffer();
+      const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+      if (bytes.byteLength !== part.bytes || hash !== part.sha256) { writer?.abort().catch(() => {}); throw Error('A game file did not download correctly. Please reload and try again.'); }
+      if (part === parts[parts.length - 1]) size = new DataView(bytes).getUint32(bytes.byteLength - 4, true);   // gzip footer: unpacked size
+      if (writer) await writer.write(new Uint8Array(bytes)); else pieces.push(bytes);
+      bytes = null; done += part.bytes; show(done, false);
+    }
+    if (!writer) return new Blob(pieces, {type:'application/octet-stream'});
+    await writer.close(); await put;
+    const blob = await (await store.cache.match(WORLD))?.blob();
+    if (!blob || blob.size !== size) { await store.cache.delete(WORLD); throw Error('unpack size'); }
+    await store.cache.put(WORLD_SIZE, new Response(String(size)));   // written last: marks the saved world complete
+    return blob;
   }
   async function cachedScript(store, url) {
     try {
@@ -136,25 +157,18 @@
         // keyed by their ?v=<sha> URLs), so later visits load the world without downloading it again. Older builds'
         // copies are removed when the version changes. If storage is unavailable (private mode, quota) we just download.
         const store = await openGameStore(config.buildVersion);
+        console.log('[Stackadoo web] beta.js ' + BETA_JS + ' | game-config ' + config.buildVersion + ' | unity ' + (config.unityCommit || '?') + (config.webDeploy ? ' | deploy ' + config.webDeploy : ''));
         if (config.dataParts) {
-          let chunks = []; let done = 0;
           const total = config.dataParts.reduce((sum, part) => sum + part.bytes, 0);
-          for (const part of config.dataParts) {
-            let piece = await cachedPart(store, part);   // a disk-backed Blob: nothing extra held in memory
-            if (!piece) {
-              const download = await fetch(part.url, {cache:'no-store'});
-              if (!download.ok) throw Error('A game download was interrupted. Please try again.');
-              let bytes = await download.arrayBuffer();
-              const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
-              if (bytes.byteLength !== part.bytes || hash !== part.sha256) throw Error('A game file did not download correctly. Please reload and try again.');
-              piece = (await savePart(store, part, bytes)) || new Blob([bytes]); bytes = null;   // only verified files are kept
-            }
-            chunks.push(piece); done += part.bytes;
-            $('load-progress').value = .7 * done / total;
-            $('load-message').textContent = (store?.hit ? 'Opening the saved world: ' : 'Downloading the world: ') + Math.round(done/1024/1024) + ' of ' + Math.round(total/1024/1024) + ' MB';
+          const show = (done, saved) => { $('load-progress').value = .7 * done / total; $('load-message').textContent = (saved ? 'Opening the saved world: ' : 'Downloading the world: ') + Math.round(done/1024/1024) + ' of ' + Math.round(total/1024/1024) + ' MB'; };
+          let world = await savedWorld(store);
+          if (world) show(total, true);
+          else {
+            const unpack = !!(store && window.DecompressionStream);
+            try { world = await downloadWorld(config.dataParts, store, show, unpack); }
+            catch (e) { if (!unpack || /^A game/.test(e.message)) throw e; try { await store.cache.delete(WORLD); } catch {} world = await downloadWorld(config.dataParts, store, show, false); }   // storage full etc.: play from the download
           }
-          config.dataUrl = URL.createObjectURL(new Blob(chunks, {type:'application/octet-stream'}));
-          chunks.length = 0; chunks = null;   // memory (phones): the Blob now holds the world; drop the downloaded parts so they are not kept twice
+          config.dataUrl = URL.createObjectURL(world); world = null;   // memory (phones): the page keeps no copy of its own
           $('load-message').textContent = 'Opening the game…';
         }
         const loaderSrc = await cachedScript(store, config.loaderUrl);
