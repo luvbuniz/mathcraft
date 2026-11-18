@@ -1,8 +1,9 @@
 (async function() {
   'use strict';
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
+  let releaseWorld = () => {};
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
-  const BETA_JS = 'cache2';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
+  const BETA_JS = 'cache3';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
   const say = text => { $('status').textContent = text; };
   // The site-wide sw.js (old game) would otherwise also control /beta/ and copy every game download into its own
   // cache. This tiny /beta/ worker takes over these pages instead; it has no fetch handler, so requests go straight out.
@@ -60,6 +61,45 @@
     if (!blob || blob.size !== size) { await store.cache.delete(WORLD); throw Error('unpack size'); }
     await store.cache.put(WORLD_SIZE, new Response(String(size)));   // written last: marks the saved world complete
     return blob;
+  }
+  // cache3 (Pip dojo6: 536-655 MB for ~2 s while opening): Unity used to read the world through a stream, so the
+  // whole file passed through the page twice (thousands of small chunks waiting to be freed, plus its own buffer).
+  // Now the page fills ONE buffer of exactly the world's size straight from the device copy (a BYOB read writes into
+  // it in place, nothing else is allocated), hands that buffer to Unity, which keeps it as the game file, and drops
+  // its own reference. The buffer is only filled when Unity asks for it, after its code has loaded.
+  async function worldBuffer(blob) {
+    let buffer = new ArrayBuffer(blob.size), offset = 0;
+    try {
+      const reader = blob.stream().getReader({mode:'byob'});
+      while (offset < blob.size) {
+        const {value, done} = await reader.read(new Uint8Array(buffer, offset, Math.min(blob.size - offset, 4 << 20)));
+        if (done) break;
+        buffer = value.buffer; offset += value.byteLength;   // the read hands back the same memory
+      }
+      reader.releaseLock();
+    } catch {   // no in-place reads here: copy 8 MB slices into the buffer instead
+      if (buffer.detached || buffer.byteLength !== blob.size) buffer = new ArrayBuffer(blob.size);
+      const into = new Uint8Array(buffer);
+      for (offset = 0; offset < blob.size; offset += 8 << 20) into.set(new Uint8Array(await blob.slice(offset, offset + (8 << 20)).arrayBuffer()), offset);
+    }
+    if (offset !== blob.size) throw Error('The saved game could not be read. Please reload.');
+    return buffer;
+  }
+  const WORLD_URL = new URL('Build/stackadoo-world.data#device', location.href).href;
+  function handWorldToUnity(blob) {
+    const realFetch = window.fetch;
+    window.fetch = function(input, init) {
+      const url = typeof input === 'string' ? input : input?.url;
+      if (url !== WORLD_URL || !blob) return realFetch.apply(window, arguments);
+      window.fetch = realFetch; const source = blob; blob = null;
+      return worldBuffer(source).then(buffer => ({ok:true, status:200, statusText:'OK', url:WORLD_URL, type:'basic', redirected:false, body:null, bodyUsed:false,
+        // Unity's reader sets aside a buffer as big as Content-Length before it looks at the body; with no body it uses
+        // arrayBuffer() instead, so a 0 here keeps it from reserving a second 258 MB (and from warning about no length)
+        headers:new Headers({'Content-Length':'0', 'Content-Type':'application/octet-stream'}),
+        arrayBuffer() { const b = buffer; buffer = null; return b ? Promise.resolve(b) : Promise.reject(Error('used')); },   // Unity takes it; the page keeps nothing
+        clone() { return this; }}));
+    };
+    return () => { if (window.fetch !== realFetch && blob) window.fetch = realFetch; blob = null; };
   }
   async function cachedScript(store, url) {
     try {
@@ -168,14 +208,15 @@
             try { world = await downloadWorld(config.dataParts, store, show, unpack); }
             catch (e) { if (!unpack || /^A game/.test(e.message)) throw e; try { await store.cache.delete(WORLD); } catch {} world = await downloadWorld(config.dataParts, store, show, false); }   // storage full etc.: play from the download
           }
-          config.dataUrl = URL.createObjectURL(world); world = null;   // memory (phones): the page keeps no copy of its own
+          config.dataUrl = WORLD_URL; releaseWorld = handWorldToUnity(world); world = null;   // memory (phones): read once into the buffer Unity keeps
           $('load-message').textContent = 'Opening the game…';
         }
         const loaderSrc = await cachedScript(store, config.loaderUrl);
+        try {
         await new Promise((resolve,reject) => { const script = document.createElement('script'); script.src = loaderSrc; script.onload=resolve; script.onerror=()=>reject(Error('The game download did not start. Please check your connection.')); document.body.append(script); });
         if (loaderSrc.startsWith('blob:')) URL.revokeObjectURL(loaderSrc);
-        instance = await createUnityInstance($('unity-canvas'), {...config, cacheControl:url=>url.startsWith('blob:')?'no-store':(store && /[?&]v=/.test(url)?'immutable':'must-revalidate'), devicePixelRatio:Math.min(window.devicePixelRatio || 1,1.5), showBanner:(message,type)=>{if(type==='error') $('load-message').textContent=message;}}, value => { $('load-progress').value=.7 + .3*value; });
-        if (config.dataUrl?.startsWith('blob:')) { URL.revokeObjectURL(config.dataUrl); config.dataUrl = null; }   // Unity has its copy; let the Blob go
+        instance = await createUnityInstance($('unity-canvas'), {...config, cacheControl:url=>url.startsWith('blob:')||url===WORLD_URL?'no-store':(store && /[?&]v=/.test(url)?'immutable':'must-revalidate'), devicePixelRatio:Math.min(window.devicePixelRatio || 1,1.5), showBanner:(message,type)=>{if(type==='error') $('load-message').textContent=message;}}, value => { $('load-progress').value=.7 + .3*value; });
+        } finally { releaseWorld(); releaseWorld = () => {}; }   // Unity has the world; the page keeps no reference to it
         $('loading').hidden = true; $('full-screen').disabled = false;
       }
       $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing');
