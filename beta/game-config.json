@@ -66,5 +66,6 @@
   "autoSyncPersistentDataPath": true,
   "buildVersion": "2026.11.17-dojo6",
   "unityBranch": "cobble/dojo-camera-fixes",
-  "unityCommit": "9ff501d"
+  "unityCommit": "9ff501d",
+  "webDeploy": "348f3d7"
 }
