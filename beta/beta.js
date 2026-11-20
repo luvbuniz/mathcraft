@@ -432,6 +432,7 @@
       dlg.oncancel = e => e.preventDefault();   // Esc doesn't dismiss it: Not now is a choice
       dlg.onclose = () => { if (!done) { stopHold(); dlg.showModal(); } };   // nor does a tap outside it (dialogs.js closes on backdrop taps)
       if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      if ($('signin-dialog').open) $('signin-dialog').close();   // the parent just signed in there; this one is the next step
       update(); dlg.showModal(); $('old-game-hold').focus();
     });
   }
