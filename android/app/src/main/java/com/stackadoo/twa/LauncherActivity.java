@@ -15,16 +15,30 @@
  */
 package com.stackadoo.twa;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+
+import androidx.core.content.FileProvider;
+
+import java.io.File;
 
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
 
+    private static final String TAG = "LauncherActivity";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Chrome 152+ rejects the TWA splash image unless this app holds a grant on
+        // the FileProvider URI, and Android records no grant for the provider's owner
+        // without the persistable flag. Workaround for
+        // https://github.com/GoogleChrome/android-browser-helper/issues/623
+        // Remove once androidbrowserhelper ships the library-side grant.
+        grantSplashUriPermission();
         super.onCreate(savedInstanceState);
         // Setting an orientation crashes the app due to the transparent background on Android 8.0
         // Oreo and below. We only set the orientation on Oreo and above. This only affects the
@@ -34,6 +48,24 @@ public class LauncherActivity
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        }
+    }
+
+    private void grantSplashUriPermission() {
+        try {
+            String authority = getString(R.string.providerAuthority);
+            Uri uri = FileProvider.getUriForFile(
+                    this,
+                    authority,
+                    new File(getFilesDir(), "twa_splash/splash_image.png"));
+            grantUriPermission(
+                    getPackageName(),
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        } catch (Exception e) {
+            // Never block the launch over the splash screen.
+            Log.w(TAG, "Could not self-grant the splash URI permission", e);
         }
     }
 

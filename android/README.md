@@ -3,6 +3,14 @@
 This Trusted Web Activity opens `https://stackadoo.com/play.html` under the existing
 package `com.stackadoo.twa`. It does not bundle or modify game code or saved worlds.
 
+## Release 41 (1.0.41)
+
+- Version code 41, target/compile SDK 36, min SDK 24.
+- Fixes the missing branded splash on Chrome 152+ (log: `Failed to transfer splash image`).
+  LauncherActivity now self-grants a persistable read URI permission on the splash FileProvider
+  file before the library transfers it. Workaround for android-browser-helper#623; remove once
+  the library ships that grant. No other app or start-URL changes (`https://stackadoo.com/play.html`).
+
 ## Release 40 (1.0.40)
 
 - Version code 40, rebuilt on current main (Nov 20, 2026). Version code 39 was built and signed on Oct 24
@@ -28,7 +36,7 @@ The repository previously contained only the website. This source was reconstruc
 with Bubblewrap core 1.25.0 and checked against the saved PWABuilder bundle's manifest
 and resources. Maintain the checked-in Gradle project directly; running Bubblewrap
 update can overwrite the dependency, repository, lint and toolchain adjustments.
-`twa-manifest.json` records the original generator settings, with release version 40 (version code 40).
+`twa-manifest.json` records the original generator settings, with release version 41 (version code 41).
 Its signing path and alias are placeholders, not actual upload credentials.
 
 ## Build

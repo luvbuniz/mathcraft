@@ -19,8 +19,8 @@
     "path": "./upload.keystore",
     "alias": "upload"
   },
-  "appVersionCode": 40,
-  "appVersion": "1.0.40",
+  "appVersionCode": 41,
+  "appVersion": "1.0.41",
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://stackadoo.com/manifest.json",
