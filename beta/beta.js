@@ -182,8 +182,8 @@
     const lookup=++lookupVersion;
     $('cloud').disabled = true; say('Looking for a backup in your parent account…');
     try {
-      const sdk = await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
-      const snap = await sdk.getDocFromServer(sdk.doc(sdk.getFirestore(account.app), 'users', user.uid));
+      const {sdk, db} = await firestore();
+      const snap = await sdk.getDocFromServer(sdk.doc(db, 'users', user.uid));   // read only: users/{uid} is never written here
       if (lookup!==lookupVersion || account.auth.currentUser?.uid!==user.uid) return;
       const blob = snap.data()?.blob;
       if (!snap.exists() || typeof blob !== 'string') { say('No cloud backup was found. Games may still be saved on the device where you played.'); return; }
@@ -208,9 +208,209 @@
     if(!localSource){source=null;$('players').replaceChildren();$('transfer').hidden=true;$('import').disabled=true;}
     $('cloud').disabled=false;
     if(event.detail.signedIn && findAfterSignIn){findAfterSignIn=false;$('signin-dialog').close();checkCloud();}
+    else if(event.detail.signedIn) autoImportOldGame();
+    cloudSignedIn();
   });
-  window.StackadooBeta = {transferResult(json) {
+  // ---- d14: grown-up cloud backup / restore, and the old game brought over on sign-in ----
+  // Firestore paths: users/{uid}/stackadoo/{player} only (one snapshot per player, written whole with setDoc). users/{uid}
+  // and its old-game 'blob' are only ever read. Unity side: CloudSnapshot (export/import with a local copy first) and
+  // OldGameAutoImport (already imported here / same name as a player here).
+  let fsdk = null, fdb = null;
+  const waiting = {};
+  async function firestore() {
+    const account = window.StackadooBetaAccount;
+    if (!account) throw Object.assign(Error('signed out'), {code: 'signed-out'});
+    if (!fsdk) fsdk = await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+    if (!fdb) {
+      fdb = fsdk.getFirestore(account.app);
+      const emu = window.STACKADOO_AUTH_CONFIG?.emulator;   // local QA only (never set in the live auth-config.js)
+      if (emu?.firestore) fsdk.connectFirestoreEmulator(fdb, emu.firestore[0], emu.firestore[1]);
+    }
+    return {sdk: fsdk, db: fdb};
+  }
+  async function gameReady(ms = 600000) {
+    const t = performance.now();
+    while (!(instance && !starting)) { if (performance.now() - t > ms) throw Object.assign(Error('no game'), {code: 'no-game'}); await new Promise(r => setTimeout(r, 500)); }
+  }
+  function askUnity(method, arg, kind, ms = 30000) {
+    return new Promise((resolve, reject) => {
+      if (!instance) { reject(Object.assign(Error('no game'), {code: 'no-game'})); return; }
+      const timer = setTimeout(() => { delete waiting[kind]; reject(Object.assign(Error('timeout'), {code: 'timeout'})); }, ms);
+      waiting[kind] = result => { clearTimeout(timer); resolve(result); };
+      instance.SendMessage('Stackadoo web transfer', method, arg);
+    });
+  }
+  const KB = bytes => Math.max(1, Math.round(bytes / 1024)) + ' KB';
+  const when = iso => { try { return new Date(iso).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'}); } catch { return iso || 'an earlier day'; } };
+  const SNAPSHOT_LIMIT = 900 * 1024, GZIP_FROM = 256 * 1024;
+  async function pack(text) {
+    if (text.length < GZIP_FROM || !window.CompressionStream) return {encoding: 'json', snapshot: text};
+    const gz = new Uint8Array(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    let bin = ''; for (let i = 0; i < gz.length; i += 0x8000) bin += String.fromCharCode.apply(null, gz.subarray(i, i + 0x8000));
+    return {encoding: 'gzip-base64', snapshot: btoa(bin)};
+  }
+  async function unpack(data) {
+    if (data.encoding !== 'gzip-base64') return data.snapshot;
+    const bin = atob(data.snapshot), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  function cloudError(e) {
+    const code = e?.code || '';
+    if (code === 'signed-out') return 'Sign in with your parent account first.';
+    if (code === 'no-game') return 'Open the game first, then try again.';
+    if (code === 'timeout') return 'The game didn\u2019t answer. Please try again.';
+    if (!navigator.onLine || code === 'unavailable' || code === 'failed-precondition') return 'You\u2019re offline. Connect to the internet and try again. Nothing was changed.';
+    if (code === 'permission-denied') return 'Your parent account can\u2019t save backups yet. Nothing was changed. Please try again later.';
+    if (code === 'invalid-argument' || code === 'resource-exhausted') return 'This game is too big to back up. Nothing was changed.';
+    return 'That didn\u2019t work. Nothing was changed. Please try again.';
+  }
+  const cloudSay = text => { $('cloud-status').textContent = text; };
+  function cloudBusy(on) { for (const id of ['cloud-backup', 'cloud-restore', 'cloud-undo']) $(id).disabled = on; $('cloud-list').querySelectorAll('button').forEach(b => b.disabled = on); }
+  function askGrownUp(text, yes) {
+    return new Promise(resolve => {
+      $('cloud-confirm-text').textContent = text; $('cloud-yes').textContent = yes; $('cloud-confirm').hidden = false; $('cloud-yes').focus();
+      const finish = answer => { $('cloud-confirm').hidden = true; $('cloud-yes').onclick = $('cloud-no').onclick = null; resolve(answer); };
+      $('cloud-yes').onclick = () => finish(true); $('cloud-no').onclick = () => finish(false);
+    });
+  }
+  function signedInUser() { const user = window.StackadooBetaAccount?.auth.currentUser; if (!user) throw Object.assign(Error('signed out'), {code: 'signed-out'}); return user; }
+  function cloudSignedIn() { const user = window.StackadooBetaAccount?.auth.currentUser; $('cloud-account').textContent = user ? 'Parent account: ' + (user.email || 'signed in') : 'Sign in with your parent account to back up or restore.'; }
+  function openCloud() {
+    closeWebsiteControls(); if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+    $('cloud-list').replaceChildren(); $('cloud-confirm').hidden = true; cloudSay(''); cloudSignedIn(); $('cloud-dialog').showModal();
+  }
+  async function cloudBackup() {
+    cloudBusy(true); $('cloud-list').replaceChildren();
+    try {
+      const user = signedInUser(); await gameReady(5000);
+      cloudSay('Getting the game ready to back up\u2026');
+      const r = await askUnity('CloudExport', '', 'export');
+      if (!r.ok) { cloudSay(r.message || 'This game couldn\u2019t be backed up.'); return; }
+      const packed = await pack(r.snapshot);
+      if (packed.snapshot.length > SNAPSHOT_LIMIT) { cloudSay('This game is too big to back up (' + KB(packed.snapshot.length) + '). Nothing was changed.'); return; }
+      const {sdk, db} = await firestore(), ref = sdk.doc(db, 'users', user.uid, 'stackadoo', r.player);
+      const old = await sdk.getDocFromServer(ref);
+      if (old.exists() && old.data().name !== r.name && !await askGrownUp('Your account already has a backup of ' + (old.data().name || 'another player') + ' from ' + when(old.data().savedAt) + '. Replace it with ' + (r.name || 'this player') + '\u2019s game?', 'Replace backup')) { cloudSay('Nothing was changed.'); return; }
+      cloudSay('Backing up\u2026');
+      await sdk.setDoc(ref, {schema: 1, player: r.player, name: r.name, savedAt: r.savedAt, gameVersion: JSON.parse(r.snapshot).gameVersion || '', bytes: r.bytes, encoding: packed.encoding, snapshot: packed.snapshot, updatedAt: sdk.serverTimestamp()});
+      cloudSay('Backed up ' + (r.name || 'this player') + '\u2019s game to your parent account (' + KB(r.bytes) + ').');
+      console.log('[Stackadoo cloud] backup ' + r.player + ' ' + r.bytes + ' bytes (' + packed.encoding + ', ' + packed.snapshot.length + ' stored)');
+    } catch (e) { console.warn('[Stackadoo cloud] backup failed', e?.code || e); cloudSay(cloudError(e)); }
+    finally { cloudBusy(false); }
+  }
+  async function cloudRestoreList() {
+    cloudBusy(true); $('cloud-list').replaceChildren();
+    try {
+      const user = signedInUser(); const {sdk, db} = await firestore();
+      cloudSay('Looking for backups in your parent account\u2026');
+      const list = await sdk.getDocsFromServer(sdk.collection(db, 'users', user.uid, 'stackadoo'));
+      const docs = list.docs.filter(d => d.data()?.schema === 1 && typeof d.data().snapshot === 'string');
+      if (!docs.length) { cloudSay('No backup was found in this parent account yet. Use Back up to my account first.'); return; }
+      cloudSay('Choose the backup to put on this device.');
+      for (const d of docs) {
+        const data = d.data(), row = document.createElement('div'), text = document.createElement('span'), button = document.createElement('button');
+        row.className = 'cloud-row'; text.textContent = (data.name || 'Player') + ' \u00b7 saved ' + when(data.savedAt) + ' \u00b7 ' + KB(data.bytes || data.snapshot.length);
+        button.className = 'button cream'; button.textContent = 'Restore this'; button.dataset.player = d.id; button.onclick = () => cloudRestore(data);
+        row.append(text, button); $('cloud-list').append(row);
+      }
+    } catch (e) { console.warn('[Stackadoo cloud] list failed', e?.code || e); cloudSay(cloudError(e)); }
+    finally { cloudBusy(false); }
+  }
+  async function cloudRestore(data) {
+    cloudBusy(true);
+    try {
+      signedInUser(); await gameReady(5000);
+      const here = await askUnity('CloudExport', '', 'export');
+      const name = here.name || 'this player';
+      if (!await askGrownUp('This replaces ' + name + '\u2019s game on this device with the backup of ' + (data.name || 'a player') + ' from ' + when(data.savedAt) + '. We\u2019ll keep a copy of the current game first.', 'Replace ' + name + '\u2019s game')) { cloudSay('Nothing was changed.'); return; }
+      cloudSay('Restoring\u2026');
+      const text = await unpack(data);
+      const r = await askUnity('CloudImport', text, 'import', 60000);
+      if (!r.ok) { cloudSay(r.message || 'The restore couldn\u2019t finish. Nothing was changed.'); return; }
+      console.log('[Stackadoo cloud] restored ' + r.keys + ' keys into ' + r.player + '; copy of the old game kept in ' + r.backupKey);
+      cloudSay('Restored. The game will restart in a moment.');
+      setTimeout(() => location.reload(), 2500);   // Unity saved; the page restarts so the game reads the restored save
+    } catch (e) { console.warn('[Stackadoo cloud] restore failed', e?.code || e); cloudSay(cloudError(e)); }
+    finally { cloudBusy(false); }
+  }
+  async function cloudUndo() {
+    cloudBusy(true);
+    try {
+      await gameReady(5000);
+      if (!await askGrownUp('Put back the game this player had just before the last restore? We\u2019ll keep a copy of the current game first.', 'Put it back')) { cloudSay('Nothing was changed.'); return; }
+      const r = await askUnity('CloudUndo', '', 'undo', 60000);
+      cloudSay(r.message || (r.ok ? 'Done.' : 'That didn\u2019t work. Nothing was changed.'));
+      if (r.ok) setTimeout(() => location.reload(), 2500);
+    } catch (e) { cloudSay(cloudError(e)); }
+    finally { cloudBusy(false); }
+  }
+  $('cloud-open').onclick = openCloud; $('cloud-backup').onclick = cloudBackup; $('cloud-restore').onclick = cloudRestoreList; $('cloud-undo').onclick = cloudUndo;
+  $('cloud-signin').onclick = () => { $('cloud-dialog').close(); $('signin-dialog').showModal(); };
+  // Old game on sign-in: users/{uid}.blob (read only) -> players not yet on this device come over with no extra tap.
+  // Once per account per device (and Unity's own once-per-device guard on top); a name already used here asks instead.
+  const AUTO_KEY = uid => 'stackadoo.beta.oldGameAuto.' + uid;
+  let autoBusy = false;
+  function sendImport(payload) { return new Promise(resolve => { waiting.transfer = resolve; importing = true; instance.SendMessage('Stackadoo web transfer', 'ImportSelected', payload); }); }
+  function kidNotice(text, buttons = []) {
+    $('transfer-result').replaceChildren(document.createTextNode(text));
+    if (buttons.length) { const row = document.createElement('div'); row.className = 'link-row'; for (const b of buttons) row.append(b); $('transfer-result').append(row); }
+    document.querySelector('.transfer-notice').hidden = false;
+  }
+  function choice(text, yes, no) {
+    return new Promise(resolve => {
+      const a = document.createElement('button'), b = document.createElement('button');
+      a.className = b.className = 'button cream'; a.textContent = yes; b.textContent = no; a.id = 'auto-import-new'; b.id = 'auto-import-skip';
+      a.onclick = () => resolve(true); b.onclick = () => resolve(false);
+      kidNotice(text, [a, b]);
+    });
+  }
+  async function autoImportOldGame() {
+    const account = window.StackadooBetaAccount, user = account?.auth.currentUser;
+    if (!user || autoBusy) return;
+    let handled = null; try { handled = localStorage.getItem(AUTO_KEY(user.uid)); } catch { return; }
+    if (handled) { console.log('[Stackadoo old game] already handled on this device (' + handled + ')'); return; }
+    autoBusy = true;
+    const mark = how => { try { localStorage.setItem(AUTO_KEY(user.uid), how + ' ' + new Date().toISOString()); } catch {} console.log('[Stackadoo old game] ' + how); };
+    try {
+      const {sdk, db} = await firestore();
+      const snap = await sdk.getDocFromServer(sdk.doc(db, 'users', user.uid));   // read only
+      if (account.auth.currentUser?.uid !== user.uid) return;
+      const blob = snap.exists() ? snap.data()?.blob : null;
+      if (typeof blob !== 'string') { mark('no old game'); return; }
+      const old = core.fromJSON(blob);
+      if (!old.names.length) { mark('no old players'); return; }
+      await gameReady();
+      while (importing) await new Promise(r => setTimeout(r, 500));
+      const fresh = [], freshNames = [], taken = [];
+      for (const name of old.names) {
+        const p = await askUnity('OldGamePreview', core.select(old, [name]), 'preview');
+        const info = p.ok && p.players[0];
+        if (!info) continue;
+        if (info.alreadyHere) continue;            // brought over before on this device: never twice
+        if (info.nameTaken) taken.push({name, shown: info.name}); else { fresh.push(name); freshNames.push(info.name); }
+      }
+      const brought = [];
+      if (fresh.length) {
+        const r = await sendImport(core.select(old, fresh));
+        if (!r.ok) { kidNotice('We couldn\u2019t bring over your old game this time. We\u2019ll try again next time you sign in.'); return; }
+        brought.push(...freshNames);
+      }
+      for (const t of taken) {
+        const yes = await choice(t.shown + ' is already a player here. Bring the old game in as a new player, or skip it?', 'Bring in as new player', 'Skip');
+        if (!yes) continue;
+        const r = await sendImport(core.select(old, [t.name]));
+        if (r.ok) brought.push(t.shown + ' (old game)');
+      }
+      if (brought.length) kidNotice('We brought over your old game: ' + brought.join(', ') + '.');
+      else if (taken.length) document.querySelector('.transfer-notice').hidden = true;
+      mark(brought.length ? 'imported ' + brought.length : 'nothing new');
+    } catch (e) { console.warn('[Stackadoo old game] auto import stopped', e?.code || e); }
+    finally { autoBusy = false; }
+  }
+  window.StackadooBeta = {cloudResult(kind, json) { const done = waiting[kind]; delete waiting[kind]; if (done) done(JSON.parse(json)); },
+  transferResult(json) {
     importing = false; const result = JSON.parse(json);
+    if (waiting.transfer) { const done = waiting.transfer; delete waiting.transfer; pendingOriginal = null; done(result); return; }
     if (result.ok && pendingOriginal) {
       try {
         const current = core.select(core.fromStorage(localStorage), pendingOriginal.names);

@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // d14 web beta cloud backup: one snapshot per player, owner only. users/{uid} above is unchanged (rules do not
+    // cascade, so this adds access to this subcollection only).
+    match /users/{uid}/stackadoo/{player} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && player.matches('^(main|player[0-9]+|player_[a-f0-9]{32})$')
+        && request.resource.data.keys().hasOnly(['schema', 'player', 'name', 'savedAt', 'gameVersion', 'bytes', 'encoding', 'snapshot', 'updatedAt'])
+        && request.resource.data.schema == 1
+        && request.resource.data.player == player
+        && request.resource.data.snapshot is string
+        && request.resource.data.snapshot.size() <= 921600;
+    }
+  }
+}

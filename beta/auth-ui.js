@@ -108,6 +108,8 @@
     ]);
     sdk = authSDK;
     auth = sdk.getAuth(appSDK.initializeApp(config.firebase));
+    // Local QA against the Firebase emulators only; the live auth-config.js has no emulator entry.
+    if (config.emulator?.auth) sdk.connectAuthEmulator(auth, config.emulator.auth, {disableWarnings: true});
     // Local QA keeps its Google session in memory, separate from the live game's session.
     if (config.allowLocalTesting === true) await sdk.setPersistence(auth, sdk.inMemoryPersistence);
     window.StackadooBetaAccount = {auth, app: auth.app};

@@ -1,0 +1,35 @@
+// d14: Firestore rules for the web beta cloud backup, against the local emulator only.
+// run: npx firebase emulators:exec --only firestore --project demo-stackadoo "node rules.test.mjs"
+import {readFileSync} from 'node:fs';
+import {initializeTestEnvironment, assertSucceeds, assertFails} from '@firebase/rules-unit-testing';
+import {doc, getDoc, setDoc, deleteDoc, collection, getDocs} from 'firebase/firestore';
+const env = await initializeTestEnvironment({projectId: 'demo-stackadoo', firestore: {rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080}});
+let n = 0; const ok = async (p, what) => { await p; n++; console.log('PASS ' + what); };
+const snap = (player, extra = {}) => ({schema: 1, player, name: 'QA Cloud', savedAt: '2026-11-20T04:00:00Z', gameVersion: 'test', bytes: 10, encoding: 'json', snapshot: '{"schema":1}', ...extra});
+await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'users/alice'), {blob: '{"data":{}}', unlocked: true}); });
+const alice = env.authenticatedContext('alice').firestore(), bob = env.authenticatedContext('bob').firestore(), anon = env.unauthenticatedContext().firestore();
+await ok(assertSucceeds(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('main'))), 'owner writes users/{uid}/stackadoo/main');
+await ok(assertSucceeds(setDoc(doc(alice, 'users/alice/stackadoo/player_0123456789abcdef0123456789abcdef'), snap('player_0123456789abcdef0123456789abcdef'))), 'owner writes a player_<guid> doc');
+await ok(assertSucceeds(getDoc(doc(alice, 'users/alice/stackadoo/main'))), 'owner reads it');
+await ok(assertSucceeds(getDocs(collection(alice, 'users/alice/stackadoo'))), 'owner lists own backups');
+await ok(assertFails(getDoc(doc(bob, 'users/alice/stackadoo/main'))), 'another user cannot read');
+await ok(assertFails(getDocs(collection(bob, 'users/alice/stackadoo'))), 'another user cannot list');
+await ok(assertFails(setDoc(doc(bob, 'users/alice/stackadoo/main'), snap('main'))), 'another user cannot write');
+await ok(assertFails(getDoc(doc(anon, 'users/alice/stackadoo/main'))), 'signed-out cannot read');
+await ok(assertFails(setDoc(doc(anon, 'users/alice/stackadoo/main'), snap('main'))), 'signed-out cannot write');
+await ok(assertFails(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('main', {snapshot: 'x'.repeat(921601)}))), 'oversized snapshot refused');
+await ok(assertSucceeds(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('main', {snapshot: 'x'.repeat(921600)}))), 'snapshot at the limit accepted');
+await ok(assertFails(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('main', {blob: 'x'}))), 'unknown field refused');
+await ok(assertFails(setDoc(doc(alice, 'users/alice/stackadoo/evil'), snap('evil'))), 'odd player id refused');
+await ok(assertFails(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('player2'))), 'player field must match the doc id');
+await ok(assertFails(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('main', {schema: 2}))), 'unknown schema refused');
+await ok(assertFails(setDoc(doc(alice, 'users/alice/stackadoo/main'), snap('main', {snapshot: 5}))), 'non-string snapshot refused');
+await ok(assertFails(getDoc(doc(alice, 'users/alice/other/x'))), 'other subcollections still closed (no cascade)');
+await ok(assertFails(getDoc(doc(bob, 'users/alice'))), 'users/{uid}: another user still cannot read (unchanged)');
+await ok(assertSucceeds(getDoc(doc(alice, 'users/alice'))), 'users/{uid}: owner still reads (unchanged)');
+await ok(assertFails(getDoc(doc(anon, 'users/alice'))), 'users/{uid}: signed-out still cannot read (unchanged)');
+await ok(assertSucceeds(deleteDoc(doc(alice, 'users/alice/stackadoo/main'))), 'owner can delete own backup');
+let after; await env.withSecurityRulesDisabled(async c => { after = (await getDoc(doc(c.firestore(), 'users/alice'))).data(); });
+if (JSON.stringify(after) !== JSON.stringify({blob: '{"data":{}}', unlocked: true})) throw Error('users/alice changed'); n++; console.log('PASS users/{uid} untouched by subcollection writes');
+await env.cleanup(); console.log('RULES ALL PASSED ' + n);
+process.exit(0);
