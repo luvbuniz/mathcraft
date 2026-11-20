@@ -208,7 +208,7 @@
     if(!localSource){source=null;$('players').replaceChildren();$('transfer').hidden=true;$('import').disabled=true;}
     $('cloud').disabled=false;
     if(event.detail.signedIn && findAfterSignIn){findAfterSignIn=false;$('signin-dialog').close();checkCloud();}
-    else if(event.detail.signedIn) autoImportOldGame();
+    if(event.detail.signedIn) autoImportOldGame();
     cloudSignedIn();
   });
   // ---- d14: grown-up cloud backup / restore, and the old game brought over on sign-in ----
@@ -291,6 +291,7 @@
       const {sdk, db} = await firestore(), ref = sdk.doc(db, 'users', user.uid, 'stackadoo', r.player);
       const old = await sdk.getDocFromServer(ref);
       if (old.exists() && old.data().name !== r.name && !await askGrownUp('Your account already has a backup of ' + (old.data().name || 'another player') + ' from ' + when(old.data().savedAt) + '. Replace it with ' + (r.name || 'this player') + '\u2019s game?', 'Replace backup')) { cloudSay('Nothing was changed.'); return; }
+      if (signedInUser().uid !== user.uid) throw Object.assign(Error('account changed'), {code:'signed-out'});
       cloudSay('Backing up\u2026');
       await sdk.setDoc(ref, {schema: 1, player: r.player, name: r.name, savedAt: r.savedAt, gameVersion: JSON.parse(r.snapshot).gameVersion || '', bytes: r.bytes, encoding: packed.encoding, snapshot: packed.snapshot, updatedAt: sdk.serverTimestamp()});
       cloudSay('Backed up ' + (r.name || 'this player') + '\u2019s game to your parent account (' + KB(r.bytes) + ').');
@@ -319,10 +320,11 @@
   async function cloudRestore(data) {
     cloudBusy(true);
     try {
-      signedInUser(); await gameReady(5000);
+      const user = signedInUser(); await gameReady(5000);
       const here = await askUnity('CloudExport', '', 'export');
       const name = here.name || 'this player';
       if (!await askGrownUp('This replaces ' + name + '\u2019s game on this device with the backup of ' + (data.name || 'a player') + ' from ' + when(data.savedAt) + '. We\u2019ll keep a copy of the current game first.', 'Replace ' + name + '\u2019s game')) { cloudSay('Nothing was changed.'); return; }
+      if (signedInUser().uid !== user.uid) throw Object.assign(Error('account changed'), {code:'signed-out'});
       cloudSay('Restoring\u2026');
       const text = await unpack(data);
       const r = await askUnity('CloudImport', text, 'import', 60000);
@@ -360,7 +362,9 @@
     return new Promise(resolve => {
       const a = document.createElement('button'), b = document.createElement('button');
       a.className = b.className = 'button cream'; a.textContent = yes; b.textContent = no; a.id = 'auto-import-new'; b.id = 'auto-import-skip';
-      a.onclick = () => resolve(true); b.onclick = () => resolve(false);
+      $('dismiss-transfer').hidden = true;
+      const finish = yes => { $('dismiss-transfer').hidden = false; resolve(yes); };
+      a.onclick = () => finish(true); b.onclick = () => finish(false);
       kidNotice(text, [a, b]);
     });
   }
@@ -380,6 +384,7 @@
       const old = core.fromJSON(blob);
       if (!old.names.length) { mark('no old players'); return; }
       await gameReady();
+      if (account.auth.currentUser?.uid !== user.uid) return;
       while (importing) await new Promise(r => setTimeout(r, 500));
       const fresh = [], freshNames = [], taken = [];
       for (const name of old.names) {
