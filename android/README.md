@@ -3,6 +3,12 @@
 This Trusted Web Activity opens `https://stackadoo.com/play.html` under the existing
 package `com.stackadoo.twa`. It does not bundle or modify game code or saved worlds.
 
+## Release 40 (1.0.40)
+
+- Version code 40, rebuilt on current main (Nov 20, 2026). Version code 39 was built and signed on Oct 24
+  and handed off for upload, so it may already be registered in Play Console; 40 guarantees no collision.
+  Still compile/target SDK 36, min SDK 24. No other app changes.
+
 ## Release 39 (1.0.39)
 
 - Version code 39 (bumped from 38 so it cannot collide with any 1.0.38 upload attempt). No other app changes.
@@ -22,7 +28,7 @@ The repository previously contained only the website. This source was reconstruc
 with Bubblewrap core 1.25.0 and checked against the saved PWABuilder bundle's manifest
 and resources. Maintain the checked-in Gradle project directly; running Bubblewrap
 update can overwrite the dependency, repository, lint and toolchain adjustments.
-`twa-manifest.json` records the original generator settings, with release version 39 (version code 39).
+`twa-manifest.json` records the original generator settings, with release version 40 (version code 40).
 Its signing path and alias are placeholders, not actual upload credentials.
 
 ## Build
