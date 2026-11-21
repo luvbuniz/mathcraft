@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
   let releaseWorld = () => {};
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
-  const BETA_JS = 'cache10';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
+  const BETA_JS = 'cache11';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
   const say = text => { $('status').textContent = text; };
   // cache6 (Pip dojo9: one reload in ~17 sat at 70% 'Opening the game…' for 2.5+ min with the console silent after
   // Unity's cached-code lines): every loading step is logged with its time, every device-storage read has a time
@@ -187,7 +187,7 @@
       if (lookup!==lookupVersion || account.auth.currentUser?.uid!==user.uid) return;
       const blob = snap.data()?.blob;
       if (!snap.exists() || typeof blob !== 'string') { say('No cloud backup was found. Games may still be saved on the device where you played.'); return; }
-      showSource(core.fromJSON(blob), 'Copy from this parent account’s cloud backup. We will not change the cloud backup.');
+      showSource(Object.assign(core.fromJSON(blob), {origin: 'cloud'}), 'Copy from this parent account’s cloud backup. We will not change the cloud backup.');
     } catch { if(lookup===lookupVersion) say('We could not read the cloud backup. Check your connection and parent account, or use a backup file.'); }
     finally { if(lookup===lookupVersion) $('cloud').disabled = false; }
   }
@@ -348,24 +348,92 @@
   }
   $('cloud-open').onclick = openCloud; $('cloud-backup').onclick = cloudBackup; $('cloud-restore').onclick = cloudRestoreList; $('cloud-undo').onclick = cloudUndo;
   $('cloud-signin').onclick = () => { $('cloud-dialog').close(); $('signin-dialog').showModal(); };
-  // Old game on sign-in: users/{uid}.blob (read only) -> players not yet on this device come over with no extra tap.
-  // Once per account per device (and Unity's own once-per-device guard on top); a name already used here asks instead.
+  // Old game on sign-in (d15, Amy 20 Nov: parents don't look unless something blocks the game, and kids tap everything):
+  // users/{uid}.blob (read only) -> the game says which players are new on this device -> a grown-up hold blocks the game ->
+  // a checklist with nothing ticked (Bring selected / Bring all / Not now). Nothing comes over by itself. "Not now" is
+  // remembered on this device; Parent account -> Find my saved players still lists them. The notice is built from what the
+  // game really brought over.
   const AUTO_KEY = uid => 'stackadoo.beta.oldGameAuto.' + uid;
+  const HOLD_MS = 3000;
   let autoBusy = false;
   function sendImport(payload) { return new Promise(resolve => { waiting.transfer = resolve; importing = true; instance.SendMessage('Stackadoo web transfer', 'ImportSelected', payload); }); }
-  function kidNotice(text, buttons = []) {
+  function kidNotice(text) {
     $('transfer-result').replaceChildren(document.createTextNode(text));
-    if (buttons.length) { const row = document.createElement('div'); row.className = 'link-row'; for (const b of buttons) row.append(b); $('transfer-result').append(row); }
     document.querySelector('.transfer-notice').hidden = false;
   }
-  function choice(text, yes, no) {
+  function broughtWords(r) {
+    const got = r.imported || [], n = got.length;
+    if (!n) return 'Those players were already here, so nothing new was brought over.';
+    const list = n > 6 ? got.slice(0, 5).join(', ') + ' and ' + (n - 5) + ' more' : got.join(', ');
+    return 'Brought over ' + n + (n === 1 ? ' player: ' : ' players: ') + list + '.' + (n > 1 ? ' Swipe \u203A on \u201CWho\u2019s playing?\u201D to see everyone.' : '')
+      + (r.skipped?.length ? ' ' + r.skipped.length + ' ' + (r.skipped.length === 1 ? 'was' : 'were') + ' already here.' : '');
+  }
+  // The hold: pointer or Space/Enter held for 3 s. Letting go, sliding off or a second finger starts it over.
+  function holdButton(button, onDone) {
+    let timer = null;
+    const stop = () => { clearTimeout(timer); timer = null; button.classList.remove('holding'); };
+    const begin = e => { if (timer || button.disabled) return; if (e) e.preventDefault(); button.classList.add('holding'); timer = setTimeout(() => { stop(); onDone(); }, HOLD_MS); };
+    button.onpointerdown = e => { if (e.isPrimary === false) { stop(); return; } try { button.releasePointerCapture(e.pointerId); } catch {} begin(e); };   // no capture: sliding off must stop it
+    button.onpointerup = button.onpointercancel = stop;
+    button.onpointerleave = stop;
+    button.oncontextmenu = e => e.preventDefault();
+    button.onkeydown = e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) begin(e); else if (e.key === ' ' || e.key === 'Enter') e.preventDefault(); };
+    button.onkeyup = e => { if (e.key === ' ' || e.key === 'Enter') stop(); };
+    button.onclick = e => e.preventDefault();   // a quick tap does nothing
+    return stop;
+  }
+  // Resolves to the chosen player names (as the game listed them) or null for "Not now".
+  function chooseOldPlayers(fresh, preview) {
     return new Promise(resolve => {
-      const a = document.createElement('button'), b = document.createElement('button');
-      a.className = b.className = 'button cream'; a.textContent = yes; b.textContent = no; a.id = 'auto-import-new'; b.id = 'auto-import-skip';
-      $('dismiss-transfer').hidden = true;
-      const finish = yes => { $('dismiss-transfer').hidden = false; resolve(yes); };
-      a.onclick = () => finish(true); b.onclick = () => finish(false);
-      kidNotice(text, [a, b]);
+      const dlg = $('old-game-dialog'), n = fresh.length;
+      $('old-game-intro').textContent = 'Your old Stackadoo game has ' + n + (n === 1 ? ' player' : ' players') + ' not on this device yet.';
+      $('old-game-gate').hidden = false; $('old-game-pick').hidden = true; $('old-game-big').hidden = true;
+      $('old-game-list').replaceChildren();
+      const boxes = fresh.map(p => {
+        const row = document.createElement('label'), box = document.createElement('input'), text = document.createElement('span');
+        box.type = 'checkbox'; box.value = p.name; box.checked = false;
+        text.textContent = p.name;
+        if (p.nameTaken) { const note = document.createElement('small'); note.textContent = ' \u2014 a player here has this name, so it will be added as \u201C' + p.newName + '\u201D'; text.append(note); }
+        row.append(box, text); $('old-game-list').append(row);
+        box.onchange = update; return {box, p};
+      });
+      const used = preview.usedBytes || 0, ask = preview.askAboveBytes || 700 * 1024, refuse = preview.refuseAboveBytes || 950 * 1024;
+      const total = list => used + list.reduce((a, x) => a + (x.p.bytes || 0), 0);
+      function update() {
+        const picked = boxes.filter(x => x.box.checked), t = total(picked);
+        $('old-game-bring').disabled = !picked.length || t > refuse;
+        $('old-game-bring').textContent = picked.length ? 'Bring ' + picked.length + ' selected' : 'Bring selected';
+        $('old-game-size').textContent = 'This browser can keep about 1 MB of game saves. ' + (picked.length ? 'With these: about ' + KB(t) + '.' : 'In use now: about ' + KB(used) + '.') + (t > refuse ? ' That is too much for this browser at once. Choose fewer players.' : '');
+        $('old-game-big').hidden = true;
+      }
+      $('old-game-all').textContent = 'Bring all ' + n;
+      $('old-game-all').disabled = total(boxes) > refuse;
+      if (total(boxes) > refuse) $('old-game-all').title = 'Too much for this browser at once. Choose fewer players.';
+      let stopHold = () => {};
+      let done = false;
+      const finish = names => { done = true; stopHold(); dlg.oncancel = dlg.onclose = null; dlg.close(); resolve(names); };
+      const bring = list => {
+        if (!list.length) return;
+        const t = total(list);
+        if (t > refuse) { update(); return; }
+        if (t > ask) {
+          $('old-game-big-text').textContent = 'That is a lot for this browser (about ' + KB(t) + ' of its 1 MB). There may be little room left for new building. Bring anyway?';
+          $('old-game-big').hidden = false; $('old-game-anyway').focus();
+          $('old-game-anyway').onclick = () => finish(list.map(x => x.p.name));
+          $('old-game-fewer').onclick = () => { $('old-game-big').hidden = true; };
+          return;
+        }
+        finish(list.map(x => x.p.name));
+      };
+      stopHold = holdButton($('old-game-hold'), () => { $('old-game-gate').hidden = true; $('old-game-pick').hidden = false; update(); $('old-game-list').querySelector('input')?.focus(); });
+      $('old-game-later').onclick = $('old-game-skip').onclick = () => finish(null);
+      $('old-game-bring').onclick = () => bring(boxes.filter(x => x.box.checked));
+      $('old-game-all').onclick = () => bring(boxes);
+      dlg.oncancel = e => e.preventDefault();   // Esc doesn't dismiss it: Not now is a choice
+      dlg.onclose = () => { if (!done) { stopHold(); dlg.showModal(); } };   // nor does a tap outside it (dialogs.js closes on backdrop taps)
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      if ($('signin-dialog').open) $('signin-dialog').close();   // the parent just signed in there; this one is the next step
+      update(); dlg.showModal(); $('old-game-hold').focus();
     });
   }
   async function autoImportOldGame() {
@@ -386,29 +454,19 @@
       await gameReady();
       if (account.auth.currentUser?.uid !== user.uid) return;
       while (importing) await new Promise(r => setTimeout(r, 500));
-      const fresh = [], freshNames = [], taken = [];
-      for (const name of old.names) {
-        const p = await askUnity('OldGamePreview', core.select(old, [name]), 'preview');
-        const info = p.ok && p.players[0];
-        if (!info) continue;
-        if (info.alreadyHere) continue;            // brought over before on this device: never twice
-        if (info.nameTaken) taken.push({name, shown: info.name}); else { fresh.push(name); freshNames.push(info.name); }
-      }
-      const brought = [];
-      if (fresh.length) {
-        const r = await sendImport(core.select(old, fresh));
-        if (!r.ok) { kidNotice('We couldn\u2019t bring over your old game this time. We\u2019ll try again next time you sign in.'); return; }
-        brought.push(...freshNames);
-      }
-      for (const t of taken) {
-        const yes = await choice(t.shown + ' is already a player here. Bring the old game in as a new player, or skip it?', 'Bring in as new player', 'Skip');
-        if (!yes) continue;
-        const r = await sendImport(core.select(old, [t.name]));
-        if (r.ok) brought.push(t.shown + ' (old game)');
-      }
-      if (brought.length) kidNotice('We brought over your old game: ' + brought.join(', ') + '.');
-      else if (taken.length) document.querySelector('.transfer-notice').hidden = true;
-      mark(brought.length ? 'imported ' + brought.length : 'nothing new');
+      const preview = await askUnity('OldGamePreview', core.select(old, old.names, 'cloud'), 'preview', 60000);
+      if (!preview.ok) { console.warn('[Stackadoo old game] preview failed', preview.message); return; }
+      const fresh = preview.players.filter(p => !p.alreadyHere);
+      console.log('[Stackadoo old game] ' + preview.players.length + ' old players, ' + fresh.length + ' new here, about ' + KB(preview.usedBytes) + ' in use');
+      if (!fresh.length) { mark('nothing new'); return; }
+      const names = await chooseOldPlayers(fresh, preview);
+      if (!names) { mark('not now'); return; }
+      while (importing) await new Promise(r => setTimeout(r, 500));
+      kidNotice('Bringing your old players over\u2026');
+      const r = await sendImport(core.select(old, names, 'cloud'));
+      if (!r.ok) { kidNotice(r.message || 'We couldn\u2019t bring over your old game this time. Nothing was changed.'); return; }
+      kidNotice(broughtWords(r));
+      mark('imported ' + (r.imported || []).length);
     } catch (e) { console.warn('[Stackadoo old game] auto import stopped', e?.code || e); }
     finally { autoBusy = false; }
   }
@@ -416,14 +474,15 @@
   transferResult(json) {
     importing = false; const result = JSON.parse(json);
     if (waiting.transfer) { const done = waiting.transfer; delete waiting.transfer; pendingOriginal = null; done(result); return; }
+    let words = result.ok && Array.isArray(result.imported) ? broughtWords(result) : result.message;   // d15: from what the game brought over
     if (result.ok && pendingOriginal) {
       try {
         const current = core.select(core.fromStorage(localStorage), pendingOriginal.names);
-        result.message += current === pendingOriginal.payload ? '\nChecked: the selected original browser saves are unchanged.' : '\nThe old browser saves changed during the test. Keep both versions and review before continuing.';
-      } catch { result.message += '\nThe originals could not be rechecked. Please keep your old game.'; }
+        words += current === pendingOriginal.payload ? '\nChecked: the selected original browser saves are unchanged.' : '\nThe old browser saves changed during the test. Keep both versions and review before continuing.';
+      } catch { words += '\nThe originals could not be rechecked. Please keep your old game.'; }
     }
     pendingOriginal = null;
-    $('transfer-result').textContent = result.message;
+    $('transfer-result').textContent = words;
     document.querySelector('.transfer-notice').hidden = false;
     $('import').disabled = !selected().length;
     if (!result.ok) $('retry-transfer').focus();
@@ -479,7 +538,7 @@
     finally { starting=false; $('skip').disabled=false; $('import').disabled=importing || !selected().length; }
   }
   $('skip').onclick=()=>start(null);
-  $('import').onclick=()=>{ try { const names=selected(), payload=core.select(source,names); start(payload,localSource?{names,payload}:null); } catch(e) {say(e.message);} };
+  $('import').onclick=()=>{ try { const names=selected(), payload=core.select(source,names,source.origin); start(payload,localSource?{names,payload}:null); } catch(e) {say(e.message);} };
   $('full-screen').onclick=async()=>{
     closeWebsiteControls();
     try {
