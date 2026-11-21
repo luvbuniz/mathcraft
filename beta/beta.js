@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
   let releaseWorld = () => {};
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
-  const BETA_JS = 'cache11';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
+  const BETA_JS = 'cache12';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
   const say = text => { $('status').textContent = text; };
   // cache6 (Pip dojo9: one reload in ~17 sat at 70% 'Opening the game…' for 2.5+ min with the console silent after
   // Unity's cached-code lines): every loading step is logged with its time, every device-storage read has a time
