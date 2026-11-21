@@ -513,7 +513,7 @@
             const unpack = !!(store && window.DecompressionStream);
             if (!unpack) { const w0 = await downloadWorld(config.dataParts, store, show, false); w0.packed = true; world = w0; } else
             try { world = await downloadWorld(config.dataParts, store, show, unpack); }
-            catch (e) { if (!unpack || /^A game/.test(e.message)) throw e; stage('saving on the device failed (' + (e.message || e) + '), playing from the download'); try { await limit(store.cache.delete(WORLD), 'saved world delete'); } catch {} world = await downloadWorld(config.dataParts, store, show, false); world.packed = true; }   // storage full etc.: play from the download
+            catch (e) { const why = (e && e.message) || String(e); if (!unpack || /^A game/.test(why)) throw e; stage('saving on the device failed (' + why + '), playing from the download'); try { await limit(store.cache.delete(WORLD), 'saved world delete'); } catch {} world = await downloadWorld(config.dataParts, store, show, false); world.packed = true; }   // storage full etc.: play from the download
           }
           config.dataUrl = WORLD_URL; releaseWorld = handWorldToUnity(world, config.dataParts); world = null;   // memory (phones): read once into the buffer Unity keeps
           $('load-message').textContent = 'Opening the game…';
@@ -534,7 +534,7 @@
       if (payload) { pendingOriginal = originalSnapshot; importing = true; document.querySelector('.transfer-notice').hidden = false; $('transfer-result').textContent='Bringing your selected games and learning records…'; instance.SendMessage('Stackadoo web transfer','ImportSelected',payload); }
       try { localStorage.setItem('stackadoo.beta.hasPlayed','1'); } catch {}
       $('unity-canvas').focus();
-    } catch (e) { loadDone = true; clearInterval(watchdog); stage('failed: ' + (e.message || e)); document.body.classList.remove('playing'); $('setup').hidden=false; $('game').hidden=true; say(e.message || 'The game could not start. Please try again in an up-to-date browser.'); }
+    } catch (e) { loadDone = true; clearInterval(watchdog); stage('failed: ' + ((e && e.message) || e)); document.body.classList.remove('playing'); $('setup').hidden=false; $('game').hidden=true; say((e && e.message) || 'The game could not start. Please try again in an up-to-date browser.'); }
     finally { starting=false; $('skip').disabled=false; $('import').disabled=importing || !selected().length; }
   }
   $('skip').onclick=()=>start(null);
