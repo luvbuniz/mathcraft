@@ -31,8 +31,10 @@
   .playing .game-tools {max-height:65dvh;overflow-y:auto;}
 }
 
+/* Home-screen installs hide the website controls. The Android app (html.in-app, set by beta.js) keeps them:
+   they are its only way to the parent account, backup/restore, help and the classic game. */
 @media (display-mode: standalone), (display-mode: fullscreen) {
-  #website-controls, .playing .game-tools {display:none !important;}
+  html:not(.in-app) #website-controls, html:not(.in-app) .playing .game-tools {display:none !important;}
   .playing canvas {height:100%;}
 }
 .playing canvas:fullscreen {width:100vw;height:100vh;}

@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id), core = window.StackadooTransfer;
   let releaseWorld = () => {};
   let source = null, instance = null, starting = false, importing = false, localSource = false, pendingOriginal = null, lookupVersion = 0, findAfterSignIn = false;
-  const BETA_JS = 'cache13';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
+  const BETA_JS = 'twa1';   // bump with the ?v= in play.html; printed in the console so testers can tell what is live
   const say = text => { $('status').textContent = text; };
   // cache6 (Pip dojo9: one reload in ~17 sat at 70% 'Opening the game…' for 2.5+ min with the console silent after
   // Unity's cached-code lines): every loading step is logged with its time, every device-storage read has a time
@@ -12,6 +12,55 @@
   let lastStage = 'start', lastMove = T0, loadDone = false, watchdog = 0;
   const stage = text => { lastStage = text; lastMove = performance.now(); console.log('[Stackadoo load] ' + text + ' (+' + Math.round(lastMove - T0) + ' ms)'); };
   const moved = () => { lastMove = performance.now(); };
+  // twa1: the Android app (com.stackadoo.twa) opens /app/?source=twa, which forwards here with ?source=twa. Chrome only
+  // gives the first page an android-app:// referrer, so remember it for this app session. The app is Chrome itself:
+  // saves, the device game copy and the parent sign-in are the same stackadoo.com storage as in the Chrome browser.
+  const IN_APP = (() => { try {
+    const yes = new URLSearchParams(location.search).get('source') === 'twa' || (document.referrer || '').startsWith('android-app://') || sessionStorage.getItem('stackadoo.inApp') === '1';
+    if (yes) sessionStorage.setItem('stackadoo.inApp', '1');
+    return yes;
+  } catch { return false; } })();
+  if (IN_APP) document.documentElement.classList.add('in-app');
+  // twa1: one big progress bar. It shows real progress (downloaded bytes of the world parts, then Unity's own loader
+  // progress) and, between real updates, creeps slowly toward the end of the current step so it never looks frozen on
+  // slow phones (Pip: 60-70 s with nothing moving). It never goes backwards and only shows 100% when the game is ready.
+  const bar = {shown: 0, target: 0, cap: 0, timer: 0};
+  // Unity's own progress reaches 90% once its files are in; the long part on slow phones (starting the game code) comes
+  // after that and reports nothing. So Unity 0-90% fills half of what is left, reading the saved world counts too, and
+  // the last step creeps toward 97%.
+  let unityFrom = .1;
+  const unitySpan = () => .99 - unityFrom;
+  const unityProgress = value => value < .9 ? progress(unityFrom + unitySpan() * .5 * value / .9, unityFrom + unitySpan() * .5 * Math.min(1, value / .9 + .2))
+                                            : progress(unityFrom + unitySpan() * .5, .97);
+  function paintBar() {
+    const pct = loadDone ? 100 : Math.min(99, Math.floor(bar.shown * 100));
+    $('load-fill').style.width = (loadDone ? 100 : Math.max(2, bar.shown * 100)) + '%';
+    $('load-percent').textContent = pct + '%';
+    $('load-bar').setAttribute('aria-valuenow', String(pct));
+    if (pct >= 90 && !loadDone && !$('load-retry')) $('load-title').textContent = 'Almost there!';
+  }
+  function progress(fraction, creepTo = fraction) {
+    bar.target = Math.max(bar.target, Math.min(fraction, .99)); bar.cap = Math.max(bar.cap, bar.target, Math.min(creepTo, .99));
+    if (!bar.timer) bar.timer = setInterval(() => {
+      if (loadDone) { clearInterval(bar.timer); bar.timer = 0; paintBar(); return; }
+      if (bar.shown < bar.target) bar.shown = Math.min(bar.target, bar.shown + Math.max((bar.target - bar.shown) * .3, .003));
+      else if (bar.shown < bar.cap - .01) bar.shown += .0012;   // about 0.5% a second
+      paintBar();
+    }, 250);
+  }
+  const loadTitle = text => { if (!$('load-retry')) $('load-title').textContent = text; };
+  // A phone that still runs the classic game's site-wide /sw.js from before Nov 24, 2026 controls this page on its
+  // first visit and would copy the world download into its own cache. The tiny /beta/ worker (registered below) takes
+  // over as soon as it activates; wait for that, briefly, before downloading.
+  async function betaWorkerInCharge() {
+    try {
+      const sw = navigator.serviceWorker, now = sw && sw.controller;
+      if (!now || new URL(now.scriptURL).pathname.startsWith('/beta/')) return;
+      stage('page controlled by ' + new URL(now.scriptURL).pathname + '; waiting for the /beta/ worker');
+      await limit(new Promise(done => sw.addEventListener('controllerchange', done, {once: true})), 'beta worker', 4000);
+      stage('the /beta/ worker is in charge');
+    } catch (e) { stage('continuing without the /beta/ worker (' + ((e && e.message) || e) + ')'); }
+  }
   const limit = (promise, what, ms = LIMIT) => { let timer; return Promise.race([promise, new Promise((_, fail) => { timer = setTimeout(() => fail(Error('stalled: ' + what)), ms); })]).finally(() => clearTimeout(timer)); };
   const RETRY_KEY = 'stackadoo.beta.retryFromNetwork';
   let fromNetwork = false; try { fromNetwork = !!sessionStorage.getItem(RETRY_KEY); sessionStorage.removeItem(RETRY_KEY); } catch {}
@@ -78,12 +127,24 @@
       stage('download part ' + (parts.indexOf(part) + 1) + ' of ' + parts.length);
       const download = await fetch(part.url, {cache:'no-store'});
       if (!download.ok) { writer?.abort().catch(() => {}); throw Error('A game download was interrupted. Please try again.'); }
-      let bytes = await download.arrayBuffer();
+      let bytes;
+      if (download.body && download.body.getReader) {   // twa1: read the part as it arrives so the bar moves inside a 20 MB part
+        const into = new Uint8Array(part.bytes), reader = download.body.getReader(); let got = 0, shownAt = 0;
+        for (;;) {
+          const {value, done: finished} = await limit(reader.read(), 'download part ' + (parts.indexOf(part) + 1), 90000);
+          if (finished) break;
+          if (got + value.byteLength > part.bytes) { reader.cancel().catch(() => {}); writer?.abort().catch(() => {}); throw Error('A game file did not download correctly. Please reload and try again.'); }
+          into.set(value, got); got += value.byteLength; moved();
+          if (got - shownAt >= 262144 || got === part.bytes) { shownAt = got; show(done + got, false, part.bytes); }
+        }
+        if (got !== part.bytes) { writer?.abort().catch(() => {}); throw Error('A game file did not download correctly. Please reload and try again.'); }
+        bytes = into.buffer;
+      } else bytes = await download.arrayBuffer();
       const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
       if (bytes.byteLength !== part.bytes || hash !== part.sha256) { writer?.abort().catch(() => {}); throw Error('A game file did not download correctly. Please reload and try again.'); }
       if (part === parts[parts.length - 1]) size = new DataView(bytes).getUint32(bytes.byteLength - 4, true);   // gzip footer: unpacked size
       if (writer) await limit(writer.write(new Uint8Array(bytes)), 'saving part to the device', 60000); else pieces.push(bytes);
-      bytes = null; done += part.bytes; show(done, false);
+      bytes = null; done += part.bytes; show(done, false, 0);
     }
     if (!writer) return new Blob(pieces, {type:'application/octet-stream'});
     stage('download done; finishing the saved copy');
@@ -105,8 +166,8 @@
       while (offset < blob.size) {
         const {value, done} = await limit(reader.read(new Uint8Array(buffer, offset, Math.min(blob.size - offset, 4 << 20))), 'saved world read at ' + Math.round(offset / 1048576) + ' MB');
         if (done) break;
-        buffer = value.buffer; offset += value.byteLength; moved();   // the read hands back the same memory
-        if (offset % (64 << 20) < value.byteLength) stage('world read ' + Math.round(offset / 1048576) + ' MB');
+        buffer = value.buffer; offset += value.byteLength; moved(); unityProgress(.9 * offset / blob.size * .95);   // the read hands back the same memory
+        if (offset % (64 << 20) < value.byteLength) { stage('world read ' + Math.round(offset / 1048576) + ' MB'); $('load-message').textContent = 'Opening your saved world: ' + Math.round(offset / 1048576) + ' of ' + Math.round(blob.size / 1048576) + ' MB'; }
       }
       reader.releaseLock();
     } catch (e) {   // no in-place reads here (or one stalled): copy 8 MB slices into the buffer instead
@@ -493,21 +554,28 @@
     starting = true; $('skip').disabled = $('import').disabled = true;
     try {
       if (!instance) {
+        unityFrom = .1;   // where the bar is when Unity's own loader takes over (no world parts: early)
         const response = await fetch('game-config.json', {cache:'no-store'});
         if (!response.ok) throw Error('The browser game is not available yet. Please try again later.');
         const config = await response.json();
-        $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing'); $('loading').hidden = false;
+        $('setup').hidden = true; $('game').hidden = false; document.body.classList.add('playing'); $('loading').hidden = false; progress(.02, .05);
         stage('config ' + config.buildVersion + (fromNetwork ? ' (retry after a stall: fresh download)' : '')); startWatchdog();
         // Keep the game on this device: each build is stored once in Cache Storage (named by buildVersion; files are
         // keyed by their ?v=<sha> URLs), so later visits load the world without downloading it again. Older builds'
         // copies are removed when the version changes. If storage is unavailable (private mode, quota) we just download.
-        const store = await openGameStore(config.buildVersion);
+        await betaWorkerInCharge();
+        const store = await openGameStore(config.buildVersion); progress(.04, .06);
         console.log('[Stackadoo web] beta.js ' + BETA_JS + ' | game-config ' + config.buildVersion + ' | unity ' + (config.unityCommit || '?') + (config.webDeploy ? ' | deploy ' + config.webDeploy : ''));
         if (config.dataParts) {
           const total = config.dataParts.reduce((sum, part) => sum + part.bytes, 0);
-          const show = (done, saved) => { $('load-progress').value = .7 * done / total; $('load-message').textContent = (saved ? 'Opening the saved world: ' : 'Downloading the world: ') + Math.round(done/1024/1024) + ' of ' + Math.round(total/1024/1024) + ' MB'; };
+          // Download: 5% -> 75% by bytes (it creeps toward the end of the part being downloaded). Then Unity: 75% -> 99%.
+          const show = (done, saved, partBytes = 0) => {
+            if (saved) { progress(.2, .3); loadTitle('Opening your world…'); $('load-tip').textContent = 'Your world is saved on this device, so no big download this time.'; }
+            else { progress(.05 + .7 * done / total, .05 + .7 * Math.min(total, done + partBytes) / total); loadTitle('Downloading your world…'); }
+            $('load-message').textContent = (saved ? 'Opening the saved world: ' : 'Downloading the world: ') + Math.round(done/1024/1024) + ' of ' + Math.round(total/1024/1024) + ' MB'; };
           stage('looking for the saved world');
           let world = await savedWorld(store);
+          unityFrom = world ? .2 : .75;
           if (world) { stage('saved world found (' + Math.round(world.size / 1048576) + ' MB)'); show(total, true); }
           else {
             const unpack = !!(store && window.DecompressionStream);
@@ -516,17 +584,17 @@
             catch (e) { const why = (e && e.message) || String(e); if (!unpack || /^A game/.test(why)) throw e; stage('saving on the device failed (' + why + '), playing from the download'); try { await limit(store.cache.delete(WORLD), 'saved world delete'); } catch {} world = await downloadWorld(config.dataParts, store, show, false); world.packed = true; }   // storage full etc.: play from the download
           }
           config.dataUrl = WORLD_URL; releaseWorld = handWorldToUnity(world, config.dataParts); world = null;   // memory (phones): read once into the buffer Unity keeps
-          $('load-message').textContent = 'Opening the game…';
+          $('load-message').textContent = 'Opening the game…'; progress(unityFrom, unityFrom + .05);
         }
         stage('loading the Unity loader');
         const loaderSrc = await cachedScript(store, config.loaderUrl);
         try {
         await new Promise((resolve,reject) => { const script = document.createElement('script'); script.src = loaderSrc; script.onload=resolve; script.onerror=()=>reject(Error('The game download did not start. Please check your connection.')); document.body.append(script); });
         if (loaderSrc.startsWith('blob:')) URL.revokeObjectURL(loaderSrc);
-        stage('unity starting');
+        stage('unity starting'); loadTitle('Building Math Meadow…');
         let shown = -1;
-        instance = await createUnityInstance($('unity-canvas'), {...config, cacheControl:url=>url.startsWith('blob:')||url===WORLD_URL?'no-store':(store && /[?&]v=/.test(url)?'immutable':'must-revalidate'), devicePixelRatio:Math.min(window.devicePixelRatio || 1,1.5), showBanner:(message,type)=>{if(type==='error') $('load-message').textContent=message;}}, value => { $('load-progress').value=.7 + .3*value; const step = Math.floor(value * 4); if (step !== shown) { shown = step; stage('unity starting: ' + Math.round(value * 100) + '%'); } else moved(); });
-        loadDone = true; clearInterval(watchdog); stage('game ready');
+        instance = await createUnityInstance($('unity-canvas'), {...config, cacheControl:url=>url.startsWith('blob:')||url===WORLD_URL?'no-store':(store && /[?&]v=/.test(url)?'immutable':'must-revalidate'), devicePixelRatio:Math.min(window.devicePixelRatio || 1,1.5), showBanner:(message,type)=>{if(type==='error') $('load-message').textContent=message;}}, value => { unityProgress(value); const step = Math.floor(value * 4); if (step !== shown) { shown = step; stage('unity starting: ' + Math.round(value * 100) + '%'); } else moved(); });
+        loadDone = true; clearInterval(watchdog); paintBar(); stage('game ready');
         } finally { releaseWorld(); releaseWorld = () => {}; }   // Unity has the world; the page keeps no reference to it
         $('loading').hidden = true; $('full-screen').disabled = false;
       }

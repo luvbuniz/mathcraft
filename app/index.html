@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#87CEEB">
+<title>Stackadoo</title>
+<!-- /app/ = where the Android app (com.stackadoo.twa, Trusted Web Activity) starts, from version 1.0.42.
+     It opens the new game at /beta/play.html. Changing the forward below (for example back to /play.html,
+     the classic game) changes what the app opens without a new Play release.
+     Before it forwards it asks the site-wide /sw.js (the classic game's worker, scope /) to update, so a phone
+     that still runs a copy from before Nov 24, 2026 gets the one that leaves the new game alone (no 3-second
+     fallback to the classic page, no copying the ~230 MB download into its cache). -->
+<link rel="canonical" href="https://stackadoo.com/">
+<style>
+html,body{margin:0;height:100%;background:#87CEEB;color:#173b4e;font-family:system-ui,sans-serif}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;text-align:center}
+h1{font-size:34px;margin:0}
+p{font-size:20px;margin:0;max-width:30em;line-height:1.5}
+a.button{display:inline-block;min-height:56px;line-height:56px;padding:0 30px;border-radius:28px;background:#1a9851;color:#fff;font-size:21px;font-weight:800;text-decoration:none}
+a.quiet{color:#173b4e;font-size:17px}
+</style>
+</head>
+<body>
+<main>
+<h1>Stackadoo</h1>
+<p id="msg">Opening the game…</p>
+<p id="offline" hidden>You’re offline. The new game needs the internet the first time it opens. You can still play the classic game.</p>
+<a id="go" class="button" href="/beta/play.html?source=twa">Play</a>
+<a id="classic" class="quiet" href="/old/" hidden>Play the classic game</a>
+</main>
+<script>
+(function () {
+  'use strict';
+  var target = '/beta/play.html', params;
+  try { params = new URLSearchParams(location.search); } catch (e) { params = null; }
+  var fromApp = (document.referrer || '').indexOf('android-app://') === 0 || (params && params.get('source') === 'twa');
+  try { if (fromApp) sessionStorage.setItem('stackadoo.inApp', '1'); } catch (e) {}
+  // Keep any extra query (for example a future ?start=1), always say where we came from.
+  if (params) { if (fromApp) params.set('source', 'twa'); }
+  var query = params ? params.toString() : '';
+  var url = target + (query ? '?' + query : '') + location.hash;
+  document.getElementById('go').href = url;
+  var gone = false;
+  function go() { if (gone) return; gone = true; location.replace(url); }
+  if (navigator.onLine === false) {
+    document.getElementById('msg').hidden = true;
+    document.getElementById('offline').hidden = false;
+    document.getElementById('classic').hidden = false;
+    document.getElementById('go').textContent = 'Try again';
+    document.getElementById('go').onclick = function (e) { e.preventDefault(); location.reload(); };
+    return;
+  }
+  setTimeout(go, 3000);   // never wait longer than this for the worker update
+  try {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistration) { go(); return; }
+    navigator.serviceWorker.getRegistration('/').then(function (reg) {
+      if (!reg || !reg.active || new URL(reg.scope).pathname !== '/') return;   // no classic worker here: nothing to refresh
+      return reg.update().then(function () {
+        var next = reg.installing || reg.waiting;
+        if (!next) return;   // already the current worker
+        return new Promise(function (done) {
+          next.addEventListener('statechange', function () { if (next.state === 'activated' || next.state === 'redundant') done(); });
+        });
+      });
+    }).catch(function () {}).then(go, go);
+  } catch (e) { go(); }
+})();
+</script>
+</body>
+</html>

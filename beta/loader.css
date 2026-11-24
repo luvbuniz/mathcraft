@@ -1,0 +1,17 @@
+/* Loading screen: one big, friendly progress bar (Nov 24, 2026). Kids can read the percent; grown-ups get the MB line. */
+#loading{box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+.playing #loading{position:absolute;inset:0;z-index:3;background:linear-gradient(180deg,#87CEEB 0%,#bfe8f7 55%,#eaf7e7 100%)}
+#loading[hidden]{display:none!important}
+.load-card{width:min(640px,100%);display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.load-logo{width:96px;height:96px;border-radius:22px;box-shadow:0 6px 18px #16321c33;animation:load-bob 1.6s ease-in-out infinite}
+#load-title{margin:0;font-size:clamp(26px,5.5vw,40px);line-height:1.15;color:#173b4e;font-weight:900}
+.load-bar{position:relative;width:100%;height:34px;border-radius:17px;background:#fffbef;border:3px solid #173b4e;box-sizing:border-box;overflow:hidden}
+.load-fill{height:100%;width:0;border-radius:14px;background:repeating-linear-gradient(-45deg,#1a9851 0 16px,#26b866 16px 32px);background-size:45px 45px;animation:load-stripes 1s linear infinite;transition:width .25s linear}
+.load-percent{margin:0;font-size:clamp(30px,7vw,48px);font-weight:900;color:#157b48;font-variant-numeric:tabular-nums}
+#load-message{margin:0;font-size:clamp(17px,3.6vw,21px);line-height:1.45;color:#173b4e;font-weight:700}
+.load-tip{margin:0;font-size:clamp(15px,3.2vw,18px);line-height:1.45;color:#2b5a45}
+#load-retry{margin-top:6px}
+@keyframes load-stripes{to{background-position:45px 0}}
+@keyframes load-bob{50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.load-fill,.load-logo{animation:none}}
+@media (max-height:500px) and (orientation:landscape){.load-logo{width:56px;height:56px}.load-card{gap:8px}}
