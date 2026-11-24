@@ -1,7 +1,17 @@
 # Stackadoo Android wrapper
 
-This Trusted Web Activity opens `https://stackadoo.com/play.html` under the existing
-package `com.stackadoo.twa`. It does not bundle or modify game code or saved worlds.
+This Trusted Web Activity opens `https://stackadoo.com/app/?source=twa` (the new game) under the existing
+package `com.stackadoo.twa`. Up to 1.0.41 it opened `https://stackadoo.com/play.html` (the classic game). It does not bundle or modify game code or saved worlds.
+
+## Release 42 (1.0.42)
+
+- Version code 42. Start URL `https://stackadoo.com/app/?source=twa` (was `/play.html`). `/app/` is a small
+  web page that opens the new game at `/beta/play.html?source=twa`; what the app opens can be changed on the
+  website without a new release (rollback: make `/app/` forward to `/play.html`).
+- The web page `/app/` must be live before this version is released (it is on branch `cobble/twa-newgame`).
+- New app shortcut (long-press the icon): "Classic game" opens `https://stackadoo.com/old/` (forwards to `/play.html`,
+  the classic game with the kids' classic saves).
+- Same package, same upload key, same Digital Asset Links (`/.well-known/assetlinks.json` unchanged). Target/compile 36, min 24.
 
 ## Release 41 (1.0.41)
 

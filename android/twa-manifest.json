@@ -12,16 +12,23 @@
   "navigationDividerColorDark": "#87CEEB",
   "backgroundColor": "#87CEEB",
   "enableNotifications": true,
-  "startUrl": "/play.html",
+  "startUrl": "/app/?source=twa",
   "iconUrl": "https://stackadoo.com/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./upload.keystore",
     "alias": "upload"
   },
-  "appVersionCode": 41,
-  "appVersion": "1.0.41",
-  "shortcuts": [],
+  "appVersionCode": 42,
+  "appVersion": "1.0.42",
+  "shortcuts": [
+    {
+      "name": "Classic Stackadoo game",
+      "shortName": "Classic game",
+      "url": "https://stackadoo.com/old/",
+      "chosenIconUrl": "https://stackadoo.com/icon-512.png"
+    }
+  ],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://stackadoo.com/manifest.json",
   "fallbackType": "customtabs",
