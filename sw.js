@@ -40,8 +40,36 @@ self.addEventListener('install', e => {
   )));
 });
 
+// The new website (Nov 2026) lives at the site root and the new game under /beta/. This worker only
+// serves the old game (play.html and its files), so it leaves every new-site URL to the network and
+// never stores one. On activate it also removes any new-site copy it saved before (including the old
+// home page saved under './'), so it can't show a stale home page or keep the ~230 MB game download.
+// CACHE is deliberately NOT bumped: the offline copy of the old game (play.html) is kept as it is.
+const NEW_SITE_PAGES = ['/', '/index.html', '/index', '/worlds.html', '/worlds', '/heroes.html', '/heroes',
+  '/grown-ups.html', '/grown-ups', '/help.html', '/help', '/how-to-play.html', '/how-to-play', '/faq.html', '/faq'];
+function isNewSite(url) {
+  try {
+    const u = new URL(url, self.location && self.location.href);
+    if (self.location && u.origin !== self.location.origin) return false;
+    const p = u.pathname;
+    return NEW_SITE_PAGES.includes(p) || p === '/beta' || p.startsWith('/beta/') || /\.(unityweb|part|data)$/.test(p);
+  } catch (e) { return false; }
+}
+
+function purgeNewSite() {
+  return caches.keys().then(names => Promise.all(names.map(n => caches.open(n).then(c => c.keys && c.keys().then(reqs =>
+    Promise.all(reqs.filter(r => isNewSite(typeof r === 'string' ? r : r.url)).map(r => c.delete(r))))))))
+    // A visit to /beta/play.html before the beta had its own worker could have saved the NEW game's page
+    // as the old game's offline copy. Drop that copy (the next online load saves the real one).
+    .then(() => caches.open(CACHE)).then(c => c.match('play.html').then(r => r && r.text().then(t => {
+      if (/unity-canvas|WebBeta|beta\.js/.test(t)) return c.delete('play.html');
+    })))
+    .catch(() => {});
+}
+
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(purgeNewSite)
     .then(() => self.clients.claim())
 ));
 
@@ -52,12 +80,11 @@ function isAuthUrl(url) {
 }
 
 // The game page answers on several URLs: '/play' (the pretty URL GitHub Pages and Cloudflare
-// serve and the installed app opens), '/play.html' and '/'. '/play' used to fall through to the
+// serve and the installed app opens) and '/play.html'. ('/' is the new website now: see isNewSite.) '/play' used to fall through to the
 // generic handler below, which read it through the 10-minute HTTP cache and saved a stale copy.
 function pagePath(req) {
   try {
     const p = new URL(req.url).pathname.replace(/\/+$/, '') || '/';
-    if (p === '/' || p === '/index.html') return '/';
     if (p === '/play' || p === '/play.html' || p.endsWith('/play.html') || p.endsWith('/play')) return 'play';
   } catch (e) {}
   return null;
@@ -66,7 +93,7 @@ function pagePath(req) {
 function isPlayHtml(req) { return pagePath(req) !== null; }
 
 // Cache key for the offline copy of each page. '/play' and '/play.html' share one copy.
-function pageCacheKey(req) { return pagePath(req) === '/' ? './' : 'play.html'; }
+function pageCacheKey(req) { return 'play.html'; }
 
 function patchPlayHtml(text) {
   if (!text || text.indexOf('google-signin.js') >= 0) return text;
@@ -123,6 +150,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   if (isAuthUrl(req.url)) return;          // let the browser talk to Google / Firebase directly
+  if (isNewSite(req.url)) return;          // new website and new game: straight to the network, never cached here
 
   if (isPlayHtml(req) && (req.mode === 'navigate' || req.destination === 'document')) {
     e.respondWith(handleNavigation(req));

@@ -5,7 +5,9 @@
 window.STACKADOO_AUTH_CONFIG = Object.freeze({
   enabled: true,
   allowedOrigins: ['https://stackadoo.com', 'https://www.stackadoo.com'],
-  callbackPath: '/beta/index.html',
+  // Email sign-in links come back to the page family they were sent from: /beta/ pages to /beta/index.html,
+  // the website at the site root to '/'. (Firebase checks the domain, stackadoo.com, not the path.)
+  callbackPath: (typeof location !== 'undefined' && /^\/beta(\/|$)/.test(location.pathname)) ? '/beta/index.html' : '/',
   firebase: {
     apiKey: 'AIzaSyBNOgrfPBOKg2-J0N82g9sdJn6IHtcYJMU',
     authDomain: 'stackadoo.firebaseapp.com',

@@ -21,6 +21,8 @@ function makeSW() {
   const cacheObj = name => ({
     match: k => Promise.resolve(store(name).has(norm(k)) ? new Resp(store(name).get(norm(k))) : undefined),
     put: (k, r) => r.text().then(t => { store(name).set(norm(k), t); }),
+    keys: () => Promise.resolve([...store(name).keys()].map(url => ({ url }))),
+    delete: k => Promise.resolve(store(name).delete(norm(k))),
   });
   const caches = {
     open: name => Promise.resolve(cacheObj(name)),
@@ -59,17 +61,21 @@ async function main() {
   assert.equal(sw.store(sw.CACHE).get('play.html'), 'BUILD-B', 'offline copy refreshed after a good fetch');
 
   // Every page URL is handled the same way, and assets are not treated as pages.
-  for (const u of ['https://stackadoo.com/', 'https://stackadoo.com/play.html', 'https://x.workers.dev/play?r2=1', 'https://stackadoo.com/play/'])
+  for (const u of ['https://stackadoo.com/play.html', 'https://x.workers.dev/play?r2=1', 'https://stackadoo.com/play/'])
     assert.equal(vm.runInContext(`isPlayHtml({url:${JSON.stringify(u)}})`, sw.ctx), true, u);
-  for (const u of ['https://stackadoo.com/sw.js', 'https://stackadoo.com/avatars/leo.glb', 'https://stackadoo.com/playground.png'])
+  for (const u of ['https://stackadoo.com/', 'https://stackadoo.com/sw.js', 'https://stackadoo.com/avatars/leo.glb', 'https://stackadoo.com/playground.png'])
     assert.equal(vm.runInContext(`isPlayHtml({url:${JSON.stringify(u)}})`, sw.ctx), false, u);
 
   // 2. Offline: the saved copy loads, for /play and for /.
   sw.net.mode = 'offline';
   r = await sw.nav('https://stackadoo.com/play').p;
   assert.match(await r.text(), /BUILD-B/, 'offline /play uses the saved copy');
-  r = await sw.nav('https://stackadoo.com/').p;
-  assert.match(await r.text(), /BUILD-B/, 'offline / falls back to the saved game page');
+  // The new website (/, its pages) and the new game (/beta/...) are never answered or cached by this worker.
+  for (const u of ['https://stackadoo.com/', 'https://stackadoo.com/index.html', 'https://stackadoo.com/worlds.html', 'https://stackadoo.com/faq',
+                   'https://stackadoo.com/beta/', 'https://stackadoo.com/beta/play.html?start=1', 'https://stackadoo.com/beta/Build/world-data-03.part',
+                   'https://stackadoo.com/beta/assets/starters.png'])
+    assert.equal(sw.nav(u).responded, false, 'left to the network: ' + u);
+  assert.equal(sw.dispatch('fetch', { request: { url: 'https://stackadoo.com/beta/Build/WebBeta.wasm.unityweb', method: 'GET', mode: 'cors' } }).responded, false);
 
   // 3. Slow network (longer than the timeout) with a saved copy: the saved copy is used.
   sw = makeSW();
@@ -99,6 +105,13 @@ async function main() {
   assert.notEqual(sw.CACHE, 'stackadoo-v301', 'cache version bumped');
   await sw.dispatch('activate', {}).p;
   assert.deepEqual([...sw.stores.keys()], [sw.CACHE]);
+  assert.equal(sw.store(sw.CACHE).get('play.html'), 'NEW', 'old game offline copy kept on activate');
+  // Activate also drops new-site copies saved earlier, and a new-game page saved as the old game's copy.
+  sw = makeSW();
+  sw.store(sw.CACHE).set('https://stackadoo.com/', 'OLD-HOME'); sw.store(sw.CACHE).set('https://stackadoo.com/beta/Build/world-data-00.part', 'BIG');
+  sw.store(sw.CACHE).set('https://stackadoo.com/textures/oak-store-v1.jpg?v=280', 'TEX'); sw.store(sw.CACHE).set('play.html', '<canvas id="unity-canvas">');
+  await sw.dispatch('activate', {}).p;
+  assert.deepEqual([...sw.store(sw.CACHE).keys()], ['https://stackadoo.com/textures/oak-store-v1.jpg?v=280']);
   assert.equal(sw.claimed, 1);
   assert.doesNotMatch(src, /\.navigate\(|location\.reload|postMessage/, 'the worker never forces a page reload');
 
@@ -108,7 +121,8 @@ async function main() {
 
   // 8. The page registers the same worker URL from both entry pages (no install ping-pong).
   const reg = f => (fs.readFileSync(path.join(__dirname, '..', f), 'utf8').match(/serviceWorker\.register\('([^']+)'/) || [])[1];
-  assert.equal(reg('play.html'), reg('index.html'));
+  assert.equal(reg('play.html'), 'sw.js?v=311', 'the old game still registers the same worker URL');
+  assert.equal(reg('index.html'), undefined, 'the new home page does not register the old game worker');
   console.log('sw-strategy: all checks passed');
 }
 main().catch(e => { console.error(e); process.exit(1); });
