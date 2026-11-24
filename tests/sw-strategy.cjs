@@ -73,7 +73,7 @@ async function main() {
   // The new website (/, its pages) and the new game (/beta/...) are never answered or cached by this worker.
   for (const u of ['https://stackadoo.com/', 'https://stackadoo.com/index.html', 'https://stackadoo.com/worlds.html', 'https://stackadoo.com/faq',
                    'https://stackadoo.com/beta/', 'https://stackadoo.com/beta/play.html?start=1', 'https://stackadoo.com/beta/Build/world-data-03.part',
-                   'https://stackadoo.com/beta/assets/starters.png'])
+                   'https://stackadoo.com/beta/assets/starters.png', 'https://stackadoo.com/old/', 'https://stackadoo.com/old'])
     assert.equal(sw.nav(u).responded, false, 'left to the network: ' + u);
   assert.equal(sw.dispatch('fetch', { request: { url: 'https://stackadoo.com/beta/Build/WebBeta.wasm.unityweb', method: 'GET', mode: 'cors' } }).responded, false);
 

@@ -46,7 +46,8 @@ self.addEventListener('install', e => {
 // home page saved under './'), so it can't show a stale home page or keep the ~230 MB game download.
 // CACHE is deliberately NOT bumped: the offline copy of the old game (play.html) is kept as it is.
 const NEW_SITE_PAGES = ['/', '/index.html', '/index', '/worlds.html', '/worlds', '/heroes.html', '/heroes',
-  '/grown-ups.html', '/grown-ups', '/help.html', '/help', '/how-to-play.html', '/how-to-play', '/faq.html', '/faq'];
+  '/grown-ups.html', '/grown-ups', '/help.html', '/help', '/how-to-play.html', '/how-to-play', '/faq.html', '/faq',
+  '/old', '/old/', '/old/index.html'];   // /old/ only forwards to /play.html (which this worker still handles)
 function isNewSite(url) {
   try {
     const u = new URL(url, self.location && self.location.href);

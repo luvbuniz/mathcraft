@@ -33,11 +33,10 @@ def fix_attr(m):
 # Beta-only wording that is wrong once this is the main website (the beta pages keep theirs).
 COPY = {
     'index.html': [('<p class="availability">Browser beta · Play Stackadoo before the changeover</p>', '')],
-    'help.html': [('<a href="https://stackadoo.com/play.html">Open the original game →</a>', '<a href="/play.html">Open the classic game →</a>'),
-                  ('Please keep your original saves', 'Please keep your classic-game saves')],
+    'help.html': [('Please keep your original saves', 'Please keep your classic-game saves')],
     'grown-ups.html': [('into the beta. Keep the original game while you check the transfer.', 'into the new game. Keep the classic game while you check the transfer.')],
     'faq.html': [('<summary>Is the beta ready for the final changeover?</summary><p>This is a place to try the full website and new browser game. Please keep your original games while transfers, gameplay, and performance are tested. The current website and old game remain available.</p>',
-                  '<summary>Can we still play the classic game?</summary><p>Yes. The classic Stackadoo game is still at <a href="/play.html">stackadoo.com/play.html</a> and in the Android app. Please keep your classic-game saves until you have checked a transfer.</p>')],
+                  '<summary>Can we still play the classic game?</summary><p>Yes! Kids can still play the classic Stackadoo game any time at <a href="/old/">stackadoo.com/old</a>, and it’s still in the Android app. Their classic worlds stay right where they left them, so they can visit both.</p>')],
 }
 
 def build(page):
