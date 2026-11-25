@@ -1,70 +1,50 @@
 {
-  "loaderUrl": "Build/WebBeta.loader.js?v=878c835aa091a1f1",
+  "loaderUrl": "Build/WebBeta.loader.js?v=57cd71dd2b1c9b11",
   "dataParts": [
     {
-      "url": "Build/world-data-00.part?v=edd5b5764b748acf",
+      "url": "Build/world-data-00.part?v=5a57fd3dd64bcb34",
       "bytes": 20971520,
-      "sha256": "edd5b5764b748acf0684c6892e23f5838293a35112abd5159d20481191945d5b"
+      "sha256": "5a57fd3dd64bcb3447302bf358c499a3473284ae7c088bf3805b030a648d7c34"
     },
     {
-      "url": "Build/world-data-01.part?v=db6ebc92f88c5525",
+      "url": "Build/world-data-01.part?v=fbef3c3a1620066d",
       "bytes": 20971520,
-      "sha256": "db6ebc92f88c5525d42ee511eddbe426bcf08848aca2e22a7b09ac05bfbcb913"
+      "sha256": "fbef3c3a1620066d7b20418a28aa8810c53e6a4bd0404ef46c71fbb688349b01"
     },
     {
-      "url": "Build/world-data-02.part?v=f1c580f35ca42bb3",
+      "url": "Build/world-data-02.part?v=eb8b6d12346552f6",
       "bytes": 20971520,
-      "sha256": "f1c580f35ca42bb397485b56ccbc41bc8684074374c9869f2ab38c4dd0b835e1"
+      "sha256": "eb8b6d12346552f6648faae2a9469a40aa7a336695d9fcb0a5d05856ea4dce8e"
     },
     {
-      "url": "Build/world-data-03.part?v=2ee812dd10512064",
+      "url": "Build/world-data-03.part?v=1af6a64e6f5378ea",
       "bytes": 20971520,
-      "sha256": "2ee812dd10512064642a7f9fdb473562efc5f739545efe66f0d95f0553590375"
+      "sha256": "1af6a64e6f5378ea4a513ebf219a05e8de9d4cee74591c8f398d0237758c7586"
     },
     {
-      "url": "Build/world-data-04.part?v=10965b957a1a3406",
+      "url": "Build/world-data-04.part?v=3131ac01a836e20a",
       "bytes": 20971520,
-      "sha256": "10965b957a1a34069e487aa37aee6862ea36fd9c32aab8e0e5fc58e71523f9db"
+      "sha256": "3131ac01a836e20a34787f34c535ffd07322f4cc3bbb304405625499211db37d"
     },
     {
-      "url": "Build/world-data-05.part?v=fb3a1233fd554dbb",
+      "url": "Build/world-data-05.part?v=8427d2db6ae2a323",
       "bytes": 20971520,
-      "sha256": "fb3a1233fd554dbb9eb8a8424ad3ea8269d090f0a7a89def0d3194ca0f7c6329"
+      "sha256": "8427d2db6ae2a323eefea1a65e3a1ff95133088a9302e4ca20538f991125f613"
     },
     {
-      "url": "Build/world-data-06.part?v=6f6454e2b038f7a3",
-      "bytes": 20971520,
-      "sha256": "6f6454e2b038f7a3478b1399b45abb9a14f9fe17349f78f0112ca4b6e39d2945"
-    },
-    {
-      "url": "Build/world-data-07.part?v=09ab1b4fe0b8b0d2",
-      "bytes": 20971520,
-      "sha256": "09ab1b4fe0b8b0d2e02a235dfcb17084a5772387f5fa29df8494e1d30c4ac67e"
-    },
-    {
-      "url": "Build/world-data-08.part?v=9963b4ca3959fbdb",
-      "bytes": 20971520,
-      "sha256": "9963b4ca3959fbdba5e7bd08792c84e5ef9f3726e80f9a3115fb33d72276b6e4"
-    },
-    {
-      "url": "Build/world-data-09.part?v=8efb0db69e6c0cb7",
-      "bytes": 20971520,
-      "sha256": "8efb0db69e6c0cb7b757798352b84ea8edeb23555025651048c0b37e7cb5049f"
-    },
-    {
-      "url": "Build/world-data-10.part?v=5e97511d34516ce2",
-      "bytes": 18326221,
-      "sha256": "5e97511d34516ce2fd35cade91729534781b45b66b2446e83a1d8a57d078b41a"
+      "url": "Build/world-data-06.part?v=78db82987efbc33a",
+      "bytes": 10945969,
+      "sha256": "78db82987efbc33a860024795423e282d8e4aad401e59b3f72ba523e5516ccb4"
     }
   ],
-  "frameworkUrl": "Build/WebBeta.framework.js.unityweb?v=9c9a655dde063255",
-  "codeUrl": "Build/WebBeta.wasm.unityweb?v=f8bf20fc846b8db0",
+  "frameworkUrl": "Build/WebBeta.framework.js.unityweb?v=2e459c7afdd0e125",
+  "codeUrl": "Build/WebBeta.wasm.unityweb?v=e4f740667ad4228a",
   "streamingAssetsUrl": "StreamingAssets",
   "companyName": "Stackadoo",
   "productName": "Stackadoo Browser Beta",
-  "productVersion": "2026.11.25-thanksgiving-rc1",
+  "productVersion": "2026.11.25-thanksgiving-rc2",
   "autoSyncPersistentDataPath": true,
-  "buildVersion": "2026.11.25-thanksgiving-rc1",
-  "unityCommit": "345d434",
-  "sourceManifestSha256": "ef6248c833ec310a22397f89a8d8cbc0cd3e8f40db03fbdf248d40f136557962"
+  "buildVersion": "2026.11.25-thanksgiving-rc2",
+  "unityCommit": "3d479af",
+  "sourceManifestSha256": "978ba42addff75e6edc8c90f230db44dd43916fbf5cd638336ad64bea1ced44d"
 }
